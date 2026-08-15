@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Klinik System - PT ATI & ATI Medika</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- GATE LOGIN OVERLAY (Pass: 231067) -->
+  <div id="gate-login-overlay" class="gate-overlay">
+    <div class="gate-card">
+      <div class="gate-icon">🔐</div>
+      <h2 class="gate-title">Login Klinik</h2>
+      <p class="gate-sub">Masukkan Kode Akses</p>
+      
+      <form id="form-gate-login" onsubmit="handleGateLogin(event)">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <input type="password" id="gate-password-input" class="form-control gate-input" placeholder="Password..." required autofocus>
+        </div>
+        <button type="submit" class="btn btn-gate-submit">MASUK</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- App Header Navbar (PT ATI Style Complete Tabs) -->
+  <header class="app-navbar">
+    <div class="brand-section">
+      <img src="ATI Logo.png" alt="ATI Logo" class="brand-logo-img">
+      <img src="Salinan Logo nafila.webp" alt="Nafila Logo" class="brand-logo-img">
+      <div>
+        <h1 class="brand-title">Mobile Klinik System</h1>
+        <p class="brand-subtitle">Klinik PT ATI & ATI Medika</p>
+      </div>
+    </div>
+
+    <nav class="nav-links">
+      <button class="nav-btn active" data-target="view-poli">
+        <i class="fa-solid fa-stethoscope"></i> POLI
+      </button>
+      <button class="nav-btn" data-target="view-edit-data">
+        <i class="fa-solid fa-clock-rotate-left"></i> EDIT DATA
+      </button>
+      <button class="nav-btn" data-target="view-gudang">
+        <i class="fa-solid fa-boxes-stacked"></i> GUDANG
+      </button>
+      <button class="nav-btn" data-target="view-obat-req">
+        <i class="fa-solid fa-capsules"></i> OBAT REQ
+      </button>
+      <button class="nav-btn" data-target="view-karyawan">
+        <i class="fa-solid fa-id-card"></i> KARYAWAN
+      </button>
+      <button class="nav-btn" data-target="view-shift">
+        <i class="fa-solid fa-paper-plane"></i> SHIFT
+      </button>
+      <button class="nav-btn" data-target="view-hse">
+        <i class="fa-solid fa-chart-pie"></i> HSE
+      </button>
+      <button class="nav-btn" data-target="view-manajemen">
+        <i class="fa-solid fa-sack-dollar"></i> MANAJEMEN
+      </button>
+      <button class="nav-btn" data-target="view-gsheet">
+        <i class="fa-brands fa-google-drive"></i> G-SHEET SYNC
+      </button>
+      <button class="theme-toggle-btn" id="btn-toggle-theme" title="Ubah Tema">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button class="btn btn-sm btn-secondary" onclick="handleLogout()" title="Keluar">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Application Content Container -->
+  <main class="app-container">
+
+    <!-- 1. TAB POLI (INPUT KUNJUNGAN POLI - MARUNDA STYLE + SPLIT SCREEN SOAP) -->
+    <section id="view-poli" class="page-view active">
+      <div class="soap-split-layout">
+
+        <!-- LAYAR KIRI: Form Input Pemeriksaan Saat Ini (PT ATI Form Style) -->
+        <div class="glass-card soap-panel">
+          <div class="soap-panel-header">
+            <div class="soap-panel-title">
+              <i class="fa-solid fa-notes-medical" style="color: var(--primary);"></i>
+              Input Kunjungan Poli
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="resetFormPoli()">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+
+          <div class="soap-scrollable-body">
+            
+            <!-- Scan / Cari NIK Pabrik atau Nama Pasien -->
+            <div class="patient-select-bar">
+              <input type="text" id="poli-search-nik" class="form-control" placeholder="Scan / Ketik NIK Pabrik atau Nama Karyawan..." onkeyup="if(event.key==='Enter') searchPatientByNIK()">
+              <button class="btn btn-primary" onclick="searchPatientByNIK()">
+                <i class="fa-solid fa-magnifying-glass"></i> CARI
+              </button>
+            </div>
+
+            <!-- Patient Quick Info Badge -->
+            <div id="poli-patient-info-box" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: none;">
+              <div style="font-weight: 700; color: var(--primary-light);" id="poli-info-nama">Nama Pasien</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);" id="poli-info-sub">NIK Pabrik: - | Dept: -</div>
+            </div>
+
+            <form id="form-poli-entry" onsubmit="handleSavePoli(event)">
+
+              <!-- 1. KELUHAN UTAMA (Subjektif - S) -->
+              <div class="form-group">
+                <label class="form-label marunda-section-label">1. KELUHAN UTAMA (Subjektif)</label>
+                <textarea id="poli-keluhan" class="form-control" placeholder="Keluhan utama, riwayat penyakit sekarang, gejala..." required></textarea>
+              </div>
+
+              <!-- 2. TTV / PEMERIKSAAN (Objektif - O) -->
+              <div class="form-group">
+                <label class="form-label marunda-section-label">2. TTV / PEMERIKSAAN (Objektif)</label>
+                <div class="vitals-grid">
+                  <div class="vital-item">
+                    <label class="form-label">TD (mmHg)</label>
+                    <input type="text" id="poli-td" class="form-control" placeholder="120/80">
+                  </div>
+                  <div class="vital-item">
+                    <label class="form-label">Nadi (bpm)</label>
+                    <input type="text" id="poli-nadi" class="form-control" placeholder="80">
+                  </div>
+                  <div class="vital-item">
+                    <label class="form-label">Suhu (°C)</label>
+                    <input type="text" id="poli-suhu" class="form-control" placeholder="36.5">
+                  </div>
+                  <div class="vital-item">
+                    <label class="form-label">BB (kg)</label>
+                    <input type="text" id="poli-bb" class="form-control" placeholder="65">
+                  </div>
+                  <div class="vital-item">
+                    <label class="form-label">TB (cm)</label>
+                    <input type="text" id="poli-tb" class="form-control" placeholder="168">
+                  </div>
+                </div>
+                <textarea id="poli-objektif-detail" class="form-control" placeholder="Detail pemeriksaan fisik dasar (farings, auskultasi, dll)..."></textarea>
+              </div>
+
+              <!-- 3. DIAGNOSIS (MULTI - ICD 10) (Asesmen - A) -->
+              <div class="form-group">
+                <label class="form-label marunda-section-label">3. DIAGNOSIS (MULTI - ICD 10)</label>
+                <div id="container-icd10-list">
+                  <!-- Dynamic ICD10 Select Inputs -->
+                </div>
+                <button type="button" class="btn btn-sm btn-secondary" style="width: 100%; margin-top: 6px;" onclick="addICD10Row()">
+                  + TAMBAH DIAGNOSIS
+                </button>
+              </div>
+
+              <!-- 4. RESEP OBAT (STOK TERLIHAT & AUTO REDUCT) (Plan - P) -->
+              <div class="form-group">
+                <label class="form-label marunda-section-label">4. RESEP OBAT (STOK TERLIHAT & BERKURANG OTOMATIS)</label>
+                <table class="resep-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40%;">Obat & Stok Available</th>
+                      <th style="width: 18%;">Dosis</th>
+                      <th style="width: 18%;">Jumlah</th>
+                      <th style="width: 24%;">Aturan Pakai</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="poli-resep-body">
+                    <!-- Dynamic Medicine Rows with Live Stock -->
+                  </tbody>
+                </table>
+                <button type="button" class="btn btn-sm btn-secondary" style="width: 100%;" onclick="addPoliMedicineRow()">
+                  + TAMBAH OBAT
+                </button>
+              </div>
+
+              <!-- 5. NAMA NAKES / PEMERIKSA -->
+              <div class="form-group">
+                <label class="form-label marunda-section-label">5. NAMA NAKES / PEMERIKSA</label>
+                <input type="text" id="poli-pemeriksa" class="form-control" value="dr. Dylan Fadhilah" required>
+                <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="poli-izin-sakit" style="width: 18px; height: 18px;">
+                  <label for="poli-izin-sakit" style="font-weight: 600; font-size: 0.9rem;">Izin Sakit / Surkes?</label>
+                </div>
+              </div>
+
+              <!-- RED BANNER: TANDAI PASIEN DALAM PANTAUAN -->
+              <div class="pantauan-banner">
+                <input type="checkbox" id="poli-pantauan" style="width: 20px; height: 20px;">
+                <label for="poli-pantauan" style="font-weight: 700; color: #ef4444; font-size: 0.95rem;">
+                  🔴 TANDAI PASIEN DALAM PANTAUAN
+                </label>
+              </div>
+
+              <!-- 6. UPLOAD FOTO / DOKUMEN REKAM MEDIS (Opsional) -->
+              <div class="form-group">
+                <label class="form-label marunda-section-label">6. UPLOAD FOTO / DOKUMEN REKAM MEDIS (Opsional)</label>
+                <input type="file" id="poli-upload-file" class="form-control" accept="image/*,.pdf">
+              </div>
+
+              <!-- Submit Button -->
+              <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1rem; margin-top: 10px;">
+                <i class="fa-solid fa-floppy-disk"></i> SIMPAN REKAM MEDIS
+              </button>
+
+            </form>
+          </div>
+        </div>
+
+        <!-- LAYAR KANAN: Timeline Riwayat Rekam Medis Pasien yang Dipilih -->
+        <div class="glass-card soap-panel">
+          <div class="soap-panel-header">
+            <div class="soap-panel-title">
+              <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent);"></i>
+              Riwayat Kunjungan Pasien (Timeline)
+            </div>
+            <span class="banner-sub" id="poli-history-count">0 Kunjungan</span>
+          </div>
+
+          <div id="poli-selected-banner" class="patient-info-banner">
+            <div>
+              <div class="banner-name" id="poli-banner-name">Silakan Cari / Pilih Pasien</div>
+              <div class="banner-sub" id="poli-banner-sub">Riwayat kunjungan & resep pasien akan muncul di sini</div>
+            </div>
+            <div id="poli-banner-alergi" style="font-size: 0.8rem; font-weight: 700; color: var(--danger);"></div>
+          </div>
+
+          <div class="soap-scrollable-body" id="poli-timeline-container">
+            <div style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+              <i class="fa-solid fa-folder-open" style="font-size: 3rem; margin-bottom: 12px; opacity: 0.4;"></i>
+              <p>Riwayat rekam medis pasien akan ditampilkan di sisi kanan ini secara kronologis.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2. TAB EDIT DATA & KOREKSI STOK -->
+    <section id="view-edit-data" class="page-view">
+      <div class="glass-card" style="margin-bottom: 20px;">
+        <h2><i class="fa-solid fa-clock-rotate-left" style="color: var(--warning);"></i> Edit Data & Koreksi Stok</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Pilih tanggal atau cari pasien untuk mengedit rekam medis & mengoreksi stok obat secara otomatis.</p>
+        
+        <div style="display: flex; gap: 12px; margin-top: 14px;">
+          <input type="date" id="filter-edit-date" class="form-control" style="width: 220px;" onchange="filterEditDataTable()">
+          <input type="text" id="filter-edit-search" class="form-control" placeholder="Cari Nama Pasien / NIK Pabrik / Keluhan..." style="flex: 1;" onkeyup="filterEditDataTable()">
+          <button class="btn btn-primary" onclick="filterEditDataTable()">
+            <i class="fa-solid fa-magnifying-glass"></i> CARI
+          </button>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th style="width: 12%;">Tanggal</th>
+                <th style="width: 20%;">Nama Pasien</th>
+                <th style="width: 45%;">Keluhan & Diagnosis</th>
+                <th style="width: 10%;">Pemeriksa</th>
+                <th style="width: 13%;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="table-edit-data-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TAB GUDANG (AKSES GUDANG NAFILA) -->
+    <section id="view-gudang" class="page-view">
+      <!-- Locked State -->
+      <div id="gudang-locked-view" class="glass-card" style="max-width: 500px; margin: 40px auto; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 12px; color: var(--warning);"><i class="fa-solid fa-lock"></i></div>
+        <h3>Akses Gudang Obat</h3>
+        <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.88rem;">Hanya dapat diakses oleh Apoteker Nafila & Petugas Gudang.</p>
+        <form onsubmit="handleUnlockGudang(event)">
+          <div class="form-group">
+            <input type="password" id="gudang-password-input" class="form-control" placeholder="Sandi Gudang..." required style="text-align: center; font-size: 1.1rem;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1rem;">
+            BUKA AKSES GUDANG
+          </button>
+        </form>
+      </div>
+
+      <!-- Unlocked State -->
+      <div id="gudang-unlocked-view" style="display: none;">
+        <div class="glass-card" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h2><i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i> Stok Obat Gudang Apotek Nafila</h2>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">Manajemen stok obat, sisa stok, &amp; cetak lembar stok opname manual PT ATI.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" onclick="openModalTambahObat()">
+                <i class="fa-solid fa-plus"></i> Tambah Obat Baru
+              </button>
+            </div>
+          </div>
+
+          <!-- SUB-TAB BUTTONS GUDANG -->
+          <div style="display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px;">
+            <button class="btn btn-primary" id="gudang-subtab-list" onclick="switchGudangSubTab('list')">
+              <i class="fa-solid fa-table-list"></i> Data Obat Lengkap
+            </button>
+            <button class="btn btn-secondary" id="gudang-subtab-opname" onclick="switchGudangSubTab('opname')" style="background: #0284c7; color: #fff; border: none;">
+              <i class="fa-solid fa-clipboard-check"></i> Stok Opname Manual (PT ATI)
+            </button>
+          </div>
+
+          <!-- VIEW 1: DATA OBAT LENGKAP -->
+          <div id="gudang-view-list">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>KODE</th>
+                    <th>NAMA OBAT</th>
+                    <th>KATEGORI</th>
+                    <th>SISA STOK</th>
+                    <th>HARGA (Rp)</th>
+                    <th>SATUAN</th>
+                    <th>STATUS</th>
+                    <th>AKSI</th>
+                  </tr>
+                </thead>
+                <tbody id="table-gudang-body">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- VIEW 2: STOK OPNAME MANUAL (PT ATI) -->
+          <div id="gudang-view-opname" style="display: none;">
+            <div style="background: rgba(2, 132, 199, 0.15); border: 1px solid rgba(2, 132, 199, 0.4); border-radius: 8px; padding: 14px; margin-bottom: 16px; font-size: 0.88rem; color: #7dd3fc;">
+              ℹ️ Pilih tanggal dan cetak lembar stok opname fisik obat untuk dichecklist manual saat kunjungan ke PT ATI.
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+              <div style="font-weight: 700; color: var(--primary-light);">
+                📋 Lembar Pengecekan Fisik Obat (Stok Opname)
+              </div>
+              <button class="btn btn-primary" onclick="printStokOpnameDoc()" style="background: #0284c7; border: none; font-weight: 700; padding: 10px 20px;">
+                <i class="fa-solid fa-print"></i> 🖨️ CETAK LEMBAR STOK OPNAME
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="custom-table" id="tbl-stok-opname">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nama Obat</th>
+                    <th>Harga Modal</th>
+                    <th>Stok Sistem</th>
+                    <th>Stok Real (Fisik)</th>
+                    <th>Selisih</th>
+                    <th>Perhitungan Harga Selisih</th>
+                  </tr>
+                </thead>
+                <tbody id="table-stok-opname-body">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. TAB OBAT REQ (PERMINTAAN OBAT KE APOTEK NAFILA VIA WHATSAPP API) -->
+    <section id="view-obat-req" class="page-view">
+      <div class="glass-card" style="max-width: 750px; margin: 0 auto;">
+        <h2><i class="fa-solid fa-capsules" style="color: var(--warning);"></i> 💊 Permintaan Obat ke Apotek Nafila</h2>
+        
+        <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 12px 16px; margin: 16px 0 24px 0; font-size: 0.88rem; color: #fcd34d;">
+          ⚠️ Form ini hanya mengirimkan <strong>PERMINTAAN via WhatsApp</strong> secara otomatis ke nomor WhatsApp Apoteker Nafila.
+        </div>
+
+        <form id="form-obat-req" onsubmit="handleSendObatReqWA(event)">
+          <div class="form-group">
+            <label class="form-label marunda-section-label">NAMA PERAWAT / PENGIRIM</label>
+            <input type="text" id="req-nama-perawat" class="form-control" placeholder="Nama perawat..." required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label marunda-section-label">DAFTAR PERMINTAAN OBAT</label>
+            <table class="resep-table">
+              <thead>
+                <tr>
+                  <th style="width: 60%;">Nama Obat</th>
+                  <th style="width: 30%;">Jumlah Req</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="req-table-body">
+                <!-- Dynamic Rows -->
+              </tbody>
+            </table>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+              <button type="button" class="btn btn-sm btn-secondary" onclick="addObatReqRowDropdown()">
+                + OBAT DARI DAFTAR (DROPDOWN)
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="addObatReqRowManual()">
+                + OBAT BARU (KETIK MANUAL)
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-warning" style="width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 700; background: #f59e0b; color: #000; margin-top: 20px;">
+            <i class="fa-brands fa-whatsapp"></i> KIRIM PERMINTAAN via WhatsApp
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 5. TAB KARYAWAN (SEARCH NAMA & NIK PABRIK) -->
+    <section id="view-karyawan" class="page-view">
+      <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <h2><i class="fa-solid fa-id-card" style="color: var(--primary);"></i> Data Karyawan & Pasien PT ATI</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Master data karyawan pabrik terdaftar.</p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="search-karyawan-input" class="form-control" placeholder="Cari NIK Pabrik atau Nama Karyawan..." style="width: 280px;" onkeyup="filterKaryawanTable()">
+            <button class="btn btn-primary" onclick="openModalTambahKaryawan()">
+              <i class="fa-solid fa-user-plus"></i> Tambah Karyawan Baru
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th style="width: 15%;">NIK PABRIK</th>
+                <th>NAMA KARYAWAN</th>
+                <th>DEPARTEMEN / BAGIAN</th>
+                <th>TANGGAL LAHIR</th>
+                <th>GENDER</th>
+                <th>NO. HP</th>
+                <th>AKSI</th>
+              </tr>
+            </thead>
+            <tbody id="table-karyawan-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. TAB SHIFT (LAPORAN OPER SHIFT KE TELEGRAM) -->
+    <section id="view-shift" class="page-view">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="glass-card">
+          <h3><i class="fa-solid fa-paper-plane" style="color: var(--primary);"></i> FORMAT 1 – Oper Shift</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rangkuman kunjungan pasien shift ke Telegram Bot Klinik.</p>
+          <form onsubmit="handleKirimShift1(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
+              <div>
+                <label class="form-label">Tgl Mulai</label>
+                <input type="date" id="shift1-tgl-mulai" class="form-control" required>
+              </div>
+              <div>
+                <label class="form-label">Tgl Selesai</label>
+                <input type="date" id="shift1-tgl-selesai" class="form-control" required>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
+              <div>
+                <label class="form-label">Jam Mulai</label>
+                <input type="time" id="shift1-jam-mulai" class="form-control" value="07:00">
+              </div>
+              <div>
+                <label class="form-label">Jam Selesai</label>
+                <input type="time" id="shift1-jam-selesai" class="form-control" value="14:00">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
+              <div>
+                <label class="form-label">Serah Dari</label>
+                <input type="text" id="shift1-dari" class="form-control" placeholder="Contoh: Dian">
+              </div>
+              <div>
+                <label class="form-label">Terima Ke</label>
+                <input type="text" id="shift1-ke" class="form-control" placeholder="Contoh: Nisa">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px;">
+              <i class="fa-solid fa-paper-plane"></i> KIRIM OPER SHIFT TELEGRAM
+            </button>
+          </form>
+        </div>
+
+        <div class="glass-card">
+          <h3><i class="fa-solid fa-chart-line" style="color: var(--success);"></i> FORMAT 2 – Rekap 24 Jam</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rekapitulasi total kunjungan 24 jam per departemen ke Telegram.</p>
+          <form onsubmit="handleKirimShift2(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
+              <div>
+                <label class="form-label">Tgl Mulai</label>
+                <input type="date" id="shift2-tgl-mulai" class="form-control" required>
+              </div>
+              <div>
+                <label class="form-label">Tgl Selesai</label>
+                <input type="date" id="shift2-tgl-selesai" class="form-control" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Petugas Shift 1</label>
+              <input type="text" id="shift2-s1" class="form-control" placeholder="Shift 1: Dian & Budi">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Petugas Shift 2</label>
+              <input type="text" id="shift2-s2" class="form-control" placeholder="Shift 2: Nisa & Rina">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Petugas Shift 3</label>
+              <input type="text" id="shift2-s3" class="form-control" placeholder="Shift 3: Andi">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; background: var(--success);">
+              <i class="fa-solid fa-paper-plane"></i> KIRIM REKAP 24H TELEGRAM
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. TAB HSE (K3 - HEALTH, SAFETY, ENVIRONMENT) -->
+    <section id="view-hse" class="page-view">
+      <div class="glass-card" style="margin-bottom: 20px;">
+        
+        <!-- CARDS STATISTIK K3 / HSE OVERVIEW -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+          <div style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 16px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">TOTAL KUNJUNGAN K3</div>
+            <div id="hse-stat-total-visits" style="font-size: 1.6rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">0</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Rekam Medis Terdata</div>
+          </div>
+          <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px;">
+            <div style="font-size: 0.8rem; color: #fca5a5; font-weight: 600;">PASIEN PANTAUAN (HIGH RISK)</div>
+            <div id="hse-stat-pantauan-count" style="font-size: 1.6rem; font-weight: 800; color: #ef4444; margin-top: 4px;">0</div>
+            <div style="font-size: 0.75rem; color: #fca5a5; margin-top: 4px;">Karyawan Perlu Monitoring</div>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 16px;">
+            <div style="font-size: 0.8rem; color: #fcd34d; font-weight: 600;">SURKES / IZIN SAKIT</div>
+            <div id="hse-stat-surkes-count" style="font-size: 1.6rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">0</div>
+            <div style="font-size: 0.75rem; color: #fcd34d; margin-top: 4px;">Kasus Istirahat Sakit</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" id="subtab-btn-rm" onclick="switchHSESubTab('rm')">
+              <i class="fa-solid fa-file-medical"></i> REKAM MEDIS PASIEN
+            </button>
+            <button class="btn btn-secondary" id="subtab-btn-pantauan" onclick="switchHSESubTab('pantauan')">
+              <i class="fa-solid fa-circle-exclamation" style="color: var(--danger);"></i> 🔴 PASIEN PANTAUAN
+            </button>
+          </div>
+          <button class="btn btn-primary" onclick="printHSEOfficialReport()" style="background: #0284c7; border: none; font-weight: 700;">
+            <i class="fa-solid fa-print"></i> 🖨️ CETAK LAPORAN K3 / HSE (PDF)
+          </button>
+        </div>
+
+        <!-- SUB-TAB 1: REKAM MEDIS PASIEN -->
+        <div id="hse-subtab-rm">
+          <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+            <input type="text" id="hse-rm-search" class="form-control" placeholder="Ketik NIK Pabrik Pasien..." style="width: 250px;">
+            <input type="date" id="hse-rm-start" class="form-control" style="width: 180px;">
+            <input type="date" id="hse-rm-end" class="form-control" style="width: 180px;">
+            <button class="btn btn-primary" onclick="filterHSERekamMedisTable()">
+              <i class="fa-solid fa-magnifying-glass"></i> Tampil
+            </button>
+            <button class="btn btn-secondary" onclick="exportHSERekamMedisExcel()">
+              <i class="fa-solid fa-file-excel"></i> Download Excel
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Tanggal</th>
+                  <th>Nama</th>
+                  <th>NIK Pabrik</th>
+                  <th>Bagian</th>
+                  <th>Keluhan</th>
+                  <th>Diagnosis</th>
+                  <th>Hasil Pemeriksaan</th>
+                  <th>Obat</th>
+                  <th>Perawat / Nakes</th>
+                </tr>
+              </thead>
+              <tbody id="table-hse-rm-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SUB-TAB 2: PASIEN PANTAUAN -->
+        <div id="hse-subtab-pantauan" style="display: none;">
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.88rem; color: #fca5a5;">
+            ⚠️ Pasien di bawah ini sedang dalam kondisi perlu dipantau oleh Tim HSE & Medis.
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Tanggal Ditandai</th>
+                  <th>NIK Pabrik</th>
+                  <th>Nama Pasien</th>
+                  <th>Bagian</th>
+                  <th>Alasan Pemantauan</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-hse-pantauan-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 9. TAB MANAJEMEN (LAPORAN EKSEKUTIF DIREKSI & MANAJEMEN) -->
+    <section id="view-manajemen" class="page-view">
+      <!-- Locked State (Rahasia Tanpa Petunjuk Sandi) -->
+      <div id="manajemen-locked-view" class="glass-card" style="max-width: 480px; margin: 50px auto; text-align: center; border: 1px solid rgba(16, 185, 129, 0.3);">
+        <div style="font-size: 3.2rem; margin-bottom: 14px; color: var(--success);"><i class="fa-solid fa-user-lock"></i></div>
+        <h3 style="margin-bottom: 6px;">Akses Analisis &amp; Laporan Direktur</h3>
+        <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.88rem;">Area terbatas &amp; rahasia khusus Direksi Klinik &amp; Pimpinan.</p>
+        <form onsubmit="handleUnlockDirektur(event)">
+          <div class="form-group">
+            <input type="password" id="direktur-password-input" class="form-control" placeholder="Masukkan Kata Sandi Keamanan..." required style="text-align: center; font-size: 1.1rem; letter-spacing: 2px;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 1rem; background: var(--success); font-weight: 700; border: none;">
+            <i class="fa-solid fa-key"></i> BUKA ANALISIS DIREKTUR
+          </button>
+        </form>
+      </div>
+
+      <!-- Unlocked State -->
+      <div id="manajemen-unlocked-view" style="display: none;">
+        <div class="glass-card" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" id="mj-nav-analisis" onclick="switchManajemenTab('analisis')">📊 Analisis Anggaran Obat</button>
+              <button class="btn btn-secondary" id="mj-nav-billing" onclick="switchManajemenTab('billing')">🧾 Billing PT &amp; Biaya</button>
+              <button class="btn btn-warning" id="mj-nav-kontak" onclick="switchManajemenTab('kontak')">📲 Kontak WA</button>
+            </div>
+            <button class="btn btn-primary" onclick="printExecutiveReport()" style="background: #10b981; border: none; font-weight: 700;">
+              <i class="fa-solid fa-print"></i> 🖨️ CETAK LAPORAN DIREKSI &amp; FINANSIAL (PDF)
+            </button>
+          </div>
+
+          <!-- 1. ANALISIS OBAT -->
+          <div id="mj-tab-analisis" style="margin-top: 16px;">
+            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+              <select id="mj-bulan" class="form-control" style="width: 160px;"></select>
+              <select id="mj-tahun" class="form-control" style="width: 140px;"></select>
+              <button class="btn btn-primary" onclick="renderAnalisisObat()">Go</button>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 20px; text-align: center;">
+              <h3 style="color: var(--success); font-size: 1.4rem;">Total Modal Pemakaian Obat: <span id="mj-modal-total">Rp 0</span></h3>
+              <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 6px;">Batas Target Anggaran Efisiensi: Rp 2.000.000 / Bulan</p>
+            </div>
+          </div>
+
+          <!-- 2. BILLING PT -->
+          <div id="mj-tab-billing" style="display: none; margin-top: 16px;">
+            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 0.88rem; color: #7dd3fc;">
+              🧾 Laporan tagihan &amp; akumulasi biaya berobat rawat jalan karyawan PT. Andalan Manis Sejahtera &amp; PT ATI.
+            </div>
+            <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+              <input type="date" id="billing-start" class="form-control" style="width: 180px;">
+              <input type="date" id="billing-end" class="form-control" style="width: 180px;">
+              <button class="btn btn-primary" onclick="renderBillingPTTable()">CARI</button>
+              <button class="btn btn-secondary" onclick="exportBillingExcel()">💾 SIMPAN EXCEL</button>
+            </div>
+            <div class="table-responsive">
+              <table class="custom-table" id="tbl-billing-pt">
+                <thead>
+                  <tr>
+                    <th>NO</th>
+                    <th>TGL</th>
+                    <th>KARYAWAN</th>
+                    <th>NIK PABRIK</th>
+                    <th>BAGIAN</th>
+                    <th>DIAGNOSA</th>
+                    <th>TOTAL BIAYA</th>
+                  </tr>
+                </thead>
+                <tbody id="table-billing-body">
+                  <!-- Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. KONTAK WA -->
+          <div id="mj-tab-kontak" style="display: none; margin-top: 16px;">
+            <h3>📲 Kontak WA Apoteker &amp; Pimpinan</h3>
+            <div class="form-group" style="margin-top: 12px; max-width: 500px;">
+              <label class="form-label">Nomor WhatsApp Apoteker / Nakes</label>
+              <input type="text" id="mj-wa-num" class="form-control" value="6281234567890">
+              <button class="btn btn-primary" onclick="saveWAPhoneSetting()" style="margin-top: 10px;">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Nomor WA
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. TAB G-SHEET SYNC (DILINDUNGI KATA SANDI / KHUSUS IT & ADMIN) -->
+    <section id="view-gsheet" class="page-view">
+      <!-- Locked State -->
+      <div id="gsheet-locked-view" class="glass-card" style="max-width: 480px; margin: 50px auto; text-align: center; border: 1px solid rgba(2, 132, 199, 0.3);">
+        <div style="font-size: 3.2rem; margin-bottom: 14px; color: #0284c7;"><i class="fa-solid fa-lock"></i></div>
+        <h3 style="margin-bottom: 6px;">Pengaturan Sync Google Sheet</h3>
+        <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.88rem;">Sistem sudah berjalan otomatis. Area ini khusus Administrator &amp; IT.</p>
+        <form onsubmit="handleUnlockGSheetSync(event)">
+          <div class="form-group">
+            <input type="password" id="gsheet-password-input" class="form-control" placeholder="Masukkan Kata Sandi Administrator..." required style="text-align: center; font-size: 1.1rem; letter-spacing: 2px;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 1rem; background: #0284c7; font-weight: 700; border: none;">
+            <i class="fa-solid fa-key"></i> BUKA PENGATURAN SYNC
+          </button>
+        </form>
+      </div>
+
+      <!-- Unlocked State -->
+      <div id="gsheet-unlocked-view" style="display: none;">
+        <div class="glass-card" style="margin-bottom: 20px;">
+          <h2><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Sinkronisasi Google Sheets (Integrasi Real-Time)</h2>
+          <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.85rem;">Master ICD-10, Stok Obat dan Karyawan tersinkron otomatis 24 Jam di background.</p>
+          <div id="gsheet-last-sync" style="font-size: 0.8rem; color: var(--success); font-weight: 600; margin-top: 6px;"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="glass-card">
+            <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-link" style="color: var(--primary);"></i> Pengaturan Koneksi</h3>
+            <div class="form-group">
+              <label class="form-label marunda-section-label">URL Google Apps Script (GAS Web App)</label>
+              <input type="text" id="gsheet-app-url" class="form-control" placeholder="https://script.google.com/macros/s/AKfycbx.../exec" style="font-size: 0.8rem;">
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">Salin URL Deployment Web App dari Google Apps Script Anda.</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+              <button class="btn btn-warning" onclick="pushAllMasterToGSheet()" style="width: 100%; padding: 11px; font-weight: 700; background: #f59e0b; color: #000;">
+                <i class="fa-solid fa-table-cells"></i> 1-KLIK ISI TAB & HEADERS KE GSHEET
+              </button>
+              <button class="btn btn-primary" onclick="syncWithGoogleSheetNow()" style="width: 100%; padding: 11px;">
+                <i class="fa-solid fa-arrows-rotate"></i> Tarik Master Data dari GSheet
+              </button>
+              <button class="btn btn-secondary" onclick="pushRecordsToGSheet()" style="width: 100%; padding: 11px;">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Kirim Data Rekam Medis ke GSheet
+              </button>
+              <button class="btn btn-secondary" onclick="exportBackupData()" style="width: 100%; padding: 11px;">
+                <i class="fa-solid fa-download"></i> Unduh Backup JSON Lokal
+              </button>
+            </div>
+            <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 0.82rem;">
+              Ubah Master ICD-10, Obat, atau Karyawan di Google Sheet lalu klik Sinkronkan agar sistem otomatis terupdate.
+            </div>
+          </div>
+          <div class="glass-card">
+            <h3 style="margin-bottom: 14px;"><i class="fa-brands fa-google" style="color: #EA4335;"></i> Panduan Setup GAS</h3>
+            <ol style="padding-left: 18px; margin-bottom: 12px; color: var(--text-muted); font-size: 0.83rem; line-height:1.8;">
+              <li>Buka <a href="https://script.google.com" target="_blank" style="color: var(--primary);">script.google.com</a> lalu buat project baru</li>
+              <li>Paste kode di bawah ke Code.gs</li>
+              <li>Deploy sebagai Web App, Access: Anyone</li>
+              <li>Salin URL Deployment ke kolom kiri</li>
+            </ol>
+            <p style="font-weight: 700; color: var(--warning); margin-bottom: 6px; font-size:0.83rem;">Struktur Sheet yang dibutuhkan:</p>
+            <ul style="padding-left: 16px; color: var(--text-muted); margin-bottom: 12px; font-size:0.8rem;">
+              <li>Sheet "Diagnosis": kolom code, description</li>
+              <li>Sheet "Obat": kolom nama, stok, satuan, kategori</li>
+              <li>Sheet "Karyawan": kolom nikPabrik, nama, dept, gender, tglLahir, hp</li>
+            </ul>
+            <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 0.7rem; max-height: 220px; overflow-y: auto; color: #86efac; line-height: 1.5;">
+              <pre style="margin:0;white-space:pre-wrap;">// == KLINIK ATI: GOOGLE APPS SCRIPT (TARGETED) ==
+var SPREADSHEET_ID = "1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY";
+
+function getSpreadsheet() {
+  try {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  } catch(e) {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
+function doGet(e) {
+  var ss = getSpreadsheet();
+  var result = {};
+  var diag = ss.getSheetByName('Diagnosis');
+  if (diag) result.icd10 = diag.getDataRange().getValues().slice(1)
+    .map(function(r,i){ return {id:'ICD-'+i,code:r[0],description:r[1]}; });
+  var obat = ss.getSheetByName('Obat');
+  if (obat) result.medicines = obat.getDataRange().getValues().slice(1)
+    .map(function(r){ return {nama:r[0],stok:parseInt(r[1])||0,satuan:r[2]||'strip',kategori:r[3]||'Obat'}; });
+  var kary = ss.getSheetByName('Karyawan');
+  if (kary) result.employees = kary.getDataRange().getValues().slice(1)
+    .map(function(r){ return {nikPabrik:r[0],nama:r[1],dept:r[2],gender:r[3],tglLahir:r[4],hp:r[5]}; });
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var ss = getSpreadsheet();
+  if (data.action === 'pushRecords') {
+    var sh = ss.getSheetByName('Rekam Medis') || ss.insertSheet('Rekam Medis');
+    if (!sh.getLastRow()) sh.appendRow(['ID','Tgl','NIK','Nama','Dept','Keluhan','Diagnosis','Obat','Nakes']);
+    data.records.forEach(function(r){
+      sh.appendRow([r.id,r.tanggal,r.nikPabrik,r.namaPasien,r.dept,r.keluhan,r.asesmen,r.plan,r.pemeriksa]);
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify({success:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Fungsi Setup Otomatis Tab & Header di Spreadsheet ini:
+function setupTabDanHeader() {
+  var ss = getSpreadsheet();
+  var d = ss.getSheetByName("Diagnosis") || ss.insertSheet("Diagnosis");
+  if (d.getLastRow() === 0) d.appendRow(["code", "description"]);
+  
+  var o = ss.getSheetByName("Obat") || ss.insertSheet("Obat");
+  if (o.getLastRow() === 0) o.appendRow(["nama", "stok", "satuan", "kategori"]);
+  
+  var k = ss.getSheetByName("Karyawan") || ss.insertSheet("Karyawan");
+  if (k.getLastRow() === 0) k.appendRow(["nikPabrik", "nama", "dept", "gender", "tglLahir", "hp"]);
+  
+  Logger.log("Tab & Header Berhasil Dibuat di RM ATI!");
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODALS: EDIT DATA & KOREKSI STOK (MARUNDA FORMAT) -->
+  <div id="modal-edit-record" class="modal-overlay">
+    <div class="modal-card" style="max-width: 650px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-pen-to-square" style="color: #eab308;"></i> Edit &amp; Koreksi Stok</h3>
+        <button class="close-btn" onclick="closeModalEditRecord()">&times;</button>
+      </div>
+      <form id="form-edit-record" onsubmit="handleSaveEditRecord(event)">
+        <input type="hidden" id="edit-record-id">
+        <input type="hidden" id="edit-nama-pasien">
+        
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 700; text-transform: uppercase;">KELUHAN</label>
+          <textarea id="edit-keluhan" class="form-control" rows="2" placeholder="Keluhan utama..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 700; text-transform: uppercase;">PEMERIKSAAN</label>
+          <textarea id="edit-objektif" class="form-control" rows="2" placeholder="TTV & Hasil pemeriksaan..."></textarea>
+        </div>
+
+        <!-- DIAGNOSIS (MULTI) -->
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 700; text-transform: uppercase;">DIAGNOSIS (MULTI)</label>
+          <div id="edit-container-icd10" style="margin-bottom: 8px;"></div>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="addEditICD10Row()" style="width: 100%; border: 1px dashed var(--border-color); background: rgba(255,255,255,0.04); font-weight: 600;">
+            + Tambah
+          </button>
+        </div>
+
+        <!-- OBAT (KOREKSI OTOMATIS) -->
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 700; text-transform: uppercase; color: #38bdf8;">OBAT (KOREKSI OTOMATIS)</label>
+          <div id="edit-container-resep" style="margin-bottom: 8px;"></div>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="addEditResepRow()" style="width: 100%; border: 1px dashed #38bdf8; background: rgba(56, 189, 248, 0.05); color: #38bdf8; font-weight: 600;">
+            + Tambah
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 700; text-transform: uppercase;">NAKES</label>
+          <input type="text" id="edit-pemeriksa" class="form-control" placeholder="Nama Nakes / Dokter">
+        </div>
+
+        <div class="form-group" style="margin-top: 14px; margin-bottom: 18px;">
+          <label style="display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; color: #ef4444; cursor: pointer; border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; background: rgba(239, 68, 68, 0.08);">
+            <input type="checkbox" id="edit-is-pantauan" style="width: 18px; height: 18px; accent-color: #ef4444;">
+            <span>🔴 TANDAI PASIEN DALAM PANTAUAN</span>
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalEditRecord()" style="flex: 1;">Batal</button>
+          <button type="submit" class="btn btn-warning" style="flex: 2; font-weight: 800; background: #eab308; color: #000; padding: 12px; border: none;">
+            <i class="fa-solid fa-floppy-disk"></i> UPDATE &amp; REVISI STOK
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-karyawan" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Tambah Data Karyawan Baru</h3>
+        <button class="close-btn" onclick="closeModalTambahKaryawan()">&times;</button>
+      </div>
+      <form id="form-karyawan" onsubmit="handleSaveKaryawan(event)">
+        <div class="form-group">
+          <label class="form-label">NIK Pabrik Karyawan *</label>
+          <input type="text" id="karyawan-nik" class="form-control" placeholder="Contoh: 2014050034" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap Karyawan *</label>
+          <input type="text" id="karyawan-nama" class="form-control" placeholder="Nama lengkap..." required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Departemen / Bagian</label>
+            <input type="text" id="karyawan-dept" class="form-control" placeholder="Process / Mechanical / SCM">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal Lahir</label>
+            <input type="date" id="karyawan-tgl-lahir" class="form-control">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Jenis Kelamin</label>
+            <select id="karyawan-gender" class="form-control">
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">No. HP / WA</label>
+            <input type="text" id="karyawan-hp" class="form-control" placeholder="0812...">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Alamat / Lokasi</label>
+          <textarea id="karyawan-alamat" class="form-control" placeholder="Alamat..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalTambahKaryawan()">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Simpan Karyawan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-obat" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Tambah Obat Baru Ke Gudang</h3>
+        <button class="close-btn" onclick="closeModalTambahObat()">&times;</button>
+      </div>
+      <form id="form-tambah-obat" onsubmit="handleSaveTambahObat(event)">
+        <div class="form-group">
+          <label class="form-label">Nama Obat *</label>
+          <input type="text" id="obat-nama" class="form-control" required placeholder="Contoh: Paracetamol 500mg">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Stok Awal *</label>
+            <input type="number" id="obat-stok" class="form-control" required value="100" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Harga (Rp) *</label>
+            <input type="number" id="obat-harga" class="form-control" required value="1000" min="0" placeholder="1000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Satuan *</label>
+            <input type="text" id="obat-satuan" class="form-control" required value="strip" placeholder="strip / box / tube / botol">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori Obat</label>
+          <input type="text" id="obat-kategori" class="form-control" placeholder="Analgetik / Bebas / Antibiotik">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalTambahObat()">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Simpan Obat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="gdrive-sync.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

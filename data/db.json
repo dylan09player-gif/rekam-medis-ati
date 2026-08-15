@@ -1,0 +1,7000 @@
+{
+  "settings": {
+    "gate_password": "231067",
+    "gudang_password": "nafila123",
+    "wa_apotek": "6281234567890",
+    "nama_klinik": "Klinik PT PT ATI & ATI Medika",
+    "alamat": "Jl. PT ATI Makmur No. 88, Jakarta Utara",
+    "penanggung_jawab": "dr. Dylan Fadhilah",
+    "gsheet_url": "https://script.google.com/macros/s/AKfycbyC97_y1xThnBpgRPpZKWYyJzu-rsqvIwHD_fEFYSduqLbgjROP-Qa_IWhWKCP5whXl/exec",
+    "telegram_chat_id": "-1003726103172"
+  },
+  "employees": [
+    {
+      "id": "EMP-1",
+      "nik": "2014050034",
+      "nama": "A Fauzi",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1990-03-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-2",
+      "nik": "2013080204",
+      "nama": "A Fudholi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-01-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-3",
+      "nik": "2013100355",
+      "nama": "AA Agung Gumilar",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-07-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-4",
+      "nik": "2014030001",
+      "nama": "Abd Mukhid",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-09-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-5",
+      "nik": "2013080206",
+      "nama": "Abdul Choeri",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-07-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-6",
+      "nik": "2013100356",
+      "nama": "Abdul Karnen",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-04-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-7",
+      "nik": "3,32709E+15",
+      "nama": "ABDUL KARNEN",
+      "departemen": "Proses",
+      "jabatan": "Proses",
+      "tgl_lahir": "1990-04-02",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-8",
+      "nik": "2013090314",
+      "nama": "Abdul Kodir Zoelani",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1988-03-03",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-9",
+      "nik": "2013090280",
+      "nama": "Abdul Majep",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1990-02-02",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-10",
+      "nik": "2013090281",
+      "nama": "Abdul Manaf",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1988-04-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-11",
+      "nik": "2014020028",
+      "nama": "Abdul Muluk",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1990-06-30",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-12",
+      "nik": "2024110001",
+      "nama": "Abdul Rofi",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "2001-06-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-13",
+      "nik": "2014030012",
+      "nama": "Abdul Rojak",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-05-25",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-14",
+      "nik": "2014060010",
+      "nama": "Abdul Sukur",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-12-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-15",
+      "nik": "2014020029",
+      "nama": "Abdulloh Syaid",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1988-07-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-16",
+      "nik": "2019110007",
+      "nama": "Ablina Pratianingrum",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1996-10-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-17",
+      "nik": "2015010009",
+      "nama": "Abrori",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1987-09-12",
+      "gender": "Perempuan",
+      "no_hp": "081290812526",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-18",
+      "nik": "2022080010",
+      "nama": "Achmad Banada",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1986-06-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-19",
+      "nik": "2013030016",
+      "nama": "Achmad Sulaiman",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1974-02-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-20",
+      "nik": "2015010007",
+      "nama": "Adam Maulana",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-11-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-21",
+      "nik": "2014060012",
+      "nama": "Ade Noviyanti",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1988-11-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-22",
+      "nik": "2019080014",
+      "nama": "Ade Ria",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1998-05-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-23",
+      "nik": "2014030003",
+      "nama": "Adi Muhamad Rafi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-04-19",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-24",
+      "nik": "2021080005",
+      "nama": "Adirza Dio Randha",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1993-12-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-25",
+      "nik": "2014020035",
+      "nama": "Afrizal Sanjaya",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1994-04-30",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-26",
+      "nik": "2021020022",
+      "nama": "Agung Nugroho Budi Prasetio",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1985-06-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-27",
+      "nik": "2014120025",
+      "nama": "Agung Pribadi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-09-08",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-364",
+      "nik": "3,17204E+15",
+      "nama": "Agung pribadi",
+      "departemen": "Operator/proses",
+      "jabatan": "Operator/proses",
+      "tgl_lahir": "1992-09-08",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-28",
+      "nik": "2014040018",
+      "nama": "Agus Maulana",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-08-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-29",
+      "nik": "2013100357",
+      "nama": "Agus Riyanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-02-26",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-30",
+      "nik": "2014080018",
+      "nama": "Agus Susanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-08-11",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-31",
+      "nik": "2013120422",
+      "nama": "Ahmad Fadilah",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1986-04-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-32",
+      "nik": "2015040001",
+      "nama": "Ahmad Fauzi",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1996-05-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-33",
+      "nik": "2014120024",
+      "nama": "Ahmad Fayumi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-06-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-34",
+      "nik": "2023030001",
+      "nama": "Ahmad Haikal Rizaldhi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "2004-06-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-35",
+      "nik": "2014120021",
+      "nama": "Ahmad Irfandi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-10-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-36",
+      "nik": "2014030010",
+      "nama": "Ahmad Jani",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-08-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-37",
+      "nik": "2013100358",
+      "nama": "Ahmad Maksum",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-09-30",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-38",
+      "nik": "2020040010",
+      "nama": "Ahmad Roji",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1990-05-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-39",
+      "nik": "2013120406",
+      "nama": "Ahmad Sadiyan",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1994-05-31",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-40",
+      "nik": "2014050002",
+      "nama": "Ahmad Saifulloh",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1993-08-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-41",
+      "nik": "2015010012",
+      "nama": "Ahmad Suryana",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1987-02-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-42",
+      "nik": "2026020010",
+      "nama": "aidil fiqar",
+      "departemen": "PPU",
+      "jabatan": "PPU",
+      "tgl_lahir": "1994-03-14",
+      "gender": "Perempuan",
+      "no_hp": "85362690059",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-43",
+      "nik": "2015020002",
+      "nama": "Akbar Jayadi",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1996-02-19",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-44",
+      "nik": "2015010018",
+      "nama": "Akbar Roebit",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-11-02",
+      "gender": "Perempuan",
+      "no_hp": "081519160642",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-45",
+      "nik": "2013090283",
+      "nama": "Akh Hawaiz",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1989-04-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-46",
+      "nik": "2015040020",
+      "nama": "Alam Prabowo",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1994-02-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-47",
+      "nik": "2018050019",
+      "nama": "Aldi Saputra",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1995-06-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-48",
+      "nik": "10690",
+      "nama": "alex erlangga",
+      "departemen": "security",
+      "jabatan": "security",
+      "tgl_lahir": "2003-05-31",
+      "gender": "Perempuan",
+      "no_hp": "81272444063",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-49",
+      "nik": "2014110002",
+      "nama": "Amar Husain",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1986-01-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-50",
+      "nik": "2013100359",
+      "nama": "Ami Ismatulah",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-07-20",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-51",
+      "nik": "2018040030",
+      "nama": "Amy Ahmanda Putra",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-05-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-52",
+      "nik": "2015030004",
+      "nama": "Andi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1985-04-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-53",
+      "nik": "2014020030",
+      "nama": "Andi Ahmad",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-07-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-54",
+      "nik": "2017100012",
+      "nama": "Andi Renaldi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1995-07-08",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-55",
+      "nik": "2014120048",
+      "nama": "Andi Supriyadi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-04-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-56",
+      "nik": "2015010020",
+      "nama": "Andik Wahyu Santoso",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1992-09-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-57",
+      "nik": "2022020002",
+      "nama": "Andreanus Partogi Sirait",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-12-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-58",
+      "nik": "2019080013",
+      "nama": "Andreas Agung Firmansyah",
+      "departemen": "Information Technology",
+      "jabatan": "Information Technology",
+      "tgl_lahir": "1984-09-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-59",
+      "nik": "2013100361",
+      "nama": "Andri Hermawan",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-02-23",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-60",
+      "nik": "2025090012",
+      "nama": "ANDRIYANSAH",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1996-07-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-61",
+      "nik": "2014060009",
+      "nama": "Angga Anggriawan",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1994-05-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-62",
+      "nik": "2016050014",
+      "nama": "Annisa Choiriyah",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1993-11-11",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-63",
+      "nik": "2013050100",
+      "nama": "Anwar Hidayat",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1980-07-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-64",
+      "nik": "2014040015",
+      "nama": "Anwar Sanusi",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1989-01-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-65",
+      "nik": "2014030008",
+      "nama": "Aprian Firmansyah",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-04-22",
+      "gender": "Perempuan",
+      "no_hp": "085888227900",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-66",
+      "nik": "2015080030",
+      "nama": "Apriyanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-04-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-67",
+      "nik": "2014080005",
+      "nama": "Ardi Pratomo",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-05-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-68",
+      "nik": "2022120004",
+      "nama": "Ardi Yudha Nugraha",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1991-07-31",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-69",
+      "nik": "2015040004",
+      "nama": "Ardiansyah",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-06-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-70",
+      "nik": "2020120005",
+      "nama": "Ardiansyah",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1985-04-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-71",
+      "nik": "2013080212",
+      "nama": "Arfan Ramadhan",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-03-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-72",
+      "nik": "2013100362",
+      "nama": "Ari Wibowo",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-03-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-73",
+      "nik": "2014100005",
+      "nama": "Arief Faisal",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1994-06-18",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-74",
+      "nik": "2014030004",
+      "nama": "Arief Pamuji",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-10-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-75",
+      "nik": "3275031310880024",
+      "nama": "Arief Pamuji",
+      "departemen": "Bagging/ Process",
+      "jabatan": "Bagging/ Process",
+      "tgl_lahir": "1988-10-13",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-76",
+      "nik": "2017100005",
+      "nama": "Arif Al Rasyid",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-12-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-77",
+      "nik": "2016030013",
+      "nama": "Arif Dwi Prasetyo",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1996-04-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-78",
+      "nik": "2014060007",
+      "nama": "Arif Susanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-04-11",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-79",
+      "nik": "2013120407",
+      "nama": "Arip Rinaldi",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1991-12-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-80",
+      "nik": "2024010001",
+      "nama": "Asep Mulyadi",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1978-03-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-81",
+      "nik": "2014030011",
+      "nama": "Asep Sunandar",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-12-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-82",
+      "nik": "2014040008",
+      "nama": "Asep Sunardi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-01-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-83",
+      "nik": "2014040010",
+      "nama": "Asep Supriyadi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-12-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-84",
+      "nik": "2025090015",
+      "nama": "ASTA DARMAWAN",
+      "departemen": "HSE",
+      "jabatan": "HSE",
+      "tgl_lahir": "2000-05-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-85",
+      "nik": "2023070007",
+      "nama": "Azizan",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "2002-04-08",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-86",
+      "nik": "2018040009",
+      "nama": "Badrun Romadi",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1988-04-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-87",
+      "nik": "2014050032",
+      "nama": "Bahrudin",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1989-07-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-88",
+      "nik": "2022050010",
+      "nama": "Berlianne Shanaza Andriany",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1999-06-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-89",
+      "nik": "2013100363",
+      "nama": "Berti Ferdiyanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-02-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-90",
+      "nik": "2014100004",
+      "nama": "Bima Ariefianto",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1993-08-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-91",
+      "nik": "2015010021",
+      "nama": "Brigith Mutiara Dewi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-08-11",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-92",
+      "nik": "2014090008",
+      "nama": "Caca Andika",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1994-03-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-93",
+      "nik": "2015050019",
+      "nama": "Cahyamin",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1987-03-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-94",
+      "nik": "2023060011",
+      "nama": "Chamelia Ulfahera Marpaung",
+      "departemen": "Factory Management Office",
+      "jabatan": "Factory Management Office",
+      "tgl_lahir": "1995-12-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-95",
+      "nik": "2013110392",
+      "nama": "Cuk Setyoso",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1970-05-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-96",
+      "nik": "2014060008",
+      "nama": "Damroni",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1985-10-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-97",
+      "nik": "2021090004",
+      "nama": "Dara Khoirunnisa Sadikin",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "2001-04-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-98",
+      "nik": "2014050033",
+      "nama": "Darma Bakti",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-05-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-99",
+      "nik": "2022010011",
+      "nama": "Darmanto",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1977-08-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-100",
+      "nik": "2024050004",
+      "nama": "Darmawan Susanto",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1988-02-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-101",
+      "nik": "2013030017",
+      "nama": "Darsono",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1989-04-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-102",
+      "nik": "2014050003",
+      "nama": "Dede Astriadi",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1995-03-30",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-103",
+      "nik": "2015020010",
+      "nama": "Dede Setiawan",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1982-08-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-104",
+      "nik": "2014090027",
+      "nama": "Dede Suhendar",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1989-06-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-105",
+      "nik": "2013080215",
+      "nama": "Dedi Priyanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-07-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-106",
+      "nik": "2014090001",
+      "nama": "Dedy Setiadi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1986-09-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-107",
+      "nik": "2013120408",
+      "nama": "Devi Hidayat",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1981-03-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-108",
+      "nik": "2023060010",
+      "nama": "Devi Margaretha",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "2001-08-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-109",
+      "nik": "2024060045",
+      "nama": "Dhani Hermanto",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1998-12-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-110",
+      "nik": "2013100364",
+      "nama": "Dian Eka Prasetia",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-12-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-111",
+      "nik": "2017070019",
+      "nama": "Diki Handika",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1996-09-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-112",
+      "nik": "2015040006",
+      "nama": "Dodi Siswanto",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1996-07-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-113",
+      "nik": "2013090285",
+      "nama": "Drajat Edi Dermawan",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1992-11-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-114",
+      "nik": "2014090012",
+      "nama": "Dwi Harjono",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1986-11-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-115",
+      "nik": "2012090033",
+      "nama": "Dwi Kurniawan S",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-03-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-116",
+      "nik": "2013090305",
+      "nama": "Dwi Sakti Adiwijaya",
+      "departemen": "Accounting & Finance",
+      "jabatan": "Accounting & Finance",
+      "tgl_lahir": "1985-01-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-117",
+      "nik": "2013050088",
+      "nama": "Eep Desmayana",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1985-12-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-118",
+      "nik": "2023110001",
+      "nama": "Efendi",
+      "departemen": "Factory Management Office",
+      "jabatan": "Factory Management Office",
+      "tgl_lahir": "1972-10-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-119",
+      "nik": "2021030009",
+      "nama": "Eka Restu",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-10-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-120",
+      "nik": "2013090310",
+      "nama": "Eko Rahadian",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1983-10-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-121",
+      "nik": "2014120023",
+      "nama": "Eky Fadjar Dianto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-06-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-122",
+      "nik": "2014040004",
+      "nama": "Eli Romlih",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-01-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-123",
+      "nik": "2022050001",
+      "nama": "Engga Anggara Deli",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1995-04-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-124",
+      "nik": "2013090321",
+      "nama": "Engga Suganda",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1988-07-27",
+      "gender": "Perempuan",
+      "no_hp": "08567446824",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-125",
+      "nik": "2013090322",
+      "nama": "Eri Suhartanto",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1987-09-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-126",
+      "nik": "50999",
+      "nama": "Erika Damayanti",
+      "departemen": "Nakes",
+      "jabatan": "Nakes",
+      "tgl_lahir": "1999-09-05",
+      "gender": "Perempuan",
+      "no_hp": "88213280810",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-127",
+      "nik": "2018010013",
+      "nama": "Erwin Mirhansyah",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1979-05-18",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-128",
+      "nik": "2020010004",
+      "nama": "Fachri Surya Nugraha",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1995-04-27",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-129",
+      "nik": "2014030014",
+      "nama": "Fachrur Rozi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-06-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-130",
+      "nik": "2014040017",
+      "nama": "Fahmi Fauzi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-04-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-131",
+      "nik": "2015050028",
+      "nama": "Fajar Syaifuddin",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-02-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-132",
+      "nik": "2023090005",
+      "nama": "Fatah Maulana Siregar",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1983-02-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-133",
+      "nik": "2015090021",
+      "nama": "Ferawati Mey",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1983-05-31",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-134",
+      "nik": "2014020031",
+      "nama": "Fiki Alfian",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-08-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-135",
+      "nik": "2013090323",
+      "nama": "Fikih Hermawan",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1991-03-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-136",
+      "nik": "2024070012",
+      "nama": "Fikri Ihza Riswanto",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "2001-09-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-137",
+      "nik": "2016120012",
+      "nama": "Finna Octyana",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1995-10-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-138",
+      "nik": "2014090011",
+      "nama": "Firdaus",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1972-10-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-139",
+      "nik": "2015040005",
+      "nama": "Firman Antoni",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1988-10-11",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-140",
+      "nik": "2018040029",
+      "nama": "Galih Julistian Pramesty",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1998-06-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-141",
+      "nik": "2017100011",
+      "nama": "Gatot Purnomo",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-09-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-142",
+      "nik": "2015010041",
+      "nama": "Gilang Khaerul Anam",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1996-06-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-143",
+      "nik": "2020020013",
+      "nama": "Halimah Nuraini",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1995-08-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-360",
+      "nik": "3172046510940007",
+      "nama": "Halimah Nuraini",
+      "departemen": "Procurement",
+      "jabatan": "Procurement",
+      "tgl_lahir": "1994-10-23",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-144",
+      "nik": "2013090286",
+      "nama": "Hamim",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1979-06-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-145",
+      "nik": "2015090012",
+      "nama": "Hamzah Herdiansyah Armain",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1989-12-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-146",
+      "nik": "2012120070",
+      "nama": "Hartono",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-05-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-147",
+      "nik": "2013120409",
+      "nama": "Helmy Mulia Akbar",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1993-05-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-148",
+      "nik": "2014070002",
+      "nama": "Hendrik",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1985-09-18",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-149",
+      "nik": "2013030019",
+      "nama": "Henhen Suhendar",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1976-04-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-150",
+      "nik": "2014080011",
+      "nama": "Hermansyah",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1984-10-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-151",
+      "nik": "2013120410",
+      "nama": "Hidayat Saripudin",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1993-07-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-152",
+      "nik": "211299",
+      "nama": "Husnul khotimah",
+      "departemen": "nakes",
+      "jabatan": "nakes",
+      "tgl_lahir": "2026-02-23",
+      "gender": "Perempuan",
+      "no_hp": "08818834324",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-153",
+      "nik": "2023050006",
+      "nama": "Ibnu Masud Maulidina",
+      "departemen": "Factory Management Office",
+      "jabatan": "Factory Management Office",
+      "tgl_lahir": "1997-06-27",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-154",
+      "nik": "2015030001",
+      "nama": "Icha Rahmadhani Puteri",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1997-01-09",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-155",
+      "nik": "2014030005",
+      "nama": "Idamanto",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1985-10-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-156",
+      "nik": "2022120007",
+      "nama": "Illustina Br Depari",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1993-05-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-157",
+      "nik": "2013090325",
+      "nama": "Indriani Puspita Wardhani",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1977-09-20",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-158",
+      "nik": "2015050027",
+      "nama": "Irpan Dadi",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1990-03-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-159",
+      "nik": "2014070005",
+      "nama": "Irwan Kurniyawan",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1986-06-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-160",
+      "nik": "2013080264",
+      "nama": "Ismail",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1989-10-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-161",
+      "nik": "2015100019",
+      "nama": "Jaka Maulana",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-06-18",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-162",
+      "nik": "2014090022",
+      "nama": "Jiki Purnomo Widodo",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1994-07-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-163",
+      "nik": "2013080221",
+      "nama": "Johan Astrando",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-01-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-164",
+      "nik": "2015040034",
+      "nama": "Joni Budiyarto",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1982-05-27",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-165",
+      "nik": "2014080020",
+      "nama": "Juli Setiawan",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-07-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-166",
+      "nik": "2016080011",
+      "nama": "Kevin Tampubolon",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1995-07-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-167",
+      "nik": "2014090009",
+      "nama": "Khairul Anwar",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-04-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-168",
+      "nik": "2025060146",
+      "nama": "KHARIS MUNANDAR TANJUNG",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1984-03-23",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-169",
+      "nik": "2014050039",
+      "nama": "Khoironi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1979-05-31",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-170",
+      "nik": "2013090290",
+      "nama": "Khoiruddin",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1993-12-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-171",
+      "nik": "2014090003",
+      "nama": "Khotis Danu Prawiro",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1987-12-08",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-172",
+      "nik": "2022050013",
+      "nama": "Kresnanda Bintang Pangestu",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1998-01-30",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-173",
+      "nik": "2018030042",
+      "nama": "Kurniawan Isnain",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1984-04-09",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-174",
+      "nik": "2014080017",
+      "nama": "Kusnadi Permanan",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1987-01-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-175",
+      "nik": "2014090002",
+      "nama": "Labaikal",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-06-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-176",
+      "nik": "2014080010",
+      "nama": "Laode Muhamad Rifai",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-09-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-177",
+      "nik": "2014020032",
+      "nama": "Lina Anggraeni",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1995-01-23",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-178",
+      "nik": "2014030013",
+      "nama": "M Akbar",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-11-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-179",
+      "nik": "2017070020",
+      "nama": "Mahmudin",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-03-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-180",
+      "nik": "2016060017",
+      "nama": "Maisuroh",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1995-05-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-181",
+      "nik": "2014040007",
+      "nama": "Maman Afandi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-10-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-182",
+      "nik": "2016070005",
+      "nama": "Marcus Ernestus Acevedo D",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1973-06-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-183",
+      "nik": "2014020038",
+      "nama": "Marjan",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1986-01-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-184",
+      "nik": "2015050024",
+      "nama": "Marjukih",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-03-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-185",
+      "nik": "2013040074",
+      "nama": "Marliana Dwi Megawati",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1991-03-09",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-186",
+      "nik": "2014040006",
+      "nama": "Marna Setiawan",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-03-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-187",
+      "nik": "2014030022",
+      "nama": "Marta",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1973-12-31",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-188",
+      "nik": "2014030007",
+      "nama": "Masrijal",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-03-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-189",
+      "nik": "2015030006",
+      "nama": "Maulana Ishaq",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1996-02-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-190",
+      "nik": "2018050013",
+      "nama": "Mira Andriasari",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1980-02-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-191",
+      "nik": "2015010022",
+      "nama": "Misbah Toriq",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1992-04-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-192",
+      "nik": "2013100366",
+      "nama": "Miska",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-07-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-193",
+      "nik": "2012090036",
+      "nama": "Moch. Fachrudin",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-04-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-194",
+      "nik": "2014090004",
+      "nama": "Mochammad Iqbal Azis",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-11-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-195",
+      "nik": "2015050001",
+      "nama": "Moh Ilah Wahyu",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1993-04-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-196",
+      "nik": "2014100009",
+      "nama": "Moh Latif Segara",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1983-12-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-197",
+      "nik": "2014080003",
+      "nama": "Mohamad Soleh",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1986-03-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-198",
+      "nik": "2014100019",
+      "nama": "Mohammad Anwar",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1984-10-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-199",
+      "nik": "2022080004",
+      "nama": "Muhamad Faqih Irwan",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "2000-08-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-200",
+      "nik": "2014090006",
+      "nama": "Muhamad Husein",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-08-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-201",
+      "nik": "2015040002",
+      "nama": "Muhamad Junaidi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-02-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-202",
+      "nik": "2014090021",
+      "nama": "Muhamad Khoerudin",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1990-12-18",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-203",
+      "nik": "2022110004",
+      "nama": "Muhamad Nur Hidayah",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1999-04-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-204",
+      "nik": "2014040020",
+      "nama": "Muhamad Sahril",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1983-09-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-205",
+      "nik": "2015040003",
+      "nama": "Muhamad Sodik",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-02-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-206",
+      "nik": "2023050003",
+      "nama": "Muhamad Taufik",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "2000-10-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-207",
+      "nik": "2023110004",
+      "nama": "Muhamad Taufiq",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1972-04-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-208",
+      "nik": "2014020025",
+      "nama": "Muhamad Yasir",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1993-09-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-209",
+      "nik": "2016080013",
+      "nama": "Muhammad Andhika Bagaskara",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1998-12-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-210",
+      "nik": "2015040013",
+      "nama": "Muhammad Donny Ashari",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1990-10-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-211",
+      "nik": "2021020020",
+      "nama": "Muhammad Nur Teguh Rukmana",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1995-09-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-212",
+      "nik": "2013090327",
+      "nama": "Muhammad Nurali Agung Wahyudi",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1992-01-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-213",
+      "nik": "2013080223",
+      "nama": "Muhammad Suhendi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-10-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-214",
+      "nik": "2013040061",
+      "nama": "Muhammad Syahrial",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1984-02-13",
+      "gender": "Perempuan",
+      "no_hp": "0811634974",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-215",
+      "nik": "2013090328",
+      "nama": "Muhammad Syawalludin",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1989-05-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-216",
+      "nik": "2013090293",
+      "nama": "Muhammad Umar Bawazir",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1991-01-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-217",
+      "nik": "6675",
+      "nama": "Muhidin",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "1984-06-10",
+      "gender": "Perempuan",
+      "no_hp": "85880400781",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-218",
+      "nik": "2015050021",
+      "nama": "Muji Wahyono",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1986-08-30",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-219",
+      "nik": "2014110011",
+      "nama": "Mulyadi",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1988-01-18",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-220",
+      "nik": "2013080226",
+      "nama": "Murtadho",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1987-09-08",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-366",
+      "nik": "3216010809870001",
+      "nama": "MURTADHO",
+      "departemen": "SCM",
+      "jabatan": "SCM",
+      "tgl_lahir": "1987-09-08",
+      "gender": "Laki-laki",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-221",
+      "nik": "2013100367",
+      "nama": "Muslim",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1985-09-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-222",
+      "nik": "2014100001",
+      "nama": "Mustakim",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1993-03-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-223",
+      "nik": "2013040069",
+      "nama": "Nana Sukana",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1985-10-13",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-224",
+      "nik": "2013120411",
+      "nama": "Neta Ferdinal",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1986-07-08",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-225",
+      "nik": "2013090312",
+      "nama": "Nidih",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1980-09-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-226",
+      "nik": "2015060017",
+      "nama": "Nining Supriyatin",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1987-05-23",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-227",
+      "nik": "2014040012",
+      "nama": "Nirwanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-06-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-228",
+      "nik": "2022080019",
+      "nama": "Nono Prastowo",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1980-11-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-229",
+      "nik": "2013080238",
+      "nama": "Nurdin Saputra",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1986-12-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-230",
+      "nik": "2020010045",
+      "nama": "Nurhadi",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1991-04-10",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-231",
+      "nik": "2013090294",
+      "nama": "Nurhayadi",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1990-12-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-232",
+      "nik": "2025270811",
+      "nama": "Nurhayati islami elrizal",
+      "departemen": "Klinik",
+      "jabatan": "Klinik",
+      "tgl_lahir": "2001-05-11",
+      "gender": "Perempuan",
+      "no_hp": "8978163988",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-233",
+      "nik": "2013120426",
+      "nama": "Nurohman",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1985-11-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-234",
+      "nik": "2014090020",
+      "nama": "Nursin",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-10-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-235",
+      "nik": "2013050082",
+      "nama": "Nursita",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1981-05-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-236",
+      "nik": "2014080009",
+      "nama": "Okrina Osman",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1986-10-20",
+      "gender": "Perempuan",
+      "no_hp": "089660655406",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-237",
+      "nik": "2021030008",
+      "nama": "Panji Buana",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1999-06-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-238",
+      "nik": "2013100368",
+      "nama": "Parimin",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-04-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-239",
+      "nik": "2020060001",
+      "nama": "Paulus Heri Santoso",
+      "departemen": "HSE",
+      "jabatan": "HSE",
+      "tgl_lahir": "1969-07-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-240",
+      "nik": "2018100009",
+      "nama": "Prayogi Wicaksono",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1992-06-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-241",
+      "nik": "2019010019",
+      "nama": "Putra Bagus Dharmawan",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1988-07-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-242",
+      "nik": "2017070015",
+      "nama": "Putra Marganda Hutabarat",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1986-02-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-243",
+      "nik": "2012090037",
+      "nama": "R Gagah Pria Setya",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-09-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-244",
+      "nik": "2023070004",
+      "nama": "Rachmi Tiara Anggraini",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1998-04-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-245",
+      "nik": "2015030020",
+      "nama": "Rahman Nurrahim",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-10-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-246",
+      "nik": "2021050019",
+      "nama": "Rahmat Hidayat",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1997-05-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-247",
+      "nik": "2017010033",
+      "nama": "Raka Syifa Dzaki",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1996-11-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-248",
+      "nik": "2013100369",
+      "nama": "Rangga Rawe",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-04-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-249",
+      "nik": "2016050012",
+      "nama": "Rendini Suwondo",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1989-07-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-250",
+      "nik": "2022030008",
+      "nama": "Reyno Dwicahyo Putro Nugroho",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1999-06-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-251",
+      "nik": "2018120018",
+      "nama": "Rezka Mudzakir",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1996-11-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-252",
+      "nik": "2015080033",
+      "nama": "Ricky",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1992-05-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-253",
+      "nik": "2014080002",
+      "nama": "Ricky Syafaat",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1993-02-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-254",
+      "nik": "2023120001",
+      "nama": "Ridwan Qolbi",
+      "departemen": "FMO",
+      "jabatan": "FMO",
+      "tgl_lahir": "1979-07-27",
+      "gender": "Perempuan",
+      "no_hp": "082125360064",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-255",
+      "nik": "2013090295",
+      "nama": "Riki Ardiyan",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1992-03-09",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-256",
+      "nik": "2014080019",
+      "nama": "Rinto Adji",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-12-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-257",
+      "nik": "2022030007",
+      "nama": "Risda Elmayanti Dewi",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1996-11-23",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-258",
+      "nik": "2017100004",
+      "nama": "Rivaldi Bayu Sugesti",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1995-12-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-259",
+      "nik": "2015080029",
+      "nama": "Riyan Widiyanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-03-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-260",
+      "nik": "2013090331",
+      "nama": "Rizal",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1993-01-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-261",
+      "nik": "2013040076",
+      "nama": "Rizki Bagus Saputro",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1993-04-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-262",
+      "nik": "2024060046",
+      "nama": "Rizqi Mulya Pradipta",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "2001-09-18",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-263",
+      "nik": "2013090332",
+      "nama": "Rohmansyah",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1986-01-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-264",
+      "nik": "2015040015",
+      "nama": "Rudi Hartono",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1986-01-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-265",
+      "nik": "2019080015",
+      "nama": "Ruji Haryanto",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1982-10-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-266",
+      "nik": "2017010013",
+      "nama": "Rustam Effendi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-04-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-267",
+      "nik": "2014020033",
+      "nama": "Saipul Anwar",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1993-01-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-268",
+      "nik": "2014030006",
+      "nama": "Salman Alfaruq",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1986-06-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-269",
+      "nik": "2014020034",
+      "nama": "Samsuri",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1992-12-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-270",
+      "nik": "2014080006",
+      "nama": "Sandi Ferdiyansyah",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-01-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-271",
+      "nik": "2019010008",
+      "nama": "Sandy Tias",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1994-03-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-272",
+      "nik": "2014050046",
+      "nama": "Sanin",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1982-02-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-273",
+      "nik": "2014090018",
+      "nama": "Sendi Ananda Budiman",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1987-04-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-274",
+      "nik": "2015030019",
+      "nama": "Septian Widuri",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-09-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-275",
+      "nik": "2013070198",
+      "nama": "Shofyan Hadi",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1982-07-08",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-362",
+      "nik": "201301798",
+      "nama": "Shofyan Hadi",
+      "departemen": "SCM",
+      "jabatan": "SCM",
+      "tgl_lahir": "1982-08-07",
+      "gender": "Laki-laki",
+      "no_hp": "8119969090",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-276",
+      "nik": "2021010010",
+      "nama": "Sigit Noegraha",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "2000-07-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-277",
+      "nik": "2016050005",
+      "nama": "SIGIT PRIYONO",
+      "departemen": "Factory Management Office",
+      "jabatan": "Factory Management Office",
+      "tgl_lahir": "1982-02-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-278",
+      "nik": "2025110007",
+      "nama": "SISWADI",
+      "departemen": "Factory Management Office",
+      "jabatan": "Factory Management Office",
+      "tgl_lahir": "1969-10-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-279",
+      "nik": "2022100020",
+      "nama": "Siti Nurmala Asy'Syifa",
+      "departemen": "People Culture & Services",
+      "jabatan": "People Culture & Services",
+      "tgl_lahir": "1997-09-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-280",
+      "nik": "2014040019",
+      "nama": "Slamet Karyanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-07-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-281",
+      "nik": "2850",
+      "nama": "Sony Saputra",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "1996-11-08",
+      "gender": "Perempuan",
+      "no_hp": "85693743581",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-282",
+      "nik": "2020090008",
+      "nama": "Sopyan Bintaryanto",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1983-04-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-283",
+      "nik": "2004100138",
+      "nama": "Sudarmono",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1986-11-18",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-284",
+      "nik": "2014030002",
+      "nama": "Suharyadi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-06-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-285",
+      "nik": "2014040029",
+      "nama": "Sunarya",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-04-14",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-286",
+      "nik": "2015030018",
+      "nama": "Suparman",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-01-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-287",
+      "nik": "2014050031",
+      "nama": "Supri Purwanto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-03-16",
+      "gender": "Perempuan",
+      "no_hp": "081522609965",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-288",
+      "nik": "2014040014",
+      "nama": "Suratman",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-07-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-289",
+      "nik": "2013090296",
+      "nama": "Suroso",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1986-03-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-290",
+      "nik": "6690",
+      "nama": "Suroso",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "1975-04-16",
+      "gender": "Perempuan",
+      "no_hp": "81285805774",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-291",
+      "nik": "2013100371",
+      "nama": "Suyatno",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-04-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-292",
+      "nik": "2020070014",
+      "nama": "Syahroni",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1985-06-11",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-293",
+      "nik": "2017060007",
+      "nama": "Syarif Hidayatulloh",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1994-02-11",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-294",
+      "nik": "2013090334",
+      "nama": "Syarifudin Dahlan",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1990-10-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-295",
+      "nik": "2013090335",
+      "nama": "Syuhada",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1988-10-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-296",
+      "nik": "2015030005",
+      "nama": "Tantan Tanwiri",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-07-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-297",
+      "nik": "2014060005",
+      "nama": "Taufik Akbar",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1986-08-27",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-298",
+      "nik": "2013100372",
+      "nama": "Taufik Hidayat",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1987-05-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-299",
+      "nik": "2020060014",
+      "nama": "Taupiq Faisal",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1998-12-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-300",
+      "nik": "2014020026",
+      "nama": "Tayim",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1992-06-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-301",
+      "nik": "2013100373",
+      "nama": "Tio Prastyo",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-02-07",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-302",
+      "nik": "2015110005",
+      "nama": "Tiurma Lasma Rohana",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1993-08-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-371",
+      "nik": "20260904",
+      "nama": "Tn.Aji solahudin",
+      "departemen": "Vendor PT.Adi Logam",
+      "jabatan": "Vendor PT.Adi Logam",
+      "tgl_lahir": "1995-08-19",
+      "gender": "Perempuan",
+      "no_hp": "87764715635",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-368",
+      "nik": "7271",
+      "nama": "Tn.Alex",
+      "departemen": "sc",
+      "jabatan": "sc",
+      "tgl_lahir": "2026-04-01",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-303",
+      "nik": "11032026",
+      "nama": "Tn.anwar",
+      "departemen": "TKBM",
+      "jabatan": "TKBM",
+      "tgl_lahir": "2026-03-12",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-304",
+      "nik": "7882",
+      "nama": "Tn.Asri waldi",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "1984-08-15",
+      "gender": "Laki-laki",
+      "no_hp": "085777936937",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-359",
+      "nik": "6692",
+      "nama": "Tn.Baba",
+      "departemen": "Dept.Security",
+      "jabatan": "Dept.Security",
+      "tgl_lahir": "1983-06-06",
+      "gender": "Perempuan",
+      "no_hp": "81280061908",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-305",
+      "nik": "R1670730",
+      "nama": "Tn.Bahar supriyadi",
+      "departemen": "ISS",
+      "jabatan": "ISS",
+      "tgl_lahir": "1995-06-23",
+      "gender": "Perempuan",
+      "no_hp": "85716264707",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-306",
+      "nik": "r1670730",
+      "nama": "Tn.bahar supriyadi",
+      "departemen": "ISS",
+      "jabatan": "ISS",
+      "tgl_lahir": "2026-06-26",
+      "gender": "Perempuan",
+      "no_hp": "85716264707",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-307",
+      "nik": "11797",
+      "nama": "Tn.Budi",
+      "departemen": "security",
+      "jabatan": "security",
+      "tgl_lahir": "2026-03-27",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-308",
+      "nik": "2026010011",
+      "nama": "Tn.Fatihalsena",
+      "departemen": "IT",
+      "jabatan": "IT",
+      "tgl_lahir": "2026-03-17",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-309",
+      "nik": "10912",
+      "nama": "Tn.Firman",
+      "departemen": "security",
+      "jabatan": "security",
+      "tgl_lahir": "2026-03-24",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-310",
+      "nik": "201309025",
+      "nama": "Tn.Indriyani",
+      "departemen": "Dept.QC.LAB",
+      "jabatan": "Dept.QC.LAB",
+      "tgl_lahir": "1997-09-20",
+      "gender": "Perempuan",
+      "no_hp": "82122089488",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-311",
+      "nik": "1624293",
+      "nama": "Tn.Iwan",
+      "departemen": "ISS",
+      "jabatan": "ISS",
+      "tgl_lahir": "2026-02-20",
+      "gender": "Laki-laki",
+      "no_hp": "081585237748",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-375",
+      "nik": "2995",
+      "nama": "Tn.Jamal awaludin",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "1986-07-28",
+      "gender": "Perempuan",
+      "no_hp": "85711060960",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-312",
+      "nik": "13035",
+      "nama": "Tn.Khairul amin",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "2001-04-27",
+      "gender": "Perempuan",
+      "no_hp": "85159988638",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-361",
+      "nik": "2023080011",
+      "nama": "Tn.Leo L L Gaol",
+      "departemen": "FMO",
+      "jabatan": "FMO",
+      "tgl_lahir": "1966-12-08",
+      "gender": "Laki-laki",
+      "no_hp": "81281292919",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-313",
+      "nik": "16370738",
+      "nama": "tn.M Idris",
+      "departemen": "ISS",
+      "jabatan": "ISS",
+      "tgl_lahir": "1997-04-04",
+      "gender": "Perempuan",
+      "no_hp": "85691956309",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-367",
+      "nik": "6668",
+      "nama": "Tn.Marji",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "1989-02-19",
+      "gender": "Perempuan",
+      "no_hp": "8568366635",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-314",
+      "nik": "6680",
+      "nama": "Tn.Marui",
+      "departemen": "security",
+      "jabatan": "security",
+      "tgl_lahir": "2026-03-27",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-365",
+      "nik": "11272",
+      "nama": "Tn.maulana",
+      "departemen": "security",
+      "jabatan": "security",
+      "tgl_lahir": "1994-05-05",
+      "gender": "Perempuan",
+      "no_hp": "89630403071",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-372",
+      "nik": "R1670739",
+      "nama": "Tn.Muslimin",
+      "departemen": "iss",
+      "jabatan": "iss",
+      "tgl_lahir": "2026-04-14",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-369",
+      "nik": "6211991",
+      "nama": "Tn.Nadro",
+      "departemen": "vendor BST",
+      "jabatan": "vendor BST",
+      "tgl_lahir": "2026-04-06",
+      "gender": "Perempuan",
+      "no_hp": "81292571981",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-370",
+      "nik": "6121991",
+      "nama": "Tn.Nadro",
+      "departemen": "vendro bst",
+      "jabatan": "vendro bst",
+      "tgl_lahir": "2026-04-06",
+      "gender": "Perempuan",
+      "no_hp": "81292571981",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-315",
+      "nik": "332917280888001",
+      "nama": "Tn.pipin",
+      "departemen": "pt cas",
+      "jabatan": "pt cas",
+      "tgl_lahir": "1988-08-28",
+      "gender": "Perempuan",
+      "no_hp": "88291044631",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-316",
+      "nik": "9704",
+      "nama": "Tn.Rahmat",
+      "departemen": "Dept.Security",
+      "jabatan": "Dept.Security",
+      "tgl_lahir": "1986-10-23",
+      "gender": "Perempuan",
+      "no_hp": "81382563541",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-317",
+      "nik": "60407",
+      "nama": "Tn.Rahmat hidayat",
+      "departemen": "Dept.Security",
+      "jabatan": "Dept.Security",
+      "tgl_lahir": "1991-09-18",
+      "gender": "Perempuan",
+      "no_hp": "85813706371",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-318",
+      "nik": "6047",
+      "nama": "Tn.Rahmat hidayat",
+      "departemen": "Dept.Security",
+      "jabatan": "Dept.Security",
+      "tgl_lahir": "1991-09-18",
+      "gender": "Perempuan",
+      "no_hp": "6047",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-319",
+      "nik": "12441",
+      "nama": "Tn.Rehan nofaldi",
+      "departemen": "Dept.Security",
+      "jabatan": "Dept.Security",
+      "tgl_lahir": "2005-11-16",
+      "gender": "Perempuan",
+      "no_hp": "85774022790",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-320",
+      "nik": "7794",
+      "nama": "Tn.Subadrin",
+      "departemen": "Dept.Security",
+      "jabatan": "Dept.Security",
+      "tgl_lahir": "1985-06-10",
+      "gender": "Perempuan",
+      "no_hp": "85273563037",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-321",
+      "nik": "6666",
+      "nama": "Tn.Subeki",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "1967-08-05",
+      "gender": "Laki-laki",
+      "no_hp": "085693699997",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-322",
+      "nik": "9899",
+      "nama": "TN.Suhendra",
+      "departemen": "security",
+      "jabatan": "security",
+      "tgl_lahir": "2026-03-18",
+      "gender": "Perempuan",
+      "no_hp": "8888",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-323",
+      "nik": "6687",
+      "nama": "Tn.Sunin",
+      "departemen": "security",
+      "jabatan": "security",
+      "tgl_lahir": "2026-03-16",
+      "gender": "Perempuan",
+      "no_hp": "888888",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-373",
+      "nik": "3216010612950007",
+      "nama": "Tn.supriyanto",
+      "departemen": "CAS",
+      "jabatan": "CAS",
+      "tgl_lahir": "2026-04-16",
+      "gender": "Perempuan",
+      "no_hp": "82210758943",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-374",
+      "nik": "3216010612950007",
+      "nama": "Tn.Supriyanto",
+      "departemen": "pt.cas",
+      "jabatan": "pt.cas",
+      "tgl_lahir": "2026-04-17",
+      "gender": "Perempuan",
+      "no_hp": "82210758043",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-324",
+      "nik": "10091993",
+      "nama": "Tn.Tommy",
+      "departemen": "vendor steking",
+      "jabatan": "vendor steking",
+      "tgl_lahir": "2026-03-06",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-363",
+      "nik": "1234",
+      "nama": "Tn.Umar hidayat",
+      "departemen": "iss",
+      "jabatan": "iss",
+      "tgl_lahir": "2026-03-30",
+      "gender": "Perempuan",
+      "no_hp": "0",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-325",
+      "nik": "2013100374",
+      "nama": "Tomi Mailano",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1990-05-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-326",
+      "nik": "2013050085",
+      "nama": "Tony Hariyanto",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1977-10-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-327",
+      "nik": "2014080008",
+      "nama": "Toto Asgiarto",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1995-09-30",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-328",
+      "nik": "2013080233",
+      "nama": "Tri Sutrisno",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-12-21",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-329",
+      "nik": "2014080007",
+      "nama": "Tri Sutrisno",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-05-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-330",
+      "nik": "2013090337",
+      "nama": "Triyo Nurohman",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1991-06-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-331",
+      "nik": "6694",
+      "nama": "Ubailani",
+      "departemen": "Security",
+      "jabatan": "Security",
+      "tgl_lahir": "1984-06-15",
+      "gender": "Perempuan",
+      "no_hp": "85710048134",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-332",
+      "nik": "2013050094",
+      "nama": "Ugi Dewanto",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1982-11-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-333",
+      "nik": "2014010004",
+      "nama": "Upendi",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1989-05-08",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-334",
+      "nik": "2020010017",
+      "nama": "Veri Tri Wibowo",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1990-09-19",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-335",
+      "nik": "2022120003",
+      "nama": "Vicky Ferdinan Ujiana",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1981-06-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-336",
+      "nik": "2017120003",
+      "nama": "Vika Ayu Adistiana",
+      "departemen": "QA, QC & Laboratory",
+      "jabatan": "QA, QC & Laboratory",
+      "tgl_lahir": "1992-05-25",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-337",
+      "nik": "2014100003",
+      "nama": "Volty Abi Nugroho",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1993-04-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-338",
+      "nik": "2013090297",
+      "nama": "Wahyu Hidayat",
+      "departemen": "Mechanical",
+      "jabatan": "Mechanical",
+      "tgl_lahir": "1986-11-26",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-339",
+      "nik": "2013030025",
+      "nama": "Wahyu Kurniawan",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1984-07-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-340",
+      "nik": "2013050095",
+      "nama": "Wahyu Sulistyono",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1976-01-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-341",
+      "nik": "2016050010",
+      "nama": "Wahyudin Danial",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1992-01-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-342",
+      "nik": "2014030009",
+      "nama": "Waladi",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1988-08-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-343",
+      "nik": "2016100002",
+      "nama": "Wawan Candra Mulya",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1989-08-04",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-344",
+      "nik": "2014020039",
+      "nama": "Wawan Hermawan",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1990-06-29",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-345",
+      "nik": "2013080234",
+      "nama": "Welas Widodo",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1989-09-03",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-346",
+      "nik": "2020040012",
+      "nama": "Win Jerohdiko",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1989-02-24",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-347",
+      "nik": "2012090042",
+      "nama": "Yanuar Syaifulloh",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1991-01-12",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-348",
+      "nik": "2013090338",
+      "nama": "Yaya",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1993-11-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-349",
+      "nik": "2015020001",
+      "nama": "Yaya Sunarya",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "1993-07-05",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-350",
+      "nik": "2017060009",
+      "nama": "Yayang Putri Rahayu",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1995-09-15",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-351",
+      "nik": "2015080014",
+      "nama": "Yayat Supriyatin",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1988-03-16",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-352",
+      "nik": "2023010002",
+      "nama": "Yeni Dwi Cahyani",
+      "departemen": "Electrical, Instrument & Automation",
+      "jabatan": "Electrical, Instrument & Automation",
+      "tgl_lahir": "2000-06-22",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-353",
+      "nik": "2022070007",
+      "nama": "Yogi Cahyadi",
+      "departemen": "Power Plant & Utility",
+      "jabatan": "Power Plant & Utility",
+      "tgl_lahir": "1995-10-02",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-354",
+      "nik": "2014080001",
+      "nama": "Yosi Niarto",
+      "departemen": "SCM & Procurement",
+      "jabatan": "SCM & Procurement",
+      "tgl_lahir": "1985-10-28",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-355",
+      "nik": "2020110013",
+      "nama": "Yusron Rohman",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "2000-11-01",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-356",
+      "nik": "2014030015",
+      "nama": "Yusup Yusmanul Hakim",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1986-07-06",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-357",
+      "nik": "2014040013",
+      "nama": "Zaenudin",
+      "departemen": "Process",
+      "jabatan": "Process",
+      "tgl_lahir": "1992-03-17",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    },
+    {
+      "id": "EMP-358",
+      "nik": "2015020006",
+      "nama": "Zulkarnain",
+      "departemen": "HSE",
+      "jabatan": "HSE",
+      "tgl_lahir": "1985-12-20",
+      "gender": "Perempuan",
+      "no_hp": "",
+      "alamat": "PT PT ATI",
+      "alergi": "Tidak Ada"
+    }
+  ],
+  "medicines": [
+    {
+      "id": "MED-O-1775702980973",
+      "nama": "ABBOCATH 24 TERUMO",
+      "satuan": "-",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "45000",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-O-1775099271251",
+      "nama": "ACYCLOVIR SALEP",
+      "satuan": "-",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "2830",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-O-1775099242559",
+      "nama": "ACYCLOVIR TAB 400 MG",
+      "satuan": "-",
+      "stok": 88,
+      "kategori": "Gudang PT ATI",
+      "harga": "666",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-1",
+      "nama": "ALKOHOL SWAB",
+      "satuan": "box",
+      "stok": 43,
+      "kategori": "Gudang PT ATI",
+      "harga": "240",
+      "stok_minimum": "5"
+    },
+    {
+      "id": "MED-2",
+      "nama": "ALLOPURINOL 100 MG TAB",
+      "satuan": "strip",
+      "stok": 114,
+      "kategori": "Gudang PT ATI",
+      "harga": "172",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-3",
+      "nama": "ALLOPURINOL 300 MG TAB",
+      "satuan": "strip",
+      "stok": 47,
+      "kategori": "Gudang PT ATI",
+      "harga": "474",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-4",
+      "nama": "ALPARA",
+      "satuan": "strip",
+      "stok": 156,
+      "kategori": "Gudang PT ATI",
+      "harga": "667",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-5",
+      "nama": "AMBROXOL 30 MG TAB",
+      "satuan": "strip",
+      "stok": 158,
+      "kategori": "Gudang PT ATI",
+      "harga": "99",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-6",
+      "nama": "AMLODIPINE 10 MG TAB",
+      "satuan": "strip",
+      "stok": 111,
+      "kategori": "Gudang PT ATI",
+      "harga": "111",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-7",
+      "nama": "AMLODIPINE 5 MG TAB",
+      "satuan": "strip",
+      "stok": 35,
+      "kategori": "Gudang PT ATI",
+      "harga": "100",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-8",
+      "nama": "ANTASIDA TAB",
+      "satuan": "strip",
+      "stok": 101,
+      "kategori": "Gudang PT ATI",
+      "harga": "110",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-9",
+      "nama": "ASAM TRANEXAMAT TAB",
+      "satuan": "strip",
+      "stok": 18,
+      "kategori": "Gudang PT ATI",
+      "harga": "1352",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-10",
+      "nama": "B COMPLEX TAB",
+      "satuan": "strip",
+      "stok": 122,
+      "kategori": "Gudang PT ATI",
+      "harga": "53",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-11",
+      "nama": "BALSEM GELIGA 10 gr",
+      "satuan": "tube",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "7373",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-12",
+      "nama": "BENANG CATGUT",
+      "satuan": "pcs",
+      "stok": 5,
+      "kategori": "Gudang PT ATI",
+      "harga": "11000",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-13",
+      "nama": "BENOSON SALP 5 GR",
+      "satuan": "tube",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "17850",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-O-1772073197830",
+      "nama": "BIOMEGA",
+      "satuan": "-",
+      "stok": 56,
+      "kategori": "Gudang PT ATI",
+      "harga": "564",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-15",
+      "nama": "BIOPLACENTON SALP",
+      "satuan": "tube",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "23800",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-16",
+      "nama": "BLOOD LANCET",
+      "satuan": "box",
+      "stok": 48,
+      "kategori": "Gudang PT ATI",
+      "harga": "113",
+      "stok_minimum": "20"
+    },
+    {
+      "id": "MED-17",
+      "nama": "CAVIPLEX TAB",
+      "satuan": "strip",
+      "stok": 100,
+      "kategori": "Gudang PT ATI",
+      "harga": "612",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-18",
+      "nama": "CEFADROXIL 500 MG TAB",
+      "satuan": "strip",
+      "stok": 61,
+      "kategori": "Gudang PT ATI",
+      "harga": "948",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-19",
+      "nama": "CEFIXIME 100 MG TAB",
+      "satuan": "strip",
+      "stok": 42,
+      "kategori": "Gudang PT ATI",
+      "harga": "774",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-20",
+      "nama": "CETIRIZINE 10 MG TAB",
+      "satuan": "strip",
+      "stok": 178,
+      "kategori": "Gudang PT ATI",
+      "harga": "167",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-O-1772680812997",
+      "nama": "COUNTERPAIN 30 GR",
+      "satuan": "-",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "37500",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-O-1772073356265",
+      "nama": "DANASONE TAB",
+      "satuan": "-",
+      "stok": 95,
+      "kategori": "Gudang PT ATI",
+      "harga": "110",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-O-1772681217147",
+      "nama": "DERMAFIX 10X12 CM (PERBAN ANTI AIR)",
+      "satuan": "-",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "12000",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-21",
+      "nama": "DOMPERIDONE 10 MG",
+      "satuan": "strip",
+      "stok": 196,
+      "kategori": "Gudang PT ATI",
+      "harga": "120",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-O-1772073474230",
+      "nama": "DOUBLE SPIK",
+      "satuan": "-",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "2500",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-O-1772073278484",
+      "nama": "EPERISON HCL 50 MG TAB",
+      "satuan": "-",
+      "stok": 156,
+      "kategori": "Gudang PT ATI",
+      "harga": "525",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-O-1772681039165",
+      "nama": "ERLA MYCETIN SALP MATA",
+      "satuan": "-",
+      "stok": 3,
+      "kategori": "Gudang PT ATI",
+      "harga": "10500",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-23",
+      "nama": "ERLAMYCETIN TTS TELINGA",
+      "satuan": "botol",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "10005",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-24",
+      "nama": "ETABION",
+      "satuan": "strip",
+      "stok": 87,
+      "kategori": "Gudang PT ATI",
+      "harga": "256",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-25",
+      "nama": "FG TROCHES",
+      "satuan": "strip",
+      "stok": 76,
+      "kategori": "Gudang PT ATI",
+      "harga": "1472",
+      "stok_minimum": "2"
+    },
+    {
+      "id": "MED-26",
+      "nama": "GENTAMISIN SALP",
+      "satuan": "tube",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "2758",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-O-1772073328421",
+      "nama": "HANDSCON NITRIL",
+      "satuan": "-",
+      "stok": 100,
+      "kategori": "Gudang PT ATI",
+      "harga": "1460",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-27",
+      "nama": "HANSAPLAST SACHET",
+      "satuan": "sachet",
+      "stok": 108,
+      "kategori": "Gudang PT ATI",
+      "harga": "280",
+      "stok_minimum": "5"
+    },
+    {
+      "id": "MED-O-1775099310501",
+      "nama": "HIDROCORTISON SALEP",
+      "satuan": "-",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "4800",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-28",
+      "nama": "HIDROCORTISON SALP",
+      "satuan": "tube",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "4800",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-O-1774507228907",
+      "nama": "HISTIGO TAB",
+      "satuan": "-",
+      "stok": 100,
+      "kategori": "Gudang PT ATI",
+      "harga": "517",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-29",
+      "nama": "HOT IN CREAM MERAH",
+      "satuan": "tube",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "30000",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-30",
+      "nama": "IBUPROFEN TAB 400 MG",
+      "satuan": "strip",
+      "stok": 134,
+      "kategori": "Gudang PT ATI",
+      "harga": "219",
+      "stok_minimum": "2"
+    },
+    {
+      "id": "MED-O-1775703103020",
+      "nama": "INFUSET Y OTSUKA DEWASA",
+      "satuan": "-",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "8000",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-31",
+      "nama": "INSTO",
+      "satuan": "botol",
+      "stok": 3,
+      "kategori": "Gudang PT ATI",
+      "harga": "11500",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-O-1772681140444",
+      "nama": "IODINE PROVIODINE 1 LITER",
+      "satuan": "-",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "90000",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-32",
+      "nama": "KASSA 10 CM",
+      "satuan": "roll",
+      "stok": 71,
+      "kategori": "Gudang PT ATI",
+      "harga": "5000",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-33",
+      "nama": "KASSA 5 CM",
+      "satuan": "roll",
+      "stok": 10,
+      "kategori": "Gudang PT ATI",
+      "harga": "5000",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-34",
+      "nama": "KASSA STERIL",
+      "satuan": "pcs",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "2378",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-35",
+      "nama": "KETOCONAZOLE SALP",
+      "satuan": "tube",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "5155",
+      "stok_minimum": "2"
+    },
+    {
+      "id": "MED-36",
+      "nama": "KLIP OBAT 1000 pcs",
+      "satuan": "pack",
+      "stok": 399,
+      "kategori": "Gudang PT ATI",
+      "harga": "90",
+      "stok_minimum": "20"
+    },
+    {
+      "id": "MED-37",
+      "nama": "LAXANA",
+      "satuan": "strip",
+      "stok": 66,
+      "kategori": "Gudang PT ATI",
+      "harga": "295",
+      "stok_minimum": "20"
+    },
+    {
+      "id": "MED-38",
+      "nama": "LIDOCAIN INJEK",
+      "satuan": "ampul",
+      "stok": 5,
+      "kategori": "Gudang PT ATI",
+      "harga": "1554",
+      "stok_minimum": "5"
+    },
+    {
+      "id": "MED-39",
+      "nama": "LOPERAMID",
+      "satuan": "strip",
+      "stok": 124,
+      "kategori": "Gudang PT ATI",
+      "harga": "123",
+      "stok_minimum": "20"
+    },
+    {
+      "id": "MED-67",
+      "nama": "MASKER",
+      "satuan": "tab",
+      "stok": 100,
+      "kategori": "Gudang PT ATI",
+      "harga": "0",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-40",
+      "nama": "MASKER NEBU DEWASA",
+      "satuan": "pcs",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "32800",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-41",
+      "nama": "MEFENAMID ACID 500 MG",
+      "satuan": "strip",
+      "stok": 79,
+      "kategori": "Gudang PT ATI",
+      "harga": "186",
+      "stok_minimum": "20"
+    },
+    {
+      "id": "MED-42",
+      "nama": "METFORMIN 500 MG",
+      "satuan": "strip",
+      "stok": 50,
+      "kategori": "Gudang PT ATI",
+      "harga": "408",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-43",
+      "nama": "METHYL PREDNISOLON 4 MG",
+      "satuan": "strip",
+      "stok": 30,
+      "kategori": "Gudang PT ATI",
+      "harga": "167",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-44",
+      "nama": "METRONIDAZOLE TAB",
+      "satuan": "strip",
+      "stok": 188,
+      "kategori": "Gudang PT ATI",
+      "harga": "210",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-45",
+      "nama": "MICROPORE SEDANG",
+      "satuan": "roll",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "10500",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-46",
+      "nama": "MINYAK GOSOK TAWON 60 ML",
+      "satuan": "botol",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "56084",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-47",
+      "nama": "MINYAK KAYU PUTIH 120 ML",
+      "satuan": "botol",
+      "stok": 3,
+      "kategori": "Gudang PT ATI",
+      "harga": "37092",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-O-1772073408124",
+      "nama": "MOLEXFLU TAB",
+      "satuan": "-",
+      "stok": 112,
+      "kategori": "Gudang PT ATI",
+      "harga": "500",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-48",
+      "nama": "NACL 500 ML",
+      "satuan": "botol",
+      "stok": 3,
+      "kategori": "Gudang PT ATI",
+      "harga": "7748",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-O-1773648490564",
+      "nama": "NEW DIATABS TAB",
+      "satuan": "-",
+      "stok": 78,
+      "kategori": "Gudang PT ATI",
+      "harga": "870",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-49",
+      "nama": "OMEPRAZOLE CAPS",
+      "satuan": "strip",
+      "stok": 62,
+      "kategori": "Gudang PT ATI",
+      "harga": "240",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-50",
+      "nama": "PARACETAMOL 500 MG",
+      "satuan": "strip",
+      "stok": 3,
+      "kategori": "Gudang PT ATI",
+      "harga": "126",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-O-1772681286500",
+      "nama": "PARATUSIN TAB",
+      "satuan": "-",
+      "stok": 192,
+      "kategori": "Gudang PT ATI",
+      "harga": "1500",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-52",
+      "nama": "PIROXICAM 10 MG",
+      "satuan": "strip",
+      "stok": 202,
+      "kategori": "Gudang PT ATI",
+      "harga": "106",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-53",
+      "nama": "PLESTER COKLAT",
+      "satuan": "roll",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "3956",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-54",
+      "nama": "POT SALEP",
+      "satuan": "pcs",
+      "stok": 25,
+      "kategori": "Gudang PT ATI",
+      "harga": "500",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-O-1772681005333",
+      "nama": "RECO TTS MATA",
+      "satuan": "-",
+      "stok": 0,
+      "kategori": "Gudang PT ATI",
+      "harga": "8500",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-O-1772073384357",
+      "nama": "RENADINAC TAB 50 MG",
+      "satuan": "-",
+      "stok": 124,
+      "kategori": "Gudang PT ATI",
+      "harga": "565",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-O-1775703075707",
+      "nama": "RL INFUS",
+      "satuan": "-",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "13000",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-55",
+      "nama": "SALBUTAMOL 2MG",
+      "satuan": "strip",
+      "stok": 44,
+      "kategori": "Gudang PT ATI",
+      "harga": "98",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-56",
+      "nama": "SALONPAS KOYO",
+      "satuan": "sachet",
+      "stok": 55,
+      "kategori": "Gudang PT ATI",
+      "harga": "3492",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-O-1775703126913",
+      "nama": "SELANG OKSIGEN DEWASA",
+      "satuan": "-",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "44000",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-57",
+      "nama": "SIMVASTATIN 20 MG",
+      "satuan": "strip",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "236",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-58",
+      "nama": "SPASMINAL TAB",
+      "satuan": "strip",
+      "stok": 77,
+      "kategori": "Gudang PT ATI",
+      "harga": "977",
+      "stok_minimum": "2"
+    },
+    {
+      "id": "MED-59",
+      "nama": "SPUIT 3CC",
+      "satuan": "pcs",
+      "stok": 5,
+      "kategori": "Gudang PT ATI",
+      "harga": "4120",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-60",
+      "nama": "STIK ASAM URAT",
+      "satuan": "box",
+      "stok": 16,
+      "kategori": "Gudang PT ATI",
+      "harga": "3304",
+      "stok_minimum": "10"
+    },
+    {
+      "id": "MED-61",
+      "nama": "STIK GDS",
+      "satuan": "box",
+      "stok": 20,
+      "kategori": "Gudang PT ATI",
+      "harga": "3356",
+      "stok_minimum": "5"
+    },
+    {
+      "id": "MED-62",
+      "nama": "STIK KOLESTEROL",
+      "satuan": "box",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "15140",
+      "stok_minimum": "5"
+    },
+    {
+      "id": "MED-63",
+      "nama": "THROMBOPOP GEL",
+      "satuan": "tube",
+      "stok": 2,
+      "kategori": "Gudang PT ATI",
+      "harga": "66600",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-64",
+      "nama": "VENTOLIN NEBU",
+      "satuan": "pcs",
+      "stok": 1,
+      "kategori": "Gudang PT ATI",
+      "harga": "13163",
+      "stok_minimum": "1"
+    },
+    {
+      "id": "MED-O-1772073245395",
+      "nama": "Y-RINS / BOTOL",
+      "satuan": "-",
+      "stok": 5,
+      "kategori": "Gudang PT ATI",
+      "harga": "8250",
+      "stok_minimum": ""
+    },
+    {
+      "id": "MED-66",
+      "nama": "ZINC TAB",
+      "satuan": "strip",
+      "stok": 71,
+      "kategori": "Gudang PT ATI",
+      "harga": "240",
+      "stok_minimum": "10"
+    }
+  ],
+  "icd10": [
+    {
+      "kode": "A01.0",
+      "nama": "Demam Tifoid"
+    },
+    {
+      "kode": "A06.0",
+      "nama": "Disenteri Ameba"
+    },
+    {
+      "kode": "A07.0",
+      "nama": "Giardia"
+    },
+    {
+      "kode": "A08.0",
+      "nama": "Rotavirus Diare"
+    },
+    {
+      "kode": "A09.9",
+      "nama": "Diare/GEA"
+    },
+    {
+      "kode": "A15.0",
+      "nama": "TB Paru BTA+"
+    },
+    {
+      "kode": "A15.3",
+      "nama": "TB Kelenjar Getah Bening"
+    },
+    {
+      "kode": "A16.2",
+      "nama": "TB Paru Klinis"
+    },
+    {
+      "kode": "A17.0",
+      "nama": "TB Meningitis"
+    },
+    {
+      "kode": "A18.0",
+      "nama": "TB Tulang"
+    },
+    {
+      "kode": "A18.2",
+      "nama": "TB Kelenjar Limfe Perifer"
+    },
+    {
+      "kode": "A33",
+      "nama": "Tetanus Neonatus"
+    },
+    {
+      "kode": "A34",
+      "nama": "Tetanus Obstetrik"
+    },
+    {
+      "kode": "A35",
+      "nama": "Tetanus"
+    },
+    {
+      "kode": "A36.9",
+      "nama": "Difteri"
+    },
+    {
+      "kode": "A37.9",
+      "nama": "Batuk Rejan"
+    },
+    {
+      "kode": "A90",
+      "nama": "Demam Dengue"
+    },
+    {
+      "kode": "A91.0",
+      "nama": "Demam Berdarah"
+    },
+    {
+      "kode": "B01",
+      "nama": "Varisela (cacar air)"
+    },
+    {
+      "kode": "B01.0",
+      "nama": "Varisela dengan meningitis"
+    },
+    {
+      "kode": "B01.1",
+      "nama": "Varisela dengan ensefalitis/mielitis"
+    },
+    {
+      "kode": "B01.2",
+      "nama": "Varisela dengan pneumonia"
+    },
+    {
+      "kode": "B01.8",
+      "nama": "Varisela dengan komplikasi lain"
+    },
+    {
+      "kode": "B01.9",
+      "nama": "Varisela tanpa komplikasi"
+    },
+    {
+      "kode": "B02",
+      "nama": "Herpes zoster (cacar ular)"
+    },
+    {
+      "kode": "B02.0",
+      "nama": "Herpes zoster dengan ensefalitis"
+    },
+    {
+      "kode": "B02.1",
+      "nama": "Herpes zoster dengan meningitis"
+    },
+    {
+      "kode": "B02.2",
+      "nama": "Herpes zoster dengan komplikasi saraf lain"
+    },
+    {
+      "kode": "B02.3",
+      "nama": "Herpes zoster oftalmikus/okular"
+    },
+    {
+      "kode": "B02.7",
+      "nama": "Herpes zoster diseminata"
+    },
+    {
+      "kode": "B02.8",
+      "nama": "Herpes zoster dengan komplikasi lain"
+    },
+    {
+      "kode": "B02.9",
+      "nama": "Herpes Zoster"
+    },
+    {
+      "kode": "B02.9",
+      "nama": "Herpes zoster tanpa komplikasi"
+    },
+    {
+      "kode": "B15.9",
+      "nama": "Hepatitis A"
+    },
+    {
+      "kode": "B16.9",
+      "nama": "Hepatitis B Akut"
+    },
+    {
+      "kode": "B18.1",
+      "nama": "Hepatitis B Kronik"
+    },
+    {
+      "kode": "B19.9",
+      "nama": "Hepatitis"
+    },
+    {
+      "kode": "B20",
+      "nama": "HIV/AIDS"
+    },
+    {
+      "kode": "B35.0",
+      "nama": "Jamur Kulit"
+    },
+    {
+      "kode": "B37.9",
+      "nama": "Kandidiasis"
+    },
+    {
+      "kode": "B49",
+      "nama": "Infeksi Jamur"
+    },
+    {
+      "kode": "B54",
+      "nama": "Malaria"
+    },
+    {
+      "kode": "B55.9",
+      "nama": "Leishmaniasis"
+    },
+    {
+      "kode": "B85.0",
+      "nama": "Kutu Kepala"
+    },
+    {
+      "kode": "B86",
+      "nama": "Skabies"
+    },
+    {
+      "kode": "B87.9",
+      "nama": "Miasis"
+    },
+    {
+      "kode": "B88.0",
+      "nama": "Akariasis"
+    },
+    {
+      "kode": "C16.9",
+      "nama": "Kanker Lambung"
+    },
+    {
+      "kode": "C18.9",
+      "nama": "Kanker Usus Besar"
+    },
+    {
+      "kode": "C22.0",
+      "nama": "Kanker Hati"
+    },
+    {
+      "kode": "C25.9",
+      "nama": "Kanker Pankreas"
+    },
+    {
+      "kode": "C34.9",
+      "nama": "Kanker Paru"
+    },
+    {
+      "kode": "C50.9",
+      "nama": "Kanker Payudara"
+    },
+    {
+      "kode": "C53.9",
+      "nama": "Kanker Serviks"
+    },
+    {
+      "kode": "C61",
+      "nama": "Kanker Prostat"
+    },
+    {
+      "kode": "C67.9",
+      "nama": "Kanker Kandung Kemih"
+    },
+    {
+      "kode": "C73",
+      "nama": "Kanker Tiroid"
+    },
+    {
+      "kode": "D25.9",
+      "nama": "Mioma Uteri"
+    },
+    {
+      "kode": "D27",
+      "nama": "Kista Ovarium"
+    },
+    {
+      "kode": "D35.2",
+      "nama": "Adenoma Adrenal"
+    },
+    {
+      "kode": "D50.9",
+      "nama": "Anemia"
+    },
+    {
+      "kode": "D62",
+      "nama": "Anemia Perdarahan Akut"
+    },
+    {
+      "kode": "D64.9",
+      "nama": "Anemia tidak spesifik"
+    },
+    {
+      "kode": "D69.6",
+      "nama": "Trombositopenia"
+    },
+    {
+      "kode": "E03.9",
+      "nama": "Hipotiroid"
+    },
+    {
+      "kode": "E05.9",
+      "nama": "Hipertiroid"
+    },
+    {
+      "kode": "E10.9",
+      "nama": "Diabetes Tipe 1"
+    },
+    {
+      "kode": "E11.4",
+      "nama": "Diabetes+Saraf"
+    },
+    {
+      "kode": "E11.5",
+      "nama": "Diabetes+Sirkulasi"
+    },
+    {
+      "kode": "E11.9",
+      "nama": "Diabetes Tipe 2"
+    },
+    {
+      "kode": "E14.9",
+      "nama": "Diabetes"
+    },
+    {
+      "kode": "E50.9",
+      "nama": "Defisiensi Vitamin A"
+    },
+    {
+      "kode": "E55.9",
+      "nama": "Defisiensi Vitamin D"
+    },
+    {
+      "kode": "E61.1",
+      "nama": "Defisiensi Zat Besi"
+    },
+    {
+      "kode": "E66.9",
+      "nama": "Obesitas"
+    },
+    {
+      "kode": "E78.5",
+      "nama": "Kolesterol Tinggi"
+    },
+    {
+      "kode": "E86",
+      "nama": "Dehidrasi"
+    },
+    {
+      "kode": "E87.5",
+      "nama": "Hiperkalemia"
+    },
+    {
+      "kode": "E87.6",
+      "nama": "Hipokalemia"
+    },
+    {
+      "kode": "F10.1",
+      "nama": "Alkohol Berbahaya"
+    },
+    {
+      "kode": "F19.2",
+      "nama": "Ketergantungan Zat"
+    },
+    {
+      "kode": "F32.9",
+      "nama": "Depresi"
+    },
+    {
+      "kode": "F41.9",
+      "nama": "Cemas/Anxietas"
+    },
+    {
+      "kode": "G40.9",
+      "nama": "Epilepsi"
+    },
+    {
+      "kode": "G43.9",
+      "nama": "Migrain"
+    },
+    {
+      "kode": "G45.9",
+      "nama": "TIA/Mini Stroke"
+    },
+    {
+      "kode": "G47.0",
+      "nama": "Insomnia"
+    },
+    {
+      "kode": "G47.3",
+      "nama": "Sleep Apnea"
+    },
+    {
+      "kode": "G50.0",
+      "nama": "Nyeri Wajah"
+    },
+    {
+      "kode": "G54.2",
+      "nama": "Neuralgia Servikal"
+    },
+    {
+      "kode": "G62.9",
+      "nama": "Neuropati Perifer"
+    },
+    {
+      "kode": "G63",
+      "nama": "Neuropati Diabetik"
+    },
+    {
+      "kode": "H10.9",
+      "nama": "Konjungtivitis"
+    },
+    {
+      "kode": "H25.9",
+      "nama": "Katarak"
+    },
+    {
+      "kode": "H26.9",
+      "nama": "Katarak Sekunder"
+    },
+    {
+      "kode": "H35.0",
+      "nama": "Retinopati"
+    },
+    {
+      "kode": "H40.9",
+      "nama": "Glaukoma"
+    },
+    {
+      "kode": "H52.4",
+      "nama": "Presbiopi"
+    },
+    {
+      "kode": "H60.9",
+      "nama": "Otitis Eksterna"
+    },
+    {
+      "kode": "H65.9",
+      "nama": "Otitis Media"
+    },
+    {
+      "kode": "H66.9",
+      "nama": "Otitis Media Supuratif"
+    },
+    {
+      "kode": "H81.3",
+      "nama": "Vertigo"
+    },
+    {
+      "kode": "I10",
+      "nama": "Hipertensi"
+    },
+    {
+      "kode": "I11.9",
+      "nama": "Hipertensi+Jantung"
+    },
+    {
+      "kode": "I20.9",
+      "nama": "Angina Pektoris"
+    },
+    {
+      "kode": "I25.9",
+      "nama": "Jantung Koroner"
+    },
+    {
+      "kode": "I26.9",
+      "nama": "Embolisme Paru"
+    },
+    {
+      "kode": "I42.9",
+      "nama": "Kardiomiopati"
+    },
+    {
+      "kode": "I48.9",
+      "nama": "Fibrilasi Atrium"
+    },
+    {
+      "kode": "I50.9",
+      "nama": "Gagal Jantung"
+    },
+    {
+      "kode": "I51.7",
+      "nama": "Pembesaran Jantung"
+    },
+    {
+      "kode": "I63.9",
+      "nama": "Stroke Iskemik"
+    },
+    {
+      "kode": "I64",
+      "nama": "Stroke"
+    },
+    {
+      "kode": "I70.0",
+      "nama": "Aterosklerosis"
+    },
+    {
+      "kode": "I83.9",
+      "nama": "Varises Kaki"
+    },
+    {
+      "kode": "I84.9",
+      "nama": "Wasir/Hemoroid"
+    },
+    {
+      "kode": "I87.9",
+      "nama": "Insufisiensi Vena"
+    },
+    {
+      "kode": "J00",
+      "nama": "Pilek"
+    },
+    {
+      "kode": "J02.9",
+      "nama": "Faringitis"
+    },
+    {
+      "kode": "J03.9",
+      "nama": "Tonsilitis"
+    },
+    {
+      "kode": "J04.0",
+      "nama": "Laringitis"
+    },
+    {
+      "kode": "J06.9",
+      "nama": "ISPA"
+    },
+    {
+      "kode": "J11",
+      "nama": "Influenza"
+    },
+    {
+      "kode": "J18.9",
+      "nama": "Pneumonia"
+    },
+    {
+      "kode": "J20.9",
+      "nama": "Bronkitis Akut"
+    },
+    {
+      "kode": "J30.4",
+      "nama": "Rinitis Alergi"
+    },
+    {
+      "kode": "J31.0",
+      "nama": "Rinitis Kronik"
+    },
+    {
+      "kode": "J32.9",
+      "nama": "Sinusitis Kronik"
+    },
+    {
+      "kode": "J34.0",
+      "nama": "Policip Hidung"
+    },
+    {
+      "kode": "J35.0",
+      "nama": "Tonsilitis Kronik"
+    },
+    {
+      "kode": "J37.0",
+      "nama": "Laringitis Kronik"
+    },
+    {
+      "kode": "J39.2",
+      "nama": "Faringitis Kronik"
+    },
+    {
+      "kode": "J44.0",
+      "nama": "PPOK Akut"
+    },
+    {
+      "kode": "J44.1",
+      "nama": "PPOK Eksaserbasi"
+    },
+    {
+      "kode": "J45.9",
+      "nama": "Asma"
+    },
+    {
+      "kode": "J47",
+      "nama": "Bronkiektasis"
+    },
+    {
+      "kode": "J81",
+      "nama": "Edema Paru"
+    },
+    {
+      "kode": "J86.9",
+      "nama": "Empiema"
+    },
+    {
+      "kode": "J90",
+      "nama": "Efusi Pleura"
+    },
+    {
+      "kode": "J93.9",
+      "nama": "Pneumotoraks"
+    },
+    {
+      "kode": "J96.0",
+      "nama": "Gagal Napas"
+    },
+    {
+      "kode": "K00.6",
+      "nama": "Gigi Impaksi"
+    },
+    {
+      "kode": "K02.9",
+      "nama": "Karies Gigi"
+    },
+    {
+      "kode": "K04.0",
+      "nama": "Pulpitis"
+    },
+    {
+      "kode": "K05.0",
+      "nama": "Gingivitis Akut"
+    },
+    {
+      "kode": "K05.1",
+      "nama": "Gingivitis Kronik"
+    },
+    {
+      "kode": "K05.3",
+      "nama": "Periodontitis Kronik"
+    },
+    {
+      "kode": "K08.8",
+      "nama": "Nyeri Gigi"
+    },
+    {
+      "kode": "K11.2",
+      "nama": "Batu Liur/Sialolithiasis"
+    },
+    {
+      "kode": "K11.3",
+      "nama": "Abses Kelenjar Ludah"
+    },
+    {
+      "kode": "K12.0",
+      "nama": "Sariawan"
+    },
+    {
+      "kode": "K13.0",
+      "nama": "Lesi Bibir"
+    },
+    {
+      "kode": "K21.0",
+      "nama": "GERD"
+    },
+    {
+      "kode": "K25.9",
+      "nama": "Tukak Lambung"
+    },
+    {
+      "kode": "K26.9",
+      "nama": "Tukak Usus 12 Jari"
+    },
+    {
+      "kode": "K27.9",
+      "nama": "Tukak Usus"
+    },
+    {
+      "kode": "K29.7",
+      "nama": "Gastritis"
+    },
+    {
+      "kode": "K30",
+      "nama": "Dispepsia"
+    },
+    {
+      "kode": "K35.8",
+      "nama": "Apendisitis"
+    },
+    {
+      "kode": "K40.9",
+      "nama": "Hernia Inguinal"
+    },
+    {
+      "kode": "K42.9",
+      "nama": "Hernia Umbilikalis"
+    },
+    {
+      "kode": "K43.9",
+      "nama": "Hernia Ventralis"
+    },
+    {
+      "kode": "K46.9",
+      "nama": "Hernia Abdomen"
+    },
+    {
+      "kode": "K50.9",
+      "nama": "Crohn Disease"
+    },
+    {
+      "kode": "K51.9",
+      "nama": "Kolitis Ulseratif"
+    },
+    {
+      "kode": "K56.7",
+      "nama": "Ileus/Usus Tersumbat"
+    },
+    {
+      "kode": "K57.30",
+      "nama": "Divertikulitis"
+    },
+    {
+      "kode": "K59.0",
+      "nama": "Konstipasi"
+    },
+    {
+      "kode": "K59.1",
+      "nama": "Diare Fungsional"
+    },
+    {
+      "kode": "K60.0",
+      "nama": "Fisura Ani"
+    },
+    {
+      "kode": "K64.9",
+      "nama": "Wasir/Ambeien"
+    },
+    {
+      "kode": "K70.3",
+      "nama": "Sirosis Alkohol"
+    },
+    {
+      "kode": "K74.6",
+      "nama": "Sirosis Hati"
+    },
+    {
+      "kode": "K80.1",
+      "nama": "Batu Empedu"
+    },
+    {
+      "kode": "K85.9",
+      "nama": "Pankreatitis Akut"
+    },
+    {
+      "kode": "K86.1",
+      "nama": "Pankreatitis Kronik"
+    },
+    {
+      "kode": "K92.1",
+      "nama": "Melena/BAB Hitam"
+    },
+    {
+      "kode": "L00",
+      "nama": "Sindrom kulit stafilokokus ​"
+    },
+    {
+      "kode": "L01",
+      "nama": "Impetigo kulit"
+    },
+    {
+      "kode": "L01.0",
+      "nama": "Impetigo"
+    },
+    {
+      "kode": "L02",
+      "nama": "Abses kulit/bisul"
+    },
+    {
+      "kode": "L02.0",
+      "nama": "Abses wajah"
+    },
+    {
+      "kode": "L02.1",
+      "nama": "Abses leher"
+    },
+    {
+      "kode": "L02.2",
+      "nama": "Abses badan"
+    },
+    {
+      "kode": "L02.3",
+      "nama": "Abses bokong"
+    },
+    {
+      "kode": "L02.4",
+      "nama": "Abses tungkai"
+    },
+    {
+      "kode": "L02.5",
+      "nama": "Abses tangan"
+    },
+    {
+      "kode": "L02.6",
+      "nama": "Abses kaki"
+    },
+    {
+      "kode": "L02.8",
+      "nama": "Abses lokasi lain"
+    },
+    {
+      "kode": "L02.9",
+      "nama": "Abses Kulit"
+    },
+    {
+      "kode": "L02.9",
+      "nama": "Abses kulit NOS (termasuk bisul)"
+    },
+    {
+      "kode": "L03",
+      "nama": "Selulitis kulit akut"
+    },
+    {
+      "kode": "L03.9",
+      "nama": "Selulitis"
+    },
+    {
+      "kode": "L04",
+      "nama": "Limfadenitis akut"
+    },
+    {
+      "kode": "L04.9",
+      "nama": "Limfadenitis Akut"
+    },
+    {
+      "kode": "L05",
+      "nama": "Kista pilonidal"
+    },
+    {
+      "kode": "L08.0",
+      "nama": "Infeksi Kulit"
+    },
+    {
+      "kode": "L08.0",
+      "nama": "Pioderma kulit"
+    },
+    {
+      "kode": "L08.1",
+      "nama": "Eritrasma kulit"
+    },
+    {
+      "kode": "L08.8",
+      "nama": "Infeksi kulit lain"
+    },
+    {
+      "kode": "L08.9",
+      "nama": "Infeksi kulit NOS ."
+    },
+    {
+      "kode": "L20.9",
+      "nama": "Eksem Atopik"
+    },
+    {
+      "kode": "L21.9",
+      "nama": "Dermatitis Seboroik"
+    },
+    {
+      "kode": "L23.9",
+      "nama": "Alergi Kulit"
+    },
+    {
+      "kode": "L30.9",
+      "nama": "Dermatitis"
+    },
+    {
+      "kode": "L40.9",
+      "nama": "Psoriasis"
+    },
+    {
+      "kode": "L43.9",
+      "nama": "Lichen Planus"
+    },
+    {
+      "kode": "L50.9",
+      "nama": "Urtikaria/Biduran"
+    },
+    {
+      "kode": "L57.0",
+      "nama": "Keratosis Aktinik"
+    },
+    {
+      "kode": "L60.0",
+      "nama": "Cantengan"
+    },
+    {
+      "kode": "L70.0",
+      "nama": "Jerawat/Akne"
+    },
+    {
+      "kode": "L72.0",
+      "nama": "Kista Kulit"
+    },
+    {
+      "kode": "L90.0",
+      "nama": "Lichen Sklerosis"
+    },
+    {
+      "kode": "M00.9",
+      "nama": "Artritis Septik"
+    },
+    {
+      "kode": "M06.9",
+      "nama": "Arthritis Reumatoid"
+    },
+    {
+      "kode": "M10.9",
+      "nama": "Asam Urat"
+    },
+    {
+      "kode": "M16.9",
+      "nama": "Nyeri Sendi Panggul"
+    },
+    {
+      "kode": "M17.9",
+      "nama": "Nyeri Lutut"
+    },
+    {
+      "kode": "M19.9",
+      "nama": "Osteoartritis"
+    },
+    {
+      "kode": "M25.5",
+      "nama": "Nyeri Sendi"
+    },
+    {
+      "kode": "M35.9",
+      "nama": "Penyakit Jaringan Ikat"
+    },
+    {
+      "kode": "M45",
+      "nama": "Sponsylitis Ankilosa"
+    },
+    {
+      "kode": "M47.9",
+      "nama": "Spondilosis"
+    },
+    {
+      "kode": "M48.0",
+      "nama": "Stenosis Spinal"
+    },
+    {
+      "kode": "M51.1",
+      "nama": "Hernia Nukleus Pulposus"
+    },
+    {
+      "kode": "M54.5",
+      "nama": "Sakit Pinggang"
+    },
+    {
+      "kode": "M62.4",
+      "nama": "Kontraktur Otot"
+    },
+    {
+      "kode": "M65.9",
+      "nama": "Tenosinovitis"
+    },
+    {
+      "kode": "M75.1",
+      "nama": "Rotator Cuff/Bahu Kaku"
+    },
+    {
+      "kode": "M79.1",
+      "nama": "Nyeri Otot"
+    },
+    {
+      "kode": "M79.3",
+      "nama": "Pannikulitis"
+    },
+    {
+      "kode": "M80.9",
+      "nama": "Osteoporosis+Fraktur"
+    },
+    {
+      "kode": "M81.9",
+      "nama": "Osteoporosis"
+    },
+    {
+      "kode": "N04.9",
+      "nama": "Sindrom Nefrotik"
+    },
+    {
+      "kode": "N10",
+      "nama": "Nefritis Tubulointerstisial"
+    },
+    {
+      "kode": "N17.9",
+      "nama": "Gagal Ginjal Akut"
+    },
+    {
+      "kode": "N18.9",
+      "nama": "Gagal Ginjal Kronik"
+    },
+    {
+      "kode": "N20.0",
+      "nama": "Batu Ginjal"
+    },
+    {
+      "kode": "N20.1",
+      "nama": "Batu Ureter"
+    },
+    {
+      "kode": "N23",
+      "nama": "Kolik Ginjal"
+    },
+    {
+      "kode": "N30.0",
+      "nama": "Sistitis Akut"
+    },
+    {
+      "kode": "N30.1",
+      "nama": "Sistitis Interstisial"
+    },
+    {
+      "kode": "N39.0",
+      "nama": "ISK"
+    },
+    {
+      "kode": "N40",
+      "nama": "Prostat Membesar"
+    },
+    {
+      "kode": "N41.0",
+      "nama": "Prostatitis Akut"
+    },
+    {
+      "kode": "N43.3",
+      "nama": "Hidrokel"
+    },
+    {
+      "kode": "N44",
+      "nama": "Torsio Testis"
+    },
+    {
+      "kode": "N45.9",
+      "nama": "Orkhitis/Epididimitis"
+    },
+    {
+      "kode": "N47",
+      "nama": "Fimosis"
+    },
+    {
+      "kode": "N76.0",
+      "nama": "Vaginitis Akut"
+    },
+    {
+      "kode": "N80.9",
+      "nama": "Endometriosis"
+    },
+    {
+      "kode": "N81.4",
+      "nama": "Prolaps Uteri"
+    },
+    {
+      "kode": "N83.2",
+      "nama": "Kista Ovarium"
+    },
+    {
+      "kode": "N89.8",
+      "nama": "Leukore/Keputihan"
+    },
+    {
+      "kode": "N92.0",
+      "nama": "Haid Tidak Teratur"
+    },
+    {
+      "kode": "N93.9",
+      "nama": "Perdarahan Vagina"
+    },
+    {
+      "kode": "N94.6",
+      "nama": "Dismenore"
+    },
+    {
+      "kode": "N95.1",
+      "nama": "Menopause"
+    },
+    {
+      "kode": "O00.9",
+      "nama": "Kehamilan Ektopik"
+    },
+    {
+      "kode": "O03.9",
+      "nama": "Keguguran"
+    },
+    {
+      "kode": "O10.0",
+      "nama": "Hipertensi Hamil"
+    },
+    {
+      "kode": "O14.1",
+      "nama": "Pre-eklampsia"
+    },
+    {
+      "kode": "O20.0",
+      "nama": "Ancaman Keguguran"
+    },
+    {
+      "kode": "O21.0",
+      "nama": "Mual Hamil"
+    },
+    {
+      "kode": "O26.9",
+      "nama": "Komplikasi Kehamilan"
+    },
+    {
+      "kode": "O42.0",
+      "nama": "Ketuban Pecah Dini"
+    },
+    {
+      "kode": "O60.1",
+      "nama": "Persalinan Preterm"
+    },
+    {
+      "kode": "O69.9",
+      "nama": "Komplikasi Tali Pusat"
+    },
+    {
+      "kode": "O80",
+      "nama": "Persalinan Normal"
+    },
+    {
+      "kode": "O85",
+      "nama": "Sepsis Nifas"
+    },
+    {
+      "kode": "O86.0",
+      "nama": "Infeksi Luka Jahitan"
+    },
+    {
+      "kode": "P07.1",
+      "nama": "BBLR"
+    },
+    {
+      "kode": "P22.0",
+      "nama": "Sesak Napas Bayi"
+    },
+    {
+      "kode": "P59.9",
+      "nama": "Kuning Bayi"
+    },
+    {
+      "kode": "Q21.1",
+      "nama": "VSD/Jantung Bocor"
+    },
+    {
+      "kode": "Q35.9",
+      "nama": "Celah Langit-langit"
+    },
+    {
+      "kode": "Q36.9",
+      "nama": "Bibir Sumbing"
+    },
+    {
+      "kode": "Q65.0",
+      "nama": "Dislokasi Panggul Bawaan"
+    },
+    {
+      "kode": "Q66.0",
+      "nama": "Kaki Pengkor Bawaan"
+    },
+    {
+      "kode": "R00.0",
+      "nama": "Takikardia"
+    },
+    {
+      "kode": "R04.0",
+      "nama": "Mimisan"
+    },
+    {
+      "kode": "R05",
+      "nama": "Batuk"
+    },
+    {
+      "kode": "R06.0",
+      "nama": "Sesak Napas"
+    },
+    {
+      "kode": "R06.2",
+      "nama": "Ngik-ngik/Wheezing"
+    },
+    {
+      "kode": "R07.4",
+      "nama": "Nyeri Dada"
+    },
+    {
+      "kode": "R09.0",
+      "nama": "Asfiksia"
+    },
+    {
+      "kode": "R10.4",
+      "nama": "Nyeri Perut"
+    },
+    {
+      "kode": "R11",
+      "nama": "Mual Muntah"
+    },
+    {
+      "kode": "R19.7",
+      "nama": "Diare"
+    },
+    {
+      "kode": "R20.2",
+      "nama": "Kesemutan"
+    },
+    {
+      "kode": "R25.2",
+      "nama": "Kram Otot"
+    },
+    {
+      "kode": "R33",
+      "nama": "Retensi Urin"
+    },
+    {
+      "kode": "R35",
+      "nama": "Sering Buang Air Kecil"
+    },
+    {
+      "kode": "R41.3",
+      "nama": "Gangguan Memori"
+    },
+    {
+      "kode": "R42",
+      "nama": "Pusing/Vertigo"
+    },
+    {
+      "kode": "R45.1",
+      "nama": "Gelisah"
+    },
+    {
+      "kode": "R50.9",
+      "nama": "Demam"
+    },
+    {
+      "kode": "R51",
+      "nama": "Sakit Kepala"
+    },
+    {
+      "kode": "R53.83",
+      "nama": "Other fatigue"
+    },
+    {
+      "kode": "R55",
+      "nama": "Pingsan/Sinkop"
+    },
+    {
+      "kode": "R56.0",
+      "nama": "Kejang Demam"
+    },
+    {
+      "kode": "R60.0",
+      "nama": "Edema Tungkai"
+    },
+    {
+      "kode": "R63.0",
+      "nama": "Anoreksia"
+    },
+    {
+      "kode": "R68.0",
+      "nama": "Hipotermia"
+    },
+    {
+      "kode": "R73.0",
+      "nama": "Prediabetes"
+    },
+    {
+      "kode": "R73.0",
+      "nama": "Gula Darah Tinggi"
+    },
+    {
+      "kode": "R73.09",
+      "nama": "Hiperglikemia"
+    },
+    {
+      "kode": "R74.0",
+      "nama": "Enzim Hati Tinggi"
+    },
+    {
+      "kode": "S00.0",
+      "nama": "Luka Lecet Kepala"
+    },
+    {
+      "kode": "S00.9",
+      "nama": "Cedera Kepala"
+    },
+    {
+      "kode": "S01.0",
+      "nama": "Luka Kepala"
+    },
+    {
+      "kode": "S01.2",
+      "nama": "Luka Hidung"
+    },
+    {
+      "kode": "S01.5",
+      "nama": "Luka Mulut"
+    },
+    {
+      "kode": "S01.9",
+      "nama": "Vulnus Laseratum"
+    },
+    {
+      "kode": "S09.9",
+      "nama": "Cedera Kepala ringan"
+    },
+    {
+      "kode": "S11.9",
+      "nama": "VL Leher"
+    },
+    {
+      "kode": "S21.9",
+      "nama": "VL Dada"
+    },
+    {
+      "kode": "S31.9",
+      "nama": "VL Perut"
+    },
+    {
+      "kode": "S32.0",
+      "nama": "Patah Tulang Belakang"
+    },
+    {
+      "kode": "S41.1",
+      "nama": "VL Lengan Atas"
+    },
+    {
+      "kode": "S42.9",
+      "nama": "Patah Bahu/Selangka"
+    },
+    {
+      "kode": "S51.9",
+      "nama": "VL Lengan Bawah"
+    },
+    {
+      "kode": "S52.9",
+      "nama": "Patah Tulang Lengan"
+    },
+    {
+      "kode": "S61.9",
+      "nama": "VL Tangan"
+    },
+    {
+      "kode": "S62.3",
+      "nama": "Patah Tangan"
+    },
+    {
+      "kode": "S71.1",
+      "nama": "VL Paha"
+    },
+    {
+      "kode": "S72.9",
+      "nama": "Patah Tulang Paha"
+    },
+    {
+      "kode": "S81.9",
+      "nama": "VL Tungkai Bawah"
+    },
+    {
+      "kode": "S82.9",
+      "nama": "Patah Tulang Betis"
+    },
+    {
+      "kode": "S91.3",
+      "nama": "VL Kaki"
+    },
+    {
+      "kode": "T09.1",
+      "nama": "Luka Terbuka Punggung"
+    },
+    {
+      "kode": "T14.0",
+      "nama": "Luka Dangkal"
+    },
+    {
+      "kode": "T14.1",
+      "nama": "Luka Terbuka"
+    },
+    {
+      "kode": "T14.9",
+      "nama": "Cedera tidak spesifik"
+    },
+    {
+      "kode": "T20",
+      "nama": "Luka bakar dan korosi pada kepala, wajah, dan leher"
+    },
+    {
+      "kode": "T21",
+      "nama": "Luka bakar dan korosi pada batang tubuh (thoraks, abdomen, punggung)"
+    },
+    {
+      "kode": "T22",
+      "nama": "Luka bakar dan korosi pada bahu dan lengan, kecuali pergelangan dan tangan"
+    },
+    {
+      "kode": "T23",
+      "nama": "Luka bakar dan korosi pada pergelangan tangan dan tangan"
+    },
+    {
+      "kode": "T24",
+      "nama": "Luka bakar dan korosi pada pinggul dan tungkai bawah, kecuali pergelangan kaki dan kaki"
+    },
+    {
+      "kode": "T25",
+      "nama": "Luka bakar dan korosi pada pergelangan kaki dan kaki"
+    },
+    {
+      "kode": "T30.0",
+      "nama": "Luka Bakar"
+    },
+    {
+      "kode": "T30.1",
+      "nama": "Luka bakar derajat I (superfisial), lokasi tidak spesifik"
+    },
+    {
+      "kode": "T30.2",
+      "nama": "Luka bakar derajat II (parsial ketebalan), lokasi tidak spesifik"
+    },
+    {
+      "kode": "T30.3",
+      "nama": "Luka bakar derajat III (penuh ketebalan, sampai otot/tulang), lokasi tidak spesifik"
+    },
+    {
+      "kode": "T31.0",
+      "nama": "Luka bakar yang melibatkan <10% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.1",
+      "nama": "Luka bakar yang melibatkan 10–19% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.2",
+      "nama": "Luka bakar yang melibatkan 20–29% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.3",
+      "nama": "Luka bakar yang melibatkan 30–39% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.4",
+      "nama": "Luka bakar yang melibatkan 40–49% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.5",
+      "nama": "Luka bakar yang melibatkan 50–59% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.6",
+      "nama": "Luka bakar yang melibatkan 60–69% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.7",
+      "nama": "Luka bakar yang melibatkan 70–79% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.8",
+      "nama": "Luka bakar yang melibatkan 80–89% luas permukaan tubuh"
+    },
+    {
+      "kode": "T31.9",
+      "nama": "Luka bakar yang melibatkan ≥90% luas permukaan tubuh"
+    },
+    {
+      "kode": "T63.4",
+      "nama": "Gigitan Serangga"
+    },
+    {
+      "kode": "T78.1",
+      "nama": "Reaksi Alergi Makanan"
+    },
+    {
+      "kode": "T78.4",
+      "nama": "Alergi"
+    },
+    {
+      "kode": "U07.1",
+      "nama": "COVID-19"
+    },
+    {
+      "kode": "V01",
+      "nama": "Pejalan kaki cedera tabrakan sepeda (lalin)"
+    },
+    {
+      "kode": "V02",
+      "nama": "Pejalan kaki cedera tabrakan motor (lalin)"
+    },
+    {
+      "kode": "V03",
+      "nama": "Pejalan kaki cedera tabrakan mobil/pick up/van (lalin)"
+    },
+    {
+      "kode": "V05",
+      "nama": "Pejalan kaki cedera tabrakan bus/truk (lalin)"
+    },
+    {
+      "kode": "V09",
+      "nama": "Pejalan kaki cedera kecelakaan lalu lintas lain/tidak spesifik"
+    },
+    {
+      "kode": "V20",
+      "nama": "Pengendara motor cedera tabrakan pejalan kaki/hewan (lalin)"
+    },
+    {
+      "kode": "V21",
+      "nama": "Pengendara motor cedera tabrakan sepeda (lalin)"
+    },
+    {
+      "kode": "V22",
+      "nama": "Pengendara motor cedera tabrakan motor (lalin)"
+    },
+    {
+      "kode": "V23",
+      "nama": "Pengendara motor cedera tabrakan mobil/pick up/van (lalin)"
+    },
+    {
+      "kode": "V24",
+      "nama": "Pengendara motor cedera tabrakan bus/truk (lalin)"
+    },
+    {
+      "kode": "V28",
+      "nama": "Pengendara motor cedera tabrakan objek tetap/benda lain (lalin)"
+    },
+    {
+      "kode": "V29",
+      "nama": "Pengendara motor cedera kecelakaan lalu lintas lain/tidak spesifik"
+    },
+    {
+      "kode": "V40",
+      "nama": "Penumpang/pengemudi mobil cedera tabrakan pejalan kaki/hewan (lalin)"
+    },
+    {
+      "kode": "V41",
+      "nama": "Penumpang/pengemudi mobil cedera tabrakan sepeda (lalin)"
+    },
+    {
+      "kode": "V42",
+      "nama": "Penumpang/pengemudi mobil cedera tabrakan motor (lalin)"
+    },
+    {
+      "kode": "V43",
+      "nama": "Penumpang/pengemudi mobil cedera tabrakan mobil/pick up/van (lalin)"
+    },
+    {
+      "kode": "V44",
+      "nama": "Penumpang/pengemudi mobil cedera tabrakan bus/truk (lalin)"
+    },
+    {
+      "kode": "V47",
+      "nama": "Penumpang/pengemudi mobil cedera tabrakan objek tetap (lalin)"
+    },
+    {
+      "kode": "V48",
+      "nama": "Penumpang/pengemudi mobil cedera kecelakaan non‑tabrakan (lalin)"
+    },
+    {
+      "kode": "V49",
+      "nama": "Penumpang/pengemudi mobil cedera kecelakaan lalu lintas lain/tidak spesifik"
+    },
+    {
+      "kode": "V70",
+      "nama": "Penumpang/pengemudi bus cedera tabrakan pejalan kaki/hewan (lalin)"
+    },
+    {
+      "kode": "V71",
+      "nama": "Penumpang/pengemudi bus cedera tabrakan sepeda (lalin)"
+    },
+    {
+      "kode": "V72",
+      "nama": "Penumpang/pengemudi bus cedera tabrakan motor (lalin)"
+    },
+    {
+      "kode": "V73",
+      "nama": "Penumpang/pengemudi bus cedera tabrakan mobil/pick up/van (lalin)"
+    },
+    {
+      "kode": "V74",
+      "nama": "Penumpang/pengemudi bus cedera tabrakan truk lain (lalin)"
+    },
+    {
+      "kode": "V77",
+      "nama": "Penumpang/pengemudi bus cedera tabrakan beberapa kendaraan (lalin)"
+    },
+    {
+      "kode": "V78",
+      "nama": "Penumpang/pengemudi bus cedera tabrakan objek tetap (lalin)"
+    },
+    {
+      "kode": "V79",
+      "nama": "Penumpang/pengemudi bus cedera kecelakaan lalu lintas lain/tidak spesifik"
+    },
+    {
+      "kode": "W19",
+      "nama": "Jatuh"
+    },
+    {
+      "kode": "W50",
+      "nama": "Terpukul/Tertendang"
+    },
+    {
+      "kode": "X49",
+      "nama": "Keracunan"
+    },
+    {
+      "kode": "Z00.0",
+      "nama": "Cek Kesehatan"
+    },
+    {
+      "kode": "Z01.0",
+      "nama": "Cek Mata"
+    },
+    {
+      "kode": "Z01.1",
+      "nama": "Cek THT"
+    },
+    {
+      "kode": "Z13.1",
+      "nama": "Skrining Hipertensi"
+    },
+    {
+      "kode": "Z20.820",
+      "nama": "Kontak/paparan varisela"
+    },
+    {
+      "kode": "Z22.3",
+      "nama": "Kontak TB"
+    },
+    {
+      "kode": "Z23",
+      "nama": "Imunisasi Vaksin"
+    },
+    {
+      "kode": "Z23",
+      "nama": "Imunisasi/vaksinasi varisela"
+    },
+    {
+      "kode": "Z25.1",
+      "nama": "Imunisasi Hepatitis B"
+    },
+    {
+      "kode": "Z27.0",
+      "nama": "Imunisasi Ganda"
+    },
+    {
+      "kode": "Z29.0",
+      "nama": "Karantina"
+    },
+    {
+      "kode": "Z30.0",
+      "nama": "Konseling KB"
+    },
+    {
+      "kode": "Z30.1",
+      "nama": "Pasang IUD"
+    },
+    {
+      "kode": "Z30.3",
+      "nama": "Pasang Implan"
+    },
+    {
+      "kode": "Z34.0",
+      "nama": "ANC/Hamil Normal"
+    },
+    {
+      "kode": "Z34.1",
+      "nama": "ANC Trimester II"
+    },
+    {
+      "kode": "Z34.2",
+      "nama": "ANC Trimester III"
+    },
+    {
+      "kode": "Z35.0",
+      "nama": "Pengawasan Hamil Risiko"
+    },
+    {
+      "kode": "Z39.1",
+      "nama": "Konseling Menyusui"
+    },
+    {
+      "kode": "Z39.2",
+      "nama": "Kontrasepsi"
+    },
+    {
+      "kode": "Z48.0",
+      "nama": "Pasca Operasi"
+    },
+    {
+      "kode": "Z48.1",
+      "nama": "Rawat Luka Ops"
+    },
+    {
+      "kode": "Z48.8",
+      "nama": "Perawatan Pasca Tindakan"
+    },
+    {
+      "kode": "Z48.9",
+      "nama": "Pasca Operasi"
+    },
+    {
+      "kode": "Z51.1",
+      "nama": "Kemoterapi"
+    },
+    {
+      "kode": "Z51.5",
+      "nama": "Perawatan Paliatif"
+    },
+    {
+      "kode": "Z71.1",
+      "nama": "Konseling Gizi"
+    },
+    {
+      "kode": "Z71.3",
+      "nama": "Konseling Diet"
+    },
+    {
+      "kode": "Z76.0",
+      "nama": "Ambil Resep"
+    },
+    {
+      "kode": "Z96.6",
+      "nama": "Implan Ortopedi"
+    }
+  ],
+  "records": [
+    {
+      "nikPabrik": "",
+      "namaPasien": "A Fauzi",
+      "dept": "",
+      "tanggal": "15/8/2026",
+      "keluhan": "test",
+      "objektif": "TD: 12, Nadi: 123, Suhu: 31, BB: 13, TB: 31. 123",
+      "asesmen": "undefined - undefined",
+      "plan": "BLOOD LANCET 3x1 No.1 (sesudah makan); AMLODIPINE 5 MG TAB 3x1 No.1 (sesudah makan)",
+      "resep": [
+        {
+          "namaObat": "BLOOD LANCET",
+          "dosage": "3x1",
+          "qty": 1,
+          "aturan": "sesudah makan"
+        },
+        {
+          "namaObat": "AMLODIPINE 5 MG TAB",
+          "dosage": "3x1",
+          "qty": 1,
+          "aturan": "sesudah makan"
+        }
+      ],
+      "pemeriksa": "dr. Dylan Fadhilah",
+      "izinSakit": false,
+      "isPantauan": false,
+      "linkFoto": "",
+      "id": "REC-1786786018737",
+      "created_at": "2026-08-15T09:26:58.738Z"
+    }
+  ]
+}
