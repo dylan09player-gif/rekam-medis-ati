@@ -17,19 +17,33 @@
 </head>
 <body>
 
-  <!-- GATE LOGIN OVERLAY (Pass: 231067) -->
+  <!-- GATE LOGIN OVERLAY — Full-Screen Secure Access -->
   <div id="gate-login-overlay" class="gate-overlay">
     <div class="gate-card">
-      <div class="gate-icon">🔐</div>
-      <h2 class="gate-title">Login Klinik</h2>
-      <p class="gate-sub">Masukkan Kode Akses</p>
+      <div class="gate-header">
+        <div class="gate-shield">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2 class="gate-title">Mobile Klinik System</h2>
+        <p class="gate-sub">PT ATI &amp; ATI Medika — Akses Terbatas</p>
+      </div>
       
       <form id="form-gate-login" onsubmit="handleGateLogin(event)">
-        <div class="form-group" style="margin-bottom: 20px;">
-          <input type="password" id="gate-password-input" class="form-control gate-input" placeholder="Password..." required autofocus>
+        <div class="gate-input-group">
+          <label class="gate-label" for="gate-password-input">Kode Akses Klinik</label>
+          <div class="gate-input-wrap">
+            <i class="fa-solid fa-lock gate-input-icon"></i>
+            <input type="password" id="gate-password-input" class="gate-input" placeholder="Masukkan password..." required autofocus>
+          </div>
         </div>
-        <button type="submit" class="btn btn-gate-submit">MASUK</button>
+        <button type="submit" class="btn-gate-submit">
+          <i class="fa-solid fa-right-to-bracket"></i> MASUK KE SISTEM
+        </button>
       </form>
+
+      <div class="gate-footer">
+        <i class="fa-solid fa-circle-info"></i> Hubungi administrator jika lupa kode akses
+      </div>
     </div>
   </div>
 
