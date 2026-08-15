@@ -104,48 +104,60 @@
             
             <!-- Scan / Cari NIK Pabrik atau Nama Pasien -->
             <div class="patient-select-bar">
-              <input type="text" id="poli-search-nik" class="form-control" placeholder="Scan / Ketik NIK Pabrik atau Nama Karyawan..." onkeyup="if(event.key==='Enter') searchPatientByNIK()">
-              <button class="btn btn-primary" onclick="searchPatientByNIK()">
+              <div style="position: relative; flex: 1;">
+                <input type="text" id="poli-search-nik" class="form-control" placeholder="Scan / Ketik NIK Pabrik atau Nama Karyawan..." onkeyup="if(event.key==='Enter') searchPatientByNIK()" style="padding-left: 36px;">
+                <i class="fa-solid fa-id-card" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+              </div>
+              <button class="btn btn-primary" onclick="searchPatientByNIK()" style="padding: 0 18px;">
                 <i class="fa-solid fa-magnifying-glass"></i> CARI
               </button>
             </div>
 
             <!-- Patient Quick Info Badge -->
-            <div id="poli-patient-info-box" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: none;">
-              <div style="font-weight: 700; color: var(--primary-light);" id="poli-info-nama">Nama Pasien</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);" id="poli-info-sub">NIK Pabrik: - | Dept: -</div>
+            <div id="poli-patient-info-box" class="patient-info-banner" style="display: none;">
+              <div>
+                <div class="banner-name" id="poli-info-nama">Nama Pasien</div>
+                <div class="banner-sub" id="poli-info-sub">NIK Pabrik: - | Dept: -</div>
+              </div>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('poli-search-nik').value=''; document.getElementById('poli-patient-info-box').style.display='none'; appData.currentPoliPatient=null;" title="Ganti Pasien">
+                <i class="fa-solid fa-xmark"></i> Ganti
+              </button>
             </div>
 
             <form id="form-poli-entry" onsubmit="handleSavePoli(event)">
 
               <!-- 1. KELUHAN UTAMA (Subjektif - S) -->
               <div class="form-group">
-                <label class="form-label marunda-section-label">1. KELUHAN UTAMA (Subjektif)</label>
-                <textarea id="poli-keluhan" class="form-control" placeholder="Keluhan utama, riwayat penyakit sekarang, gejala..." required></textarea>
+                <label class="form-label marunda-section-label">
+                  <span class="soap-chip soap-chip-s">S</span> 1. KELUHAN UTAMA (Subjektif)
+                </label>
+                <textarea id="poli-keluhan" class="form-control" placeholder="Keluhan utama pasien, riwayat penyakit sekarang, gejala..." required></textarea>
               </div>
 
               <!-- 2. TTV / PEMERIKSAAN (Objektif - O) -->
               <div class="form-group">
-                <label class="form-label marunda-section-label">2. TTV / PEMERIKSAAN (Objektif)</label>
+                <label class="form-label marunda-section-label">
+                  <span class="soap-chip soap-chip-o">O</span> 2. TTV &amp; PEMERIKSAAN FISIK (Objektif)
+                </label>
                 <div class="vitals-grid">
                   <div class="vital-item">
-                    <label class="form-label">TD (mmHg)</label>
+                    <label><i class="fa-solid fa-heart-pulse" style="color:#ef4444;"></i> TD (mmHg)</label>
                     <input type="text" id="poli-td" class="form-control" placeholder="120/80">
                   </div>
                   <div class="vital-item">
-                    <label class="form-label">Nadi (bpm)</label>
+                    <label><i class="fa-solid fa-wave-square" style="color:#0ea5e9;"></i> Nadi (bpm)</label>
                     <input type="text" id="poli-nadi" class="form-control" placeholder="80">
                   </div>
                   <div class="vital-item">
-                    <label class="form-label">Suhu (°C)</label>
+                    <label><i class="fa-solid fa-temperature-three-quarters" style="color:#f59e0b;"></i> Suhu (°C)</label>
                     <input type="text" id="poli-suhu" class="form-control" placeholder="36.5">
                   </div>
                   <div class="vital-item">
-                    <label class="form-label">BB (kg)</label>
+                    <label><i class="fa-solid fa-weight-scale" style="color:#10b981;"></i> BB (kg)</label>
                     <input type="text" id="poli-bb" class="form-control" placeholder="65">
                   </div>
                   <div class="vital-item">
-                    <label class="form-label">TB (cm)</label>
+                    <label><i class="fa-solid fa-ruler-vertical" style="color:#8b5cf6;"></i> TB (cm)</label>
                     <input type="text" id="poli-tb" class="form-control" placeholder="168">
                   </div>
                 </div>
@@ -154,64 +166,74 @@
 
               <!-- 3. DIAGNOSIS (MULTI - ICD 10) (Asesmen - A) -->
               <div class="form-group">
-                <label class="form-label marunda-section-label">3. DIAGNOSIS (MULTI - ICD 10)</label>
+                <label class="form-label marunda-section-label">
+                  <span class="soap-chip soap-chip-a">A</span> 3. DIAGNOSIS (MULTI - ICD 10)
+                </label>
                 <div id="container-icd10-list">
                   <!-- Dynamic ICD10 Select Inputs -->
                 </div>
-                <button type="button" class="btn btn-sm btn-secondary" style="width: 100%; margin-top: 6px;" onclick="addICD10Row()">
-                  + TAMBAH DIAGNOSIS
+                <button type="button" class="btn btn-sm btn-secondary btn-block" style="margin-top: 6px;" onclick="addICD10Row()">
+                  <i class="fa-solid fa-plus"></i> Tambah Diagnosis
                 </button>
               </div>
 
               <!-- 4. RESEP OBAT (STOK TERLIHAT & AUTO REDUCT) (Plan - P) -->
               <div class="form-group">
-                <label class="form-label marunda-section-label">4. RESEP OBAT (STOK TERLIHAT & BERKURANG OTOMATIS)</label>
+                <label class="form-label marunda-section-label">
+                  <span class="soap-chip soap-chip-p">P</span> 4. RESEP OBAT (Stok Live &amp; Berkurang Otomatis)
+                </label>
                 <table class="resep-table">
                   <thead>
                     <tr>
-                      <th style="width: 40%;">Obat & Stok Available</th>
+                      <th style="width: 40%;">Obat &amp; Stok</th>
                       <th style="width: 18%;">Dosis</th>
-                      <th style="width: 18%;">Jumlah</th>
-                      <th style="width: 24%;">Aturan Pakai</th>
-                      <th></th>
+                      <th style="width: 16%;">Jumlah</th>
+                      <th style="width: 22%;">Aturan Pakai</th>
+                      <th style="width: 4%;"></th>
                     </tr>
                   </thead>
                   <tbody id="poli-resep-body">
                     <!-- Dynamic Medicine Rows with Live Stock -->
                   </tbody>
                 </table>
-                <button type="button" class="btn btn-sm btn-secondary" style="width: 100%;" onclick="addPoliMedicineRow()">
-                  + TAMBAH OBAT
+                <button type="button" class="btn btn-sm btn-secondary btn-block" onclick="addPoliMedicineRow()">
+                  <i class="fa-solid fa-plus"></i> Tambah Obat
                 </button>
               </div>
 
               <!-- 5. NAMA NAKES / PEMERIKSA -->
               <div class="form-group">
-                <label class="form-label marunda-section-label">5. NAMA NAKES / PEMERIKSA</label>
+                <label class="form-label marunda-section-label">
+                  <i class="fa-solid fa-user-doctor"></i> 5. NAMA NAKES / PEMERIKSA
+                </label>
                 <input type="text" id="poli-pemeriksa" class="form-control" value="dr. Dylan Fadhilah" required>
                 <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
                   <input type="checkbox" id="poli-izin-sakit" style="width: 18px; height: 18px;">
-                  <label for="poli-izin-sakit" style="font-weight: 600; font-size: 0.9rem;">Izin Sakit / Surkes?</label>
+                  <label for="poli-izin-sakit" style="font-weight: 700; font-size: 0.88rem; cursor: pointer;">
+                    <i class="fa-solid fa-file-medical"></i> Izin Sakit / Surat Istirahat Dokter (Surkes)?
+                  </label>
                 </div>
               </div>
 
               <!-- RED BANNER: TANDAI PASIEN DALAM PANTAUAN -->
               <div class="pantauan-banner">
                 <input type="checkbox" id="poli-pantauan" style="width: 20px; height: 20px;">
-                <label for="poli-pantauan" style="font-weight: 700; color: #ef4444; font-size: 0.95rem;">
-                  🔴 TANDAI PASIEN DALAM PANTAUAN
+                <label for="poli-pantauan">
+                  <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
                 </label>
               </div>
 
               <!-- 6. UPLOAD FOTO / DOKUMEN REKAM MEDIS (Opsional) -->
               <div class="form-group">
-                <label class="form-label marunda-section-label">6. UPLOAD FOTO / DOKUMEN REKAM MEDIS (Opsional)</label>
+                <label class="form-label marunda-section-label">
+                  <i class="fa-solid fa-paperclip"></i> 6. UPLOAD FOTO / DOKUMEN REKAM MEDIS (Opsional)
+                </label>
                 <input type="file" id="poli-upload-file" class="form-control" accept="image/*,.pdf">
               </div>
 
               <!-- Submit Button -->
-              <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1rem; margin-top: 10px;">
-                <i class="fa-solid fa-floppy-disk"></i> SIMPAN REKAM MEDIS
+              <button type="submit" class="btn btn-primary btn-block" style="padding: 13px; font-size: 0.95rem; font-weight: 800; margin-top: 12px;">
+                <i class="fa-solid fa-floppy-disk"></i> SIMPAN REKAM MEDIS &amp; POTONG STOK
               </button>
 
             </form>
@@ -349,7 +371,7 @@
 
           <!-- VIEW 2: STOK OPNAME MANUAL (PT ATI) -->
           <div id="gudang-view-opname" style="display: none;">
-            <div style="background: rgba(2, 132, 199, 0.15); border: 1px solid rgba(2, 132, 199, 0.4); border-radius: 8px; padding: 14px; margin-bottom: 16px; font-size: 0.88rem; color: #7dd3fc;">
+            <div class="info-banner info-banner-blue" style="margin-bottom: 16px;">
               ℹ️ Pilih tanggal dan cetak lembar stok opname fisik obat untuk dichecklist manual saat kunjungan ke PT ATI.
             </div>
 
@@ -391,7 +413,7 @@
       <div class="glass-card" style="max-width: 750px; margin: 0 auto;">
         <h2><i class="fa-solid fa-capsules" style="color: var(--warning);"></i> 💊 Permintaan Obat ke Apotek Nafila</h2>
         
-        <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 12px 16px; margin: 16px 0 24px 0; font-size: 0.88rem; color: #fcd34d;">
+        <div class="info-banner info-banner-yellow" style="margin: 16px 0 24px 0;">
           ⚠️ Form ini hanya mengirimkan <strong>PERMINTAAN via WhatsApp</strong> secara otomatis ke nomor WhatsApp Apoteker Nafila.
         </div>
 
@@ -554,21 +576,21 @@
       <div class="glass-card" style="margin-bottom: 20px;">
         
         <!-- CARDS STATISTIK K3 / HSE OVERVIEW -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
-          <div style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 16px;">
-            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">TOTAL KUNJUNGAN K3</div>
-            <div id="hse-stat-total-visits" style="font-size: 1.6rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">0</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Rekam Medis Terdata</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px;">
+          <div class="stat-card">
+            <div class="stat-label">Total Kunjungan K3</div>
+            <div id="hse-stat-total-visits" class="stat-value" style="color: var(--info);">0</div>
+            <div class="stat-sub">Rekam Medis Terdata</div>
           </div>
-          <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px;">
-            <div style="font-size: 0.8rem; color: #fca5a5; font-weight: 600;">PASIEN PANTAUAN (HIGH RISK)</div>
-            <div id="hse-stat-pantauan-count" style="font-size: 1.6rem; font-weight: 800; color: #ef4444; margin-top: 4px;">0</div>
-            <div style="font-size: 0.75rem; color: #fca5a5; margin-top: 4px;">Karyawan Perlu Monitoring</div>
+          <div class="stat-card">
+            <div class="stat-label">Pasien Pantauan</div>
+            <div id="hse-stat-pantauan-count" class="stat-value" style="color: var(--danger);">0</div>
+            <div class="stat-sub">High Risk — Perlu Monitoring</div>
           </div>
-          <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 16px;">
-            <div style="font-size: 0.8rem; color: #fcd34d; font-weight: 600;">SURKES / IZIN SAKIT</div>
-            <div id="hse-stat-surkes-count" style="font-size: 1.6rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">0</div>
-            <div style="font-size: 0.75rem; color: #fcd34d; margin-top: 4px;">Kasus Istirahat Sakit</div>
+          <div class="stat-card">
+            <div class="stat-label">Surkes / Izin Sakit</div>
+            <div id="hse-stat-surkes-count" class="stat-value" style="color: var(--warning);">0</div>
+            <div class="stat-sub">Kasus Istirahat Sakit</div>
           </div>
         </div>
 
@@ -625,7 +647,7 @@
 
         <!-- SUB-TAB 2: PASIEN PANTAUAN -->
         <div id="hse-subtab-pantauan" style="display: none;">
-          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.88rem; color: #fca5a5;">
+          <div class="info-banner info-banner-red" style="margin-bottom: 16px;">
             ⚠️ Pasien di bawah ini sedang dalam kondisi perlu dipantau oleh Tim HSE & Medis.
           </div>
           <div class="table-responsive">
@@ -689,15 +711,16 @@
               <select id="mj-tahun" class="form-control" style="width: 140px;"></select>
               <button class="btn btn-primary" onclick="renderAnalisisObat()">Go</button>
             </div>
-            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 20px; text-align: center;">
-              <h3 style="color: var(--success); font-size: 1.4rem;">Total Modal Pemakaian Obat: <span id="mj-modal-total">Rp 0</span></h3>
-              <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 6px;">Batas Target Anggaran Efisiensi: Rp 2.000.000 / Bulan</p>
+            <div class="info-banner info-banner-green" style="padding: 20px; text-align: center; border-radius: 12px;">
+              <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; margin-bottom: 6px;">Total Modal Pemakaian Obat</div>
+              <div style="font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em;" id="mj-modal-total">Rp 0</div>
+              <p style="font-size: 0.78rem; opacity: 0.7; margin-top: 6px;">Target Anggaran Efisiensi: Rp 2.000.000 / Bulan</p>
             </div>
           </div>
 
           <!-- 2. BILLING PT -->
           <div id="mj-tab-billing" style="display: none; margin-top: 16px;">
-            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 0.88rem; color: #7dd3fc;">
+            <div class="info-banner info-banner-blue" style="margin-bottom: 14px;">
               🧾 Laporan tagihan &amp; akumulasi biaya berobat rawat jalan karyawan PT. Andalan Manis Sejahtera &amp; PT ATI.
             </div>
             <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
@@ -806,8 +829,8 @@
               <li>Sheet "Obat": kolom nama, stok, satuan, kategori</li>
               <li>Sheet "Karyawan": kolom nikPabrik, nama, dept, gender, tglLahir, hp</li>
             </ul>
-            <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 0.7rem; max-height: 220px; overflow-y: auto; color: #86efac; line-height: 1.5;">
-              <pre style="margin:0;white-space:pre-wrap;">// == KLINIK ATI: GOOGLE APPS SCRIPT (TARGETED) ==
+            <div class="code-block">
+              <pre>// == KLINIK ATI: GOOGLE APPS SCRIPT (TARGETED) ==
 var SPREADSHEET_ID = "1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY";
 
 function getSpreadsheet() {

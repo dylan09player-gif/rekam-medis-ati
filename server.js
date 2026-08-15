@@ -879,9 +879,11 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`=================================================`);
   console.log(`Mobile Klinik System PT ATI running on port ${PORT}`);
-  console.log(`System status: READY & SECURE`);
+  console.log(`- Akses Lokal:  http://localhost:${PORT}`);
+  console.log(`- Akses Wi-Fi:  http://10.125.149.122:${PORT} (atau sesuaikan IP Wi-Fi Anda)`);
+  console.log(`System status: READY & SECURE (Bisa dibuka via HP/Tablet di Wi-Fi yang sama)`);
   console.log(`=================================================`);
 });

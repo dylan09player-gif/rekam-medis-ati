@@ -191,7 +191,7 @@ function addICD10Row(defaultValue = '') {
   const container = document.getElementById('container-icd10-list');
   const div = document.createElement('div');
   div.className = 'icd10-row';
-  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
 
   let selectHTML = `<select class="form-control select-icd10" style="flex: 1;"><option value="">-- Pilih Diagnosis ICD-10 --</option>`;
   appData.icd10.forEach(item => {
@@ -201,7 +201,7 @@ function addICD10Row(defaultValue = '') {
     const sel = (defaultValue && (code === defaultValue || desc === defaultValue || label === defaultValue)) ? 'selected' : '';
     selectHTML += `<option value="${label}" ${sel}>${label}</option>`;
   });
-  selectHTML += `</select><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus Diagnosis">&times;</button>`;
+  selectHTML += `</select><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus Diagnosis" style="width: 38px; height: 38px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button>`;
 
   div.innerHTML = selectHTML;
   container.appendChild(div);
@@ -221,12 +221,12 @@ function addPoliMedicineRow(medName = '', dosage = '3x1', qty = 1, aturan = 'ses
   tr.innerHTML = `
     <td>
       ${selectHTML}
-      <small class="stock-badge-info" style="font-size: 0.75rem; color: var(--primary-light); font-weight: 600;"></small>
+      <small class="stock-badge-info"></small>
     </td>
-    <td><input type="text" class="form-control med-dosage" value="${dosage}"></td>
+    <td><input type="text" class="form-control med-dosage" value="${dosage}" placeholder="3x1"></td>
     <td><input type="number" class="form-control med-qty" value="${qty}" min="1"></td>
-    <td><input type="text" class="form-control med-aturan" value="${aturan}"></td>
-    <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">&times;</button></td>
+    <td><input type="text" class="form-control med-aturan" value="${aturan}" placeholder="sesudah makan"></td>
+    <td style="text-align: center;"><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()" title="Hapus Obat" style="width: 34px; height: 34px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button></td>
   `;
 
   body.appendChild(tr);
@@ -238,7 +238,18 @@ function updateMedicineStockBadge(selectEl) {
   const opt = selectEl.options[selectEl.selectedIndex];
   const infoEl = selectEl.parentElement.querySelector('.stock-badge-info');
   if (opt && opt.dataset.stok !== undefined) {
-    infoEl.textContent = `Tersedia: ${opt.dataset.stok} ${opt.dataset.satuan}`;
+    const stok = parseInt(opt.dataset.stok) || 0;
+    let colorClass = 'stock-badge-green';
+    let label = `✓ Tersedia: ${stok} ${opt.dataset.satuan}`;
+    if (stok <= 5) {
+      colorClass = 'stock-badge-red';
+      label = `🔥 Sisa Sedikit: ${stok} ${opt.dataset.satuan}`;
+    } else if (stok <= 15) {
+      colorClass = 'stock-badge-yellow';
+      label = `⚠️ Tersedia: ${stok} ${opt.dataset.satuan}`;
+    }
+    infoEl.className = `stock-badge-info ${colorClass}`;
+    infoEl.textContent = label;
   } else {
     infoEl.textContent = '';
   }
@@ -291,57 +302,78 @@ function renderPatientHistoryTimeline(patient) {
   countEl.textContent = `${history.length} Kunjungan`;
 
   if (history.length === 0) {
-    container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">Belum ada riwayat rekam medis untuk pasien ini.</div>`;
+    container.innerHTML = `
+      <div style="text-align:center; padding: 48px 20px; color: var(--text-muted);">
+        <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.35;"></i>
+        <p style="font-weight: 700;">Belum ada riwayat rekam medis</p>
+        <p style="font-size: 0.8rem; color: var(--text-faint); margin-top: 4px;">Kunjungan pemeriksaan pasien ini akan tersimpan otomatis di sini.</p>
+      </div>`;
     return;
   }
 
   container.innerHTML = history.map(r => {
-    // Format Diagnosis (A) Vertically line by line
-    let diagHTML = '-';
+    // Format Diagnosis (A)
+    let diagHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
     if (r.asesmen) {
       const diagList = String(r.asesmen).split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
       if (diagList.length > 0) {
-        diagHTML = `<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px;">` +
-          diagList.map(d => `<div><span class="badge badge-info" style="font-size: 0.82rem; padding: 4px 8px; display: inline-block;"><i class="fa-solid fa-stethoscope"></i> ${d}</span></div>`).join('') +
+        diagHTML = `<div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;">` +
+          diagList.map(d => `<span class="badge badge-info"><i class="fa-solid fa-stethoscope"></i> ${d}</span>`).join('') +
           `</div>`;
       }
     }
 
-    // Format Resep Obat (P) Vertically line by line
-    let planHTML = '-';
+    // Format Resep Obat (P)
+    let planHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
     if (r.plan) {
       const planItems = String(r.plan).split(';').map(p => p.trim()).filter(p => p);
       if (planItems.length > 0) {
-        planHTML = `<div style="margin-top: 4px; padding-left: 10px; border-left: 3px solid #38bdf8;">` +
-          planItems.map(p => `<div style="margin-bottom: 4px; font-size: 0.88rem; color: #e2e8f0; font-weight: 500;">💊 ${p}</div>`).join('') +
+        planHTML = `<div class="timeline-medicines-list">` +
+          planItems.map(p => `<div class="med-pill-item">💊 ${p}</div>`).join('') +
           `</div>`;
       }
     }
 
     return `
-      <div class="timeline-item" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 14px;">
-        <div class="timeline-date" style="font-size: 0.88rem; color: #38bdf8; font-weight: 700; margin-bottom: 8px;">
-          <i class="fa-regular fa-calendar-check"></i> ${r.tanggal || '-'}
+      <div class="timeline-item">
+        <div class="timeline-header">
+          <div class="timeline-date">
+            <i class="fa-regular fa-calendar-check"></i> ${r.tanggal || '-'}
+          </div>
+          <div style="display: flex; gap: 6px;">
+            ${r.isPantauan ? '<span class="badge badge-danger">🔴 Pantauan</span>' : ''}
+            ${r.izinSakit ? '<span class="badge badge-warning">📄 Surkes</span>' : ''}
+          </div>
         </div>
-        <div class="timeline-content">
-          <div class="timeline-sec" style="margin-bottom: 6px;"><strong>S (Subjektif):</strong> ${r.keluhan || '-'}</div>
-          <div class="timeline-sec" style="margin-bottom: 6px;"><strong>O (Objektif):</strong> ${r.objektif || '-'}</div>
-          <div class="timeline-sec" style="margin-bottom: 8px;">
-            <strong style="color: #a855f7;">A (Diagnosis):</strong>
-            ${diagHTML}
-          </div>
-          <div class="timeline-sec" style="margin-bottom: 8px;">
-            <strong style="color: #38bdf8;">P (Resep Obat / Plan):</strong>
-            ${planHTML}
-          </div>
-          <div class="timeline-sec" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 8px;">Pemeriksa: ${r.pemeriksa || '-'}</div>
-          
-          ${r.linkFoto ? `<div class="timeline-sec" style="margin-top: 8px;"><a href="${r.linkFoto}" target="_blank" class="btn btn-sm btn-primary" style="background:#0284c7; border:none; text-decoration:none;"><i class="fa-solid fa-image"></i> 📷 Lihat Foto / Dokumen Drive</a></div>` : ''}
 
-          <button class="btn btn-sm btn-secondary btn-salin" style="margin-top: 10px; width: 100%;" onclick='copyRecordToPoliForm(${JSON.stringify(r).replace(/'/g, "&apos;")})'>
-            <i class="fa-solid fa-copy"></i> Salin ke Form Kiri
-          </button>
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-s">S</span>
+          <span style="font-weight: 700; color: var(--text-main);">${r.keluhan || '-'}</span>
         </div>
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-o">O</span>
+          <span style="color: var(--text-muted); font-weight: 500;">${r.objektif || '-'}</span>
+        </div>
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-a">A</span>
+          ${diagHTML}
+        </div>
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-p">P</span>
+          ${planHTML}
+        </div>
+
+        <div class="timeline-footer">
+          <div><i class="fa-solid fa-user-doctor"></i> ${r.pemeriksa || 'Nakes'}</div>
+          ${r.linkFoto ? `<a href="${r.linkFoto}" target="_blank" class="btn btn-sm btn-primary" style="font-size: 0.74rem; padding: 3px 8px;"><i class="fa-solid fa-image"></i> Lihat Foto</a>` : ''}
+        </div>
+
+        <button class="btn btn-sm btn-secondary btn-block" style="margin-top: 10px; font-weight: 700;" onclick='copyRecordToPoliForm(${JSON.stringify(r).replace(/'/g, "&apos;")})'>
+          <i class="fa-solid fa-copy"></i> Salin ke Form Input
+        </button>
       </div>
     `;
   }).join('');
@@ -522,7 +554,7 @@ function addEditICD10Row(defaultValue = '') {
   if (!container) return;
   const div = document.createElement('div');
   div.className = 'edit-icd10-row';
-  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 6px;';
+  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 6px; align-items: center;';
 
   let selectHTML = `<select class="form-control select-edit-icd10" style="flex: 1;"><option value="">-- Pilih Diagnosis ICD-10 --</option>`;
   appData.icd10.forEach(item => {
@@ -532,7 +564,7 @@ function addEditICD10Row(defaultValue = '') {
     const sel = (defaultValue && (code === defaultValue || desc === defaultValue || label === defaultValue || defaultValue.includes(code))) ? 'selected' : '';
     selectHTML += `<option value="${label}" ${sel}>${label}</option>`;
   });
-  selectHTML += `</select><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus">&times;</button>`;
+  selectHTML += `</select><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus" style="width: 36px; height: 36px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button>`;
 
   div.innerHTML = selectHTML;
   container.appendChild(div);
@@ -555,7 +587,7 @@ function addEditResepRow(medName = '', qty = 1) {
   div.innerHTML = `
     ${selectHTML}
     <input type="number" class="form-control edit-med-qty" value="${qty}" min="1" style="width: 80px; text-align: center;" placeholder="Jumlah">
-    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus">&times;</button>
+    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus" style="width: 36px; height: 36px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button>
   `;
 
   container.appendChild(div);
