@@ -12,3 +12,12 @@ services:
       - NODE_ENV=production
     volumes:
       - ./data:/app/data
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: rekam-medis-tunnel
+    restart: always
+    command: tunnel --url http://rekam-medis-ati:3000
+    depends_on:
+      - rekam-medis-ati
+
