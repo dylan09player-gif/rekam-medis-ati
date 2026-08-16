@@ -1249,14 +1249,14 @@ function renderGudangTable() {
       <tr>
         <td>${m.kode || '-'}</td>
         <td><strong>${m.nama}</strong></td>
-        <td>${m.kategori || 'Obat Bebas'}</td>
+        <td>${m.kategori || 'Gudang PT ATI'}</td>
         <td style="font-weight: 700; font-size: 1.05rem; ${isLow ? 'color: var(--danger);' : ''}">${m.stok}</td>
-        <td style="font-weight: 600; color: #38bdf8;">Rp ${(parseInt(m.harga) || 0).toLocaleString('id-ID')}</td>
+        <td style="font-weight: 700; color: #38bdf8;">Rp ${(parseInt(m.harga) || 0).toLocaleString('id-ID')}</td>
         <td>${m.satuan || 'strip'}</td>
         <td>${statusBadge}</td>
-        <td>
-          <button class="btn btn-sm btn-secondary" onclick="updateObatStokDirect('${m.id}', ${m.stok}, ${m.harga || 0})"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-sm btn-danger" onclick="deleteObatDirect('${m.id}')">&times;</button>
+        <td style="white-space: nowrap;">
+          <button class="btn btn-sm btn-secondary" onclick="openModalEditObat('${m.id}')" title="Edit Data &amp; Harga Obat"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="deleteObatDirect('${m.id}')" title="Hapus Obat">&times;</button>
         </td>
       </tr>
     `;
@@ -1277,7 +1277,7 @@ async function handleSaveTambahObat(e) {
     stok: parseInt(document.getElementById('obat-stok').value) || 0,
     harga: parseInt(document.getElementById('obat-harga').value) || 0,
     satuan: document.getElementById('obat-satuan').value,
-    kategori: document.getElementById('obat-kategori').value || 'Obat'
+    kategori: document.getElementById('obat-kategori').value || 'Gudang PT ATI'
   };
 
   try {
@@ -1290,25 +1290,78 @@ async function handleSaveTambahObat(e) {
       showToast('Obat berhasil ditambahkan', 'success');
       closeModalTambahObat();
       await loadAllAppData();
+      renderGudangTable();
     }
   } catch (err) {
     showToast('Gagal menyimpan obat', 'error');
   }
 }
 
-async function updateObatStokDirect(id, currentStok) {
-  const newStok = prompt('Masukkan Stok Baru Obat:', currentStok);
-  if (newStok !== null && !isNaN(newStok)) {
-    try {
-      await fetch(`/api/medicines/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stok: parseInt(newStok) })
-      });
-      showToast('Stok obat berhasil diperbarui', 'success');
+function openModalEditObat(id) {
+  const med = appData.medicines.find(m => m.id === id);
+  if (!med) {
+    showToast('Data obat tidak ditemukan', 'error');
+    return;
+  }
+
+  document.getElementById('edit-obat-id').value = med.id;
+  document.getElementById('edit-obat-nama').value = med.nama || '';
+  document.getElementById('edit-obat-stok').value = med.stok !== undefined ? med.stok : 0;
+  document.getElementById('edit-obat-harga').value = parseInt(med.harga) || 0;
+  document.getElementById('edit-obat-satuan').value = med.satuan || 'strip';
+  document.getElementById('edit-obat-kategori').value = med.kategori || 'Gudang PT ATI';
+  document.getElementById('edit-obat-petugas').value = '';
+  document.getElementById('edit-obat-alasan').value = '';
+
+  document.getElementById('modal-edit-obat').style.display = 'flex';
+}
+
+function closeModalEditObat() {
+  document.getElementById('modal-edit-obat').style.display = 'none';
+}
+
+async function handleSaveEditObat(e) {
+  e.preventDefault();
+  const id = document.getElementById('edit-obat-id').value;
+  const payload = {
+    nama: document.getElementById('edit-obat-nama').value.trim(),
+    stok: parseInt(document.getElementById('edit-obat-stok').value) || 0,
+    harga: parseInt(document.getElementById('edit-obat-harga').value) || 0,
+    satuan: document.getElementById('edit-obat-satuan').value.trim(),
+    kategori: document.getElementById('edit-obat-kategori').value.trim() || 'Gudang PT ATI',
+    petugas: document.getElementById('edit-obat-petugas').value.trim(),
+    alasan: document.getElementById('edit-obat-alasan').value.trim()
+  };
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  let origText = '';
+  if (submitBtn) {
+    origText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan &amp; Mengirim...';
+    submitBtn.disabled = true;
+  }
+
+  try {
+    const res = await fetch(`/api/medicines/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('✅ Data obat diperbarui &amp; Laporan audit terkirim ke Telegram!', 'success');
+      closeModalEditObat();
       await loadAllAppData();
-    } catch (err) {
-      showToast('Gagal mengoreksi stok', 'error');
+      renderGudangTable();
+    } else {
+      showToast('Gagal memperbarui obat: ' + (data.error || 'Terjadi kesalahan'), 'error');
+    }
+  } catch (err) {
+    showToast('Gagal koneksi ke server: ' + err.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.innerHTML = origText;
+      submitBtn.disabled = false;
     }
   }
 }
@@ -1319,6 +1372,7 @@ async function deleteObatDirect(id) {
       await fetch(`/api/medicines/${id}`, { method: 'DELETE' });
       showToast('Obat dihapus', 'info');
       await loadAllAppData();
+      renderGudangTable();
     } catch (err) {
       showToast('Gagal menghapus', 'error');
     }

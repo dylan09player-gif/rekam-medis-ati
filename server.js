@@ -554,10 +554,49 @@ app.put('/api/medicines/:id', (req, res) => {
   if (!db.medicines) return res.status(404).json({ error: 'Obat tidak ditemukan' });
   const idx = db.medicines.findIndex(m => m.id === req.params.id);
   if (idx !== -1) {
-    db.medicines[idx] = { ...db.medicines[idx], ...req.body };
+    const oldMed = { ...db.medicines[idx] };
+    const { nama, stok, harga, satuan, kategori, petugas, alasan } = req.body;
+
+    const newNama = nama !== undefined ? String(nama).trim() : oldMed.nama;
+    const newStok = stok !== undefined ? parseSafeInt(stok, oldMed.stok) : oldMed.stok;
+    const newHarga = harga !== undefined ? parseSafeInt(harga, oldMed.harga) : oldMed.harga;
+    const newSatuan = satuan !== undefined ? String(satuan).trim() : oldMed.satuan;
+    const newKategori = kategori !== undefined ? String(kategori).trim() : oldMed.kategori;
+    const namaPetugas = petugas || 'Petugas Gudang / Apoteker';
+    const alasanEdit = alasan || 'Pembaruan data obat';
+
+    db.medicines[idx] = {
+      ...oldMed,
+      nama: newNama,
+      stok: newStok,
+      harga: newHarga,
+      satuan: newSatuan,
+      kategori: newKategori
+    };
     writeDB(db);
     autoPushMedicinesToGSheet(db);
-    return res.json(db.medicines[idx]);
+
+    // Kirim Audit Log ke Telegram Bot
+    const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+    const telegramText = 
+`🔔 *[AUDIT LOG - PERUBAHAN DATA OBAT]* 🔔
+━━━━━━━━━━━━━━━━━━━━
+📦 *Nama Obat:* ${newNama}
+👤 *Petugas:* ${namaPetugas}
+📝 *Alasan:* ${alasanEdit}
+━━━━━━━━━━━━━━━━━━━━
+📊 *Rincian Perubahan:*
+• Sisa Stok: *${oldMed.stok}* ➔ *${newStok}* ${newSatuan}
+• Harga Satuan: *Rp ${(parseInt(oldMed.harga)||0).toLocaleString('id-ID')}* ➔ *Rp ${(parseInt(newHarga)||0).toLocaleString('id-ID')}*
+• Satuan: *${oldMed.satuan || '-'}* ➔ *${newSatuan}*
+• Kategori: *${oldMed.kategori || '-'}* ➔ *${newKategori}*
+
+⏱ _Waktu: ${nowWIB} WIB_
+🏥 _Sistem Rekam Medis PT ATI_`;
+
+    sendTelegramNotif(telegramText);
+
+    return res.json({ success: true, medicine: db.medicines[idx] });
   }
   res.status(404).json({ error: 'Obat tidak ditemukan' });
 });

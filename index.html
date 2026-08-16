@@ -1074,6 +1074,66 @@ function setupTabDanHeader() {
     </div>
   </div>
 
+  <!-- MODAL EDIT DATA & HARGA OBAT (DENGAN AUDIT LOG TELEGRAM) -->
+  <div id="modal-edit-obat" class="modal-overlay">
+    <div class="modal-card" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-pen-to-square" style="color: var(--warning);"></i> Edit Data &amp; Harga Obat Gudang</h3>
+        <button class="close-btn" onclick="closeModalEditObat()">&times;</button>
+      </div>
+      <form id="form-edit-obat" onsubmit="handleSaveEditObat(event)">
+        <input type="hidden" id="edit-obat-id">
+        
+        <div class="form-group">
+          <label class="form-label">Nama Obat *</label>
+          <input type="text" id="edit-obat-nama" class="form-control" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Sisa Stok *</label>
+            <input type="number" id="edit-obat-stok" class="form-control" required min="0" style="font-weight: 700;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Harga Satuan (Rp) *</label>
+            <input type="number" id="edit-obat-harga" class="form-control" required min="0" step="10" style="font-weight: 700; color: #38bdf8;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Satuan *</label>
+            <input type="text" id="edit-obat-satuan" class="form-control" required placeholder="strip/tube/pcs">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Kategori Obat</label>
+          <input type="text" id="edit-obat-kategori" class="form-control" placeholder="Gudang PT ATI / Obat Bebas">
+        </div>
+
+        <!-- FORM AUDIT KE TELEGRAM -->
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1.5px solid rgba(245, 158, 11, 0.35); border-radius: var(--r-md); padding: 12px; margin-top: 14px; margin-bottom: 12px;">
+          <div style="font-size: 0.84rem; font-weight: 700; color: #fbbf24; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-brands fa-telegram" style="color: #38bdf8; font-size: 1.1rem;"></i> Laporan Audit Otomatis ke Telegram
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" style="font-size: 0.8rem;">Nama Petugas / Apoteker Pengubah *</label>
+            <input type="text" id="edit-obat-petugas" class="form-control" required placeholder="Contoh: Apt. Nafila / Nakes Jaga" style="font-size: 0.85rem;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">Alasan Perubahan / Catatan *</label>
+            <input type="text" id="edit-obat-alasan" class="form-control" required placeholder="Contoh: Penyesuaian harga supplier baru / Koreksi opname fisik" style="font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalEditObat()">Batal</button>
+          <button type="submit" class="btn btn-warning" style="background: #f59e0b; color: #000; font-weight: 700;">
+            <i class="fa-solid fa-paper-plane"></i> Simpan &amp; Lapor Telegram
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
   <script src="gdrive-sync.js"></script>
