@@ -180,64 +180,47 @@ async function performGSheetSync(db, gsheetUrl) {
 
   let synced = { icd10: 0, medicines: 0, employees: 0 };
 
-  // 1. Update ICD-10
+  // 1. Mirror ICD-10 (100% Mengikuti Data Real dari Google Sheets)
   if (Array.isArray(gData.icd10) && gData.icd10.length > 0) {
     db.icd10 = gData.icd10.map((item, i) => ({
       id: item.id || ('ICD-' + i),
-      code: item.code || item.kode || '',
-      description: item.description || item.nama || item.diagnosis || ''
+      code: String(item.code || item.kode || '').trim(),
+      description: String(item.description || item.nama || item.diagnosis || '').trim()
     })).filter(x => x.code || x.description);
     synced.icd10 = db.icd10.length;
   }
 
-  // 2. Update Medicines (Fix: handles 0 stock properly & price formatting)
+  // 2. Mirror Medicines (100% Mengikuti Data Real dari Google Sheets: baris, nama, stok, harga, satuan)
   if (Array.isArray(gData.medicines) && gData.medicines.length > 0) {
     const existingMeds = db.medicines || [];
-    gData.medicines.forEach(gMed => {
-      if (!gMed.nama) return;
-      const cleanName = String(gMed.nama).trim();
-      const existing = existingMeds.find(m => 
-        m.nama && m.nama.toLowerCase() === cleanName.toLowerCase()
-      );
-      const stok = parseSafeInt(gMed.stok, 0);
-      const harga = parseSafeInt(gMed.harga, 0);
-      const satuan = String(gMed.satuan || '-').trim();
-      const kategori = String(gMed.kategori || 'Gudang PT ATI').trim();
-
-      if (existing) {
-        existing.stok = stok;
-        existing.satuan = satuan;
-        existing.harga = harga;
-        existing.kategori = kategori;
-      } else {
-        existingMeds.push({
-          id: 'MED-' + Date.now() + Math.floor(Math.random() * 1000),
-          nama: cleanName,
-          stok: stok,
-          satuan: satuan,
-          harga: harga,
-          kategori: kategori
-        });
-      }
-    });
-    db.medicines = existingMeds;
+    db.medicines = gData.medicines.map((gMed, i) => {
+      const cleanName = String(gMed.nama || '').trim();
+      const existing = existingMeds.find(m => m.nama && m.nama.toLowerCase() === cleanName.toLowerCase());
+      return {
+        id: existing ? existing.id : ('MED-' + (i + 1) + '-' + Date.now()),
+        nama: cleanName,
+        stok: parseSafeInt(gMed.stok, 0),
+        satuan: String(gMed.satuan || '-').trim(),
+        harga: parseSafeInt(gMed.harga, 0),
+        kategori: String(gMed.kategori || 'Gudang PT ATI').trim()
+      };
+    }).filter(m => m.nama !== '');
     synced.medicines = db.medicines.length;
   }
 
-  // 3. Update Employees
+  // 3. Mirror Employees (100% Mengikuti Data Real dari Google Sheets jika tersedia)
   if (Array.isArray(gData.employees) && gData.employees.length > 0) {
     const existingEmps = db.employees || [];
-    gData.employees.forEach(gEmp => {
+    db.employees = gData.employees.map((gEmp, i) => {
       const empNik = String(gEmp.nikPabrik || gEmp.nik || '').trim();
       const empNama = String(gEmp.nama || '').trim();
-      if (!empNik && !empNama) return;
-
       const existing = existingEmps.find(e => 
         (empNik && ((e.nikPabrik && String(e.nikPabrik).trim() === empNik) || (e.nik && String(e.nik).trim() === empNik))) ||
         (empNama && e.nama && e.nama.toLowerCase() === empNama.toLowerCase())
       );
 
-      const updatedEmp = {
+      return {
+        id: existing ? existing.id : ('EMP-' + (i + 1) + '-' + Date.now()),
         nikPabrik: empNik,
         nik: empNik,
         nama: empNama,
@@ -249,17 +232,7 @@ async function performGSheetSync(db, gsheetUrl) {
         hp: String(gEmp.hp || gEmp.no_hp || '').trim(),
         no_hp: String(gEmp.hp || gEmp.no_hp || '').trim()
       };
-
-      if (existing) {
-        Object.assign(existing, updatedEmp);
-      } else {
-        existingEmps.unshift({
-          id: 'EMP-' + Date.now() + Math.floor(Math.random() * 1000),
-          ...updatedEmp
-        });
-      }
-    });
-    db.employees = existingEmps;
+    }).filter(e => e.nikPabrik || e.nama);
     synced.employees = db.employees.length;
   }
 
