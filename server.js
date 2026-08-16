@@ -236,6 +236,31 @@ async function performGSheetSync(db, gsheetUrl) {
     synced.employees = db.employees.length;
   }
 
+  // 4. Mirror/Merge Records (Kunjungan Pasien) dari Google Sheets jika tersedia
+  if (Array.isArray(gData.records) && gData.records.length > 0) {
+    const existingRecs = db.records || [];
+    gData.records.forEach(gRec => {
+      if (!gRec.id && !gRec.namaPasien) return;
+      const recId = String(gRec.id || '').trim();
+      const existing = existingRecs.find(r => r.id === recId);
+      if (!existing) {
+        existingRecs.push({
+          id: recId || ('RM-' + Date.now() + Math.floor(Math.random() * 1000)),
+          tanggal: gRec.tanggal || new Date().toISOString().split('T')[0],
+          nikPabrik: gRec.nikPabrik || '',
+          namaPasien: gRec.namaPasien || '',
+          dept: gRec.dept || '',
+          keluhan: gRec.keluhan || '',
+          asesmen: gRec.asesmen || '',
+          plan: gRec.plan || '',
+          pemeriksa: gRec.pemeriksa || '',
+          linkFoto: gRec.linkFoto || ''
+        });
+      }
+    });
+    db.records = existingRecs;
+  }
+
   if (!db.settings) db.settings = {};
   db.settings.gsheet_url = gsheetUrl;
   db.settings.last_sync = new Date().toISOString();

@@ -63,6 +63,7 @@ function doGet(e) {
   var ss = getSpreadsheet();
   var result = {};
   
+  // 1. Tab Diagnosis (ICD-10)
   var diag = ss.getSheetByName('Diagnosis');
   if (diag) {
     var dVal = diag.getDataRange().getValues();
@@ -73,6 +74,7 @@ function doGet(e) {
     }
   }
   
+  // 2. Tab Obat (Stok, Harga, Satuan, Kategori)
   var obat = ss.getSheetByName('Obat');
   if (obat) {
     var oVal = obat.getDataRange().getValues();
@@ -89,7 +91,8 @@ function doGet(e) {
     }
   }
   
-  var kary = ss.getSheetByName('Karyawan');
+  // 3. Tab Karyawan / Pasien
+  var kary = ss.getSheetByName('Karyawan') || ss.getSheetByName('Pasien') || ss.getSheetByName('Data Karyawan');
   if (kary) {
     var kVal = kary.getDataRange().getValues();
     if (kVal.length > 1) {
@@ -102,6 +105,28 @@ function doGet(e) {
           tglLahir: String(r[4] || '').trim(), 
           hp: String(r[5] || '').trim()
         }; 
+      });
+    }
+  }
+
+  // 4. Tab Kunjungan / Rekam Medis
+  var rm = ss.getSheetByName('Kunjungan') || ss.getSheetByName('Rekam Medis');
+  if (rm) {
+    var rVal = rm.getDataRange().getValues();
+    if (rVal.length > 1) {
+      result.records = rVal.slice(1).filter(function(r){ return r[0] || r[3]; }).map(function(r, i){
+        return {
+          id: String(r[0] || ('RM-' + i)),
+          tanggal: String(r[1] || ''),
+          nikPabrik: String(r[2] || ''),
+          namaPasien: String(r[3] || ''),
+          dept: String(r[4] || ''),
+          keluhan: String(r[5] || ''),
+          asesmen: String(r[6] || ''),
+          plan: String(r[7] || ''),
+          pemeriksa: String(r[8] || ''),
+          linkFoto: String(r[9] || '')
+        };
       });
     }
   }
