@@ -191,36 +191,51 @@
                 </button>
               </div>
 
-              <!-- 4. RESEP OBAT (STOK TERLIHAT & AUTO REDUCT) (Plan - P) -->
+              <!-- 4. RESEP OBAT (STOK TERLIHAT, SEARCHABLE & TOTAL BIAYA) (Plan - P) -->
               <div class="form-group">
                 <label class="form-label marunda-section-label">
-                  <span class="soap-chip soap-chip-p">P</span> 4. RESEP OBAT (Stok Live &amp; Berkurang Otomatis)
+                  <span class="soap-chip soap-chip-p">P</span> 4. RESEP OBAT (Stok Live, Searchable &amp; Total Biaya)
                 </label>
                 <table class="resep-table">
                   <thead>
                     <tr>
-                      <th style="width: 40%;">Obat &amp; Stok</th>
-                      <th style="width: 18%;">Dosis</th>
-                      <th style="width: 16%;">Jumlah</th>
-                      <th style="width: 22%;">Aturan Pakai</th>
+                      <th style="width: 38%;">Obat &amp; Stok</th>
+                      <th style="width: 28%;">Aturan Pakai / Dosis</th>
+                      <th style="width: 14%;">Jumlah</th>
+                      <th style="width: 16%; text-align: right;">Total Harga</th>
                       <th style="width: 4%;"></th>
                     </tr>
                   </thead>
                   <tbody id="poli-resep-body">
-                    <!-- Dynamic Medicine Rows with Live Stock -->
+                    <!-- Dynamic Medicine Rows with Live Stock & Price Calculation -->
                   </tbody>
                 </table>
+                <div class="resep-total-summary-card">
+                  <div class="resep-total-info">
+                    <i class="fa-solid fa-calculator" style="color: var(--accent);"></i>
+                    <span>Total Biaya Berobat / Obat:</span>
+                  </div>
+                  <div class="resep-total-amount" id="poli-resep-grand-total">Rp 0</div>
+                </div>
                 <button type="button" class="btn btn-sm btn-secondary btn-block" onclick="addPoliMedicineRow()">
                   <i class="fa-solid fa-plus"></i> Tambah Obat
                 </button>
               </div>
 
-              <!-- 5. NAMA NAKES / PEMERIKSA -->
+              <!-- 5. NAMA NAKES / PEMERIKSA (SEARCHABLE & FREKUENSI TERPOPULER) -->
               <div class="form-group">
                 <label class="form-label marunda-section-label">
                   <i class="fa-solid fa-user-doctor"></i> 5. NAMA NAKES / PEMERIKSA
                 </label>
-                <input type="text" id="poli-pemeriksa" class="form-control" value="dr. Dylan Fadhilah" required>
+                <div class="nakes-input-wrapper">
+                  <input type="text" id="poli-pemeriksa" class="form-control" placeholder="Ketik atau pilih nama nakes/dokter..." list="list-nakes-tersering" autocomplete="off" required>
+                  <datalist id="list-nakes-tersering">
+                    <!-- Dynamic Popular Nakes Options -->
+                  </datalist>
+                  <div id="nakes-popular-chips" class="popular-chips-container">
+                    <!-- Quick Select Chips for Top Frequent Nakes -->
+                  </div>
+                </div>
                 <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
                   <input type="checkbox" id="poli-izin-sakit" style="width: 18px; height: 18px;">
                   <label for="poli-izin-sakit" style="font-weight: 700; font-size: 0.88rem; cursor: pointer;">

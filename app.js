@@ -139,6 +139,7 @@ async function loadAllAppData() {
     renderHSEPasienPantauanTable();
     renderBillingPTTable();
     renderAbsenDirekturTable();
+    renderNakesSuggestions();
 
     console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}`);
 
@@ -177,6 +178,140 @@ function initDateInputs() {
 // -------------------------------------------------------------
 // 1. POLI TAB LOGIC & SPLIT SCREEN SOAP
 // -------------------------------------------------------------
+
+// Helper 1: ICD-10 Ranking berdasarkan frekuensi diagnosis tersering
+function getICD10WithFrequency() {
+  const freqMap = {};
+  
+  // Ambil history klik dari localStorage
+  try {
+    const localFreq = JSON.parse(localStorage.getItem('icd10_freq_map') || '{}');
+    Object.entries(localFreq).forEach(([k, v]) => { freqMap[k] = (freqMap[k] || 0) + v; });
+  } catch(e) {}
+  
+  // Ambil history dari seluruh database records kunjungan
+  if (Array.isArray(appData.records)) {
+    appData.records.forEach(r => {
+      if (r.asesmen) {
+        const diags = String(r.asesmen).split(';').map(d => d.trim()).filter(Boolean);
+        diags.forEach(d => {
+          freqMap[d] = (freqMap[d] || 0) + 1;
+        });
+      }
+    });
+  }
+
+  const list = (appData.icd10 || []).map(item => {
+    const code = item.kode || item.code || '';
+    const desc = item.nama || item.description || item.desc || '';
+    const fullLabel = code ? `[${code}] ${desc}` : desc;
+    let count = freqMap[fullLabel] || freqMap[desc] || 0;
+    if (!count && code) {
+      Object.keys(freqMap).forEach(k => {
+        if (k.includes(code)) count += freqMap[k];
+      });
+    }
+    return { code, desc, fullLabel, freq: count };
+  });
+
+  // Urutkan: Diagnosis tersering muncul di paling atas, sisanya alfabetis kode
+  list.sort((a, b) => {
+    if (b.freq !== a.freq) return b.freq - a.freq;
+    return a.code.localeCompare(b.code);
+  });
+
+  return list;
+}
+
+function recordICD10Selection(label) {
+  if (!label || !label.trim()) return;
+  try {
+    const localFreq = JSON.parse(localStorage.getItem('icd10_freq_map') || '{}');
+    localFreq[label.trim()] = (localFreq[label.trim()] || 0) + 1;
+    localStorage.setItem('icd10_freq_map', JSON.stringify(localFreq));
+  } catch(e) {}
+}
+
+// Helper 2: Daftar Obat selalu terurut Alfabetis A-Z
+function getSortedMedicines() {
+  return (appData.medicines || []).slice().sort((a, b) => {
+    return (a.nama || '').localeCompare(b.nama || '', 'id', { sensitivity: 'base' });
+  });
+}
+
+// Helper 3: Frekuensi Nama Nakes / Pemeriksa
+function getNakesFrequencyList() {
+  const counts = {};
+  
+  // 1. Dari localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('nakes_history_freq') || '{}');
+    Object.entries(saved).forEach(([k, v]) => {
+      if (k && k.trim()) counts[k.trim()] = (counts[k.trim()] || 0) + v;
+    });
+  } catch(e) {}
+
+  // 2. Dari semua rekam medis di database
+  if (Array.isArray(appData.records)) {
+    appData.records.forEach(r => {
+      if (r.pemeriksa && r.pemeriksa.trim()) {
+        const p = r.pemeriksa.trim();
+        counts[p] = (counts[p] || 0) + 1;
+      }
+    });
+  }
+
+  // Default dokter & perawat jika masih kosong
+  if (Object.keys(counts).length === 0) {
+    counts['dr. Dylan Fadhilah'] = 1;
+    counts['dr. Medika'] = 1;
+    counts['Ns. Perawat Jaga'] = 1;
+  }
+
+  return Object.entries(counts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+function renderNakesSuggestions() {
+  const listEl = document.getElementById('list-nakes-tersering');
+  const chipsEl = document.getElementById('nakes-popular-chips');
+  const inputEl = document.getElementById('poli-pemeriksa');
+  if (!listEl || !chipsEl) return;
+
+  const nakesList = getNakesFrequencyList();
+
+  listEl.innerHTML = nakesList.map(n => `<option value="${n.name}">Digunakan ${n.count}x</option>`).join('');
+
+  chipsEl.innerHTML = nakesList.slice(0, 4).map(n => `
+    <span class="nakes-chip" onclick="selectNakesChip('${n.name.replace(/'/g, "\\'")}')">
+      <i class="fa-solid fa-user-check" style="font-size: 0.68rem;"></i> ${n.name} <small style="opacity: 0.7;">(${n.count}x)</small>
+    </span>
+  `).join('');
+
+  if (inputEl && !inputEl.value.trim() && nakesList.length > 0) {
+    inputEl.value = nakesList[0].name;
+  }
+}
+
+function selectNakesChip(name) {
+  const inputEl = document.getElementById('poli-pemeriksa');
+  if (inputEl) {
+    inputEl.value = name;
+  }
+}
+
+function recordNakesUsage(name) {
+  if (!name || !name.trim()) return;
+  try {
+    const clean = name.trim();
+    const saved = JSON.parse(localStorage.getItem('nakes_history_freq') || '{}');
+    saved[clean] = (saved[clean] || 0) + 1;
+    localStorage.setItem('nakes_history_freq', JSON.stringify(saved));
+    renderNakesSuggestions();
+  } catch(e) {}
+}
+
 function initPoliForm() {
   const icdContainer = document.getElementById('container-icd10-list');
   icdContainer.innerHTML = '';
@@ -185,74 +320,272 @@ function initPoliForm() {
   const resepBody = document.getElementById('poli-resep-body');
   resepBody.innerHTML = '';
   addPoliMedicineRow();
+  
+  renderNakesSuggestions();
 }
 
 function addICD10Row(defaultValue = '') {
   const container = document.getElementById('container-icd10-list');
-  const div = document.createElement('div');
-  div.className = 'icd10-row';
-  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+  const row = document.createElement('div');
+  row.className = 'icd10-row';
+  row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;';
 
-  let selectHTML = `<select class="form-control select-icd10" style="flex: 1;"><option value="">-- Pilih Diagnosis ICD-10 --</option>`;
-  appData.icd10.forEach(item => {
-    const code = item.code || item.kode || '';
-    const desc = item.description || item.nama || item.desc || '';
-    const label = code ? `[${code}] ${desc}` : desc;
-    const sel = (defaultValue && (code === defaultValue || desc === defaultValue || label === defaultValue)) ? 'selected' : '';
-    selectHTML += `<option value="${label}" ${sel}>${label}</option>`;
+  const icdList = getICD10WithFrequency();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'custom-searchable-wrap';
+  wrap.style.flex = '1';
+
+  wrap.innerHTML = `
+    <div class="searchable-input-box">
+      <input type="text" class="form-control icd-search-input select-icd10" placeholder="🔍 Cari diagnosis ICD-10 (Tersering di atas)..." value="${defaultValue}" autocomplete="off">
+      <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+    </div>
+    <div class="searchable-dropdown-menu"></div>
+  `;
+
+  const input = wrap.querySelector('.icd-search-input');
+  const menu = wrap.querySelector('.searchable-dropdown-menu');
+
+  function renderOptions(filterText = '') {
+    const cleanFilter = filterText.toLowerCase().trim();
+    const filtered = icdList.filter(item => 
+      !cleanFilter || 
+      item.fullLabel.toLowerCase().includes(cleanFilter) ||
+      item.code.toLowerCase().includes(cleanFilter) ||
+      item.desc.toLowerCase().includes(cleanFilter)
+    );
+
+    if (filtered.length === 0) {
+      menu.innerHTML = `<div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Diagnosis tidak ditemukan (Ketik bebas untuk diagnosis manual)</div>`;
+      return;
+    }
+
+    menu.innerHTML = filtered.map(item => `
+      <div class="searchable-option-item ${item.fullLabel.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" data-value="${item.fullLabel}">
+        <span style="display: flex; align-items: center; gap: 6px; flex: 1; margin-right: 8px;">
+          ${item.freq > 0 ? `<span class="freq-tag"><i class="fa-solid fa-fire"></i> ${item.freq}x</span>` : ''}
+          <span>${item.fullLabel}</span>
+        </span>
+        ${item.freq > 0 ? `<span class="option-sub" style="font-size: 0.7rem; white-space: nowrap;">Tersering</span>` : ''}
+      </div>
+    `).join('');
+
+    menu.querySelectorAll('.searchable-option-item').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const val = opt.getAttribute('data-value');
+        input.value = val;
+        recordICD10Selection(val);
+        wrap.classList.remove('active');
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => {
+    document.querySelectorAll('.custom-searchable-wrap.active').forEach(w => {
+      if (w !== wrap) w.classList.remove('active');
+    });
+    renderOptions(input.value);
+    wrap.classList.add('active');
   });
-  selectHTML += `</select><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus Diagnosis" style="width: 38px; height: 38px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button>`;
 
-  div.innerHTML = selectHTML;
-  container.appendChild(div);
+  input.addEventListener('input', () => {
+    renderOptions(input.value);
+    wrap.classList.add('active');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove('active');
+    }
+  });
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'btn btn-sm btn-danger';
+  deleteBtn.title = 'Hapus Diagnosis';
+  deleteBtn.style.cssText = 'width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
+  deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+  deleteBtn.onclick = () => row.remove();
+
+  row.appendChild(wrap);
+  row.appendChild(deleteBtn);
+  container.appendChild(row);
 }
 
-function addPoliMedicineRow(medName = '', dosage = '3x1', qty = 1, aturan = 'sesudah makan') {
+function addPoliMedicineRow(medName = '', dosageOrAturan = '3x1 sesudah makan', qty = 1) {
   const body = document.getElementById('poli-resep-body');
   const tr = document.createElement('tr');
+  const medList = getSortedMedicines();
 
-  let selectHTML = `<select class="form-control select-medicine" onchange="updateMedicineStockBadge(this)"><option value="">-- Pilih Obat --</option>`;
-  appData.medicines.forEach(m => {
-    const sel = (medName && m.nama.toLowerCase() === medName.toLowerCase()) ? 'selected' : '';
-    selectHTML += `<option value="${m.nama}" data-stok="${m.stok}" data-satuan="${m.satuan}" ${sel}>${m.nama} (Stok: ${m.stok} ${m.satuan})</option>`;
-  });
-  selectHTML += `</select>`;
+  let initialMed = null;
+  if (medName) {
+    initialMed = medList.find(m => m.nama.toLowerCase() === medName.toLowerCase());
+  }
+
+  const defaultPrice = initialMed ? (parseInt(initialMed.harga) || 0) : 0;
+  tr.dataset.unitPrice = defaultPrice;
 
   tr.innerHTML = `
-    <td>
-      ${selectHTML}
+    <td style="vertical-align: top;">
+      <div class="custom-searchable-wrap med-searchable-wrap">
+        <div class="searchable-input-box">
+          <input type="text" class="form-control med-search-input select-medicine" placeholder="🔍 Cari obat (A-Z)..." value="${initialMed ? initialMed.nama : medName}" autocomplete="off">
+          <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+        </div>
+        <div class="searchable-dropdown-menu"></div>
+      </div>
       <small class="stock-badge-info"></small>
     </td>
-    <td><input type="text" class="form-control med-dosage" value="${dosage}" placeholder="3x1"></td>
-    <td><input type="number" class="form-control med-qty" value="${qty}" min="1"></td>
-    <td><input type="text" class="form-control med-aturan" value="${aturan}" placeholder="sesudah makan"></td>
-    <td style="text-align: center;"><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()" title="Hapus Obat" style="width: 34px; height: 34px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button></td>
+    <td style="vertical-align: top;">
+      <input type="text" class="form-control med-aturan" value="${dosageOrAturan}" placeholder="Contoh: 3x1 sesudah makan">
+    </td>
+    <td style="vertical-align: top;">
+      <input type="number" class="form-control med-qty" value="${qty}" min="1" step="1" placeholder="Qty" style="text-align: center; font-weight: 700;">
+    </td>
+    <td style="vertical-align: top; text-align: right;">
+      <div class="med-subtotal-badge">Rp 0</div>
+    </td>
+    <td style="vertical-align: top; text-align: center;">
+      <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); calculateResepGrandTotal();" title="Hapus Obat" style="width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center;"><i class="fa-solid fa-trash-can"></i></button>
+    </td>
   `;
 
   body.appendChild(tr);
-  const selEl = tr.querySelector('.select-medicine');
-  if (selEl) updateMedicineStockBadge(selEl);
+
+  const wrap = tr.querySelector('.med-searchable-wrap');
+  const input = tr.querySelector('.med-search-input');
+  const menu = tr.querySelector('.searchable-dropdown-menu');
+  const aturanInput = tr.querySelector('.med-aturan');
+  const qtyInput = tr.querySelector('.med-qty');
+  const stockInfo = tr.querySelector('.stock-badge-info');
+
+  function renderMedOptions(filterText = '') {
+    const cleanFilter = filterText.toLowerCase().trim();
+    const filtered = medList.filter(m => 
+      !cleanFilter || 
+      (m.nama && m.nama.toLowerCase().includes(cleanFilter))
+    );
+
+    if (filtered.length === 0) {
+      menu.innerHTML = `<div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Obat tidak ditemukan (Bisa ketik nama obat manual)</div>`;
+      return;
+    }
+
+    menu.innerHTML = filtered.map(m => {
+      const hargaFormat = m.harga ? `Rp ${parseInt(m.harga).toLocaleString('id-ID')}` : 'Rp 0';
+      return `
+        <div class="searchable-option-item ${m.nama.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" 
+             data-nama="${m.nama}" 
+             data-stok="${m.stok}" 
+             data-satuan="${m.satuan || '-'}" 
+             data-harga="${m.harga || 0}">
+          <div>
+            <strong>${m.nama}</strong>
+            <div class="option-sub">Stok: ${m.stok} ${m.satuan || ''} | Harga: ${hargaFormat}</div>
+          </div>
+          <span class="price-tag">${hargaFormat}</span>
+        </div>
+      `;
+    }).join('');
+
+    menu.querySelectorAll('.searchable-option-item').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const nama = opt.getAttribute('data-nama');
+        const stok = parseInt(opt.getAttribute('data-stok')) || 0;
+        const satuan = opt.getAttribute('data-satuan');
+        const harga = parseInt(opt.getAttribute('data-harga')) || 0;
+
+        input.value = nama;
+        tr.dataset.unitPrice = harga;
+        wrap.classList.remove('active');
+
+        updateStockBadgeEl(stockInfo, stok, satuan);
+        calculateRowSubtotal(tr);
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => {
+    document.querySelectorAll('.custom-searchable-wrap.active').forEach(w => {
+      if (w !== wrap) w.classList.remove('active');
+    });
+    renderMedOptions(input.value);
+    wrap.classList.add('active');
+  });
+
+  input.addEventListener('input', () => {
+    renderMedOptions(input.value);
+    wrap.classList.add('active');
+    const matched = medList.find(m => m.nama.toLowerCase() === input.value.toLowerCase().trim());
+    if (matched) {
+      tr.dataset.unitPrice = parseInt(matched.harga) || 0;
+      updateStockBadgeEl(stockInfo, matched.stok, matched.satuan);
+    }
+    calculateRowSubtotal(tr);
+  });
+
+  qtyInput.addEventListener('input', () => calculateRowSubtotal(tr));
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove('active');
+    }
+  });
+
+  if (initialMed) {
+    updateStockBadgeEl(stockInfo, initialMed.stok, initialMed.satuan);
+  }
+  calculateRowSubtotal(tr);
 }
 
-function updateMedicineStockBadge(selectEl) {
-  const opt = selectEl.options[selectEl.selectedIndex];
-  const infoEl = selectEl.parentElement.querySelector('.stock-badge-info');
-  if (opt && opt.dataset.stok !== undefined) {
-    const stok = parseInt(opt.dataset.stok) || 0;
-    let colorClass = 'stock-badge-green';
-    let label = `✓ Tersedia: ${stok} ${opt.dataset.satuan}`;
-    if (stok <= 5) {
-      colorClass = 'stock-badge-red';
-      label = `🔥 Sisa Sedikit: ${stok} ${opt.dataset.satuan}`;
-    } else if (stok <= 15) {
-      colorClass = 'stock-badge-yellow';
-      label = `⚠️ Tersedia: ${stok} ${opt.dataset.satuan}`;
-    }
-    infoEl.className = `stock-badge-info ${colorClass}`;
-    infoEl.textContent = label;
-  } else {
-    infoEl.textContent = '';
+function updateStockBadgeEl(infoEl, stok, satuan) {
+  if (!infoEl) return;
+  stok = parseInt(stok) || 0;
+  let colorClass = 'stock-badge-green';
+  let label = `✓ Tersedia: ${stok} ${satuan || ''}`;
+  if (stok <= 0) {
+    colorClass = 'stock-badge-red';
+    label = `❌ Stok Habis: 0 ${satuan || ''}`;
+  } else if (stok <= 5) {
+    colorClass = 'stock-badge-red';
+    label = `🔥 Sisa Sedikit: ${stok} ${satuan || ''}`;
+  } else if (stok <= 15) {
+    colorClass = 'stock-badge-yellow';
+    label = `⚠️ Tersedia: ${stok} ${satuan || ''}`;
   }
+  infoEl.className = `stock-badge-info ${colorClass}`;
+  infoEl.textContent = label;
+}
+
+function calculateRowSubtotal(tr) {
+  const unitPrice = parseInt(tr.dataset.unitPrice) || 0;
+  const qty = parseInt(tr.querySelector('.med-qty')?.value) || 1;
+  const subtotal = unitPrice * qty;
+  const badge = tr.querySelector('.med-subtotal-badge');
+  if (badge) {
+    badge.textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
+  }
+  calculateResepGrandTotal();
+}
+
+function calculateResepGrandTotal() {
+  const rows = document.querySelectorAll('#poli-resep-body tr');
+  let grandTotal = 0;
+  rows.forEach(tr => {
+    const unitPrice = parseInt(tr.dataset.unitPrice) || 0;
+    const qty = parseInt(tr.querySelector('.med-qty')?.value) || 1;
+    const medName = tr.querySelector('.select-medicine')?.value.trim();
+    if (medName) {
+      grandTotal += (unitPrice * qty);
+    }
+  });
+
+  const grandTotalEl = document.getElementById('poli-resep-grand-total');
+  if (grandTotalEl) {
+    grandTotalEl.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+  }
+  return grandTotal;
 }
 
 function searchPatientByNIK() {
@@ -382,11 +715,27 @@ function renderPatientHistoryTimeline(patient) {
 function copyRecordToPoliForm(record) {
   document.getElementById('poli-keluhan').value = record.keluhan || '';
   document.getElementById('poli-objektif-detail').value = record.objektif || '';
+  if (record.pemeriksa) {
+    document.getElementById('poli-pemeriksa').value = record.pemeriksa;
+  }
   
   if (record.asesmen) {
     const icdContainer = document.getElementById('container-icd10-list');
     icdContainer.innerHTML = '';
-    addICD10Row(record.asesmen);
+    const diags = String(record.asesmen).split(';').map(d => d.trim()).filter(Boolean);
+    if (diags.length > 0) {
+      diags.forEach(d => addICD10Row(d));
+    } else {
+      addICD10Row(record.asesmen);
+    }
+  }
+
+  if (Array.isArray(record.resep) && record.resep.length > 0) {
+    const resepBody = document.getElementById('poli-resep-body');
+    resepBody.innerHTML = '';
+    record.resep.forEach(r => {
+      addPoliMedicineRow(r.namaObat || r.obat, r.harga, r.qty || 1);
+    });
   }
 
   showToast('Data riwayat disalin ke form pemeriksaan!', 'info');
@@ -406,31 +755,45 @@ async function handleSavePoli(e) {
   const bb = document.getElementById('poli-bb').value.trim();
   const tb = document.getElementById('poli-tb').value.trim();
   const detailObj = document.getElementById('poli-objektif-detail').value.trim();
-  const pemeriksa = document.getElementById('poli-pemeriksa').value.trim();
+  const pemeriksa = document.getElementById('poli-pemeriksa').value.trim() || 'Nakes Pemeriksa';
   const isIzinSakit = document.getElementById('poli-izin-sakit').checked;
   const isPantauan = document.getElementById('poli-pantauan').checked;
 
   const objektifFull = `TD: ${td || '-'}, Nadi: ${nadi || '-'}, Suhu: ${suhu || '-'}, BB: ${bb || '-'}, TB: ${tb || '-'}. ${detailObj}`;
 
-  // Gather ICD-10 Diagnoses
+  // Gather ICD-10 Diagnoses & Record Frequencies
   const icdSelects = document.querySelectorAll('.select-icd10');
-  const selectedICD = Array.from(icdSelects).map(s => s.value).filter(v => v !== '').join('; ');
+  const selectedICDArr = Array.from(icdSelects).map(s => s.value.trim()).filter(v => v !== '');
+  selectedICDArr.forEach(d => recordICD10Selection(d));
+  const selectedICD = selectedICDArr.join('; ');
 
-  // Gather Resep Obat
+  // Gather Resep Obat with Live Locked Prices, Aturan Pakai & Subtotals
   const resepRows = document.querySelectorAll('#poli-resep-body tr');
   const resepList = [];
+  let grandTotalBiaya = 0;
+
   resepRows.forEach(tr => {
-    const medSel = tr.querySelector('.select-medicine').value;
-    const dosage = tr.querySelector('.med-dosage').value;
-    const qty = parseInt(tr.querySelector('.med-qty').value) || 1;
-    const aturan = tr.querySelector('.med-aturan').value;
+    const medSel = tr.querySelector('.select-medicine')?.value.trim();
+    const aturan = tr.querySelector('.med-aturan')?.value.trim() || 'sesudah makan';
+    const unitPrice = parseInt(tr.dataset.unitPrice) || 0;
+    const qty = parseInt(tr.querySelector('.med-qty')?.value) || 1;
+    const subtotal = unitPrice * qty;
 
     if (medSel) {
-      resepList.push({ namaObat: medSel, dosage, qty, aturan });
+      resepList.push({ 
+        namaObat: medSel, 
+        aturan,
+        harga: unitPrice, 
+        qty, 
+        subtotal 
+      });
+      grandTotalBiaya += subtotal;
     }
   });
 
-  const planText = resepList.map(r => `${r.namaObat} ${r.dosage} No.${r.qty} (${r.aturan})`).join('; ');
+  const planText = resepList.length > 0
+    ? resepList.map(r => `${r.namaObat} No.${r.qty} (${r.aturan}) [Harga: Rp ${r.subtotal.toLocaleString('id-ID')}]`).join('; ') + (grandTotalBiaya > 0 ? ` [Total: Rp ${grandTotalBiaya.toLocaleString('id-ID')}]` : '')
+    : 'Edukasi Istirahat & Hidrasi Cukup';
 
   // Handle File Upload to Google Drive
   let linkFoto = '';
@@ -462,6 +825,9 @@ async function handleSavePoli(e) {
     }
   }
 
+  // Record Nakes frequency
+  recordNakesUsage(pemeriksa);
+
   const newRecord = {
     nikPabrik: appData.currentPoliPatient.nikPabrik || '',
     namaPasien: appData.currentPoliPatient.nama,
@@ -470,8 +836,9 @@ async function handleSavePoli(e) {
     keluhan,
     objektif: objektifFull,
     asesmen: selectedICD || 'Pemeriksaan Umum',
-    plan: planText || 'Edukasi Istirahat',
+    plan: planText,
     resep: resepList,
+    totalBiaya: grandTotalBiaya,
     pemeriksa,
     izinSakit: isIzinSakit,
     isPantauan,
@@ -502,8 +869,8 @@ async function handleSavePoli(e) {
 
 function resetFormPoli() {
   document.getElementById('form-poli-entry').reset();
-  document.getElementById('poli-pemeriksa').value = 'dr. Dylan Fadhilah';
   initPoliForm();
+  renderNakesSuggestions();
 }
 
 // -------------------------------------------------------------
@@ -556,13 +923,14 @@ function addEditICD10Row(defaultValue = '') {
   div.className = 'edit-icd10-row';
   div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 6px; align-items: center;';
 
+  const icdList = getICD10WithFrequency();
+
   let selectHTML = `<select class="form-control select-edit-icd10" style="flex: 1;"><option value="">-- Pilih Diagnosis ICD-10 --</option>`;
-  appData.icd10.forEach(item => {
-    const code = item.code || item.kode || '';
-    const desc = item.description || item.nama || item.desc || '';
-    const label = code ? `[${code}] ${desc}` : desc;
-    const sel = (defaultValue && (code === defaultValue || desc === defaultValue || label === defaultValue || defaultValue.includes(code))) ? 'selected' : '';
-    selectHTML += `<option value="${label}" ${sel}>${label}</option>`;
+  icdList.forEach(item => {
+    const label = item.fullLabel;
+    const isTop = item.freq > 0 ? ` (🔥 ${item.freq}x)` : '';
+    const sel = (defaultValue && (item.code === defaultValue || item.desc === defaultValue || label === defaultValue || defaultValue.includes(item.code))) ? 'selected' : '';
+    selectHTML += `<option value="${label}" ${sel}>${label}${isTop}</option>`;
   });
   selectHTML += `</select><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus" style="width: 36px; height: 36px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button>`;
 
@@ -577,10 +945,12 @@ function addEditResepRow(medName = '', qty = 1) {
   div.className = 'edit-resep-row';
   div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 6px; align-items: center;';
 
+  const medList = getSortedMedicines();
+
   let selectHTML = `<select class="form-control select-edit-medicine" style="flex: 2;"><option value="">-- Pilih Obat --</option>`;
-  appData.medicines.forEach(m => {
+  medList.forEach(m => {
     const sel = (medName && m.nama.toLowerCase() === medName.toLowerCase()) ? 'selected' : '';
-    selectHTML += `<option value="${m.nama}" ${sel}>${m.nama} [Sisa: ${m.stok}]</option>`;
+    selectHTML += `<option value="${m.nama}" ${sel}>${m.nama} [Stok: ${m.stok}]</option>`;
   });
   selectHTML += `</select>`;
 

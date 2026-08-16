@@ -1229,3 +1229,280 @@ select.form-control {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ===================== SEARCHABLE DROPDOWN COMPONENT ===================== */
+.custom-searchable-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchable-input-box input {
+  padding-right: 32px;
+  cursor: text;
+  width: 100%;
+}
+
+.searchable-dropdown-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.custom-searchable-wrap.active .searchable-dropdown-arrow {
+  transform: translateY(-50%) rotate(180deg);
+  color: var(--primary);
+}
+
+/* Dropdown Menu - Dynamic Theme Compatible */
+.searchable-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 250px;
+  overflow-y: auto;
+  background: var(--surface-1);
+  border: 1.5px solid var(--border-focus);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  display: none;
+}
+
+[data-theme="dark"] .searchable-dropdown-menu {
+  background: #0f172a;
+  border-color: #38bdf8;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.8), 0 4px 10px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="light"] .searchable-dropdown-menu {
+  background: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-searchable-wrap.active .searchable-dropdown-menu {
+  display: block;
+}
+
+.searchable-option-item {
+  padding: 9px 12px;
+  font-size: 0.84rem;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-card);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.searchable-option-item:last-child {
+  border-bottom: none;
+}
+
+.searchable-option-item strong {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.searchable-option-item .option-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Dark Mode Hover / Selection */
+[data-theme="dark"] .searchable-option-item {
+  color: #f1f5f9;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+[data-theme="dark"] .searchable-option-item:hover, 
+[data-theme="dark"] .searchable-option-item.highlighted {
+  background: #1e293b;
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .searchable-option-item.selected {
+  background: rgba(14, 165, 233, 0.2);
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+/* Light Mode Hover / Selection - 100% High Contrast */
+[data-theme="light"] .searchable-option-item {
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .searchable-option-item:hover, 
+[data-theme="light"] .searchable-option-item.highlighted {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+[data-theme="light"] .searchable-option-item.selected {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+[data-theme="light"] .searchable-option-item strong {
+  color: #0f172a;
+}
+
+[data-theme="light"] .searchable-option-item .option-sub {
+  color: #64748b;
+}
+
+/* Tags & Badges */
+.freq-tag {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+[data-theme="light"] .freq-tag {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.price-tag {
+  font-size: 0.74rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+[data-theme="light"] .price-tag {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+/* ===================== RESEP SUMMARY CARD ===================== */
+.resep-total-summary-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85));
+  border: 1.5px solid rgba(14, 165, 233, 0.35);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .resep-total-summary-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1.5px solid #7dd3fc;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1);
+}
+
+.resep-total-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+[data-theme="light"] .resep-total-info {
+  color: #0f172a;
+}
+
+.resep-total-amount {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="light"] .resep-total-amount {
+  color: #0284c7;
+}
+
+.med-subtotal-badge {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 7px 8px;
+  border-radius: var(--r-xs);
+  text-align: right;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  white-space: nowrap;
+}
+
+[data-theme="light"] .med-subtotal-badge {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #6ee7b7;
+}
+
+/* Nakes Quick Chips */
+.popular-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.nakes-chip {
+  background: var(--surface-2);
+  border: 1px solid var(--border-card);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+[data-theme="light"] .nakes-chip {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.nakes-chip:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+[data-theme="light"] .nakes-chip:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
