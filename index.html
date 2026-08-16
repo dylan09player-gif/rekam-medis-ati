@@ -358,7 +358,10 @@
               <h2><i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i> Stok Obat Gudang Apotek Nafila</h2>
               <p style="color: var(--text-muted); font-size: 0.85rem;">Manajemen stok obat, sisa stok, &amp; cetak lembar stok opname manual PT ATI.</p>
             </div>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-warning" onclick="syncNowFromGSheet(this)" style="background: #f59e0b; color: #000; font-weight: 700;">
+                <i class="fa-solid fa-arrows-rotate"></i> Sync G-Sheet Sekarang
+              </button>
               <button class="btn btn-primary" onclick="openModalTambahObat()">
                 <i class="fa-solid fa-plus"></i> Tambah Obat Baru
               </button>

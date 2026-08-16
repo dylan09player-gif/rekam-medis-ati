@@ -7,7 +7,8 @@
     "alamat": "Jl. PT ATI Makmur No. 88, Jakarta Utara",
     "penanggung_jawab": "dr. Dylan Fadhilah",
     "gsheet_url": "https://script.google.com/macros/s/AKfycbyC97_y1xThnBpgRPpZKWYyJzu-rsqvIwHD_fEFYSduqLbgjROP-Qa_IWhWKCP5whXl/exec",
-    "telegram_chat_id": "-1003726103172"
+    "telegram_chat_id": "-1003726103172",
+    "last_sync": "2026-08-16T16:44:13.701Z"
   },
   "employees": [
     {
@@ -4542,10 +4543,10 @@
     {
       "id": "MED-1",
       "nama": "ALKOHOL SWAB",
-      "satuan": "box",
-      "stok": 43,
+      "satuan": "strip",
+      "stok": 992,
       "kategori": "Gudang PT ATI",
-      "harga": "240",
+      "harga": 251,
       "stok_minimum": "5"
     },
     {
@@ -4669,9 +4670,9 @@
       "id": "MED-15",
       "nama": "BIOPLACENTON SALP",
       "satuan": "tube",
-      "stok": 0,
+      "stok": 13,
       "kategori": "Gudang PT ATI",
-      "harga": "23800",
+      "harga": 38961,
       "stok_minimum": "1"
     },
     {
@@ -4929,10 +4930,10 @@
     {
       "id": "MED-34",
       "nama": "KASSA STERIL",
-      "satuan": "pcs",
-      "stok": 0,
-      "kategori": "Gudang PT ATI",
-      "harga": "2378",
+      "satuan": "strip",
+      "stok": 18,
+      "kategori": "Obat",
+      "harga": 7450,
       "stok_minimum": "1"
     },
     {
@@ -4965,10 +4966,10 @@
     {
       "id": "MED-38",
       "nama": "LIDOCAIN INJEK",
-      "satuan": "ampul",
-      "stok": 5,
-      "kategori": "Gudang PT ATI",
-      "harga": "1554",
+      "satuan": "strip",
+      "stok": 3,
+      "kategori": "Obat",
+      "harga": 3860,
       "stok_minimum": "5"
     },
     {
@@ -5037,10 +5038,10 @@
     {
       "id": "MED-45",
       "nama": "MICROPORE SEDANG",
-      "satuan": "roll",
-      "stok": 2,
-      "kategori": "Gudang PT ATI",
-      "harga": "10500",
+      "satuan": "strip",
+      "stok": 10,
+      "kategori": "Obat",
+      "harga": 34033,
       "stok_minimum": "10"
     },
     {
@@ -5209,9 +5210,9 @@
       "id": "MED-58",
       "nama": "SPASMINAL TAB",
       "satuan": "strip",
-      "stok": 77,
-      "kategori": "Gudang PT ATI",
-      "harga": "977",
+      "stok": 202,
+      "kategori": "Obat",
+      "harga": 1266,
       "stok_minimum": "2"
     },
     {
@@ -5226,10 +5227,10 @@
     {
       "id": "MED-60",
       "nama": "STIK ASAM URAT",
-      "satuan": "box",
-      "stok": 16,
-      "kategori": "Gudang PT ATI",
-      "harga": "3304",
+      "satuan": "strip",
+      "stok": 3,
+      "kategori": "Obat",
+      "harga": 20000,
       "stok_minimum": "10"
     },
     {
@@ -5244,10 +5245,10 @@
     {
       "id": "MED-62",
       "nama": "STIK KOLESTEROL",
-      "satuan": "box",
-      "stok": 1,
-      "kategori": "Gudang PT ATI",
-      "harga": "15140",
+      "satuan": "strip",
+      "stok": 11,
+      "kategori": "Obat",
+      "harga": 35000,
       "stok_minimum": "5"
     },
     {
@@ -5285,1684 +5286,4135 @@
       "kategori": "Gudang PT ATI",
       "harga": "240",
       "stok_minimum": "10"
+    },
+    {
+      "id": "MED-1786898649173219",
+      "nama": "ABOCATE 22",
+      "stok": 4,
+      "satuan": "-",
+      "harga": 40000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174810",
+      "nama": "ABOCATE 24",
+      "stok": 2,
+      "satuan": "-",
+      "harga": 60000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174382",
+      "nama": "ACETHYLCYSTEINE 200 MG",
+      "stok": 0,
+      "satuan": "box",
+      "harga": 2434,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174398",
+      "nama": "ACRAN INJEK",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 30058,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-178689864917438",
+      "nama": "ACYCLOVIR SALP",
+      "stok": 29,
+      "satuan": "strip",
+      "harga": 6646,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174603",
+      "nama": "ACYCLOVIR TAB",
+      "stok": 20,
+      "satuan": "strip",
+      "harga": 952,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174365",
+      "nama": "ALBOTHYL 10 ML",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 50000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174394",
+      "nama": "ALDISA SR TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 8585,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174172",
+      "nama": "ALKOHOL 100 ML",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 11476,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174873",
+      "nama": "ALLERON TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 165,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174719",
+      "nama": "ALLOFAR 300 MG",
+      "stok": 280,
+      "satuan": "strip",
+      "harga": 1000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174511",
+      "nama": "ALLORIS TAB",
+      "stok": 0,
+      "satuan": "tube",
+      "harga": 7215,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174644",
+      "nama": "amadiab 3 mg",
+      "stok": 100,
+      "satuan": "pcs",
+      "harga": 10000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174201",
+      "nama": "AMADIAB 4 MG TAB",
+      "stok": 100,
+      "satuan": "tube",
+      "harga": 11832,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174442",
+      "nama": "AMARYL 2 MG TAB",
+      "stok": 60,
+      "satuan": "-",
+      "harga": 11200,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174444",
+      "nama": "AMOXSAN 500 MG TAB",
+      "stok": 30,
+      "satuan": "tube",
+      "harga": 4761,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174227",
+      "nama": "ANALSIX TAB",
+      "stok": 0,
+      "satuan": "box",
+      "harga": 2525,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174414",
+      "nama": "ANDONEX SYR",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 32467,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649174535",
+      "nama": "ANPIRIDE 2 MG TAB",
+      "stok": 160,
+      "satuan": "strip",
+      "harga": 6421,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175480",
+      "nama": "ARSINAL TAB",
+      "stok": 50,
+      "satuan": "strip",
+      "harga": 1587,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175706",
+      "nama": "ascardia tab",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 2000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-178689864917577",
+      "nama": "ASPILET",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 2000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175310",
+      "nama": "ASTHAROL SYRUP",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 23376,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175858",
+      "nama": "ASTHAROL TAB",
+      "stok": 10,
+      "satuan": "-",
+      "harga": 1948,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-178689864917538",
+      "nama": "ATAROC TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 4000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175171",
+      "nama": "ATEVIR 0.5 MG TAB",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 46233,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175737",
+      "nama": "AZOMEP 500 MG",
+      "stok": 30,
+      "satuan": "-",
+      "harga": 31746,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175199",
+      "nama": "BAQUINOR FORTE TAB",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 20057,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175344",
+      "nama": "BECOM C TAB",
+      "stok": 40,
+      "satuan": "botol",
+      "harga": 2453,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175951",
+      "nama": "BECOM ZET TAB",
+      "stok": 80,
+      "satuan": "strip",
+      "harga": 3246,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175340",
+      "nama": "BENANG SILK 3/0",
+      "stok": 3,
+      "satuan": "strip",
+      "harga": 2800,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175735",
+      "nama": "BERRY VISION TAB",
+      "stok": 80,
+      "satuan": "tube",
+      "harga": 5050,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175787",
+      "nama": "BETADINE SOL 15 ML",
+      "stok": 11,
+      "satuan": "-",
+      "harga": 19769,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175979",
+      "nama": "BETASON N CREAM 5 GR",
+      "stok": 3,
+      "satuan": "sachet",
+      "harga": 23800,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175430",
+      "nama": "BIOCOMBIN INJ",
+      "stok": 4,
+      "satuan": "-",
+      "harga": 25000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-178689864917561",
+      "nama": "BIOSANBE TAB",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 1803,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175314",
+      "nama": "BIOTHICOL 500 MG TAB",
+      "stok": 0,
+      "satuan": "tube",
+      "harga": 5600,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175690",
+      "nama": "BISOPROLOL 5 MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 2500,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175954",
+      "nama": "BISTURI NO 11",
+      "stok": 3,
+      "satuan": "-",
+      "harga": 7607,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175122",
+      "nama": "BLOOD LANCETS",
+      "stok": 475,
+      "satuan": "botol",
+      "harga": 150,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175829",
+      "nama": "BRALIFEX PLUS EYE DROP",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 72150,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175579",
+      "nama": "CALADINE LOTION 60 ML",
+      "stok": 9,
+      "satuan": "roll",
+      "harga": 21139,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175389",
+      "nama": "CALADINE POWDER 60 GRM",
+      "stok": 5,
+      "satuan": "roll",
+      "harga": 15093,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175548",
+      "nama": "CANDERIN 8 MG",
+      "stok": 0,
+      "satuan": "pcs",
+      "harga": 11000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175283",
+      "nama": "CANDERIN TAB 16 MG",
+      "stok": 150,
+      "satuan": "tube",
+      "harga": 14763,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175784",
+      "nama": "CARDISAN 10MG",
+      "stok": 0,
+      "satuan": "pack",
+      "harga": 16378,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175817",
+      "nama": "CARDISAN 5MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 9235,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175106",
+      "nama": "CATAFLAM 50 MG TAB",
+      "stok": 60,
+      "satuan": "ampul",
+      "harga": 8862,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175304",
+      "nama": "CDR ISI 10",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 63000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175599",
+      "nama": "CDR ISI 15 TAB",
+      "stok": 24,
+      "satuan": "tab",
+      "harga": 84000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175992",
+      "nama": "CENDO MYCETIN SALP MATA",
+      "stok": 0,
+      "satuan": "pcs",
+      "harga": 19233,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175151",
+      "nama": "CENDO PANTOCAIN 0,5 %",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 33000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175989",
+      "nama": "CENDO XITROL SALP MATA",
+      "stok": 1,
+      "satuan": "strip",
+      "harga": 52302,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175383",
+      "nama": "CENDO XITROL TM",
+      "stok": 23,
+      "satuan": "strip",
+      "harga": 43145,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175363",
+      "nama": "CERINI TAB",
+      "stok": 20,
+      "satuan": "strip",
+      "harga": 5627,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175475",
+      "nama": "CINOLON CREAM 10 GRM",
+      "stok": 11,
+      "satuan": "roll",
+      "harga": 26118,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175100",
+      "nama": "COLLAR NECK",
+      "stok": 1,
+      "satuan": "botol",
+      "harga": 1000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175987",
+      "nama": "CORTIDEX TAB 0,5 MG",
+      "stok": 110,
+      "satuan": "botol",
+      "harga": 451,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-178689864917555",
+      "nama": "COUNTERPAIN 30 GRM",
+      "stok": 44,
+      "satuan": "-",
+      "harga": 51000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175276",
+      "nama": "COUNTERPAIN 60 GR",
+      "stok": 0,
+      "satuan": "botol",
+      "harga": 94848,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175119",
+      "nama": "COUNTERPAIN COOL 30 GR",
+      "stok": 15,
+      "satuan": "-",
+      "harga": 48000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175180",
+      "nama": "CURCUMA FORCE",
+      "stok": 84,
+      "satuan": "strip",
+      "harga": 1500,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175658",
+      "nama": "CUTICELL",
+      "stok": 10,
+      "satuan": "strip",
+      "harga": 15300,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175822",
+      "nama": "cygest suppositoria",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 48000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175324",
+      "nama": "DERMOVEL CREAM 10 GR",
+      "stok": 7,
+      "satuan": "strip",
+      "harga": 104832,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175286",
+      "nama": "DEXA INJ",
+      "stok": 0,
+      "satuan": "roll",
+      "harga": 10000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175754",
+      "nama": "DEXTAMINE TAB",
+      "stok": 60,
+      "satuan": "pcs",
+      "harga": 2619,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-178689864917544",
+      "nama": "DONEXAN SYR",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 25974,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175949",
+      "nama": "DONEXAN TAB",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 1082,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175664",
+      "nama": "DULCOLAX TAB 5 MG",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 2600,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175681",
+      "nama": "duphaston tab",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 31000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175636",
+      "nama": "EFLAGEN 25 MG",
+      "stok": 0,
+      "satuan": "sachet",
+      "harga": 2600,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175170",
+      "nama": "EFLAGEN 50 MG TAB",
+      "stok": 100,
+      "satuan": "-",
+      "harga": 3318,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175993",
+      "nama": "EFLIN TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 1803,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175944",
+      "nama": "Elevit",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 4000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175185",
+      "nama": "ELOMEP CREAM",
+      "stok": 0,
+      "satuan": "pcs",
+      "harga": 86580,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175954",
+      "nama": "EPEXOL SYRUP",
+      "stok": 9,
+      "satuan": "box",
+      "harga": 30593,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175879",
+      "nama": "EPEXOL TAB",
+      "stok": 40,
+      "satuan": "box",
+      "harga": 1334,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175863",
+      "nama": "EPISAN SYR",
+      "stok": 0,
+      "satuan": "box",
+      "harga": 77849,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175155",
+      "nama": "EPRINOC TAB",
+      "stok": 10,
+      "satuan": "tube",
+      "harga": 5483,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175746",
+      "nama": "FARMOTEN 25 MG TAB",
+      "stok": 0,
+      "satuan": "pcs",
+      "harga": 2000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-178689864917597",
+      "nama": "FASORBID 10 MG",
+      "stok": 0,
+      "satuan": "-",
+      "harga": 1000,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175781",
+      "nama": "FASTOR TAB 10 MG",
+      "stok": 70,
+      "satuan": "strip",
+      "harga": 23088,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649175486",
+      "nama": "FASTOR TAB 20 MG",
+      "stok": 10,
+      "satuan": "strip",
+      "harga": 25974,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175352",
+      "nama": "FENOLIP 160 MG",
+      "stok": 110,
+      "satuan": "strip",
+      "harga": 16000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175231",
+      "nama": "FG TROCHES ISI 300 TAB",
+      "stok": 191,
+      "satuan": "strip",
+      "harga": 2124,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864917579",
+      "nama": "FITA JOIN ROLL",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 110000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175807",
+      "nama": "FLAMAR 50 MG TAB",
+      "stok": 50,
+      "satuan": "strip",
+      "harga": 2886,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175381",
+      "nama": "FLUTAMOL TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 1480,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175250",
+      "nama": "FORBETES 500 MG TAB",
+      "stok": 20,
+      "satuan": "strip",
+      "harga": 1600,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175591",
+      "nama": "FORBETES 850 MG TAB",
+      "stok": 120,
+      "satuan": "strip",
+      "harga": 1731,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175856",
+      "nama": "FORMUNO TAB",
+      "stok": 90,
+      "satuan": "strip",
+      "harga": 10996,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175727",
+      "nama": "FORMYCO 200 MG TAB",
+      "stok": 160,
+      "satuan": "strip",
+      "harga": 8225,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175195",
+      "nama": "FORMYCO CREAM",
+      "stok": 6,
+      "satuan": "strip",
+      "harga": 29437,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175182",
+      "nama": "FORUMEN EAR DROP",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 41703,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175870",
+      "nama": "GALFLUX TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 5772,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175215",
+      "nama": "GASTRINAL SYR",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 36075,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175193",
+      "nama": "Glutrop",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 36000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175286",
+      "nama": "GLUVAS 2 MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 8000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175590",
+      "nama": "GRATIZIN 5 MG TAB",
+      "stok": 180,
+      "satuan": "strip",
+      "harga": 7431,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175832",
+      "nama": "HANDSCUN NITRIL",
+      "stok": 111,
+      "satuan": "strip",
+      "harga": 7200,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175901",
+      "nama": "HANSAPLAST KAIN",
+      "stok": 50,
+      "satuan": "strip",
+      "harga": 601,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175921",
+      "nama": "HECOSAN SYR 120 ML",
+      "stok": 6,
+      "satuan": "strip",
+      "harga": 77705,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864917572",
+      "nama": "HEPARLIC CAP",
+      "stok": 150,
+      "satuan": "strip",
+      "harga": 7647,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175674",
+      "nama": "HEROCYN 150 GR",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 35000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175330",
+      "nama": "HYOSCINE INJ",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 67208,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175153",
+      "nama": "HYPAFIX 10CM X 10 M (perkotak)",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 10000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175655",
+      "nama": "HYPAFIX 5CM X 5 M (perkotak)",
+      "stok": 1,
+      "satuan": "strip",
+      "harga": 5000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649175621",
+      "nama": "IMBOOS TAB",
+      "stok": 10,
+      "satuan": "strip",
+      "harga": 4618,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176704",
+      "nama": "INFUS SET",
+      "stok": 6,
+      "satuan": "strip",
+      "harga": 20000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176126",
+      "nama": "INODERM CREAM",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 22366,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176619",
+      "nama": "INSTO TM",
+      "stok": 3,
+      "satuan": "strip",
+      "harga": 17099,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176291",
+      "nama": "IREMAX",
+      "stok": 210,
+      "satuan": "strip",
+      "harga": 2000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176114",
+      "nama": "KASSA GULUNG 10 CM",
+      "stok": 13,
+      "satuan": "strip",
+      "harga": 3400,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176605",
+      "nama": "KENALOG KRIM",
+      "stok": 9,
+      "satuan": "strip",
+      "harga": 93636,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176133",
+      "nama": "KETESSE TAB",
+      "stok": 100,
+      "satuan": "strip",
+      "harga": 13347,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176884",
+      "nama": "KETOROLAC INJEK",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 25000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176525",
+      "nama": "KETRICIN ORABASE",
+      "stok": 3,
+      "satuan": "strip",
+      "harga": 86580,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176728",
+      "nama": "KETRICIN TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 5050,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176855",
+      "nama": "KLIP PLASTIK OBAT",
+      "stok": 4020,
+      "satuan": "strip",
+      "harga": 200,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176239",
+      "nama": "KRESEK PUTIH NAFILA",
+      "stok": 3100,
+      "satuan": "strip",
+      "harga": 500,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176360",
+      "nama": "LAFALOS CREAM",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 18900,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176436",
+      "nama": "LAPIGIM TAB 2/500",
+      "stok": 80,
+      "satuan": "strip",
+      "harga": 11000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176888",
+      "nama": "LAPRAZ CAPS",
+      "stok": 30,
+      "satuan": "strip",
+      "harga": 19552,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649176753",
+      "nama": "LODIA TAB",
+      "stok": 140,
+      "satuan": "strip",
+      "harga": 1659,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864917852",
+      "nama": "LOREMID TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 1587,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178200",
+      "nama": "LUSANOC CREAM",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 23088,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178598",
+      "nama": "LUSANOC TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 6349,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178423",
+      "nama": "MALTIRON PLUS TAB",
+      "stok": 79,
+      "satuan": "strip",
+      "harga": 2164,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178640",
+      "nama": "Masker Nebu",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 55000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178920",
+      "nama": "MAXPRO CAPS",
+      "stok": 50,
+      "satuan": "strip",
+      "harga": 27417,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178522",
+      "nama": "MAXSIMET 1000/500 MG TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 12265,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178765",
+      "nama": "MAXSIMET 50/500 MG TAB",
+      "stok": 120,
+      "satuan": "strip",
+      "harga": 10822,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178566",
+      "nama": "MEFINAL TAB",
+      "stok": 40,
+      "satuan": "strip",
+      "harga": 2164,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178344",
+      "nama": "MEFIX TAB",
+      "stok": 40,
+      "satuan": "strip",
+      "harga": 1732,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178430",
+      "nama": "MEFUROSAN CREAM",
+      "stok": 9,
+      "satuan": "strip",
+      "harga": 114141,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178949",
+      "nama": "MEGABAL CAPSUL",
+      "stok": 60,
+      "satuan": "strip",
+      "harga": 2963,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178649",
+      "nama": "MEMUCIL 600MG TAB EFF",
+      "stok": 14,
+      "satuan": "strip",
+      "harga": 17316,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178599",
+      "nama": "MEMUCIL TAB",
+      "stok": 30,
+      "satuan": "strip",
+      "harga": 5186,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178763",
+      "nama": "MENSIPOX TAB",
+      "stok": 18,
+      "satuan": "strip",
+      "harga": 19480,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178327",
+      "nama": "MEPROBAL 500MG TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 2813,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178827",
+      "nama": "MEPROSON TAB",
+      "stok": 86,
+      "satuan": "strip",
+      "harga": 4400,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178359",
+      "nama": "MERTIGO SR TAB 12 MG",
+      "stok": 30,
+      "satuan": "strip",
+      "harga": 9610,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178474",
+      "nama": "MEVITON TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 2164,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178797",
+      "nama": "MEZATRIN 500 MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 44500,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649178402",
+      "nama": "MICROPORE KECIL",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 17517,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179576",
+      "nama": "MINYAK KAYU PUTIH CAPLANG 60 ML",
+      "stok": 44,
+      "satuan": "strip",
+      "harga": 27000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179527",
+      "nama": "MUCIFAT SYR 100 ML",
+      "stok": 10,
+      "satuan": "strip",
+      "harga": 69264,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179514",
+      "nama": "MUCOHEXIN TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 808,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179192",
+      "nama": "MUCOS SYR",
+      "stok": 8,
+      "satuan": "strip",
+      "harga": 23809,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864917990",
+      "nama": "MUCOS TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 1154,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864917947",
+      "nama": "NACL 100 ML",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 35000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179124",
+      "nama": "NACL INFUS 500 ML OTSUKA",
+      "stok": 8,
+      "satuan": "strip",
+      "harga": 35000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179115",
+      "nama": "NEEDLE 24",
+      "stok": 2,
+      "satuan": "strip",
+      "harga": 3574,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179555",
+      "nama": "NEEDLE 26",
+      "stok": 5,
+      "satuan": "strip",
+      "harga": 2216,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864917965",
+      "nama": "NEPHROLIT TAB",
+      "stok": 45,
+      "satuan": "strip",
+      "harga": 3500,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179806",
+      "nama": "NEURALGIN RX TAB",
+      "stok": 20,
+      "satuan": "strip",
+      "harga": 1529,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179330",
+      "nama": "NEUROSANBE 5000 MG",
+      "stok": 40,
+      "satuan": "strip",
+      "harga": 5679,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179414",
+      "nama": "NEUROSANBE PLUS TAB",
+      "stok": 100,
+      "satuan": "strip",
+      "harga": 1800,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179348",
+      "nama": "NEW ENZYPLEX TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 3000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179436",
+      "nama": "NIKOLAM CAPS",
+      "stok": 90,
+      "satuan": "strip",
+      "harga": 4689,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179287",
+      "nama": "NOLIPO CAPS",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 7200,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179569",
+      "nama": "NORAGES INJ",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 15000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179823",
+      "nama": "NORIT TAB",
+      "stok": 40,
+      "satuan": "strip",
+      "harga": 1000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179378",
+      "nama": "OBH COMBI SYR 100 ML",
+      "stok": 11,
+      "satuan": "strip",
+      "harga": 19336,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179827",
+      "nama": "OBH NELCO SYR 100 ML",
+      "stok": 6,
+      "satuan": "strip",
+      "harga": 34632,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179540",
+      "nama": "OCUSON TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 2236,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179566",
+      "nama": "OMEGA-E",
+      "stok": 10,
+      "satuan": "strip",
+      "harga": 3000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179306",
+      "nama": "OMEPROSE BOTOL ISI 60 TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 318000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179226",
+      "nama": "ONDANCENTRON 4 MG INJEK",
+      "stok": 11,
+      "satuan": "strip",
+      "harga": 41847,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179362",
+      "nama": "ONDANE TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 7200,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179111",
+      "nama": "OPM CAPS",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 16955,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179724",
+      "nama": "OSTE FORTE TAB",
+      "stok": 72,
+      "satuan": "strip",
+      "harga": 8917,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179118",
+      "nama": "OSTELOX 7,5 MG TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 8400,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864917969",
+      "nama": "OTILON TTS TELINGA",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 64802,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179906",
+      "nama": "PARACETAMOL INFUS",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 87000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179632",
+      "nama": "PARATUSIN",
+      "stok": 140,
+      "satuan": "strip",
+      "harga": 1966,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179178",
+      "nama": "PERBAN ELASTIS KECIL (WINNER)",
+      "stok": 1,
+      "satuan": "strip",
+      "harga": 37000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179872",
+      "nama": "PERBAN ELASTIS SEDANG (WINNER)",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 45000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179963",
+      "nama": "PLASMINEX TAB",
+      "stok": 20,
+      "satuan": "strip",
+      "harga": 4433,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179816",
+      "nama": "POLIDEMISIN EYE DROP",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 43073,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179340",
+      "nama": "POT URINE",
+      "stok": 6,
+      "satuan": "strip",
+      "harga": 5000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179488",
+      "nama": "povidion iodion / ecodine",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 7887,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179228",
+      "nama": "PRALAX SYR",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 105000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179975",
+      "nama": "Priksa Saja",
+      "stok": 2100000000,
+      "satuan": "strip",
+      "harga": 0,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179494",
+      "nama": "PRIMADEX F TAB",
+      "stok": 10,
+      "satuan": "strip",
+      "harga": 850,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649179653",
+      "nama": "PRIMOLUT N TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 8000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864918066",
+      "nama": "PROCELES TAB",
+      "stok": 30,
+      "satuan": "strip",
+      "harga": 2164,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180382",
+      "nama": "PRODEXON TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 505,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180538",
+      "nama": "PROHISTATIN TAB",
+      "stok": 100,
+      "satuan": "-",
+      "harga": 6277,
+      "kategori": "Gudang PT ATI"
+    },
+    {
+      "id": "MED-1786898649180216",
+      "nama": "PROLEVOX TAB 500 MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 54000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180884",
+      "nama": "PRONOVIR TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 11544,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180509",
+      "nama": "PROXIDAN TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 5411,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180530",
+      "nama": "PUMPITOR KAPSUL",
+      "stok": 90,
+      "satuan": "strip",
+      "harga": 21500,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180881",
+      "nama": "PURICEMIA TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 4300,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180812",
+      "nama": "PYREXIN TAB",
+      "stok": 90,
+      "satuan": "strip",
+      "harga": 577,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180865",
+      "nama": "Ramolit",
+      "stok": 100,
+      "satuan": "strip",
+      "harga": 953,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180814",
+      "nama": "RANITIDIN INJEK",
+      "stok": 4,
+      "satuan": "strip",
+      "harga": 10152,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180101",
+      "nama": "RETOP",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 7936,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864918031",
+      "nama": "RHINOMAX TAB",
+      "stok": 145,
+      "satuan": "strip",
+      "harga": 7936,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864918010",
+      "nama": "RHINOS SR CAPS",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 9812,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864918060",
+      "nama": "RIVANOL 100 ML",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 5067,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180254",
+      "nama": "RL 500 ML",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 25000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180557",
+      "nama": "SAGESTAM EYE DROP",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 49653,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180318",
+      "nama": "SAGESTAM SALP",
+      "stok": 9,
+      "satuan": "strip",
+      "harga": 19552,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180859",
+      "nama": "SANADRYL DMP SYR 120 ML",
+      "stok": 5,
+      "satuan": "strip",
+      "harga": 35353,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864918091",
+      "nama": "SANADRYL EXP SYR 120 ml",
+      "stok": 1,
+      "satuan": "strip",
+      "harga": 25000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180784",
+      "nama": "SANEXON 4 MG TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 3501,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180847",
+      "nama": "SANMAG SYR",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 39960,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180252",
+      "nama": "SANMOL TAB",
+      "stok": 100,
+      "satuan": "strip",
+      "harga": 600,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180482",
+      "nama": "SANORINE 200 ML BIRU",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 27417,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180896",
+      "nama": "SANORINE 200 ML HIJAU",
+      "stok": 6,
+      "satuan": "strip",
+      "harga": 36291,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180594",
+      "nama": "SANPRIMA TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 3175,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180968",
+      "nama": "SANTA E TAB",
+      "stok": 20,
+      "satuan": "strip",
+      "harga": 1584,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180155",
+      "nama": "sarung tangan",
+      "stok": 9,
+      "satuan": "strip",
+      "harga": 4861,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180107",
+      "nama": "SCOPMA PLUS TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 1531,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180394",
+      "nama": "SELANG OKSIGEN",
+      "stok": 2,
+      "satuan": "strip",
+      "harga": 50000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180680",
+      "nama": "SIMSARTAN 40 MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 12265,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180631",
+      "nama": "SIMSARTAN 80 MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 16233,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180420",
+      "nama": "SIMTOR 10 MG",
+      "stok": 120,
+      "satuan": "strip",
+      "harga": 15873,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649180452",
+      "nama": "SIMTOR 20 MG",
+      "stok": 60,
+      "satuan": "strip",
+      "harga": 17460,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181715",
+      "nama": "SIMVASK 10 MG",
+      "stok": 120,
+      "satuan": "strip",
+      "harga": 15873,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864918112",
+      "nama": "SIMVASK 5 MG TAB",
+      "stok": 140,
+      "satuan": "strip",
+      "harga": 9018,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181744",
+      "nama": "SPORETIC 100 MG",
+      "stok": 4,
+      "satuan": "strip",
+      "harga": 31457,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181623",
+      "nama": "SPORETIC 200 MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 44372,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181153",
+      "nama": "SPUIT 3 CC",
+      "stok": 211,
+      "satuan": "strip",
+      "harga": 7578,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181942",
+      "nama": "SPUIT 5 CC",
+      "stok": 4,
+      "satuan": "strip",
+      "harga": 9008,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181433",
+      "nama": "SPUIT I CC",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 10152,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181693",
+      "nama": "STIK GULA DARAH",
+      "stok": 25,
+      "satuan": "strip",
+      "harga": 20000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181914",
+      "nama": "SUPRAMOX TAB 500 MG",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 3463,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181132",
+      "nama": "SYMBICORT TURB 80 DOS 60",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 360213,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181365",
+      "nama": "TENSICAP 25 MG",
+      "stok": 200,
+      "satuan": "strip",
+      "harga": 6349,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181285",
+      "nama": "TENSIVASK TAB 10 MG",
+      "stok": 200,
+      "satuan": "strip",
+      "harga": 15295,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181259",
+      "nama": "thrombopop gel 20 gr",
+      "stok": 7,
+      "satuan": "strip",
+      "harga": 86580,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181120",
+      "nama": "TOBROSON MINIDOSE 0,6 ML",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 41847,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181741",
+      "nama": "TRADOSIX KAPSUL",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 6349,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181241",
+      "nama": "TRAJENTA DUO",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 990000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181455",
+      "nama": "TREMENZA TAB",
+      "stok": 140,
+      "satuan": "strip",
+      "harga": 2500,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181142",
+      "nama": "TRICKER TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 7207,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181935",
+      "nama": "TROGYL TAB",
+      "stok": 30,
+      "satuan": "strip",
+      "harga": 2400,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181572",
+      "nama": "trovensis 4 mg",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 19408,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181358",
+      "nama": "TROVENSIS 8 MG TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 26500,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181275",
+      "nama": "TUDIAB 500MG",
+      "stok": 210,
+      "satuan": "strip",
+      "harga": 1731,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181801",
+      "nama": "TUGESAL 50 MG TAB",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 5050,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181515",
+      "nama": "TUZALOS CAPS",
+      "stok": 82,
+      "satuan": "strip",
+      "harga": 1587,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181737",
+      "nama": "ULCERID TAB",
+      "stok": 126,
+      "satuan": "strip",
+      "harga": 9379,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181944",
+      "nama": "UROTRACTIN CAPSUL",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 5757,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181677",
+      "nama": "VENOSMIL GEL 60 GR TUBE",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 287878,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864918175",
+      "nama": "Venosmil tab 200 mg",
+      "stok": 0,
+      "satuan": "strip",
+      "harga": 17460,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649181409",
+      "nama": "Ventolin inhaler",
+      "stok": 2,
+      "satuan": "strip",
+      "harga": 200000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-178689864918297",
+      "nama": "VOSEDON TAB",
+      "stok": 190,
+      "satuan": "strip",
+      "harga": 3752,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649182645",
+      "nama": "WINNER HANSAPLAST GULUNG",
+      "stok": 1,
+      "satuan": "strip",
+      "harga": 55000,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649182184",
+      "nama": "X-CAM 7,5 MG TAB",
+      "stok": 120,
+      "satuan": "strip",
+      "harga": 7575,
+      "kategori": "Obat"
+    },
+    {
+      "id": "MED-1786898649182902",
+      "nama": "YRINS / box",
+      "stok": 5,
+      "satuan": "strip",
+      "harga": 33890,
+      "kategori": "Obat"
     }
   ],
   "icd10": [
     {
-      "kode": "A01.0",
-      "nama": "Demam Tifoid"
+      "id": "ICD-0",
+      "code": "A01.0",
+      "description": "Demam Tifoid"
     },
     {
-      "kode": "A06.0",
-      "nama": "Disenteri Ameba"
+      "id": "ICD-1",
+      "code": "A06.0",
+      "description": "Disenteri Ameba"
     },
     {
-      "kode": "A07.0",
-      "nama": "Giardia"
+      "id": "ICD-2",
+      "code": "A07.0",
+      "description": "Giardia"
     },
     {
-      "kode": "A08.0",
-      "nama": "Rotavirus Diare"
+      "id": "ICD-3",
+      "code": "A08.0",
+      "description": "Rotavirus Diare"
     },
     {
-      "kode": "A09.9",
-      "nama": "Diare/GEA"
+      "id": "ICD-4",
+      "code": "A09.9",
+      "description": "Diare/GEA"
     },
     {
-      "kode": "A15.0",
-      "nama": "TB Paru BTA+"
+      "id": "ICD-5",
+      "code": "A15.0",
+      "description": "TB Paru BTA+"
     },
     {
-      "kode": "A15.3",
-      "nama": "TB Kelenjar Getah Bening"
+      "id": "ICD-6",
+      "code": "A15.3",
+      "description": "TB Kelenjar Getah Bening"
     },
     {
-      "kode": "A16.2",
-      "nama": "TB Paru Klinis"
+      "id": "ICD-7",
+      "code": "A16.2",
+      "description": "TB Paru Klinis"
     },
     {
-      "kode": "A17.0",
-      "nama": "TB Meningitis"
+      "id": "ICD-8",
+      "code": "A17.0",
+      "description": "TB Meningitis"
     },
     {
-      "kode": "A18.0",
-      "nama": "TB Tulang"
+      "id": "ICD-9",
+      "code": "A18.0",
+      "description": "TB Tulang"
     },
     {
-      "kode": "A18.2",
-      "nama": "TB Kelenjar Limfe Perifer"
+      "id": "ICD-10",
+      "code": "A18.2",
+      "description": "TB Kelenjar Limfe Perifer"
     },
     {
-      "kode": "A33",
-      "nama": "Tetanus Neonatus"
+      "id": "ICD-11",
+      "code": "A33",
+      "description": "Tetanus Neonatus"
     },
     {
-      "kode": "A34",
-      "nama": "Tetanus Obstetrik"
+      "id": "ICD-12",
+      "code": "A34",
+      "description": "Tetanus Obstetrik"
     },
     {
-      "kode": "A35",
-      "nama": "Tetanus"
+      "id": "ICD-13",
+      "code": "A35",
+      "description": "Tetanus"
     },
     {
-      "kode": "A36.9",
-      "nama": "Difteri"
+      "id": "ICD-14",
+      "code": "A36.9",
+      "description": "Difteri"
     },
     {
-      "kode": "A37.9",
-      "nama": "Batuk Rejan"
+      "id": "ICD-15",
+      "code": "A37.9",
+      "description": "Batuk Rejan"
     },
     {
-      "kode": "A90",
-      "nama": "Demam Dengue"
+      "id": "ICD-16",
+      "code": "A90",
+      "description": "Demam Dengue"
     },
     {
-      "kode": "A91.0",
-      "nama": "Demam Berdarah"
+      "id": "ICD-17",
+      "code": "A91.0",
+      "description": "Demam Berdarah"
     },
     {
-      "kode": "B01",
-      "nama": "Varisela (cacar air)"
+      "id": "ICD-18",
+      "code": "B01",
+      "description": "Varisela (cacar air)"
     },
     {
-      "kode": "B01.0",
-      "nama": "Varisela dengan meningitis"
+      "id": "ICD-19",
+      "code": "B01.0",
+      "description": "Varisela dengan meningitis"
     },
     {
-      "kode": "B01.1",
-      "nama": "Varisela dengan ensefalitis/mielitis"
+      "id": "ICD-20",
+      "code": "B01.1",
+      "description": "Varisela dengan ensefalitis/mielitis"
     },
     {
-      "kode": "B01.2",
-      "nama": "Varisela dengan pneumonia"
+      "id": "ICD-21",
+      "code": "B01.2",
+      "description": "Varisela dengan pneumonia"
     },
     {
-      "kode": "B01.8",
-      "nama": "Varisela dengan komplikasi lain"
+      "id": "ICD-22",
+      "code": "B01.8",
+      "description": "Varisela dengan komplikasi lain"
     },
     {
-      "kode": "B01.9",
-      "nama": "Varisela tanpa komplikasi"
+      "id": "ICD-23",
+      "code": "B01.9",
+      "description": "Varisela tanpa komplikasi"
     },
     {
-      "kode": "B02",
-      "nama": "Herpes zoster (cacar ular)"
+      "id": "ICD-24",
+      "code": "B02",
+      "description": "Herpes zoster (cacar ular)"
     },
     {
-      "kode": "B02.0",
-      "nama": "Herpes zoster dengan ensefalitis"
+      "id": "ICD-25",
+      "code": "B02.0",
+      "description": "Herpes zoster dengan ensefalitis"
     },
     {
-      "kode": "B02.1",
-      "nama": "Herpes zoster dengan meningitis"
+      "id": "ICD-26",
+      "code": "B02.1",
+      "description": "Herpes zoster dengan meningitis"
     },
     {
-      "kode": "B02.2",
-      "nama": "Herpes zoster dengan komplikasi saraf lain"
+      "id": "ICD-27",
+      "code": "B02.2",
+      "description": "Herpes zoster dengan komplikasi saraf lain"
     },
     {
-      "kode": "B02.3",
-      "nama": "Herpes zoster oftalmikus/okular"
+      "id": "ICD-28",
+      "code": "B02.3",
+      "description": "Herpes zoster oftalmikus/okular"
     },
     {
-      "kode": "B02.7",
-      "nama": "Herpes zoster diseminata"
+      "id": "ICD-29",
+      "code": "B02.7",
+      "description": "Herpes zoster diseminata"
     },
     {
-      "kode": "B02.8",
-      "nama": "Herpes zoster dengan komplikasi lain"
+      "id": "ICD-30",
+      "code": "B02.8",
+      "description": "Herpes zoster dengan komplikasi lain"
     },
     {
-      "kode": "B02.9",
-      "nama": "Herpes Zoster"
+      "id": "ICD-31",
+      "code": "B02.9",
+      "description": "Herpes Zoster"
     },
     {
-      "kode": "B02.9",
-      "nama": "Herpes zoster tanpa komplikasi"
+      "id": "ICD-32",
+      "code": "B02.9",
+      "description": "Herpes zoster tanpa komplikasi"
     },
     {
-      "kode": "B15.9",
-      "nama": "Hepatitis A"
+      "id": "ICD-33",
+      "code": "B15.9",
+      "description": "Hepatitis A"
     },
     {
-      "kode": "B16.9",
-      "nama": "Hepatitis B Akut"
+      "id": "ICD-34",
+      "code": "B16.9",
+      "description": "Hepatitis B Akut"
     },
     {
-      "kode": "B18.1",
-      "nama": "Hepatitis B Kronik"
+      "id": "ICD-35",
+      "code": "B18.1",
+      "description": "Hepatitis B Kronik"
     },
     {
-      "kode": "B19.9",
-      "nama": "Hepatitis"
+      "id": "ICD-36",
+      "code": "B19.9",
+      "description": "Hepatitis"
     },
     {
-      "kode": "B20",
-      "nama": "HIV/AIDS"
+      "id": "ICD-37",
+      "code": "B20",
+      "description": "HIV/AIDS"
     },
     {
-      "kode": "B35.0",
-      "nama": "Jamur Kulit"
+      "id": "ICD-38",
+      "code": "B35.0",
+      "description": "Jamur Kulit"
     },
     {
-      "kode": "B37.9",
-      "nama": "Kandidiasis"
+      "id": "ICD-39",
+      "code": "B37.9",
+      "description": "Kandidiasis"
     },
     {
-      "kode": "B49",
-      "nama": "Infeksi Jamur"
+      "id": "ICD-40",
+      "code": "B49",
+      "description": "Infeksi Jamur"
     },
     {
-      "kode": "B54",
-      "nama": "Malaria"
+      "id": "ICD-41",
+      "code": "B54",
+      "description": "Malaria"
     },
     {
-      "kode": "B55.9",
-      "nama": "Leishmaniasis"
+      "id": "ICD-42",
+      "code": "B55.9",
+      "description": "Leishmaniasis"
     },
     {
-      "kode": "B85.0",
-      "nama": "Kutu Kepala"
+      "id": "ICD-43",
+      "code": "B85.0",
+      "description": "Kutu Kepala"
     },
     {
-      "kode": "B86",
-      "nama": "Skabies"
+      "id": "ICD-44",
+      "code": "B86",
+      "description": "Skabies"
     },
     {
-      "kode": "B87.9",
-      "nama": "Miasis"
+      "id": "ICD-45",
+      "code": "B87.9",
+      "description": "Miasis"
     },
     {
-      "kode": "B88.0",
-      "nama": "Akariasis"
+      "id": "ICD-46",
+      "code": "B88.0",
+      "description": "Akariasis"
     },
     {
-      "kode": "C16.9",
-      "nama": "Kanker Lambung"
+      "id": "ICD-47",
+      "code": "C16.9",
+      "description": "Kanker Lambung"
     },
     {
-      "kode": "C18.9",
-      "nama": "Kanker Usus Besar"
+      "id": "ICD-48",
+      "code": "C18.9",
+      "description": "Kanker Usus Besar"
     },
     {
-      "kode": "C22.0",
-      "nama": "Kanker Hati"
+      "id": "ICD-49",
+      "code": "C22.0",
+      "description": "Kanker Hati"
     },
     {
-      "kode": "C25.9",
-      "nama": "Kanker Pankreas"
+      "id": "ICD-50",
+      "code": "C25.9",
+      "description": "Kanker Pankreas"
     },
     {
-      "kode": "C34.9",
-      "nama": "Kanker Paru"
+      "id": "ICD-51",
+      "code": "C34.9",
+      "description": "Kanker Paru"
     },
     {
-      "kode": "C50.9",
-      "nama": "Kanker Payudara"
+      "id": "ICD-52",
+      "code": "C50.9",
+      "description": "Kanker Payudara"
     },
     {
-      "kode": "C53.9",
-      "nama": "Kanker Serviks"
+      "id": "ICD-53",
+      "code": "C53.9",
+      "description": "Kanker Serviks"
     },
     {
-      "kode": "C61",
-      "nama": "Kanker Prostat"
+      "id": "ICD-54",
+      "code": "C61",
+      "description": "Kanker Prostat"
     },
     {
-      "kode": "C67.9",
-      "nama": "Kanker Kandung Kemih"
+      "id": "ICD-55",
+      "code": "C67.9",
+      "description": "Kanker Kandung Kemih"
     },
     {
-      "kode": "C73",
-      "nama": "Kanker Tiroid"
+      "id": "ICD-56",
+      "code": "C73",
+      "description": "Kanker Tiroid"
     },
     {
-      "kode": "D25.9",
-      "nama": "Mioma Uteri"
+      "id": "ICD-57",
+      "code": "D25.9",
+      "description": "Mioma Uteri"
     },
     {
-      "kode": "D27",
-      "nama": "Kista Ovarium"
+      "id": "ICD-58",
+      "code": "D27",
+      "description": "Kista Ovarium"
     },
     {
-      "kode": "D35.2",
-      "nama": "Adenoma Adrenal"
+      "id": "ICD-59",
+      "code": "D35.2",
+      "description": "Adenoma Adrenal"
     },
     {
-      "kode": "D50.9",
-      "nama": "Anemia"
+      "id": "ICD-60",
+      "code": "D50.9",
+      "description": "Anemia"
     },
     {
-      "kode": "D62",
-      "nama": "Anemia Perdarahan Akut"
+      "id": "ICD-61",
+      "code": "D62",
+      "description": "Anemia Perdarahan Akut"
     },
     {
-      "kode": "D64.9",
-      "nama": "Anemia tidak spesifik"
+      "id": "ICD-62",
+      "code": "D64.9",
+      "description": "Anemia tidak spesifik"
     },
     {
-      "kode": "D69.6",
-      "nama": "Trombositopenia"
+      "id": "ICD-63",
+      "code": "D69.6",
+      "description": "Trombositopenia"
     },
     {
-      "kode": "E03.9",
-      "nama": "Hipotiroid"
+      "id": "ICD-64",
+      "code": "E03.9",
+      "description": "Hipotiroid"
     },
     {
-      "kode": "E05.9",
-      "nama": "Hipertiroid"
+      "id": "ICD-65",
+      "code": "E05.9",
+      "description": "Hipertiroid"
     },
     {
-      "kode": "E10.9",
-      "nama": "Diabetes Tipe 1"
+      "id": "ICD-66",
+      "code": "E10.9",
+      "description": "Diabetes Tipe 1"
     },
     {
-      "kode": "E11.4",
-      "nama": "Diabetes+Saraf"
+      "id": "ICD-67",
+      "code": "E11.4",
+      "description": "Diabetes+Saraf"
     },
     {
-      "kode": "E11.5",
-      "nama": "Diabetes+Sirkulasi"
+      "id": "ICD-68",
+      "code": "E11.5",
+      "description": "Diabetes+Sirkulasi"
     },
     {
-      "kode": "E11.9",
-      "nama": "Diabetes Tipe 2"
+      "id": "ICD-69",
+      "code": "E11.9",
+      "description": "Diabetes Tipe 2"
     },
     {
-      "kode": "E14.9",
-      "nama": "Diabetes"
+      "id": "ICD-70",
+      "code": "E14.9",
+      "description": "Diabetes"
     },
     {
-      "kode": "E50.9",
-      "nama": "Defisiensi Vitamin A"
+      "id": "ICD-71",
+      "code": "E50.9",
+      "description": "Defisiensi Vitamin A"
     },
     {
-      "kode": "E55.9",
-      "nama": "Defisiensi Vitamin D"
+      "id": "ICD-72",
+      "code": "E55.9",
+      "description": "Defisiensi Vitamin D"
     },
     {
-      "kode": "E61.1",
-      "nama": "Defisiensi Zat Besi"
+      "id": "ICD-73",
+      "code": "E61.1",
+      "description": "Defisiensi Zat Besi"
     },
     {
-      "kode": "E66.9",
-      "nama": "Obesitas"
+      "id": "ICD-74",
+      "code": "E66.9",
+      "description": "Obesitas"
     },
     {
-      "kode": "E78.5",
-      "nama": "Kolesterol Tinggi"
+      "id": "ICD-75",
+      "code": "E78.5",
+      "description": "Kolesterol Tinggi"
     },
     {
-      "kode": "E86",
-      "nama": "Dehidrasi"
+      "id": "ICD-76",
+      "code": "E86",
+      "description": "Dehidrasi"
     },
     {
-      "kode": "E87.5",
-      "nama": "Hiperkalemia"
+      "id": "ICD-77",
+      "code": "E87.5",
+      "description": "Hiperkalemia"
     },
     {
-      "kode": "E87.6",
-      "nama": "Hipokalemia"
+      "id": "ICD-78",
+      "code": "E87.6",
+      "description": "Hipokalemia"
     },
     {
-      "kode": "F10.1",
-      "nama": "Alkohol Berbahaya"
+      "id": "ICD-79",
+      "code": "F10.1",
+      "description": "Alkohol Berbahaya"
     },
     {
-      "kode": "F19.2",
-      "nama": "Ketergantungan Zat"
+      "id": "ICD-80",
+      "code": "F19.2",
+      "description": "Ketergantungan Zat"
     },
     {
-      "kode": "F32.9",
-      "nama": "Depresi"
+      "id": "ICD-81",
+      "code": "F32.9",
+      "description": "Depresi"
     },
     {
-      "kode": "F41.9",
-      "nama": "Cemas/Anxietas"
+      "id": "ICD-82",
+      "code": "F41.9",
+      "description": "Cemas/Anxietas"
     },
     {
-      "kode": "G40.9",
-      "nama": "Epilepsi"
+      "id": "ICD-83",
+      "code": "G40.9",
+      "description": "Epilepsi"
     },
     {
-      "kode": "G43.9",
-      "nama": "Migrain"
+      "id": "ICD-84",
+      "code": "G43.9",
+      "description": "Migrain"
     },
     {
-      "kode": "G45.9",
-      "nama": "TIA/Mini Stroke"
+      "id": "ICD-85",
+      "code": "G45.9",
+      "description": "TIA/Mini Stroke"
     },
     {
-      "kode": "G47.0",
-      "nama": "Insomnia"
+      "id": "ICD-86",
+      "code": "G47.0",
+      "description": "Insomnia"
     },
     {
-      "kode": "G47.3",
-      "nama": "Sleep Apnea"
+      "id": "ICD-87",
+      "code": "G47.3",
+      "description": "Sleep Apnea"
     },
     {
-      "kode": "G50.0",
-      "nama": "Nyeri Wajah"
+      "id": "ICD-88",
+      "code": "G50.0",
+      "description": "Nyeri Wajah"
     },
     {
-      "kode": "G54.2",
-      "nama": "Neuralgia Servikal"
+      "id": "ICD-89",
+      "code": "G54.2",
+      "description": "Neuralgia Servikal"
     },
     {
-      "kode": "G62.9",
-      "nama": "Neuropati Perifer"
+      "id": "ICD-90",
+      "code": "G62.9",
+      "description": "Neuropati Perifer"
     },
     {
-      "kode": "G63",
-      "nama": "Neuropati Diabetik"
+      "id": "ICD-91",
+      "code": "G63",
+      "description": "Neuropati Diabetik"
     },
     {
-      "kode": "H10.9",
-      "nama": "Konjungtivitis"
+      "id": "ICD-92",
+      "code": "H10.9",
+      "description": "Konjungtivitis"
     },
     {
-      "kode": "H25.9",
-      "nama": "Katarak"
+      "id": "ICD-93",
+      "code": "H25.9",
+      "description": "Katarak"
     },
     {
-      "kode": "H26.9",
-      "nama": "Katarak Sekunder"
+      "id": "ICD-94",
+      "code": "H26.9",
+      "description": "Katarak Sekunder"
     },
     {
-      "kode": "H35.0",
-      "nama": "Retinopati"
+      "id": "ICD-95",
+      "code": "H35.0",
+      "description": "Retinopati"
     },
     {
-      "kode": "H40.9",
-      "nama": "Glaukoma"
+      "id": "ICD-96",
+      "code": "H40.9",
+      "description": "Glaukoma"
     },
     {
-      "kode": "H52.4",
-      "nama": "Presbiopi"
+      "id": "ICD-97",
+      "code": "H52.4",
+      "description": "Presbiopi"
     },
     {
-      "kode": "H60.9",
-      "nama": "Otitis Eksterna"
+      "id": "ICD-98",
+      "code": "H60.9",
+      "description": "Otitis Eksterna"
     },
     {
-      "kode": "H65.9",
-      "nama": "Otitis Media"
+      "id": "ICD-99",
+      "code": "H65.9",
+      "description": "Otitis Media"
     },
     {
-      "kode": "H66.9",
-      "nama": "Otitis Media Supuratif"
+      "id": "ICD-100",
+      "code": "H66.9",
+      "description": "Otitis Media Supuratif"
     },
     {
-      "kode": "H81.3",
-      "nama": "Vertigo"
+      "id": "ICD-101",
+      "code": "H81.3",
+      "description": "Vertigo"
     },
     {
-      "kode": "I10",
-      "nama": "Hipertensi"
+      "id": "ICD-102",
+      "code": "I10",
+      "description": "Hipertensi"
     },
     {
-      "kode": "I11.9",
-      "nama": "Hipertensi+Jantung"
+      "id": "ICD-103",
+      "code": "I11.9",
+      "description": "Hipertensi+Jantung"
     },
     {
-      "kode": "I20.9",
-      "nama": "Angina Pektoris"
+      "id": "ICD-104",
+      "code": "I20.9",
+      "description": "Angina Pektoris"
     },
     {
-      "kode": "I25.9",
-      "nama": "Jantung Koroner"
+      "id": "ICD-105",
+      "code": "I25.9",
+      "description": "Jantung Koroner"
     },
     {
-      "kode": "I26.9",
-      "nama": "Embolisme Paru"
+      "id": "ICD-106",
+      "code": "I26.9",
+      "description": "Embolisme Paru"
     },
     {
-      "kode": "I42.9",
-      "nama": "Kardiomiopati"
+      "id": "ICD-107",
+      "code": "I42.9",
+      "description": "Kardiomiopati"
     },
     {
-      "kode": "I48.9",
-      "nama": "Fibrilasi Atrium"
+      "id": "ICD-108",
+      "code": "I48.9",
+      "description": "Fibrilasi Atrium"
     },
     {
-      "kode": "I50.9",
-      "nama": "Gagal Jantung"
+      "id": "ICD-109",
+      "code": "I50.9",
+      "description": "Gagal Jantung"
     },
     {
-      "kode": "I51.7",
-      "nama": "Pembesaran Jantung"
+      "id": "ICD-110",
+      "code": "I51.7",
+      "description": "Pembesaran Jantung"
     },
     {
-      "kode": "I63.9",
-      "nama": "Stroke Iskemik"
+      "id": "ICD-111",
+      "code": "I63.9",
+      "description": "Stroke Iskemik"
     },
     {
-      "kode": "I64",
-      "nama": "Stroke"
+      "id": "ICD-112",
+      "code": "I64",
+      "description": "Stroke"
     },
     {
-      "kode": "I70.0",
-      "nama": "Aterosklerosis"
+      "id": "ICD-113",
+      "code": "I70.0",
+      "description": "Aterosklerosis"
     },
     {
-      "kode": "I83.9",
-      "nama": "Varises Kaki"
+      "id": "ICD-114",
+      "code": "I83.9",
+      "description": "Varises Kaki"
     },
     {
-      "kode": "I84.9",
-      "nama": "Wasir/Hemoroid"
+      "id": "ICD-115",
+      "code": "I84.9",
+      "description": "Wasir/Hemoroid"
     },
     {
-      "kode": "I87.9",
-      "nama": "Insufisiensi Vena"
+      "id": "ICD-116",
+      "code": "I87.9",
+      "description": "Insufisiensi Vena"
     },
     {
-      "kode": "J00",
-      "nama": "Pilek"
+      "id": "ICD-117",
+      "code": "J00",
+      "description": "Pilek"
     },
     {
-      "kode": "J02.9",
-      "nama": "Faringitis"
+      "id": "ICD-118",
+      "code": "J02.9",
+      "description": "Faringitis"
     },
     {
-      "kode": "J03.9",
-      "nama": "Tonsilitis"
+      "id": "ICD-119",
+      "code": "J03.9",
+      "description": "Tonsilitis"
     },
     {
-      "kode": "J04.0",
-      "nama": "Laringitis"
+      "id": "ICD-120",
+      "code": "J04.0",
+      "description": "Laringitis"
     },
     {
-      "kode": "J06.9",
-      "nama": "ISPA"
+      "id": "ICD-121",
+      "code": "J06.9",
+      "description": "ISPA"
     },
     {
-      "kode": "J11",
-      "nama": "Influenza"
+      "id": "ICD-122",
+      "code": "J11",
+      "description": "Influenza"
     },
     {
-      "kode": "J18.9",
-      "nama": "Pneumonia"
+      "id": "ICD-123",
+      "code": "J18.9",
+      "description": "Pneumonia"
     },
     {
-      "kode": "J20.9",
-      "nama": "Bronkitis Akut"
+      "id": "ICD-124",
+      "code": "J20.9",
+      "description": "Bronkitis Akut"
     },
     {
-      "kode": "J30.4",
-      "nama": "Rinitis Alergi"
+      "id": "ICD-125",
+      "code": "J30.4",
+      "description": "Rinitis Alergi"
     },
     {
-      "kode": "J31.0",
-      "nama": "Rinitis Kronik"
+      "id": "ICD-126",
+      "code": "J31.0",
+      "description": "Rinitis Kronik"
     },
     {
-      "kode": "J32.9",
-      "nama": "Sinusitis Kronik"
+      "id": "ICD-127",
+      "code": "J32.9",
+      "description": "Sinusitis Kronik"
     },
     {
-      "kode": "J34.0",
-      "nama": "Policip Hidung"
+      "id": "ICD-128",
+      "code": "J34.0",
+      "description": "Policip Hidung"
     },
     {
-      "kode": "J35.0",
-      "nama": "Tonsilitis Kronik"
+      "id": "ICD-129",
+      "code": "J35.0",
+      "description": "Tonsilitis Kronik"
     },
     {
-      "kode": "J37.0",
-      "nama": "Laringitis Kronik"
+      "id": "ICD-130",
+      "code": "J37.0",
+      "description": "Laringitis Kronik"
     },
     {
-      "kode": "J39.2",
-      "nama": "Faringitis Kronik"
+      "id": "ICD-131",
+      "code": "J39.2",
+      "description": "Faringitis Kronik"
     },
     {
-      "kode": "J44.0",
-      "nama": "PPOK Akut"
+      "id": "ICD-132",
+      "code": "J44.0",
+      "description": "PPOK Akut"
     },
     {
-      "kode": "J44.1",
-      "nama": "PPOK Eksaserbasi"
+      "id": "ICD-133",
+      "code": "J44.1",
+      "description": "PPOK Eksaserbasi"
     },
     {
-      "kode": "J45.9",
-      "nama": "Asma"
+      "id": "ICD-134",
+      "code": "J45.9",
+      "description": "Asma"
     },
     {
-      "kode": "J47",
-      "nama": "Bronkiektasis"
+      "id": "ICD-135",
+      "code": "J47",
+      "description": "Bronkiektasis"
     },
     {
-      "kode": "J81",
-      "nama": "Edema Paru"
+      "id": "ICD-136",
+      "code": "J81",
+      "description": "Edema Paru"
     },
     {
-      "kode": "J86.9",
-      "nama": "Empiema"
+      "id": "ICD-137",
+      "code": "J86.9",
+      "description": "Empiema"
     },
     {
-      "kode": "J90",
-      "nama": "Efusi Pleura"
+      "id": "ICD-138",
+      "code": "J90",
+      "description": "Efusi Pleura"
     },
     {
-      "kode": "J93.9",
-      "nama": "Pneumotoraks"
+      "id": "ICD-139",
+      "code": "J93.9",
+      "description": "Pneumotoraks"
     },
     {
-      "kode": "J96.0",
-      "nama": "Gagal Napas"
+      "id": "ICD-140",
+      "code": "J96.0",
+      "description": "Gagal Napas"
     },
     {
-      "kode": "K00.6",
-      "nama": "Gigi Impaksi"
+      "id": "ICD-141",
+      "code": "K00.6",
+      "description": "Gigi Impaksi"
     },
     {
-      "kode": "K02.9",
-      "nama": "Karies Gigi"
+      "id": "ICD-142",
+      "code": "K02.9",
+      "description": "Karies Gigi"
     },
     {
-      "kode": "K04.0",
-      "nama": "Pulpitis"
+      "id": "ICD-143",
+      "code": "K04.0",
+      "description": "Pulpitis"
     },
     {
-      "kode": "K05.0",
-      "nama": "Gingivitis Akut"
+      "id": "ICD-144",
+      "code": "K05.0",
+      "description": "Gingivitis Akut"
     },
     {
-      "kode": "K05.1",
-      "nama": "Gingivitis Kronik"
+      "id": "ICD-145",
+      "code": "K05.1",
+      "description": "Gingivitis Kronik"
     },
     {
-      "kode": "K05.3",
-      "nama": "Periodontitis Kronik"
+      "id": "ICD-146",
+      "code": "K05.3",
+      "description": "Periodontitis Kronik"
     },
     {
-      "kode": "K08.8",
-      "nama": "Nyeri Gigi"
+      "id": "ICD-147",
+      "code": "K08.8",
+      "description": "Nyeri Gigi"
     },
     {
-      "kode": "K11.2",
-      "nama": "Batu Liur/Sialolithiasis"
+      "id": "ICD-148",
+      "code": "K11.2",
+      "description": "Batu Liur/Sialolithiasis"
     },
     {
-      "kode": "K11.3",
-      "nama": "Abses Kelenjar Ludah"
+      "id": "ICD-149",
+      "code": "K11.3",
+      "description": "Abses Kelenjar Ludah"
     },
     {
-      "kode": "K12.0",
-      "nama": "Sariawan"
+      "id": "ICD-150",
+      "code": "K12.0",
+      "description": "Sariawan"
     },
     {
-      "kode": "K13.0",
-      "nama": "Lesi Bibir"
+      "id": "ICD-151",
+      "code": "K13.0",
+      "description": "Lesi Bibir"
     },
     {
-      "kode": "K21.0",
-      "nama": "GERD"
+      "id": "ICD-152",
+      "code": "K21.0",
+      "description": "GERD"
     },
     {
-      "kode": "K25.9",
-      "nama": "Tukak Lambung"
+      "id": "ICD-153",
+      "code": "K25.9",
+      "description": "Tukak Lambung"
     },
     {
-      "kode": "K26.9",
-      "nama": "Tukak Usus 12 Jari"
+      "id": "ICD-154",
+      "code": "K26.9",
+      "description": "Tukak Usus 12 Jari"
     },
     {
-      "kode": "K27.9",
-      "nama": "Tukak Usus"
+      "id": "ICD-155",
+      "code": "K27.9",
+      "description": "Tukak Usus"
     },
     {
-      "kode": "K29.7",
-      "nama": "Gastritis"
+      "id": "ICD-156",
+      "code": "K29.7",
+      "description": "Gastritis"
     },
     {
-      "kode": "K30",
-      "nama": "Dispepsia"
+      "id": "ICD-157",
+      "code": "K30",
+      "description": "Dispepsia"
     },
     {
-      "kode": "K35.8",
-      "nama": "Apendisitis"
+      "id": "ICD-158",
+      "code": "K35.8",
+      "description": "Apendisitis"
     },
     {
-      "kode": "K40.9",
-      "nama": "Hernia Inguinal"
+      "id": "ICD-159",
+      "code": "K40.9",
+      "description": "Hernia Inguinal"
     },
     {
-      "kode": "K42.9",
-      "nama": "Hernia Umbilikalis"
+      "id": "ICD-160",
+      "code": "K42.9",
+      "description": "Hernia Umbilikalis"
     },
     {
-      "kode": "K43.9",
-      "nama": "Hernia Ventralis"
+      "id": "ICD-161",
+      "code": "K43.9",
+      "description": "Hernia Ventralis"
     },
     {
-      "kode": "K46.9",
-      "nama": "Hernia Abdomen"
+      "id": "ICD-162",
+      "code": "K46.9",
+      "description": "Hernia Abdomen"
     },
     {
-      "kode": "K50.9",
-      "nama": "Crohn Disease"
+      "id": "ICD-163",
+      "code": "K50.9",
+      "description": "Crohn Disease"
     },
     {
-      "kode": "K51.9",
-      "nama": "Kolitis Ulseratif"
+      "id": "ICD-164",
+      "code": "K51.9",
+      "description": "Kolitis Ulseratif"
     },
     {
-      "kode": "K56.7",
-      "nama": "Ileus/Usus Tersumbat"
+      "id": "ICD-165",
+      "code": "K56.7",
+      "description": "Ileus/Usus Tersumbat"
     },
     {
-      "kode": "K57.30",
-      "nama": "Divertikulitis"
+      "id": "ICD-166",
+      "code": "K57.30",
+      "description": "Divertikulitis"
     },
     {
-      "kode": "K59.0",
-      "nama": "Konstipasi"
+      "id": "ICD-167",
+      "code": "K59.0",
+      "description": "Konstipasi"
     },
     {
-      "kode": "K59.1",
-      "nama": "Diare Fungsional"
+      "id": "ICD-168",
+      "code": "K59.1",
+      "description": "Diare Fungsional"
     },
     {
-      "kode": "K60.0",
-      "nama": "Fisura Ani"
+      "id": "ICD-169",
+      "code": "K60.0",
+      "description": "Fisura Ani"
     },
     {
-      "kode": "K64.9",
-      "nama": "Wasir/Ambeien"
+      "id": "ICD-170",
+      "code": "K64.9",
+      "description": "Wasir/Ambeien"
     },
     {
-      "kode": "K70.3",
-      "nama": "Sirosis Alkohol"
+      "id": "ICD-171",
+      "code": "K70.3",
+      "description": "Sirosis Alkohol"
     },
     {
-      "kode": "K74.6",
-      "nama": "Sirosis Hati"
+      "id": "ICD-172",
+      "code": "K74.6",
+      "description": "Sirosis Hati"
     },
     {
-      "kode": "K80.1",
-      "nama": "Batu Empedu"
+      "id": "ICD-173",
+      "code": "K80.1",
+      "description": "Batu Empedu"
     },
     {
-      "kode": "K85.9",
-      "nama": "Pankreatitis Akut"
+      "id": "ICD-174",
+      "code": "K85.9",
+      "description": "Pankreatitis Akut"
     },
     {
-      "kode": "K86.1",
-      "nama": "Pankreatitis Kronik"
+      "id": "ICD-175",
+      "code": "K86.1",
+      "description": "Pankreatitis Kronik"
     },
     {
-      "kode": "K92.1",
-      "nama": "Melena/BAB Hitam"
+      "id": "ICD-176",
+      "code": "K92.1",
+      "description": "Melena/BAB Hitam"
     },
     {
-      "kode": "L00",
-      "nama": "Sindrom kulit stafilokokus ​"
+      "id": "ICD-177",
+      "code": "L00",
+      "description": "Sindrom kulit stafilokokus ​"
     },
     {
-      "kode": "L01",
-      "nama": "Impetigo kulit"
+      "id": "ICD-178",
+      "code": "L01",
+      "description": "Impetigo kulit "
     },
     {
-      "kode": "L01.0",
-      "nama": "Impetigo"
+      "id": "ICD-179",
+      "code": "L01.0",
+      "description": "Impetigo"
     },
     {
-      "kode": "L02",
-      "nama": "Abses kulit/bisul"
+      "id": "ICD-180",
+      "code": "L02",
+      "description": "Abses kulit/bisul "
     },
     {
-      "kode": "L02.0",
-      "nama": "Abses wajah"
+      "id": "ICD-181",
+      "code": "L02.0",
+      "description": "Abses wajah "
     },
     {
-      "kode": "L02.1",
-      "nama": "Abses leher"
+      "id": "ICD-182",
+      "code": "L02.1",
+      "description": "Abses leher "
     },
     {
-      "kode": "L02.2",
-      "nama": "Abses badan"
+      "id": "ICD-183",
+      "code": "L02.2",
+      "description": "Abses badan "
     },
     {
-      "kode": "L02.3",
-      "nama": "Abses bokong"
+      "id": "ICD-184",
+      "code": "L02.3",
+      "description": "Abses bokong "
     },
     {
-      "kode": "L02.4",
-      "nama": "Abses tungkai"
+      "id": "ICD-185",
+      "code": "L02.4",
+      "description": "Abses tungkai "
     },
     {
-      "kode": "L02.5",
-      "nama": "Abses tangan"
+      "id": "ICD-186",
+      "code": "L02.5",
+      "description": "Abses tangan "
     },
     {
-      "kode": "L02.6",
-      "nama": "Abses kaki"
+      "id": "ICD-187",
+      "code": "L02.6",
+      "description": "Abses kaki "
     },
     {
-      "kode": "L02.8",
-      "nama": "Abses lokasi lain"
+      "id": "ICD-188",
+      "code": "L02.8",
+      "description": "Abses lokasi lain "
     },
     {
-      "kode": "L02.9",
-      "nama": "Abses Kulit"
+      "id": "ICD-189",
+      "code": "L02.9",
+      "description": "Abses Kulit"
     },
     {
-      "kode": "L02.9",
-      "nama": "Abses kulit NOS (termasuk bisul)"
+      "id": "ICD-190",
+      "code": "L02.9",
+      "description": "Abses kulit NOS (termasuk bisul) "
     },
     {
-      "kode": "L03",
-      "nama": "Selulitis kulit akut"
+      "id": "ICD-191",
+      "code": "L03",
+      "description": "Selulitis kulit akut "
     },
     {
-      "kode": "L03.9",
-      "nama": "Selulitis"
+      "id": "ICD-192",
+      "code": "L03.9",
+      "description": "Selulitis"
     },
     {
-      "kode": "L04",
-      "nama": "Limfadenitis akut"
+      "id": "ICD-193",
+      "code": "L04",
+      "description": "Limfadenitis akut "
     },
     {
-      "kode": "L04.9",
-      "nama": "Limfadenitis Akut"
+      "id": "ICD-194",
+      "code": "L04.9",
+      "description": "Limfadenitis Akut"
     },
     {
-      "kode": "L05",
-      "nama": "Kista pilonidal"
+      "id": "ICD-195",
+      "code": "L05",
+      "description": "Kista pilonidal "
     },
     {
-      "kode": "L08.0",
-      "nama": "Infeksi Kulit"
+      "id": "ICD-196",
+      "code": "L08.0",
+      "description": "Infeksi Kulit"
     },
     {
-      "kode": "L08.0",
-      "nama": "Pioderma kulit"
+      "id": "ICD-197",
+      "code": "L08.0",
+      "description": "Pioderma kulit "
     },
     {
-      "kode": "L08.1",
-      "nama": "Eritrasma kulit"
+      "id": "ICD-198",
+      "code": "L08.1",
+      "description": "Eritrasma kulit"
     },
     {
-      "kode": "L08.8",
-      "nama": "Infeksi kulit lain"
+      "id": "ICD-199",
+      "code": "L08.8",
+      "description": "Infeksi kulit lain "
     },
     {
-      "kode": "L08.9",
-      "nama": "Infeksi kulit NOS ."
+      "id": "ICD-200",
+      "code": "L08.9",
+      "description": "Infeksi kulit NOS ."
     },
     {
-      "kode": "L20.9",
-      "nama": "Eksem Atopik"
+      "id": "ICD-201",
+      "code": "L20.9",
+      "description": "Eksem Atopik"
     },
     {
-      "kode": "L21.9",
-      "nama": "Dermatitis Seboroik"
+      "id": "ICD-202",
+      "code": "L21.9",
+      "description": "Dermatitis Seboroik"
     },
     {
-      "kode": "L23.9",
-      "nama": "Alergi Kulit"
+      "id": "ICD-203",
+      "code": "L23.9",
+      "description": "Alergi Kulit"
     },
     {
-      "kode": "L30.9",
-      "nama": "Dermatitis"
+      "id": "ICD-204",
+      "code": "L30.9",
+      "description": "Dermatitis"
     },
     {
-      "kode": "L40.9",
-      "nama": "Psoriasis"
+      "id": "ICD-205",
+      "code": "L40.9",
+      "description": "Psoriasis"
     },
     {
-      "kode": "L43.9",
-      "nama": "Lichen Planus"
+      "id": "ICD-206",
+      "code": "L43.9",
+      "description": "Lichen Planus"
     },
     {
-      "kode": "L50.9",
-      "nama": "Urtikaria/Biduran"
+      "id": "ICD-207",
+      "code": "L50.9",
+      "description": "Urtikaria/Biduran"
     },
     {
-      "kode": "L57.0",
-      "nama": "Keratosis Aktinik"
+      "id": "ICD-208",
+      "code": "L57.0",
+      "description": "Keratosis Aktinik"
     },
     {
-      "kode": "L60.0",
-      "nama": "Cantengan"
+      "id": "ICD-209",
+      "code": "L60.0",
+      "description": "Cantengan"
     },
     {
-      "kode": "L70.0",
-      "nama": "Jerawat/Akne"
+      "id": "ICD-210",
+      "code": "L70.0",
+      "description": "Jerawat/Akne"
     },
     {
-      "kode": "L72.0",
-      "nama": "Kista Kulit"
+      "id": "ICD-211",
+      "code": "L72.0",
+      "description": "Kista Kulit"
     },
     {
-      "kode": "L90.0",
-      "nama": "Lichen Sklerosis"
+      "id": "ICD-212",
+      "code": "L90.0",
+      "description": "Lichen Sklerosis"
     },
     {
-      "kode": "M00.9",
-      "nama": "Artritis Septik"
+      "id": "ICD-213",
+      "code": "M00.9",
+      "description": "Artritis Septik"
     },
     {
-      "kode": "M06.9",
-      "nama": "Arthritis Reumatoid"
+      "id": "ICD-214",
+      "code": "M06.9",
+      "description": "Arthritis Reumatoid"
     },
     {
-      "kode": "M10.9",
-      "nama": "Asam Urat"
+      "id": "ICD-215",
+      "code": "M10.9",
+      "description": "Asam Urat"
     },
     {
-      "kode": "M16.9",
-      "nama": "Nyeri Sendi Panggul"
+      "id": "ICD-216",
+      "code": "M16.9",
+      "description": "Nyeri Sendi Panggul"
     },
     {
-      "kode": "M17.9",
-      "nama": "Nyeri Lutut"
+      "id": "ICD-217",
+      "code": "M17.9",
+      "description": "Nyeri Lutut"
     },
     {
-      "kode": "M19.9",
-      "nama": "Osteoartritis"
+      "id": "ICD-218",
+      "code": "M19.9",
+      "description": "Osteoartritis"
     },
     {
-      "kode": "M25.5",
-      "nama": "Nyeri Sendi"
+      "id": "ICD-219",
+      "code": "M25.5",
+      "description": "Nyeri Sendi"
     },
     {
-      "kode": "M35.9",
-      "nama": "Penyakit Jaringan Ikat"
+      "id": "ICD-220",
+      "code": "M35.9",
+      "description": "Penyakit Jaringan Ikat"
     },
     {
-      "kode": "M45",
-      "nama": "Sponsylitis Ankilosa"
+      "id": "ICD-221",
+      "code": "M45",
+      "description": "Sponsylitis Ankilosa"
     },
     {
-      "kode": "M47.9",
-      "nama": "Spondilosis"
+      "id": "ICD-222",
+      "code": "M47.9",
+      "description": "Spondilosis"
     },
     {
-      "kode": "M48.0",
-      "nama": "Stenosis Spinal"
+      "id": "ICD-223",
+      "code": "M48.0",
+      "description": "Stenosis Spinal"
     },
     {
-      "kode": "M51.1",
-      "nama": "Hernia Nukleus Pulposus"
+      "id": "ICD-224",
+      "code": "M51.1",
+      "description": "Hernia Nukleus Pulposus"
     },
     {
-      "kode": "M54.5",
-      "nama": "Sakit Pinggang"
+      "id": "ICD-225",
+      "code": "M54.5",
+      "description": "Sakit Pinggang"
     },
     {
-      "kode": "M62.4",
-      "nama": "Kontraktur Otot"
+      "id": "ICD-226",
+      "code": "M62.4",
+      "description": "Kontraktur Otot"
     },
     {
-      "kode": "M65.9",
-      "nama": "Tenosinovitis"
+      "id": "ICD-227",
+      "code": "M65.9",
+      "description": "Tenosinovitis"
     },
     {
-      "kode": "M75.1",
-      "nama": "Rotator Cuff/Bahu Kaku"
+      "id": "ICD-228",
+      "code": "M75.1",
+      "description": "Rotator Cuff/Bahu Kaku"
     },
     {
-      "kode": "M79.1",
-      "nama": "Nyeri Otot"
+      "id": "ICD-229",
+      "code": "M79.1",
+      "description": "Nyeri Otot"
     },
     {
-      "kode": "M79.3",
-      "nama": "Pannikulitis"
+      "id": "ICD-230",
+      "code": "M79.3",
+      "description": "Pannikulitis"
     },
     {
-      "kode": "M80.9",
-      "nama": "Osteoporosis+Fraktur"
+      "id": "ICD-231",
+      "code": "M80.9",
+      "description": "Osteoporosis+Fraktur"
     },
     {
-      "kode": "M81.9",
-      "nama": "Osteoporosis"
+      "id": "ICD-232",
+      "code": "M81.9",
+      "description": "Osteoporosis"
     },
     {
-      "kode": "N04.9",
-      "nama": "Sindrom Nefrotik"
+      "id": "ICD-233",
+      "code": "N04.9",
+      "description": "Sindrom Nefrotik"
     },
     {
-      "kode": "N10",
-      "nama": "Nefritis Tubulointerstisial"
+      "id": "ICD-234",
+      "code": "N10",
+      "description": "Nefritis Tubulointerstisial"
     },
     {
-      "kode": "N17.9",
-      "nama": "Gagal Ginjal Akut"
+      "id": "ICD-235",
+      "code": "N17.9",
+      "description": "Gagal Ginjal Akut"
     },
     {
-      "kode": "N18.9",
-      "nama": "Gagal Ginjal Kronik"
+      "id": "ICD-236",
+      "code": "N18.9",
+      "description": "Gagal Ginjal Kronik"
     },
     {
-      "kode": "N20.0",
-      "nama": "Batu Ginjal"
+      "id": "ICD-237",
+      "code": "N20.0",
+      "description": "Batu Ginjal"
     },
     {
-      "kode": "N20.1",
-      "nama": "Batu Ureter"
+      "id": "ICD-238",
+      "code": "N20.1",
+      "description": "Batu Ureter"
     },
     {
-      "kode": "N23",
-      "nama": "Kolik Ginjal"
+      "id": "ICD-239",
+      "code": "N23",
+      "description": "Kolik Ginjal"
     },
     {
-      "kode": "N30.0",
-      "nama": "Sistitis Akut"
+      "id": "ICD-240",
+      "code": "N30.0",
+      "description": "Sistitis Akut"
     },
     {
-      "kode": "N30.1",
-      "nama": "Sistitis Interstisial"
+      "id": "ICD-241",
+      "code": "N30.1",
+      "description": "Sistitis Interstisial"
     },
     {
-      "kode": "N39.0",
-      "nama": "ISK"
+      "id": "ICD-242",
+      "code": "N39.0",
+      "description": "ISK"
     },
     {
-      "kode": "N40",
-      "nama": "Prostat Membesar"
+      "id": "ICD-243",
+      "code": "N40",
+      "description": "Prostat Membesar"
     },
     {
-      "kode": "N41.0",
-      "nama": "Prostatitis Akut"
+      "id": "ICD-244",
+      "code": "N41.0",
+      "description": "Prostatitis Akut"
     },
     {
-      "kode": "N43.3",
-      "nama": "Hidrokel"
+      "id": "ICD-245",
+      "code": "N43.3",
+      "description": "Hidrokel"
     },
     {
-      "kode": "N44",
-      "nama": "Torsio Testis"
+      "id": "ICD-246",
+      "code": "N44",
+      "description": "Torsio Testis"
     },
     {
-      "kode": "N45.9",
-      "nama": "Orkhitis/Epididimitis"
+      "id": "ICD-247",
+      "code": "N45.9",
+      "description": "Orkhitis/Epididimitis"
     },
     {
-      "kode": "N47",
-      "nama": "Fimosis"
+      "id": "ICD-248",
+      "code": "N47",
+      "description": "Fimosis"
     },
     {
-      "kode": "N76.0",
-      "nama": "Vaginitis Akut"
+      "id": "ICD-249",
+      "code": "N76.0",
+      "description": "Vaginitis Akut"
     },
     {
-      "kode": "N80.9",
-      "nama": "Endometriosis"
+      "id": "ICD-250",
+      "code": "N80.9",
+      "description": "Endometriosis"
     },
     {
-      "kode": "N81.4",
-      "nama": "Prolaps Uteri"
+      "id": "ICD-251",
+      "code": "N81.4",
+      "description": "Prolaps Uteri"
     },
     {
-      "kode": "N83.2",
-      "nama": "Kista Ovarium"
+      "id": "ICD-252",
+      "code": "N83.2",
+      "description": "Kista Ovarium"
     },
     {
-      "kode": "N89.8",
-      "nama": "Leukore/Keputihan"
+      "id": "ICD-253",
+      "code": "N89.8",
+      "description": "Leukore/Keputihan"
     },
     {
-      "kode": "N92.0",
-      "nama": "Haid Tidak Teratur"
+      "id": "ICD-254",
+      "code": "N92.0",
+      "description": "Haid Tidak Teratur"
     },
     {
-      "kode": "N93.9",
-      "nama": "Perdarahan Vagina"
+      "id": "ICD-255",
+      "code": "N93.9",
+      "description": "Perdarahan Vagina"
     },
     {
-      "kode": "N94.6",
-      "nama": "Dismenore"
+      "id": "ICD-256",
+      "code": "N94.6",
+      "description": "Dismenore"
     },
     {
-      "kode": "N95.1",
-      "nama": "Menopause"
+      "id": "ICD-257",
+      "code": "N95.1",
+      "description": "Menopause"
     },
     {
-      "kode": "O00.9",
-      "nama": "Kehamilan Ektopik"
+      "id": "ICD-258",
+      "code": "O00.9",
+      "description": "Kehamilan Ektopik"
     },
     {
-      "kode": "O03.9",
-      "nama": "Keguguran"
+      "id": "ICD-259",
+      "code": "O03.9",
+      "description": "Keguguran"
     },
     {
-      "kode": "O10.0",
-      "nama": "Hipertensi Hamil"
+      "id": "ICD-260",
+      "code": "O10.0",
+      "description": "Hipertensi Hamil"
     },
     {
-      "kode": "O14.1",
-      "nama": "Pre-eklampsia"
+      "id": "ICD-261",
+      "code": "O14.1",
+      "description": "Pre-eklampsia"
     },
     {
-      "kode": "O20.0",
-      "nama": "Ancaman Keguguran"
+      "id": "ICD-262",
+      "code": "O20.0",
+      "description": "Ancaman Keguguran"
     },
     {
-      "kode": "O21.0",
-      "nama": "Mual Hamil"
+      "id": "ICD-263",
+      "code": "O21.0",
+      "description": "Mual Hamil"
     },
     {
-      "kode": "O26.9",
-      "nama": "Komplikasi Kehamilan"
+      "id": "ICD-264",
+      "code": "O26.9",
+      "description": "Komplikasi Kehamilan"
     },
     {
-      "kode": "O42.0",
-      "nama": "Ketuban Pecah Dini"
+      "id": "ICD-265",
+      "code": "O42.0",
+      "description": "Ketuban Pecah Dini"
     },
     {
-      "kode": "O60.1",
-      "nama": "Persalinan Preterm"
+      "id": "ICD-266",
+      "code": "O60.1",
+      "description": "Persalinan Preterm"
     },
     {
-      "kode": "O69.9",
-      "nama": "Komplikasi Tali Pusat"
+      "id": "ICD-267",
+      "code": "O69.9",
+      "description": "Komplikasi Tali Pusat"
     },
     {
-      "kode": "O80",
-      "nama": "Persalinan Normal"
+      "id": "ICD-268",
+      "code": "O80",
+      "description": "Persalinan Normal"
     },
     {
-      "kode": "O85",
-      "nama": "Sepsis Nifas"
+      "id": "ICD-269",
+      "code": "O85",
+      "description": "Sepsis Nifas"
     },
     {
-      "kode": "O86.0",
-      "nama": "Infeksi Luka Jahitan"
+      "id": "ICD-270",
+      "code": "O86.0",
+      "description": "Infeksi Luka Jahitan"
     },
     {
-      "kode": "P07.1",
-      "nama": "BBLR"
+      "id": "ICD-271",
+      "code": "P07.1",
+      "description": "BBLR"
     },
     {
-      "kode": "P22.0",
-      "nama": "Sesak Napas Bayi"
+      "id": "ICD-272",
+      "code": "P22.0",
+      "description": "Sesak Napas Bayi"
     },
     {
-      "kode": "P59.9",
-      "nama": "Kuning Bayi"
+      "id": "ICD-273",
+      "code": "P59.9",
+      "description": "Kuning Bayi"
     },
     {
-      "kode": "Q21.1",
-      "nama": "VSD/Jantung Bocor"
+      "id": "ICD-274",
+      "code": "Q21.1",
+      "description": "VSD/Jantung Bocor"
     },
     {
-      "kode": "Q35.9",
-      "nama": "Celah Langit-langit"
+      "id": "ICD-275",
+      "code": "Q35.9",
+      "description": "Celah Langit-langit"
     },
     {
-      "kode": "Q36.9",
-      "nama": "Bibir Sumbing"
+      "id": "ICD-276",
+      "code": "Q36.9",
+      "description": "Bibir Sumbing"
     },
     {
-      "kode": "Q65.0",
-      "nama": "Dislokasi Panggul Bawaan"
+      "id": "ICD-277",
+      "code": "Q65.0",
+      "description": "Dislokasi Panggul Bawaan"
     },
     {
-      "kode": "Q66.0",
-      "nama": "Kaki Pengkor Bawaan"
+      "id": "ICD-278",
+      "code": "Q66.0",
+      "description": "Kaki Pengkor Bawaan"
     },
     {
-      "kode": "R00.0",
-      "nama": "Takikardia"
+      "id": "ICD-279",
+      "code": "R00.0",
+      "description": "Takikardia"
     },
     {
-      "kode": "R04.0",
-      "nama": "Mimisan"
+      "id": "ICD-280",
+      "code": "R04.0",
+      "description": "Mimisan"
     },
     {
-      "kode": "R05",
-      "nama": "Batuk"
+      "id": "ICD-281",
+      "code": "R05",
+      "description": "Batuk"
     },
     {
-      "kode": "R06.0",
-      "nama": "Sesak Napas"
+      "id": "ICD-282",
+      "code": "R06.0",
+      "description": "Sesak Napas"
     },
     {
-      "kode": "R06.2",
-      "nama": "Ngik-ngik/Wheezing"
+      "id": "ICD-283",
+      "code": "R06.2",
+      "description": "Ngik-ngik/Wheezing"
     },
     {
-      "kode": "R07.4",
-      "nama": "Nyeri Dada"
+      "id": "ICD-284",
+      "code": "R07.4",
+      "description": "Nyeri Dada"
     },
     {
-      "kode": "R09.0",
-      "nama": "Asfiksia"
+      "id": "ICD-285",
+      "code": "R09.0",
+      "description": "Asfiksia"
     },
     {
-      "kode": "R10.4",
-      "nama": "Nyeri Perut"
+      "id": "ICD-286",
+      "code": "R10.4",
+      "description": "Nyeri Perut"
     },
     {
-      "kode": "R11",
-      "nama": "Mual Muntah"
+      "id": "ICD-287",
+      "code": "R11",
+      "description": "Mual Muntah"
     },
     {
-      "kode": "R19.7",
-      "nama": "Diare"
+      "id": "ICD-288",
+      "code": "R19.7",
+      "description": "Diare"
     },
     {
-      "kode": "R20.2",
-      "nama": "Kesemutan"
+      "id": "ICD-289",
+      "code": "R20.2",
+      "description": "Kesemutan"
     },
     {
-      "kode": "R25.2",
-      "nama": "Kram Otot"
+      "id": "ICD-290",
+      "code": "R25.2",
+      "description": "Kram Otot"
     },
     {
-      "kode": "R33",
-      "nama": "Retensi Urin"
+      "id": "ICD-291",
+      "code": "R33",
+      "description": "Retensi Urin"
     },
     {
-      "kode": "R35",
-      "nama": "Sering Buang Air Kecil"
+      "id": "ICD-292",
+      "code": "R35",
+      "description": "Sering Buang Air Kecil"
     },
     {
-      "kode": "R41.3",
-      "nama": "Gangguan Memori"
+      "id": "ICD-293",
+      "code": "R41.3",
+      "description": "Gangguan Memori"
     },
     {
-      "kode": "R42",
-      "nama": "Pusing/Vertigo"
+      "id": "ICD-294",
+      "code": "R42",
+      "description": "Pusing/Vertigo"
     },
     {
-      "kode": "R45.1",
-      "nama": "Gelisah"
+      "id": "ICD-295",
+      "code": "R45.1",
+      "description": "Gelisah"
     },
     {
-      "kode": "R50.9",
-      "nama": "Demam"
+      "id": "ICD-296",
+      "code": "R50.9",
+      "description": "Demam"
     },
     {
-      "kode": "R51",
-      "nama": "Sakit Kepala"
+      "id": "ICD-297",
+      "code": "R51",
+      "description": "Sakit Kepala"
     },
     {
-      "kode": "R53.83",
-      "nama": "Other fatigue"
+      "id": "ICD-298",
+      "code": "R53.83",
+      "description": "Other fatigue"
     },
     {
-      "kode": "R55",
-      "nama": "Pingsan/Sinkop"
+      "id": "ICD-299",
+      "code": "R55",
+      "description": "Pingsan/Sinkop"
     },
     {
-      "kode": "R56.0",
-      "nama": "Kejang Demam"
+      "id": "ICD-300",
+      "code": "R56.0",
+      "description": "Kejang Demam"
     },
     {
-      "kode": "R60.0",
-      "nama": "Edema Tungkai"
+      "id": "ICD-301",
+      "code": "R60.0",
+      "description": "Edema Tungkai"
     },
     {
-      "kode": "R63.0",
-      "nama": "Anoreksia"
+      "id": "ICD-302",
+      "code": "R63.0",
+      "description": "Anoreksia"
     },
     {
-      "kode": "R68.0",
-      "nama": "Hipotermia"
+      "id": "ICD-303",
+      "code": "R68.0",
+      "description": "Hipotermia"
     },
     {
-      "kode": "R73.0",
-      "nama": "Prediabetes"
+      "id": "ICD-304",
+      "code": "R73.0",
+      "description": "Prediabetes"
     },
     {
-      "kode": "R73.0",
-      "nama": "Gula Darah Tinggi"
+      "id": "ICD-305",
+      "code": "R73.0",
+      "description": "Gula Darah Tinggi"
     },
     {
-      "kode": "R73.09",
-      "nama": "Hiperglikemia"
+      "id": "ICD-306",
+      "code": "R73.09",
+      "description": "Hiperglikemia"
     },
     {
-      "kode": "R74.0",
-      "nama": "Enzim Hati Tinggi"
+      "id": "ICD-307",
+      "code": "R74.0",
+      "description": "Enzim Hati Tinggi"
     },
     {
-      "kode": "S00.0",
-      "nama": "Luka Lecet Kepala"
+      "id": "ICD-308",
+      "code": "S00.0",
+      "description": "Luka Lecet Kepala"
     },
     {
-      "kode": "S00.9",
-      "nama": "Cedera Kepala"
+      "id": "ICD-309",
+      "code": "S00.9",
+      "description": "Cedera Kepala"
     },
     {
-      "kode": "S01.0",
-      "nama": "Luka Kepala"
+      "id": "ICD-310",
+      "code": "S01.0",
+      "description": "Luka Kepala"
     },
     {
-      "kode": "S01.2",
-      "nama": "Luka Hidung"
+      "id": "ICD-311",
+      "code": "S01.2",
+      "description": "Luka Hidung"
     },
     {
-      "kode": "S01.5",
-      "nama": "Luka Mulut"
+      "id": "ICD-312",
+      "code": "S01.5",
+      "description": "Luka Mulut"
     },
     {
-      "kode": "S01.9",
-      "nama": "Vulnus Laseratum"
+      "id": "ICD-313",
+      "code": "S01.9",
+      "description": "Vulnus Laseratum"
     },
     {
-      "kode": "S09.9",
-      "nama": "Cedera Kepala ringan"
+      "id": "ICD-314",
+      "code": "S09.9",
+      "description": "Cedera Kepala ringan"
     },
     {
-      "kode": "S11.9",
-      "nama": "VL Leher"
+      "id": "ICD-315",
+      "code": "S11.9",
+      "description": "VL Leher"
     },
     {
-      "kode": "S21.9",
-      "nama": "VL Dada"
+      "id": "ICD-316",
+      "code": "S21.9",
+      "description": "VL Dada"
     },
     {
-      "kode": "S31.9",
-      "nama": "VL Perut"
+      "id": "ICD-317",
+      "code": "S31.9",
+      "description": "VL Perut"
     },
     {
-      "kode": "S32.0",
-      "nama": "Patah Tulang Belakang"
+      "id": "ICD-318",
+      "code": "S32.0",
+      "description": "Patah Tulang Belakang"
     },
     {
-      "kode": "S41.1",
-      "nama": "VL Lengan Atas"
+      "id": "ICD-319",
+      "code": "S41.1",
+      "description": "VL Lengan Atas"
     },
     {
-      "kode": "S42.9",
-      "nama": "Patah Bahu/Selangka"
+      "id": "ICD-320",
+      "code": "S42.9",
+      "description": "Patah Bahu/Selangka"
     },
     {
-      "kode": "S51.9",
-      "nama": "VL Lengan Bawah"
+      "id": "ICD-321",
+      "code": "S51.9",
+      "description": "VL Lengan Bawah"
     },
     {
-      "kode": "S52.9",
-      "nama": "Patah Tulang Lengan"
+      "id": "ICD-322",
+      "code": "S52.9",
+      "description": "Patah Tulang Lengan"
     },
     {
-      "kode": "S61.9",
-      "nama": "VL Tangan"
+      "id": "ICD-323",
+      "code": "S61.9",
+      "description": "VL Tangan"
     },
     {
-      "kode": "S62.3",
-      "nama": "Patah Tangan"
+      "id": "ICD-324",
+      "code": "S62.3",
+      "description": "Patah Tangan"
     },
     {
-      "kode": "S71.1",
-      "nama": "VL Paha"
+      "id": "ICD-325",
+      "code": "S71.1",
+      "description": "VL Paha"
     },
     {
-      "kode": "S72.9",
-      "nama": "Patah Tulang Paha"
+      "id": "ICD-326",
+      "code": "S72.9",
+      "description": "Patah Tulang Paha"
     },
     {
-      "kode": "S81.9",
-      "nama": "VL Tungkai Bawah"
+      "id": "ICD-327",
+      "code": "S81.9",
+      "description": "VL Tungkai Bawah"
     },
     {
-      "kode": "S82.9",
-      "nama": "Patah Tulang Betis"
+      "id": "ICD-328",
+      "code": "S82.9",
+      "description": "Patah Tulang Betis"
     },
     {
-      "kode": "S91.3",
-      "nama": "VL Kaki"
+      "id": "ICD-329",
+      "code": "S91.3",
+      "description": "VL Kaki"
     },
     {
-      "kode": "T09.1",
-      "nama": "Luka Terbuka Punggung"
+      "id": "ICD-330",
+      "code": "T09.1",
+      "description": "Luka Terbuka Punggung"
     },
     {
-      "kode": "T14.0",
-      "nama": "Luka Dangkal"
+      "id": "ICD-331",
+      "code": "T14.0",
+      "description": "Luka Dangkal"
     },
     {
-      "kode": "T14.1",
-      "nama": "Luka Terbuka"
+      "id": "ICD-332",
+      "code": "T14.1",
+      "description": "Luka Terbuka"
     },
     {
-      "kode": "T14.9",
-      "nama": "Cedera tidak spesifik"
+      "id": "ICD-333",
+      "code": "T14.9",
+      "description": "Cedera tidak spesifik"
     },
     {
-      "kode": "T20",
-      "nama": "Luka bakar dan korosi pada kepala, wajah, dan leher"
+      "id": "ICD-334",
+      "code": "T20",
+      "description": "Luka bakar dan korosi pada kepala, wajah, dan leher"
     },
     {
-      "kode": "T21",
-      "nama": "Luka bakar dan korosi pada batang tubuh (thoraks, abdomen, punggung)"
+      "id": "ICD-335",
+      "code": "T21",
+      "description": "Luka bakar dan korosi pada batang tubuh (thoraks, abdomen, punggung)"
     },
     {
-      "kode": "T22",
-      "nama": "Luka bakar dan korosi pada bahu dan lengan, kecuali pergelangan dan tangan"
+      "id": "ICD-336",
+      "code": "T22",
+      "description": "Luka bakar dan korosi pada bahu dan lengan, kecuali pergelangan dan tangan"
     },
     {
-      "kode": "T23",
-      "nama": "Luka bakar dan korosi pada pergelangan tangan dan tangan"
+      "id": "ICD-337",
+      "code": "T23",
+      "description": "Luka bakar dan korosi pada pergelangan tangan dan tangan"
     },
     {
-      "kode": "T24",
-      "nama": "Luka bakar dan korosi pada pinggul dan tungkai bawah, kecuali pergelangan kaki dan kaki"
+      "id": "ICD-338",
+      "code": "T24",
+      "description": "Luka bakar dan korosi pada pinggul dan tungkai bawah, kecuali pergelangan kaki dan kaki"
     },
     {
-      "kode": "T25",
-      "nama": "Luka bakar dan korosi pada pergelangan kaki dan kaki"
+      "id": "ICD-339",
+      "code": "T25",
+      "description": "Luka bakar dan korosi pada pergelangan kaki dan kaki"
     },
     {
-      "kode": "T30.0",
-      "nama": "Luka Bakar"
+      "id": "ICD-340",
+      "code": "T30.0",
+      "description": "Luka Bakar"
     },
     {
-      "kode": "T30.1",
-      "nama": "Luka bakar derajat I (superfisial), lokasi tidak spesifik"
+      "id": "ICD-341",
+      "code": "T30.1",
+      "description": "Luka bakar derajat I (superfisial), lokasi tidak spesifik"
     },
     {
-      "kode": "T30.2",
-      "nama": "Luka bakar derajat II (parsial ketebalan), lokasi tidak spesifik"
+      "id": "ICD-342",
+      "code": "T30.2",
+      "description": "Luka bakar derajat II (parsial ketebalan), lokasi tidak spesifik"
     },
     {
-      "kode": "T30.3",
-      "nama": "Luka bakar derajat III (penuh ketebalan, sampai otot/tulang), lokasi tidak spesifik"
+      "id": "ICD-343",
+      "code": "T30.3",
+      "description": "Luka bakar derajat III (penuh ketebalan, sampai otot/tulang), lokasi tidak spesifik"
     },
     {
-      "kode": "T31.0",
-      "nama": "Luka bakar yang melibatkan <10% luas permukaan tubuh"
+      "id": "ICD-344",
+      "code": "T31.0",
+      "description": "Luka bakar yang melibatkan <10% luas permukaan tubuh"
     },
     {
-      "kode": "T31.1",
-      "nama": "Luka bakar yang melibatkan 10–19% luas permukaan tubuh"
+      "id": "ICD-345",
+      "code": "T31.1",
+      "description": "Luka bakar yang melibatkan 10–19% luas permukaan tubuh"
     },
     {
-      "kode": "T31.2",
-      "nama": "Luka bakar yang melibatkan 20–29% luas permukaan tubuh"
+      "id": "ICD-346",
+      "code": "T31.2",
+      "description": "Luka bakar yang melibatkan 20–29% luas permukaan tubuh"
     },
     {
-      "kode": "T31.3",
-      "nama": "Luka bakar yang melibatkan 30–39% luas permukaan tubuh"
+      "id": "ICD-347",
+      "code": "T31.3",
+      "description": "Luka bakar yang melibatkan 30–39% luas permukaan tubuh"
     },
     {
-      "kode": "T31.4",
-      "nama": "Luka bakar yang melibatkan 40–49% luas permukaan tubuh"
+      "id": "ICD-348",
+      "code": "T31.4",
+      "description": "Luka bakar yang melibatkan 40–49% luas permukaan tubuh"
     },
     {
-      "kode": "T31.5",
-      "nama": "Luka bakar yang melibatkan 50–59% luas permukaan tubuh"
+      "id": "ICD-349",
+      "code": "T31.5",
+      "description": "Luka bakar yang melibatkan 50–59% luas permukaan tubuh"
     },
     {
-      "kode": "T31.6",
-      "nama": "Luka bakar yang melibatkan 60–69% luas permukaan tubuh"
+      "id": "ICD-350",
+      "code": "T31.6",
+      "description": "Luka bakar yang melibatkan 60–69% luas permukaan tubuh"
     },
     {
-      "kode": "T31.7",
-      "nama": "Luka bakar yang melibatkan 70–79% luas permukaan tubuh"
+      "id": "ICD-351",
+      "code": "T31.7",
+      "description": "Luka bakar yang melibatkan 70–79% luas permukaan tubuh"
     },
     {
-      "kode": "T31.8",
-      "nama": "Luka bakar yang melibatkan 80–89% luas permukaan tubuh"
+      "id": "ICD-352",
+      "code": "T31.8",
+      "description": "Luka bakar yang melibatkan 80–89% luas permukaan tubuh"
     },
     {
-      "kode": "T31.9",
-      "nama": "Luka bakar yang melibatkan ≥90% luas permukaan tubuh"
+      "id": "ICD-353",
+      "code": "T31.9",
+      "description": "Luka bakar yang melibatkan ≥90% luas permukaan tubuh"
     },
     {
-      "kode": "T63.4",
-      "nama": "Gigitan Serangga"
+      "id": "ICD-354",
+      "code": "T63.4",
+      "description": "Gigitan Serangga"
     },
     {
-      "kode": "T78.1",
-      "nama": "Reaksi Alergi Makanan"
+      "id": "ICD-355",
+      "code": "T78.1",
+      "description": "Reaksi Alergi Makanan"
     },
     {
-      "kode": "T78.4",
-      "nama": "Alergi"
+      "id": "ICD-356",
+      "code": "T78.4",
+      "description": "Alergi"
     },
     {
-      "kode": "U07.1",
-      "nama": "COVID-19"
+      "id": "ICD-357",
+      "code": "U07.1",
+      "description": "COVID-19"
     },
     {
-      "kode": "V01",
-      "nama": "Pejalan kaki cedera tabrakan sepeda (lalin)"
+      "id": "ICD-358",
+      "code": "V01",
+      "description": "Pejalan kaki cedera tabrakan sepeda (lalin)"
     },
     {
-      "kode": "V02",
-      "nama": "Pejalan kaki cedera tabrakan motor (lalin)"
+      "id": "ICD-359",
+      "code": "V02",
+      "description": "Pejalan kaki cedera tabrakan motor (lalin)"
     },
     {
-      "kode": "V03",
-      "nama": "Pejalan kaki cedera tabrakan mobil/pick up/van (lalin)"
+      "id": "ICD-360",
+      "code": "V03",
+      "description": "Pejalan kaki cedera tabrakan mobil/pick up/van (lalin)"
     },
     {
-      "kode": "V05",
-      "nama": "Pejalan kaki cedera tabrakan bus/truk (lalin)"
+      "id": "ICD-361",
+      "code": "V05",
+      "description": "Pejalan kaki cedera tabrakan bus/truk (lalin)"
     },
     {
-      "kode": "V09",
-      "nama": "Pejalan kaki cedera kecelakaan lalu lintas lain/tidak spesifik"
+      "id": "ICD-362",
+      "code": "V09",
+      "description": "Pejalan kaki cedera kecelakaan lalu lintas lain/tidak spesifik"
     },
     {
-      "kode": "V20",
-      "nama": "Pengendara motor cedera tabrakan pejalan kaki/hewan (lalin)"
+      "id": "ICD-363",
+      "code": "V20",
+      "description": "Pengendara motor cedera tabrakan pejalan kaki/hewan (lalin)"
     },
     {
-      "kode": "V21",
-      "nama": "Pengendara motor cedera tabrakan sepeda (lalin)"
+      "id": "ICD-364",
+      "code": "V21",
+      "description": "Pengendara motor cedera tabrakan sepeda (lalin)"
     },
     {
-      "kode": "V22",
-      "nama": "Pengendara motor cedera tabrakan motor (lalin)"
+      "id": "ICD-365",
+      "code": "V22",
+      "description": "Pengendara motor cedera tabrakan motor (lalin)"
     },
     {
-      "kode": "V23",
-      "nama": "Pengendara motor cedera tabrakan mobil/pick up/van (lalin)"
+      "id": "ICD-366",
+      "code": "V23",
+      "description": "Pengendara motor cedera tabrakan mobil/pick up/van (lalin)"
     },
     {
-      "kode": "V24",
-      "nama": "Pengendara motor cedera tabrakan bus/truk (lalin)"
+      "id": "ICD-367",
+      "code": "V24",
+      "description": "Pengendara motor cedera tabrakan bus/truk (lalin)"
     },
     {
-      "kode": "V28",
-      "nama": "Pengendara motor cedera tabrakan objek tetap/benda lain (lalin)"
+      "id": "ICD-368",
+      "code": "V28",
+      "description": "Pengendara motor cedera tabrakan objek tetap/benda lain (lalin)"
     },
     {
-      "kode": "V29",
-      "nama": "Pengendara motor cedera kecelakaan lalu lintas lain/tidak spesifik"
+      "id": "ICD-369",
+      "code": "V29",
+      "description": "Pengendara motor cedera kecelakaan lalu lintas lain/tidak spesifik"
     },
     {
-      "kode": "V40",
-      "nama": "Penumpang/pengemudi mobil cedera tabrakan pejalan kaki/hewan (lalin)"
+      "id": "ICD-370",
+      "code": "V40",
+      "description": "Penumpang/pengemudi mobil cedera tabrakan pejalan kaki/hewan (lalin)"
     },
     {
-      "kode": "V41",
-      "nama": "Penumpang/pengemudi mobil cedera tabrakan sepeda (lalin)"
+      "id": "ICD-371",
+      "code": "V41",
+      "description": "Penumpang/pengemudi mobil cedera tabrakan sepeda (lalin)"
     },
     {
-      "kode": "V42",
-      "nama": "Penumpang/pengemudi mobil cedera tabrakan motor (lalin)"
+      "id": "ICD-372",
+      "code": "V42",
+      "description": "Penumpang/pengemudi mobil cedera tabrakan motor (lalin)"
     },
     {
-      "kode": "V43",
-      "nama": "Penumpang/pengemudi mobil cedera tabrakan mobil/pick up/van (lalin)"
+      "id": "ICD-373",
+      "code": "V43",
+      "description": "Penumpang/pengemudi mobil cedera tabrakan mobil/pick up/van (lalin)"
     },
     {
-      "kode": "V44",
-      "nama": "Penumpang/pengemudi mobil cedera tabrakan bus/truk (lalin)"
+      "id": "ICD-374",
+      "code": "V44",
+      "description": "Penumpang/pengemudi mobil cedera tabrakan bus/truk (lalin)"
     },
     {
-      "kode": "V47",
-      "nama": "Penumpang/pengemudi mobil cedera tabrakan objek tetap (lalin)"
+      "id": "ICD-375",
+      "code": "V47",
+      "description": "Penumpang/pengemudi mobil cedera tabrakan objek tetap (lalin)"
     },
     {
-      "kode": "V48",
-      "nama": "Penumpang/pengemudi mobil cedera kecelakaan non‑tabrakan (lalin)"
+      "id": "ICD-376",
+      "code": "V48",
+      "description": "Penumpang/pengemudi mobil cedera kecelakaan non‑tabrakan (lalin)"
     },
     {
-      "kode": "V49",
-      "nama": "Penumpang/pengemudi mobil cedera kecelakaan lalu lintas lain/tidak spesifik"
+      "id": "ICD-377",
+      "code": "V49",
+      "description": "Penumpang/pengemudi mobil cedera kecelakaan lalu lintas lain/tidak spesifik"
     },
     {
-      "kode": "V70",
-      "nama": "Penumpang/pengemudi bus cedera tabrakan pejalan kaki/hewan (lalin)"
+      "id": "ICD-378",
+      "code": "V70",
+      "description": "Penumpang/pengemudi bus cedera tabrakan pejalan kaki/hewan (lalin)"
     },
     {
-      "kode": "V71",
-      "nama": "Penumpang/pengemudi bus cedera tabrakan sepeda (lalin)"
+      "id": "ICD-379",
+      "code": "V71",
+      "description": "Penumpang/pengemudi bus cedera tabrakan sepeda (lalin)"
     },
     {
-      "kode": "V72",
-      "nama": "Penumpang/pengemudi bus cedera tabrakan motor (lalin)"
+      "id": "ICD-380",
+      "code": "V72",
+      "description": "Penumpang/pengemudi bus cedera tabrakan motor (lalin)"
     },
     {
-      "kode": "V73",
-      "nama": "Penumpang/pengemudi bus cedera tabrakan mobil/pick up/van (lalin)"
+      "id": "ICD-381",
+      "code": "V73",
+      "description": "Penumpang/pengemudi bus cedera tabrakan mobil/pick up/van (lalin)"
     },
     {
-      "kode": "V74",
-      "nama": "Penumpang/pengemudi bus cedera tabrakan truk lain (lalin)"
+      "id": "ICD-382",
+      "code": "V74",
+      "description": "Penumpang/pengemudi bus cedera tabrakan truk lain (lalin)"
     },
     {
-      "kode": "V77",
-      "nama": "Penumpang/pengemudi bus cedera tabrakan beberapa kendaraan (lalin)"
+      "id": "ICD-383",
+      "code": "V77",
+      "description": "Penumpang/pengemudi bus cedera tabrakan beberapa kendaraan (lalin)"
     },
     {
-      "kode": "V78",
-      "nama": "Penumpang/pengemudi bus cedera tabrakan objek tetap (lalin)"
+      "id": "ICD-384",
+      "code": "V78",
+      "description": "Penumpang/pengemudi bus cedera tabrakan objek tetap (lalin)"
     },
     {
-      "kode": "V79",
-      "nama": "Penumpang/pengemudi bus cedera kecelakaan lalu lintas lain/tidak spesifik"
+      "id": "ICD-385",
+      "code": "V79",
+      "description": "Penumpang/pengemudi bus cedera kecelakaan lalu lintas lain/tidak spesifik"
     },
     {
-      "kode": "W19",
-      "nama": "Jatuh"
+      "id": "ICD-386",
+      "code": "W19",
+      "description": "Jatuh"
     },
     {
-      "kode": "W50",
-      "nama": "Terpukul/Tertendang"
+      "id": "ICD-387",
+      "code": "W50",
+      "description": "Terpukul/Tertendang"
     },
     {
-      "kode": "X49",
-      "nama": "Keracunan"
+      "id": "ICD-388",
+      "code": "X49",
+      "description": "Keracunan"
     },
     {
-      "kode": "Z00.0",
-      "nama": "Cek Kesehatan"
+      "id": "ICD-389",
+      "code": "Z00.0",
+      "description": "Cek Kesehatan"
     },
     {
-      "kode": "Z01.0",
-      "nama": "Cek Mata"
+      "id": "ICD-390",
+      "code": "Z01.0",
+      "description": "Cek Mata"
     },
     {
-      "kode": "Z01.1",
-      "nama": "Cek THT"
+      "id": "ICD-391",
+      "code": "Z01.1",
+      "description": "Cek THT"
     },
     {
-      "kode": "Z13.1",
-      "nama": "Skrining Hipertensi"
+      "id": "ICD-392",
+      "code": "Z13.1",
+      "description": "Skrining Hipertensi"
     },
     {
-      "kode": "Z20.820",
-      "nama": "Kontak/paparan varisela"
+      "id": "ICD-393",
+      "code": "Z20.820",
+      "description": "Kontak/paparan varisela"
     },
     {
-      "kode": "Z22.3",
-      "nama": "Kontak TB"
+      "id": "ICD-394",
+      "code": "Z22.3",
+      "description": "Kontak TB"
     },
     {
-      "kode": "Z23",
-      "nama": "Imunisasi Vaksin"
+      "id": "ICD-395",
+      "code": "Z23",
+      "description": "Imunisasi Vaksin"
     },
     {
-      "kode": "Z23",
-      "nama": "Imunisasi/vaksinasi varisela"
+      "id": "ICD-396",
+      "code": "Z23",
+      "description": "Imunisasi/vaksinasi varisela"
     },
     {
-      "kode": "Z25.1",
-      "nama": "Imunisasi Hepatitis B"
+      "id": "ICD-397",
+      "code": "Z25.1",
+      "description": "Imunisasi Hepatitis B"
     },
     {
-      "kode": "Z27.0",
-      "nama": "Imunisasi Ganda"
+      "id": "ICD-398",
+      "code": "Z27.0",
+      "description": "Imunisasi Ganda"
     },
     {
-      "kode": "Z29.0",
-      "nama": "Karantina"
+      "id": "ICD-399",
+      "code": "Z29.0",
+      "description": "Karantina"
     },
     {
-      "kode": "Z30.0",
-      "nama": "Konseling KB"
+      "id": "ICD-400",
+      "code": "Z30.0",
+      "description": "Konseling KB"
     },
     {
-      "kode": "Z30.1",
-      "nama": "Pasang IUD"
+      "id": "ICD-401",
+      "code": "Z30.1",
+      "description": "Pasang IUD"
     },
     {
-      "kode": "Z30.3",
-      "nama": "Pasang Implan"
+      "id": "ICD-402",
+      "code": "Z30.3",
+      "description": "Pasang Implan"
     },
     {
-      "kode": "Z34.0",
-      "nama": "ANC/Hamil Normal"
+      "id": "ICD-403",
+      "code": "Z34.0",
+      "description": "ANC/Hamil Normal"
     },
     {
-      "kode": "Z34.1",
-      "nama": "ANC Trimester II"
+      "id": "ICD-404",
+      "code": "Z34.1",
+      "description": "ANC Trimester II"
     },
     {
-      "kode": "Z34.2",
-      "nama": "ANC Trimester III"
+      "id": "ICD-405",
+      "code": "Z34.2",
+      "description": "ANC Trimester III"
     },
     {
-      "kode": "Z35.0",
-      "nama": "Pengawasan Hamil Risiko"
+      "id": "ICD-406",
+      "code": "Z35.0",
+      "description": "Pengawasan Hamil Risiko"
     },
     {
-      "kode": "Z39.1",
-      "nama": "Konseling Menyusui"
+      "id": "ICD-407",
+      "code": "Z39.1",
+      "description": "Konseling Menyusui"
     },
     {
-      "kode": "Z39.2",
-      "nama": "Kontrasepsi"
+      "id": "ICD-408",
+      "code": "Z39.2",
+      "description": "Kontrasepsi"
     },
     {
-      "kode": "Z48.0",
-      "nama": "Pasca Operasi"
+      "id": "ICD-409",
+      "code": "Z48.0",
+      "description": "Pasca Operasi"
     },
     {
-      "kode": "Z48.1",
-      "nama": "Rawat Luka Ops"
+      "id": "ICD-410",
+      "code": "Z48.1",
+      "description": "Rawat Luka Ops"
     },
     {
-      "kode": "Z48.8",
-      "nama": "Perawatan Pasca Tindakan"
+      "id": "ICD-411",
+      "code": "Z48.8",
+      "description": "Perawatan Pasca Tindakan"
     },
     {
-      "kode": "Z48.9",
-      "nama": "Pasca Operasi"
+      "id": "ICD-412",
+      "code": "Z48.9",
+      "description": "Pasca Operasi"
     },
     {
-      "kode": "Z51.1",
-      "nama": "Kemoterapi"
+      "id": "ICD-413",
+      "code": "Z51.1",
+      "description": "Kemoterapi"
     },
     {
-      "kode": "Z51.5",
-      "nama": "Perawatan Paliatif"
+      "id": "ICD-414",
+      "code": "Z51.5",
+      "description": "Perawatan Paliatif"
     },
     {
-      "kode": "Z71.1",
-      "nama": "Konseling Gizi"
+      "id": "ICD-415",
+      "code": "Z71.1",
+      "description": "Konseling Gizi"
     },
     {
-      "kode": "Z71.3",
-      "nama": "Konseling Diet"
+      "id": "ICD-416",
+      "code": "Z71.3",
+      "description": "Konseling Diet"
     },
     {
-      "kode": "Z76.0",
-      "nama": "Ambil Resep"
+      "id": "ICD-417",
+      "code": "Z76.0",
+      "description": "Ambil Resep"
     },
     {
-      "kode": "Z96.6",
-      "nama": "Implan Ortopedi"
+      "id": "ICD-418",
+      "code": "Z96.6",
+      "description": "Implan Ortopedi"
     }
   ],
   "records": [

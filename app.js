@@ -1991,17 +1991,51 @@ function importMCUCSVFile() {
 // -------------------------------------------------------------
 // 11. GOOGLE SHEETS SYNC LOGIC
 // -------------------------------------------------------------
-async function syncWithGoogleSheetNow() {
-  const url = document.getElementById('gsheet-app-url').value.trim();
-  if (!url) {
-    showToast('Masukkan URL Google Apps Script terlebih dahulu', 'error');
-    return;
+async function syncNowFromGSheet(btnEl = null) {
+  let origText = '';
+  if (btnEl) {
+    origText = btnEl.innerHTML;
+    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyinkronkan...';
+    btnEl.disabled = true;
   }
 
-  const btn = event.target;
-  const origText = btn.innerHTML;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyinkronkan...';
-  btn.disabled = true;
+  showToast('🔄 Menghubungkan & menarik data terbaru dari Google Sheets...', 'info');
+
+  try {
+    const res = await fetch('/api/gsheet/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✅ ${data.message}`, 'success');
+      const el = document.getElementById('gsheet-last-sync');
+      if (el) el.textContent = 'Terakhir sync: ' + new Date(data.lastSync).toLocaleString('id-ID');
+      await loadAllAppData();
+      if (typeof renderGudangTable === 'function') renderGudangTable();
+    } else {
+      showToast('Gagal sync: ' + (data.error || 'Error tidak diketahui'), 'error');
+    }
+  } catch (err) {
+    showToast('Error koneksi ke server: ' + err.message, 'error');
+  } finally {
+    if (btnEl) {
+      btnEl.innerHTML = origText;
+      btnEl.disabled = false;
+    }
+  }
+}
+
+async function syncWithGoogleSheetNow() {
+  const url = document.getElementById('gsheet-app-url')?.value.trim();
+  const btn = event ? event.target : null;
+  let origText = '';
+  if (btn) {
+    origText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyinkronkan...';
+    btn.disabled = true;
+  }
 
   try {
     const res = await fetch('/api/gsheet/sync', {
@@ -2015,14 +2049,17 @@ async function syncWithGoogleSheetNow() {
       const el = document.getElementById('gsheet-last-sync');
       if (el) el.textContent = 'Terakhir sync: ' + new Date(data.lastSync).toLocaleString('id-ID');
       await loadAllAppData();
+      if (typeof renderGudangTable === 'function') renderGudangTable();
     } else {
       showToast('Gagal sync: ' + (data.error || 'Error tidak diketahui'), 'error');
     }
   } catch (err) {
     showToast('Error koneksi ke server: ' + err.message, 'error');
   } finally {
-    btn.innerHTML = origText;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = origText;
+      btn.disabled = false;
+    }
   }
 }
 

@@ -67,7 +67,9 @@ function doGet(e) {
   if (diag) {
     var dVal = diag.getDataRange().getValues();
     if (dVal.length > 1) {
-      result.icd10 = dVal.slice(1).map(function(r, i){ return {id:'ICD-'+i, code:r[0], description:r[1]}; });
+      result.icd10 = dVal.slice(1).filter(function(r){ return r[0] || r[1]; }).map(function(r, i){ 
+        return { id: 'ICD-' + i, code: String(r[0] || '').trim(), description: String(r[1] || '').trim() }; 
+      });
     }
   }
   
@@ -75,13 +77,13 @@ function doGet(e) {
   if (obat) {
     var oVal = obat.getDataRange().getValues();
     if (oVal.length > 1) {
-      result.medicines = oVal.slice(1).map(function(r){ 
+      result.medicines = oVal.slice(1).filter(function(r){ return r[0] && String(r[0]).trim() !== ''; }).map(function(r){ 
         return {
-          nama: r[0], 
-          stok: parseInt(r[1]) || 0, 
-          satuan: r[2] || 'strip', 
-          harga: parseInt(r[3]) || 0, 
-          kategori: r[4] || 'Obat'
+          nama: String(r[0]).trim(), 
+          stok: r[1], 
+          satuan: String(r[2] || '-').trim(), 
+          harga: r[3], 
+          kategori: String(r[4] || 'Gudang PT ATI').trim()
         }; 
       });
     }
@@ -91,7 +93,16 @@ function doGet(e) {
   if (kary) {
     var kVal = kary.getDataRange().getValues();
     if (kVal.length > 1) {
-      result.employees = kVal.slice(1).map(function(r){ return {nikPabrik:r[0], nama:r[1], dept:r[2], gender:r[3], tglLahir:r[4], hp:r[5]}; });
+      result.employees = kVal.slice(1).filter(function(r){ return r[0] || r[1]; }).map(function(r){ 
+        return {
+          nikPabrik: String(r[0] || '').trim(), 
+          nama: String(r[1] || '').trim(), 
+          dept: String(r[2] || '').trim(), 
+          gender: String(r[3] || '').trim(), 
+          tglLahir: String(r[4] || '').trim(), 
+          hp: String(r[5] || '').trim()
+        }; 
+      });
     }
   }
   

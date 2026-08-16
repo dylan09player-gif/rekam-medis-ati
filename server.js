@@ -118,135 +118,170 @@ app.post('/api/auth/direktur', (req, res) => {
 // GOOGLE SHEETS SYNC ENDPOINT
 // ============================================================
 
-// Fetch data from Google Apps Script and update local DB
+// Helper: Parse integer number safely (handles '40.000', 'Rp 40.000', '0', 0, undefined, etc.)
+function parseSafeInt(val, fallback = 0) {
+  if (val === undefined || val === null || val === '') return fallback;
+  if (typeof val === 'number') return isNaN(val) ? fallback : Math.round(val);
+  const str = String(val).trim();
+  // Remove currency, text, dots/commas as thousands separators
+  const cleaned = str.replace(/[^0-9-]/g, '');
+  if (!cleaned) return fallback;
+  const num = parseInt(cleaned, 10);
+  return isNaN(num) ? fallback : num;
+}
+
+// Fetch helper from Google Sheets Apps Script
+const fetchFromGSheet = (url) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const urlObj = new URL(url);
+      const options = {
+        hostname: urlObj.hostname,
+        path: urlObj.pathname + urlObj.search,
+        method: 'GET',
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RekamMedisATI/1.0' }
+      };
+      
+      const protocol = urlObj.protocol === 'https:' ? https : require('http');
+      const request = protocol.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+          if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+            resolve(fetchFromGSheet(response.headers.location));
+            return;
+          }
+          try {
+            resolve(JSON.parse(data));
+          } catch(e) {
+            resolve({ raw: data });
+          }
+        });
+      });
+      request.on('error', reject);
+      request.setTimeout(15000, () => {
+        request.destroy();
+        reject(new Error('Koneksi ke Google Sheets timeout'));
+      });
+      request.end();
+    } catch(err) {
+      reject(err);
+    }
+  });
+};
+
+// Core Synchronizer function (used by manual endpoint and background auto-sync)
+async function performGSheetSync(db, gsheetUrl) {
+  const syncUrl = gsheetUrl + (gsheetUrl.includes('?') ? '&' : '?') + 'action=sync';
+  const gData = await fetchFromGSheet(syncUrl);
+  if (!gData || typeof gData !== 'object') {
+    throw new Error('Respon dari Google Sheets tidak valid');
+  }
+
+  let synced = { icd10: 0, medicines: 0, employees: 0 };
+
+  // 1. Update ICD-10
+  if (Array.isArray(gData.icd10) && gData.icd10.length > 0) {
+    db.icd10 = gData.icd10.map((item, i) => ({
+      id: item.id || ('ICD-' + i),
+      code: item.code || item.kode || '',
+      description: item.description || item.nama || item.diagnosis || ''
+    })).filter(x => x.code || x.description);
+    synced.icd10 = db.icd10.length;
+  }
+
+  // 2. Update Medicines (Fix: handles 0 stock properly & price formatting)
+  if (Array.isArray(gData.medicines) && gData.medicines.length > 0) {
+    const existingMeds = db.medicines || [];
+    gData.medicines.forEach(gMed => {
+      if (!gMed.nama) return;
+      const cleanName = String(gMed.nama).trim();
+      const existing = existingMeds.find(m => 
+        m.nama && m.nama.toLowerCase() === cleanName.toLowerCase()
+      );
+      const stok = parseSafeInt(gMed.stok, 0);
+      const harga = parseSafeInt(gMed.harga, 0);
+      const satuan = String(gMed.satuan || '-').trim();
+      const kategori = String(gMed.kategori || 'Gudang PT ATI').trim();
+
+      if (existing) {
+        existing.stok = stok;
+        existing.satuan = satuan;
+        existing.harga = harga;
+        existing.kategori = kategori;
+      } else {
+        existingMeds.push({
+          id: 'MED-' + Date.now() + Math.floor(Math.random() * 1000),
+          nama: cleanName,
+          stok: stok,
+          satuan: satuan,
+          harga: harga,
+          kategori: kategori
+        });
+      }
+    });
+    db.medicines = existingMeds;
+    synced.medicines = db.medicines.length;
+  }
+
+  // 3. Update Employees
+  if (Array.isArray(gData.employees) && gData.employees.length > 0) {
+    const existingEmps = db.employees || [];
+    gData.employees.forEach(gEmp => {
+      const empNik = String(gEmp.nikPabrik || gEmp.nik || '').trim();
+      const empNama = String(gEmp.nama || '').trim();
+      if (!empNik && !empNama) return;
+
+      const existing = existingEmps.find(e => 
+        (empNik && ((e.nikPabrik && String(e.nikPabrik).trim() === empNik) || (e.nik && String(e.nik).trim() === empNik))) ||
+        (empNama && e.nama && e.nama.toLowerCase() === empNama.toLowerCase())
+      );
+
+      const updatedEmp = {
+        nikPabrik: empNik,
+        nik: empNik,
+        nama: empNama,
+        dept: String(gEmp.dept || gEmp.departemen || '').trim(),
+        departemen: String(gEmp.dept || gEmp.departemen || '').trim(),
+        gender: String(gEmp.gender || '').trim(),
+        tglLahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
+        tgl_lahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
+        hp: String(gEmp.hp || gEmp.no_hp || '').trim(),
+        no_hp: String(gEmp.hp || gEmp.no_hp || '').trim()
+      };
+
+      if (existing) {
+        Object.assign(existing, updatedEmp);
+      } else {
+        existingEmps.unshift({
+          id: 'EMP-' + Date.now() + Math.floor(Math.random() * 1000),
+          ...updatedEmp
+        });
+      }
+    });
+    db.employees = existingEmps;
+    synced.employees = db.employees.length;
+  }
+
+  if (!db.settings) db.settings = {};
+  db.settings.gsheet_url = gsheetUrl;
+  db.settings.last_sync = new Date().toISOString();
+  writeDB(db);
+
+  return synced;
+}
+
+// Fetch data from Google Apps Script and update local DB (Manual Endpoint)
 app.post('/api/gsheet/sync', async (req, res) => {
-  const { gsheetUrl } = req.body;
+  const db = readDB();
+  const gsheetUrl = req.body?.gsheetUrl || db.settings?.gsheet_url;
+  
   if (!gsheetUrl) {
-    return res.status(400).json({ error: 'URL Google Apps Script tidak ada' });
+    return res.status(400).json({ error: 'URL Google Apps Script tidak ada. Konfigurasi di tab G-Sheet Sync.' });
   }
 
   try {
-    const db = readDB();
-    
-    // Fetch data from Google Sheets Apps Script
-    const fetchFromGSheet = (url) => {
-      return new Promise((resolve, reject) => {
-        const urlObj = new URL(url);
-        const options = {
-          hostname: urlObj.hostname,
-          path: urlObj.pathname + urlObj.search,
-          method: 'GET'
-        };
-        
-        const protocol = urlObj.protocol === 'https:' ? https : require('http');
-        const request = protocol.request(options, (response) => {
-          let data = '';
-          response.on('data', chunk => data += chunk);
-          response.on('end', () => {
-            // Handle redirect
-            if (response.statusCode === 301 || response.statusCode === 302) {
-              resolve(fetchFromGSheet(response.headers.location));
-              return;
-            }
-            try {
-              resolve(JSON.parse(data));
-            } catch(e) {
-              resolve({ raw: data });
-            }
-          });
-        });
-        request.on('error', reject);
-        request.end();
-      });
-    };
-    
-    // Build URL with action=sync
-    const syncUrl = gsheetUrl + (gsheetUrl.includes('?') ? '&' : '?') + 'action=sync';
-    const gData = await fetchFromGSheet(syncUrl);
-    
-    let synced = { icd10: 0, medicines: 0, employees: 0 };
-    
-    // Update ICD-10 if provided
-    if (gData.icd10 && Array.isArray(gData.icd10)) {
-      db.icd10 = gData.icd10.map((item, i) => ({
-        id: item.id || ('ICD-' + i),
-        code: item.code || item.kode || '',
-        description: item.description || item.nama || item.diagnosis || ''
-      }));
-      synced.icd10 = db.icd10.length;
-    }
-    
-    // Update Medicines if provided
-    if (gData.medicines && Array.isArray(gData.medicines)) {
-      const existingMeds = db.medicines || [];
-      gData.medicines.forEach(gMed => {
-        const existing = existingMeds.find(m => 
-          m.nama && gMed.nama && m.nama.toLowerCase() === gMed.nama.toLowerCase()
-        );
-        if (existing) {
-          existing.stok = parseInt(gMed.stok) || existing.stok;
-          existing.satuan = gMed.satuan || existing.satuan;
-          existing.harga = parseInt(gMed.harga) || existing.harga || 0;
-          existing.kategori = gMed.kategori || existing.kategori;
-        } else {
-          existingMeds.push({
-            id: 'MED-' + Date.now() + Math.random(),
-            nama: gMed.nama,
-            stok: parseInt(gMed.stok) || 0,
-            satuan: gMed.satuan || 'strip',
-            harga: parseInt(gMed.harga) || 0,
-            kategori: gMed.kategori || 'Obat'
-          });
-        }
-      });
-      db.medicines = existingMeds;
-      synced.medicines = db.medicines.length;
-    }
-    
-    // Update Employees if provided
-    if (gData.employees && Array.isArray(gData.employees)) {
-      const existingEmps = db.employees || [];
-      gData.employees.forEach(gEmp => {
-        const empNik = String(gEmp.nikPabrik || gEmp.nik || '').trim();
-        if (!empNik) return;
-        
-        const existing = existingEmps.find(e => 
-          (e.nikPabrik && String(e.nikPabrik).trim() === empNik) ||
-          (e.nik && String(e.nik).trim() === empNik)
-        );
-        
-        const updatedEmp = {
-          nikPabrik: empNik,
-          nik: empNik,
-          nama: String(gEmp.nama || '').trim(),
-          dept: String(gEmp.dept || gEmp.departemen || '').trim(),
-          departemen: String(gEmp.dept || gEmp.departemen || '').trim(),
-          gender: String(gEmp.gender || '').trim(),
-          tglLahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
-          tgl_lahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
-          hp: String(gEmp.hp || gEmp.no_hp || '').trim(),
-          no_hp: String(gEmp.hp || gEmp.no_hp || '').trim()
-        };
-
-        if (existing) {
-          Object.assign(existing, updatedEmp);
-        } else {
-          existingEmps.unshift({
-            id: 'EMP-' + Date.now() + Math.random(),
-            ...updatedEmp
-          });
-        }
-      });
-      db.employees = existingEmps;
-      synced.employees = db.employees.length;
-    }
-    
-    if (!db.settings) db.settings = {};
-    db.settings.gsheet_url = gsheetUrl;
-    db.settings.last_sync = new Date().toISOString();
-    
-    writeDB(db);
-    
+    const synced = await performGSheetSync(db, gsheetUrl);
     res.json({ 
       success: true, 
       synced,
@@ -258,6 +293,31 @@ app.post('/api/gsheet/sync', async (req, res) => {
     res.status(500).json({ error: 'Gagal sinkronisasi: ' + err.message });
   }
 });
+
+// Auto-Sync Background Interval (Berjalan otomatis setiap 30 detik di latar belakang)
+setInterval(async () => {
+  try {
+    const db = readDB();
+    const gsheetUrl = db.settings?.gsheet_url;
+    if (gsheetUrl) {
+      await performGSheetSync(db, gsheetUrl);
+    }
+  } catch (e) {
+    // Silent fail in background timer
+  }
+}, 30000);
+
+// Auto-Sync saat server pertama kali start
+setTimeout(async () => {
+  try {
+    const db = readDB();
+    const gsheetUrl = db.settings?.gsheet_url;
+    if (gsheetUrl) {
+      await performGSheetSync(db, gsheetUrl);
+      console.log('✅ Inisialisasi awal sinkronisasi Google Sheets selesai.');
+    }
+  } catch(e) {}
+}, 2000);
 
 // Upload foto/dokumen rekam medis ke Google Drive via Apps Script
 app.post('/api/upload-foto', async (req, res) => {
