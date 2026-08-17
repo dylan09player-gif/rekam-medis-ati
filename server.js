@@ -712,7 +712,13 @@ app.post('/api/patients', (req, res) => {
 app.put('/api/patients/:id', (req, res) => {
   const db = readDB();
   if (!db.employees) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
-  const idx = db.employees.findIndex(e => e.id === req.params.id || e.nikPabrik === req.params.id);
+  const param = decodeURIComponent(req.params.id);
+  const idx = db.employees.findIndex(e => 
+    String(e.id) === String(param) || 
+    String(e.nikPabrik) === String(param) || 
+    String(e.nik) === String(param) ||
+    (e.nama && e.nama.toLowerCase() === param.toLowerCase())
+  );
   if (idx !== -1) {
     db.employees[idx] = {
       ...db.employees[idx],
@@ -720,14 +726,14 @@ app.put('/api/patients/:id', (req, res) => {
       nikPabrik: req.body.nikPabrik || db.employees[idx].nikPabrik,
       nik: req.body.nikPabrik || db.employees[idx].nikPabrik,
       nama: req.body.nama || db.employees[idx].nama,
-      dept: req.body.dept || db.employees[idx].dept,
-      departemen: req.body.dept || db.employees[idx].dept,
+      dept: req.body.dept !== undefined ? req.body.dept : db.employees[idx].dept,
+      departemen: req.body.dept !== undefined ? req.body.dept : db.employees[idx].dept,
       gender: req.body.gender || db.employees[idx].gender,
       golDarah: req.body.golDarah || db.employees[idx].golDarah || '-',
       tglLahir: req.body.tglLahir || db.employees[idx].tglLahir,
       tgl_lahir: req.body.tglLahir || db.employees[idx].tglLahir,
-      hp: req.body.hp || db.employees[idx].hp || '',
-      no_hp: req.body.hp || db.employees[idx].hp || ''
+      hp: req.body.hp !== undefined ? req.body.hp : (db.employees[idx].hp || ''),
+      no_hp: req.body.hp !== undefined ? req.body.hp : (db.employees[idx].hp || '')
     };
     writeDB(db);
     return res.json({ success: true, employee: db.employees[idx] });

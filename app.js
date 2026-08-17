@@ -1574,22 +1574,31 @@ function closeModalTambahKaryawan() {
 }
 
 function openModalEditKaryawan(idOrNpk) {
-  const p = appData.patients.find(x => x.id === idOrNpk || x.nikPabrik === idOrNpk || x.nik === idOrNpk);
+  if (!idOrNpk) return;
+  const p = appData.patients.find(x => 
+    String(x.id) === String(idOrNpk) || 
+    String(x.nikPabrik) === String(idOrNpk) || 
+    String(x.nik) === String(idOrNpk) ||
+    String(x.nama) === String(idOrNpk)
+  );
   if (!p) {
     showToast('Data karyawan tidak ditemukan', 'error');
     return;
   }
 
-  document.getElementById('edit-karyawan-id').value = p.id || p.nikPabrik || '';
+  document.getElementById('edit-karyawan-id').value = p.id || p.nikPabrik || p.nik || '';
   document.getElementById('edit-karyawan-nik').value = p.nikPabrik || p.nik || '';
   document.getElementById('edit-karyawan-nama').value = p.nama || '';
-  document.getElementById('edit-karyawan-dept').value = p.dept || p.departemen || '';
+  document.getElementById('edit-karyawan-dept').value = p.dept || p.departemen || 'PT ATI';
   document.getElementById('edit-karyawan-gender').value = p.gender || 'Laki-laki';
   document.getElementById('edit-karyawan-goldarah').value = p.golDarah || '-';
   document.getElementById('edit-karyawan-tgllahir').value = p.tglLahir || p.tgl_lahir || '';
   document.getElementById('edit-karyawan-hp').value = p.hp || p.no_hp || '';
 
-  document.getElementById('modal-edit-karyawan').style.display = 'flex';
+  const modal = document.getElementById('modal-edit-karyawan');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
 }
 
 function closeModalEditKaryawan() {
