@@ -995,26 +995,24 @@ function setupTabDanHeader() {
         <h3 class="modal-title">Tambah Data Karyawan Baru</h3>
         <button class="close-btn" onclick="closeModalTambahKaryawan()">&times;</button>
       </div>
-      <form id="form-karyawan" onsubmit="handleSaveKaryawan(event)">
-        <div class="form-group">
-          <label class="form-label">NIK Pabrik Karyawan *</label>
-          <input type="text" id="karyawan-nik" class="form-control" placeholder="Contoh: 2014050034" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nama Lengkap Karyawan *</label>
-          <input type="text" id="karyawan-nama" class="form-control" placeholder="Nama lengkap..." required>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <form id="form-tambah-karyawan" onsubmit="handleSaveKaryawan(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px;">
           <div class="form-group">
-            <label class="form-label">Departemen / Bagian</label>
-            <input type="text" id="karyawan-dept" class="form-control" placeholder="Process / Mechanical / SCM">
+            <label class="form-label">NPK Pabrik *</label>
+            <input type="text" id="karyawan-nik" class="form-control" placeholder="Contoh: 11726 / RM..." required>
           </div>
           <div class="form-group">
-            <label class="form-label">Tanggal Lahir</label>
-            <input type="date" id="karyawan-tgl-lahir" class="form-control">
+            <label class="form-label">Nama Lengkap Pasien *</label>
+            <input type="text" id="karyawan-nama" class="form-control" placeholder="Nama lengkap..." required>
           </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+
+        <div class="form-group">
+          <label class="form-label">Departemen / Bagian</label>
+          <input type="text" id="karyawan-dept" class="form-control" placeholder="Process / Mechanical / Security / PT ATI">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
           <div class="form-group">
             <label class="form-label">Jenis Kelamin</label>
             <select id="karyawan-gender" class="form-control">
@@ -1023,13 +1021,26 @@ function setupTabDanHeader() {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">No. HP / WA</label>
-            <input type="text" id="karyawan-hp" class="form-control" placeholder="0812...">
+            <label class="form-label">Gol. Darah</label>
+            <select id="karyawan-goldarah" class="form-control">
+              <option value="-">-</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="AB">AB</option>
+              <option value="O">O</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal Lahir</label>
+            <input type="text" id="karyawan-tgl-lahir" class="form-control" placeholder="DD-MM-YYYY">
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Alamat / Lokasi</label>
-          <textarea id="karyawan-alamat" class="form-control" placeholder="Alamat..."></textarea>
+
+        <div class="form-group" style="background: rgba(16, 185, 129, 0.1); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: var(--r-md); padding: 12px; margin-top: 10px;">
+          <label class="form-label" style="color: #34d399; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> No. HP WhatsApp (Pemantauan Pasien)
+          </label>
+          <input type="text" id="karyawan-hp" class="form-control" placeholder="08123456789...">
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">

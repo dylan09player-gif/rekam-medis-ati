@@ -1634,12 +1634,11 @@ async function handleSaveKaryawan(e) {
   const newK = {
     nikPabrik: document.getElementById('karyawan-nik').value.trim(),
     nama: document.getElementById('karyawan-nama').value.trim(),
-    dept: document.getElementById('karyawan-dept').value.trim(),
-    tglLahir: document.getElementById('karyawan-tgl-lahir').value,
+    dept: document.getElementById('karyawan-dept').value.trim() || 'PT ATI',
+    tglLahir: document.getElementById('karyawan-tgl-lahir').value.trim(),
     gender: document.getElementById('karyawan-gender').value,
-    golDarah: '-',
-    hp: document.getElementById('karyawan-hp').value,
-    alamat: document.getElementById('karyawan-alamat').value
+    golDarah: document.getElementById('karyawan-goldarah')?.value || '-',
+    hp: document.getElementById('karyawan-hp').value.trim()
   };
 
   try {
@@ -1649,13 +1648,16 @@ async function handleSaveKaryawan(e) {
       body: JSON.stringify(newK)
     });
     if (res.ok) {
-      showToast('Data Karyawan Berhasil Disimpan', 'success');
+      showToast('✅ Data Karyawan Baru Berhasil Disimpan!', 'success');
       closeModalTambahKaryawan();
       await loadAllAppData();
       renderKaryawanTable();
+    } else {
+      const errData = await res.json();
+      showToast('Gagal menyimpan: ' + (errData.error || 'Terjadi kesalahan'), 'error');
     }
   } catch (err) {
-    showToast('Gagal menyimpan karyawan', 'error');
+    showToast('Gagal menyimpan karyawan: ' + err.message, 'error');
   }
 }
 
