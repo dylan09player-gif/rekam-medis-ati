@@ -635,6 +635,7 @@ body {
 
 .form-control {
   width: 100%;
+  max-width: 100%;
   padding: 9px 13px;
   background: var(--surface-2);
   border: 1px solid var(--border-card);
@@ -1790,6 +1791,10 @@ select.form-control {
     grid-template-columns: 1fr !important;
     gap: 14px !important;
     width: 100% !important;
+    max-width: 100% !important;
+  }
+  .pengiriman-grid > div {
+    min-width: 0 !important;
     max-width: 100% !important;
   }
 
