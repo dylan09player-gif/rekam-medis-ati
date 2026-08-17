@@ -2072,32 +2072,19 @@ select.form-control {
     gap: 10px !important;
   }
 
-  /* --- Tables WITHOUT mobile card alternatives: show with scroll --- */
-  #view-gudang .table-responsive,
-  #view-edit-data .table-responsive,
-  #view-hse .table-responsive,
-  #view-manajemen .table-responsive {
+  /* --- Mobile card max-width boundaries & safety (Standard Mobile Portrait) --- */
+  .table-responsive {
     display: block !important;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  #view-gudang .custom-table,
-  #view-edit-data .custom-table,
-  #view-hse .custom-table,
-  #view-manajemen .custom-table {
-    min-width: 600px;
-    font-size: 0.78rem;
-  }
-  #view-gudang .custom-table th,
-  #view-gudang .custom-table td,
-  #view-edit-data .custom-table th,
-  #view-edit-data .custom-table td,
-  #view-hse .custom-table th,
-  #view-hse .custom-table td,
-  #view-manajemen .custom-table th,
-  #view-manajemen .custom-table td {
-    padding: 8px 10px;
-    font-size: 0.76rem;
+  .table-responsive .custom-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
 
   /* --- Karyawan search input full-width --- */
@@ -2125,11 +2112,11 @@ select.form-control {
   .soap-panel-header { flex-wrap: wrap; gap: 8px; }
 }
 
-/* Very small screens (≤380px — older iPhones, small Androids) */
+/* Very small screens (≤380px — older iPhones, compact Androids) */
 @media (max-width: 380px) {
-  html { font-size: 13px; }
-  .app-container { padding: 10px 10px 80px; }
-  .glass-card { padding: 12px 10px; }
+  html { font-size: 12.5px; }
+  .app-container { padding: 4px 4px 70px !important; }
+  .glass-card { padding: 6px 4px !important; }
   [style*="grid-template-columns: 1fr 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
