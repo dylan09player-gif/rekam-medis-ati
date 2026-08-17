@@ -1198,6 +1198,8 @@ select.form-control {
 }
 
 /* ===================== RESPONSIVE BREAKPOINTS ===================== */
+
+/* Tablet: SOAP panels go single column */
 @media (max-width: 1100px) {
   .soap-split-layout {
     grid-template-columns: 1fr;
@@ -1208,27 +1210,494 @@ select.form-control {
   }
 }
 
-@media (max-width: 900px) {
-  .app-navbar {
-    flex-direction: column;
-    height: auto;
-    padding: 10px 16px;
-    gap: 10px;
-  }
-  .brand-section {
-    width: 100%;
-    justify-content: space-between;
-  }
-  .nav-links {
-    width: 100%;
-  }
-}
+/* ================================================
+   MOBILE / SMARTPHONE — Portrait (≤768px)
+   Best practice EMR mobile: single column, bottom
+   nav, card views, bottom sheet modals, 44px touch.
+   ================================================ */
+@media (max-width: 768px) {
 
-@media (max-width: 640px) {
+  /* --- Base font scale down slightly --- */
+  html { font-size: 14px; }
+
+  /* --- Navbar: hide top nav links, keep brand bar compact --- */
+  .app-navbar {
+    flex-direction: row;
+    justify-content: space-between;
+    height: 52px;
+    padding: 0 14px;
+    gap: 8px;
+  }
+  .brand-section { gap: 8px; }
+  .brand-logo-img { height: 26px; }
+  .brand-title { font-size: 0.88rem; }
+  .brand-subtitle { display: none; }
+
+  /* Hide desktop nav links entirely — replaced by bottom nav */
+  .nav-links { display: none !important; }
+
+  /* --- Main container: add bottom padding for bottom nav bar --- */
+  .app-container {
+    padding: 12px 12px 82px;
+  }
+
+  /* --- SOAP layout: always single column --- */
+  .soap-split-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .soap-panel {
+    height: auto;
+    min-height: auto;
+  }
+
+  /* --- Vitals grid: 2 columns (more comfortable than 5) --- */
   .vitals-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  /* --- Form grids: collapse to single column --- */
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  [style*="grid-template-columns: 1fr 1.5fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="grid-template-columns: 1.15fr 0.85fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* --- Buttons: ensure minimum 44px touch target --- */
+  .btn {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 0.84rem;
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 7px 12px;
+    font-size: 0.78rem;
+  }
+  .btn-block { width: 100%; }
+
+  /* --- Form controls: larger for finger tap --- */
+  .form-control {
+    min-height: 44px;
+    font-size: 16px; /* prevents iOS auto-zoom on focus */
+    padding: 10px 13px;
+  }
+  select.form-control { font-size: 16px; }
+  textarea.form-control { min-height: 80px; font-size: 16px; }
+
+  /* --- Patient search bar: stack vertically --- */
+  .patient-select-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .patient-select-bar .btn {
+    width: 100%;
+  }
+
+  /* --- Patient info banner: stack --- */
+  .patient-info-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* --- Glass cards: reduce padding --- */
+  .glass-card { padding: 14px 12px; }
+
+  /* --- Stat cards: smaller value text --- */
+  .stat-value { font-size: 1.5rem; }
+
+  /* --- DESKTOP TABLE: hide on mobile, show mobile cards --- */
+  .table-responsive { display: none !important; }
+  .mobile-card-list  { display: flex !important; }
+
+  /* --- Karyawan section header: stack search + button --- */
+  #view-karyawan > .glass-card > div[style*="justify-content: space-between"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  #view-karyawan input[type="text"] { width: 100%; }
+
+  /* --- MODAL → BOTTOM SHEET --- */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal-card {
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 20px 16px 30px !important;
+    animation: mobileSheetUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  @keyframes mobileSheetUp {
+    from { transform: translateY(100%); opacity: 0.6; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* Modal drag handle */
+  .modal-card::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--border-card);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+
+  /* --- Toast: push above bottom nav --- */
+  .toast-container {
+    bottom: 76px;
+    right: 12px;
+    left: 12px;
+  }
+  .toast {
+    max-width: 100%;
+    font-size: 0.84rem;
+  }
+
+  /* --- Timeline: smaller cards --- */
+  .timeline-item { padding: 12px 12px; }
+  .timeline-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+
+  /* --- Resep table: scrollable on mobile --- */
+  .resep-table { font-size: 0.78rem; }
+  .resep-table th, .resep-table td { padding: 6px 6px; }
+
+  /* --- Searchable dropdown: full viewport height aware --- */
+  .searchable-dropdown-menu { max-height: 200px; }
+
+  /* --- Code block --- */
+  .code-block { font-size: 0.68rem; max-height: 160px; }
+
+  /* --- Stat grids that use inline style --- */
+  [style*="repeat(4, 1fr)"],
+  [style*="repeat(3, 1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* --- Resep total summary card --- */
+  .resep-total-summary-card { flex-direction: column; align-items: flex-start; gap: 6px; }
+
+  /* --- Header action rows --- */
+  .soap-panel-header { flex-wrap: wrap; gap: 8px; }
 }
+
+/* Very small screens (≤380px — older iPhones, small Androids) */
+@media (max-width: 380px) {
+  html { font-size: 13px; }
+  .app-container { padding: 10px 10px 80px; }
+  .glass-card { padding: 12px 10px; }
+  [style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  .mobile-patient-card .card-actions {
+    flex-direction: column;
+  }
+}
+
+/* ==========================================
+   MOBILE BOTTOM NAVIGATION BAR
+   Fixed at bottom, always visible, 5 main tabs
+   ========================================== */
+.mobile-bottom-nav {
+  display: none; /* hidden on desktop */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border-card);
+  z-index: 200;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.25);
+  padding-bottom: env(safe-area-inset-bottom); /* iPhone notch-safe */
+}
+
+.mobile-bottom-nav-inner {
+  display: flex;
+  height: 100%;
+  align-items: stretch;
+}
+
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  padding: 6px 4px;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.mobile-nav-item i {
+  font-size: 1.15rem;
+  transition: transform 0.15s ease;
+}
+
+.mobile-nav-item:active {
+  background: var(--surface-2);
+}
+
+.mobile-nav-item.active {
+  color: var(--primary);
+}
+
+.mobile-nav-item.active i {
+  transform: translateY(-1px);
+}
+
+/* Active indicator dot */
+.mobile-nav-item.active::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* More menu overlay */
+.mobile-more-menu {
+  display: none;
+  position: fixed;
+  bottom: 64px;
+  left: 0;
+  right: 0;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border-card);
+  z-index: 199;
+  padding: 12px 0 8px;
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.3);
+  animation: moreMenuUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mobile-more-menu.open { display: block; }
+
+@keyframes moreMenuUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.mobile-more-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 16px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+
+.mobile-more-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 8px 12px;
+}
+
+.mobile-more-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 4px;
+  border-radius: var(--r-md);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-more-item i {
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.mobile-more-item:active,
+.mobile-more-item.active {
+  background: var(--surface-2);
+  color: var(--primary);
+}
+
+/* More menu backdrop */
+.mobile-more-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 198;
+  background: transparent;
+}
+.mobile-more-backdrop.open { display: block; }
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav { display: block; }
+}
+
+/* ==========================================
+   MOBILE PATIENT CARD LIST
+   Replaces the wide table on mobile screens
+   ========================================== */
+.mobile-card-list {
+  display: none; /* shown only on mobile via media query */
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.mobile-patient-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-card);
+  border-radius: var(--r-lg);
+  padding: 14px 14px 12px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+  position: relative;
+}
+
+.mobile-patient-card:active {
+  box-shadow: var(--shadow-md);
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.card-npk {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--primary-light);
+  background: var(--primary-surface);
+  border: 1px solid rgba(56,189,248,0.2);
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  letter-spacing: 0.02em;
+}
+
+.card-no {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  font-weight: 700;
+}
+
+.card-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.card-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.card-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.card-meta-chip i {
+  font-size: 0.68rem;
+  color: var(--text-faint);
+}
+
+.card-meta-divider {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.card-gol-badge {
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+}
+.card-gol-badge.ab { background: rgba(239,68,68,0.18); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.card-gol-badge.a  { background: rgba(2,132,199,0.18); color: #38bdf8; border: 1px solid rgba(2,132,199,0.3); }
+.card-gol-badge.b  { background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.card-gol-badge.o  { background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+.card-gol-badge.na { background: var(--surface-2); color: var(--text-faint); border: 1px solid var(--border-subtle); }
+
+.card-usia-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(139,92,246,0.15);
+  color: #c084fc;
+  border: 1px solid rgba(139,92,246,0.25);
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.card-actions .btn {
+  flex: 1;
+  min-height: 40px;
+  font-size: 0.78rem;
+}
+
+.card-wa-btn {
+  min-height: 40px !important;
+  width: 40px !important;
+  flex: 0 0 40px !important;
+  padding: 0 !important;
+  border-radius: var(--r-sm) !important;
+  background: rgba(16,185,129,0.15) !important;
+  border: 1px solid rgba(16,185,129,0.3) !important;
+  color: #34d399 !important;
+  font-size: 1rem !important;
+}
+
 
 /* ===================== SEARCHABLE DROPDOWN COMPONENT ===================== */
 .custom-searchable-wrap {

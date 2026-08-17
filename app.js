@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   checkGateLoginStatus();
   await loadAllAppData();
   initNavigation();
+  initMobileNav();
   initPoliForm();
   initDateInputs();
 });
@@ -140,6 +141,7 @@ async function loadAllAppData() {
     renderBillingPTTable();
     renderAbsenDirekturTable();
     renderNakesSuggestions();
+    renderMobileKaryawanCards();
 
     console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}`);
 
@@ -1557,13 +1559,19 @@ function renderKaryawanTable() {
 
 function filterKaryawanTable() {
   renderKaryawanTable();
+  renderMobileKaryawanCards();
 }
 
 function selectPatientDirectFromKaryawan(patient) {
   appData.currentPoliPatient = patient;
-  document.querySelector('.nav-btn[data-target="view-poli"]').click();
-  document.getElementById('poli-search-nik').value = patient.nikPabrik || patient.nik || patient.nama;
-  searchPatientByNIK();
+  // Navigate using both desktop nav and mobile nav
+  const desktopBtn = document.querySelector('.nav-btn[data-target="view-poli"]');
+  if (desktopBtn) desktopBtn.click();
+  switchMobileNav('view-poli', document.getElementById('mnav-poli'));
+  setTimeout(() => {
+    document.getElementById('poli-search-nik').value = patient.nikPabrik || patient.nik || patient.nama;
+    searchPatientByNIK();
+  }, 100);
 }
 
 function openModalTambahKaryawan() {
@@ -2326,4 +2334,166 @@ function showToast(message, type = 'info') {
   setTimeout(() => {
     toast.remove();
   }, 4000);
+}
+
+// =============================================================
+// MOBILE NAVIGATION — Bottom Nav Bar + More Menu
+// =============================================================
+
+function initMobileNav() {
+  // Sync desktop nav clicks to also update mobile bottom nav state
+  document.querySelectorAll('.nav-btn[data-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-target');
+      syncMobileNavHighlight(target);
+    });
+  });
+}
+
+/**
+ * Switch page view and update bottom nav active state.
+ * @param {string} viewId - The page-view section ID to show
+ * @param {HTMLElement|null} mobileBtn - The mobile-nav-item element clicked (null if from More menu)
+ * @param {boolean} fromMore - True if triggered from More menu
+ */
+function switchMobileNav(viewId, mobileBtn, fromMore = false) {
+  // Switch page view
+  document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById(viewId);
+  if (target) target.classList.add('active');
+
+  // Sync desktop nav buttons
+  document.querySelectorAll('.nav-btn[data-target]').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-target') === viewId);
+  });
+
+  // Update bottom nav highlight
+  syncMobileNavHighlight(viewId, mobileBtn);
+
+  // Close more menu
+  if (fromMore) closeMobileMore();
+}
+
+function syncMobileNavHighlight(viewId, explicitBtn) {
+  // Map of viewId → mobile nav item ID
+  const navMap = {
+    'view-poli': 'mnav-poli',
+    'view-karyawan': 'mnav-karyawan',
+    'view-gudang': 'mnav-gudang',
+    'view-hse': 'mnav-hse'
+  };
+
+  // Remove active from all bottom nav items
+  document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
+
+  if (explicitBtn) {
+    explicitBtn.classList.add('active');
+  } else if (navMap[viewId]) {
+    const btn = document.getElementById(navMap[viewId]);
+    if (btn) btn.classList.add('active');
+  }
+  // If it's a "more" tab (EDIT DATA, SHIFT, etc.), no bottom nav item gets active dot
+}
+
+function toggleMobileMore() {
+  const menu = document.getElementById('mobile-more-menu');
+  const backdrop = document.getElementById('mobile-more-backdrop');
+  const isOpen = menu.classList.contains('open');
+  if (isOpen) {
+    closeMobileMore();
+  } else {
+    menu.classList.add('open');
+    backdrop.classList.add('open');
+  }
+}
+
+function closeMobileMore() {
+  document.getElementById('mobile-more-menu')?.classList.remove('open');
+  document.getElementById('mobile-more-backdrop')?.classList.remove('open');
+}
+
+// =============================================================
+// MOBILE PATIENT CARD LIST — renders cards for smartphone view
+// =============================================================
+
+function renderMobileKaryawanCards() {
+  const container = document.getElementById('mobile-karyawan-cards');
+  if (!container) return;
+
+  const query = document.getElementById('search-karyawan-input')?.value.toLowerCase().trim() || '';
+
+  const filtered = appData.patients.filter(k => {
+    const nikP = String(k.nikPabrik || k.nik || '').toLowerCase();
+    const nama = String(k.nama || '').toLowerCase();
+    const dept = String(k.dept || k.departemen || '').toLowerCase();
+    const hp = String(k.hp || k.no_hp || '').toLowerCase();
+    return !query || nikP.includes(query) || nama.includes(query) || dept.includes(query) || hp.includes(query);
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding: 32px 16px; color: var(--text-muted);">
+        <i class="fa-solid fa-user-slash" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i>
+        <div style="font-weight: 700;">Tidak ada pasien ditemukan</div>
+        <div style="font-size: 0.8rem; margin-top: 4px;">"${query}"</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map((k, idx) => {
+    const no = k.no || String(idx + 1);
+    const npk = k.nikPabrik || k.nik || '-';
+    const nama = k.nama || '-';
+    const dept = k.dept || k.departemen || 'PT ATI';
+    const tgl = k.tglLahir || k.tgl_lahir || '';
+    const usia = tgl ? calculateAge(tgl) : '-';
+    const gender = k.gender || '-';
+    const golDarah = (k.golDarah || '-').trim();
+    const rawHp = k.hp || k.no_hp || '';
+    const cleanWA = cleanPhoneForWA(rawHp);
+    const patientJSON = JSON.stringify(k).replace(/'/g, '&apos;');
+    const editId = k.id || npk;
+
+    // Blood type badge class
+    const golClass = { 'AB': 'ab', 'A': 'a', 'B': 'b', 'O': 'o' }[golDarah.toUpperCase()] || 'na';
+    const genderIcon = gender.toLowerCase().includes('perempuan') ? 'fa-venus' : 'fa-mars';
+    const genderColor = gender.toLowerCase().includes('perempuan') ? '#f472b6' : '#60a5fa';
+
+    const waBtn = rawHp
+      ? `<button class="btn card-wa-btn" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="WhatsApp ${rawHp}">
+           <i class="fa-brands fa-whatsapp"></i>
+         </button>`
+      : '';
+
+    return `
+      <div class="mobile-patient-card">
+        <div class="card-top-row">
+          <span class="card-npk">${npk}</span>
+          <span class="card-no">#${no}</span>
+        </div>
+        <div class="card-name">${nama}</div>
+        <div class="card-meta-row">
+          <span class="card-meta-chip">
+            <i class="fa-solid fa-building"></i> ${dept}
+          </span>
+          <span class="card-meta-divider"></span>
+          <span class="card-meta-chip">
+            <i class="fa-solid ${genderIcon}" style="color:${genderColor};"></i> ${gender}
+          </span>
+          <span class="card-meta-divider"></span>
+          ${tgl ? `<span class="card-meta-chip"><i class="fa-solid fa-calendar-days"></i> ${tgl}</span>` : ''}
+          ${usia !== '-' ? `<span class="card-usia-badge">${usia}</span>` : ''}
+          <span class="card-gol-badge ${golClass}">${golDarah}</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-sm btn-primary" onclick='selectPatientDirectFromKaryawan(${patientJSON})'>
+            <i class="fa-solid fa-stethoscope"></i> Poli
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="openModalEditKaryawan('${editId}')">
+            <i class="fa-solid fa-pen"></i> Edit
+          </button>
+          ${waBtn}
+        </div>
+      </div>`;
+  }).join('');
 }

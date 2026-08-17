@@ -95,6 +95,64 @@
     </nav>
   </header>
 
+  <!-- ========================================================
+       MOBILE BOTTOM NAVIGATION BAR
+       Shown only on screens ≤768px (smartphones)
+       5 main tabs + "More" menu for the rest
+       ======================================================== -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <div class="mobile-bottom-nav-inner">
+      <button class="mobile-nav-item active" id="mnav-poli" onclick="switchMobileNav('view-poli', this)">
+        <i class="fa-solid fa-stethoscope"></i>
+        Poli
+      </button>
+      <button class="mobile-nav-item" id="mnav-karyawan" onclick="switchMobileNav('view-karyawan', this)">
+        <i class="fa-solid fa-id-card"></i>
+        Pasien
+      </button>
+      <button class="mobile-nav-item" id="mnav-gudang" onclick="switchMobileNav('view-gudang', this)">
+        <i class="fa-solid fa-boxes-stacked"></i>
+        Gudang
+      </button>
+      <button class="mobile-nav-item" id="mnav-hse" onclick="switchMobileNav('view-hse', this)">
+        <i class="fa-solid fa-chart-pie"></i>
+        HSE
+      </button>
+      <button class="mobile-nav-item" id="mnav-more" onclick="toggleMobileMore()">
+        <i class="fa-solid fa-grid-2"></i>
+        Lainnya
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile More Menu (slides up above bottom nav) -->
+  <div class="mobile-more-backdrop" id="mobile-more-backdrop" onclick="closeMobileMore()"></div>
+  <div class="mobile-more-menu" id="mobile-more-menu">
+    <div class="mobile-more-title"><i class="fa-solid fa-grid-2" style="margin-right:6px;"></i>Menu Lainnya</div>
+    <div class="mobile-more-grid">
+      <button class="mobile-more-item" onclick="switchMobileNav('view-edit-data', null, true)">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        Edit Data
+      </button>
+      <button class="mobile-more-item" onclick="switchMobileNav('view-obat-req', null, true)">
+        <i class="fa-solid fa-capsules"></i>
+        Obat Req
+      </button>
+      <button class="mobile-more-item" onclick="switchMobileNav('view-shift', null, true)">
+        <i class="fa-solid fa-paper-plane"></i>
+        Shift
+      </button>
+      <button class="mobile-more-item" onclick="switchMobileNav('view-manajemen', null, true)">
+        <i class="fa-solid fa-sack-dollar"></i>
+        Manajemen
+      </button>
+      <button class="mobile-more-item" onclick="switchMobileNav('view-gsheet', null, true)">
+        <i class="fa-brands fa-google-drive"></i>
+        G-Sheet
+      </button>
+    </div>
+  </div>
+
   <!-- Main Application Content Container -->
   <main class="app-container">
 
@@ -525,6 +583,11 @@
               <!-- Rendered dynamically via renderKaryawanTable() -->
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Card List (shown only on smartphones via CSS media query) -->
+        <div class="mobile-card-list" id="mobile-karyawan-cards">
+          <!-- Rendered dynamically via renderMobileKaryawanCards() -->
         </div>
       </div>
     </section>
