@@ -487,16 +487,16 @@
       </div>
     </section>
 
-    <!-- 5. TAB KARYAWAN (SEARCH NAMA & NIK PABRIK) -->
+    <!-- 5. TAB KARYAWAN (SEARCH NAMA & NPK PABRIK) -->
     <section id="view-karyawan" class="page-view">
       <div class="glass-card" style="margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
           <div>
-            <h2><i class="fa-solid fa-id-card" style="color: var(--primary);"></i> Data Karyawan & Pasien PT ATI</h2>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Master data karyawan pabrik terdaftar.</p>
+            <h2><i class="fa-solid fa-id-card" style="color: var(--primary);"></i> Data Karyawan &amp; Pasien PT ATI</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Master 1.400+ data karyawan &amp; pasien pabrik terdaftar.</p>
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="search-karyawan-input" class="form-control" placeholder="Cari NIK Pabrik atau Nama Karyawan..." style="width: 280px;" onkeyup="filterKaryawanTable()">
+            <input type="text" id="search-karyawan-input" class="form-control" placeholder="Cari NPK Pabrik, Nama, Dept, No WA..." style="width: 300px;" onkeyup="filterKaryawanTable()">
             <button class="btn btn-primary" onclick="openModalTambahKaryawan()">
               <i class="fa-solid fa-user-plus"></i> Tambah Karyawan Baru
             </button>
@@ -509,17 +509,19 @@
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width: 15%;">NIK PABRIK</th>
-                <th>NAMA KARYAWAN</th>
-                <th>DEPARTEMEN / BAGIAN</th>
-                <th>TANGGAL LAHIR</th>
-                <th>GENDER</th>
-                <th>NO. HP</th>
-                <th>AKSI</th>
+                <th style="width: 13%;">NPK PABRIK</th>
+                <th style="width: 22%;">NAMA KARYAWAN / PASIEN</th>
+                <th style="width: 14%;">DEPARTEMEN</th>
+                <th style="width: 11%;">TGL LAHIR</th>
+                <th style="width: 8%;">USIA</th>
+                <th style="width: 8%;">GENDER</th>
+                <th style="width: 7%;">GOL. DARAH</th>
+                <th style="width: 15%;">NO. WHATSAPP</th>
+                <th style="width: 12%; text-align: center;">AKSI</th>
               </tr>
             </thead>
             <tbody id="table-karyawan-body">
-              <!-- Rendered dynamically -->
+              <!-- Rendered dynamically via renderKaryawanTable() -->
             </tbody>
           </table>
         </div>
@@ -1129,6 +1131,69 @@ function setupTabDanHeader() {
           <button type="submit" class="btn btn-warning" style="background: #f59e0b; color: #000; font-weight: 700;">
             <i class="fa-solid fa-paper-plane"></i> Simpan &amp; Lapor Telegram
           </button>
+        </div>
+  <!-- MODAL EDIT DATA KARYAWAN & NO WHATSAPP -->
+  <div id="modal-edit-karyawan" class="modal-overlay">
+    <div class="modal-card" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-user-pen" style="color: var(--primary);"></i> Edit Data Pasien / Karyawan</h3>
+        <button class="close-btn" onclick="closeModalEditKaryawan()">&times;</button>
+      </div>
+      <form id="form-edit-karyawan" onsubmit="handleSaveEditKaryawan(event)">
+        <input type="hidden" id="edit-karyawan-id">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">NPK Pabrik *</label>
+            <input type="text" id="edit-karyawan-nik" class="form-control" required style="font-weight: 700;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap Pasien *</label>
+            <input type="text" id="edit-karyawan-nama" class="form-control" required style="font-weight: 700;">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Departemen / Bagian</label>
+          <input type="text" id="edit-karyawan-dept" class="form-control" placeholder="Process / Mechanical / Security / PT ATI">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <select id="edit-karyawan-gender" class="form-control">
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gol. Darah</label>
+            <select id="edit-karyawan-goldarah" class="form-control">
+              <option value="-">-</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="AB">AB</option>
+              <option value="O">O</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal Lahir</label>
+            <input type="text" id="edit-karyawan-tgllahir" class="form-control" placeholder="DD-MM-YYYY">
+          </div>
+        </div>
+
+        <!-- NO HP WHATSAPP UNTUK PEMANTAUAN -->
+        <div class="form-group" style="background: rgba(16, 185, 129, 0.1); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: var(--r-md); padding: 12px; margin-top: 10px;">
+          <label class="form-label" style="color: #34d399; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> No. HP WhatsApp (Pemantauan Pasien)
+          </label>
+          <input type="text" id="edit-karyawan-hp" class="form-control" placeholder="Contoh: 08123456789 / 0858..." style="font-size: 0.95rem; font-weight: 700; background: var(--surface-1);">
+          <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">Nomor ini akan langsung terhubung ke WhatsApp untuk memudahkan perawat memantau kondisi pasien.</small>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalEditKaryawan()">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Simpan Data Pasien</button>
         </div>
       </form>
     </div>

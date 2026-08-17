@@ -612,11 +612,12 @@ function searchPatientByNIK() {
   const infoBox = document.getElementById('poli-patient-info-box');
   infoBox.style.display = 'block';
   document.getElementById('poli-info-nama').textContent = p.nama;
-  document.getElementById('poli-info-sub').textContent = `NIK Pabrik: ${p.nikPabrik || '-'} | Dept: ${p.dept || '-'} | Tgl Lahir: ${p.tglLahir || '-'}`;
+  const ageStr = calculateAge(p.tglLahir || p.tgl_lahir);
+  document.getElementById('poli-info-sub').textContent = `NPK Pabrik: ${p.nikPabrik || p.nik || '-'} | Dept: ${p.dept || p.departemen || '-'} | Usia: ${ageStr} (${p.tglLahir || p.tgl_lahir || '-'}) | Gol. Darah: ${p.golDarah || '-'} | WA: ${p.hp || p.no_hp || '-'}`;
 
   // Update Right Panel Banner
-  document.getElementById('poli-banner-name').textContent = `${p.nama} (${p.nikPabrik || '-'})`;
-  document.getElementById('poli-banner-sub').textContent = `Dept: ${p.dept || '-'} | Gender: ${p.gender || '-'}`;
+  document.getElementById('poli-banner-name').textContent = `${p.nama} (${p.nikPabrik || p.nik || '-'})`;
+  document.getElementById('poli-banner-sub').textContent = `Dept: ${p.dept || p.departemen || '-'} | Usia: ${ageStr} | Gender: ${p.gender || '-'}`;
   document.getElementById('poli-banner-alergi').textContent = p.alergi ? `⚠️ Alergi: ${p.alergi}` : '';
 
   renderPatientHistoryTimeline(p);
@@ -1443,8 +1444,53 @@ function handleSendObatReqWA(e) {
 }
 
 // -------------------------------------------------------------
-// 5. TAB KARYAWAN LOGIC (NIK PABRIK SEARCH)
+// 5. TAB KARYAWAN LOGIC (NPK PABRIK, USIA & WHATSAPP)
 // -------------------------------------------------------------
+
+function calculateAge(dateStr) {
+  if (!dateStr || dateStr === '-' || dateStr === 'undefined' || dateStr === 'null') return '-';
+  const s = String(dateStr).trim();
+  if (!s) return '-';
+
+  let birthDate = null;
+  // Format DD-MM-YYYY or DD/MM/YYYY
+  if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(s)) {
+    const parts = s.split(/[-/]/);
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    birthDate = new Date(year, month, day);
+  } else if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)) {
+    const parts = s.split(/[-/]/);
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    birthDate = new Date(year, month, day);
+  } else {
+    birthDate = new Date(s);
+  }
+
+  if (!birthDate || isNaN(birthDate.getTime())) return '-';
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 0 && age < 120 ? `${age} Thn` : '-';
+}
+
+function cleanPhoneForWA(phone) {
+  if (!phone) return '';
+  let p = String(phone).replace(/[^0-9]/g, '');
+  if (p.startsWith('0')) {
+    p = '62' + p.slice(1);
+  } else if (p.startsWith('8')) {
+    p = '62' + p;
+  }
+  return p;
+}
+
 function renderKaryawanTable() {
   const tbody = document.getElementById('table-karyawan-body');
   if (!tbody) return;
@@ -1455,29 +1501,56 @@ function renderKaryawanTable() {
     const nikP = String(k.nikPabrik || k.nik || '').toLowerCase();
     const nama = String(k.nama || '').toLowerCase();
     const dept = String(k.dept || k.departemen || '').toLowerCase();
-    return !query || nikP.includes(query) || nama.includes(query) || dept.includes(query);
+    const hp = String(k.hp || k.no_hp || '').toLowerCase();
+    return !query || nikP.includes(query) || nama.includes(query) || dept.includes(query) || hp.includes(query);
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan '${query}'</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan pencarian '${query}'</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = filtered.map(k => `
-    <tr>
-      <td><span class="badge badge-info">${k.nikPabrik || k.nik || '-'}</span></td>
-      <td><strong>${k.nama || '-'}</strong></td>
-      <td>${k.dept || k.departemen || '-'}</td>
-      <td>${k.tglLahir || k.tgl_lahir || '-'}</td>
-      <td>${k.gender || '-'}</td>
-      <td>${k.hp || k.no_hp || '-'}</td>
-      <td>
-        <button class="btn btn-sm btn-primary" onclick='selectPatientDirectFromKaryawan(${JSON.stringify(k).replace(/'/g, "&apos;")})'>
-          <i class="fa-solid fa-stethoscope"></i> Periksa di Poli
-        </button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = filtered.map(k => {
+    const npk = k.nikPabrik || k.nik || '-';
+    const nama = k.nama || '-';
+    const dept = k.dept || k.departemen || 'PT ATI';
+    const tgl = k.tglLahir || k.tgl_lahir || '-';
+    const usia = calculateAge(tgl);
+    const gender = k.gender || '-';
+    const golDarah = k.golDarah || '-';
+    const rawHp = k.hp || k.no_hp || '';
+    const cleanWA = cleanPhoneForWA(rawHp);
+
+    let waHTML = `<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">-</span>`;
+    if (rawHp) {
+      waHTML = `<a href="https://wa.me/${cleanWA}" target="_blank" class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;" title="Kirim Pesan WhatsApp Pemantauan">
+        <i class="fa-brands fa-whatsapp"></i> ${rawHp}
+      </a>`;
+    }
+
+    return `
+      <tr>
+        <td><span class="badge badge-info" style="font-weight: 700;">${npk}</span></td>
+        <td><strong>${nama}</strong></td>
+        <td>${dept}</td>
+        <td>${tgl}</td>
+        <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; font-weight: 700;">${usia}</span></td>
+        <td>${gender}</td>
+        <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; font-weight: 700;">${golDarah}</span></td>
+        <td>${waHTML}</td>
+        <td style="text-align: center;">
+          <div style="display: flex; gap: 6px; justify-content: center;">
+            <button class="btn btn-sm btn-primary" onclick='selectPatientDirectFromKaryawan(${JSON.stringify(k).replace(/'/g, "&apos;")})' title="Periksa di Poli">
+              <i class="fa-solid fa-stethoscope"></i> Poli
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="openModalEditKaryawan('${k.id || npk}')" title="Edit Data & No WhatsApp Pasien">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function filterKaryawanTable() {
@@ -1487,7 +1560,7 @@ function filterKaryawanTable() {
 function selectPatientDirectFromKaryawan(patient) {
   appData.currentPoliPatient = patient;
   document.querySelector('.nav-btn[data-target="view-poli"]').click();
-  document.getElementById('poli-search-nik').value = patient.nikPabrik || patient.nama;
+  document.getElementById('poli-search-nik').value = patient.nikPabrik || patient.nik || patient.nama;
   searchPatientByNIK();
 }
 
@@ -1498,6 +1571,62 @@ function closeModalTambahKaryawan() {
   document.getElementById('modal-karyawan').style.display = 'none';
 }
 
+function openModalEditKaryawan(idOrNpk) {
+  const p = appData.patients.find(x => x.id === idOrNpk || x.nikPabrik === idOrNpk || x.nik === idOrNpk);
+  if (!p) {
+    showToast('Data karyawan tidak ditemukan', 'error');
+    return;
+  }
+
+  document.getElementById('edit-karyawan-id').value = p.id || p.nikPabrik || '';
+  document.getElementById('edit-karyawan-nik').value = p.nikPabrik || p.nik || '';
+  document.getElementById('edit-karyawan-nama').value = p.nama || '';
+  document.getElementById('edit-karyawan-dept').value = p.dept || p.departemen || '';
+  document.getElementById('edit-karyawan-gender').value = p.gender || 'Laki-laki';
+  document.getElementById('edit-karyawan-goldarah').value = p.golDarah || '-';
+  document.getElementById('edit-karyawan-tgllahir').value = p.tglLahir || p.tgl_lahir || '';
+  document.getElementById('edit-karyawan-hp').value = p.hp || p.no_hp || '';
+
+  document.getElementById('modal-edit-karyawan').style.display = 'flex';
+}
+
+function closeModalEditKaryawan() {
+  document.getElementById('modal-edit-karyawan').style.display = 'none';
+}
+
+async function handleSaveEditKaryawan(e) {
+  e.preventDefault();
+  const id = document.getElementById('edit-karyawan-id').value;
+  const updatedData = {
+    nikPabrik: document.getElementById('edit-karyawan-nik').value.trim(),
+    nama: document.getElementById('edit-karyawan-nama').value.trim(),
+    dept: document.getElementById('edit-karyawan-dept').value.trim(),
+    gender: document.getElementById('edit-karyawan-gender').value,
+    golDarah: document.getElementById('edit-karyawan-goldarah').value,
+    tglLahir: document.getElementById('edit-karyawan-tgllahir').value.trim(),
+    hp: document.getElementById('edit-karyawan-hp').value.trim()
+  };
+
+  try {
+    const res = await fetch(`/api/patients/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedData)
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('✅ Data pasien & No WhatsApp berhasil diperbarui!', 'success');
+      closeModalEditKaryawan();
+      await loadAllAppData();
+      renderKaryawanTable();
+    } else {
+      showToast('Gagal menyimpan: ' + (data.error || 'Terjadi kesalahan'), 'error');
+    }
+  } catch(err) {
+    showToast('Gagal koneksi server: ' + err.message, 'error');
+  }
+}
+
 async function handleSaveKaryawan(e) {
   e.preventDefault();
   const newK = {
@@ -1506,6 +1635,7 @@ async function handleSaveKaryawan(e) {
     dept: document.getElementById('karyawan-dept').value.trim(),
     tglLahir: document.getElementById('karyawan-tgl-lahir').value,
     gender: document.getElementById('karyawan-gender').value,
+    golDarah: '-',
     hp: document.getElementById('karyawan-hp').value,
     alamat: document.getElementById('karyawan-alamat').value
   };
@@ -1520,6 +1650,7 @@ async function handleSaveKaryawan(e) {
       showToast('Data Karyawan Berhasil Disimpan', 'success');
       closeModalTambahKaryawan();
       await loadAllAppData();
+      renderKaryawanTable();
     }
   } catch (err) {
     showToast('Gagal menyimpan karyawan', 'error');
