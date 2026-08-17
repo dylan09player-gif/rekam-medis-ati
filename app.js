@@ -1530,44 +1530,98 @@ function initShipmentView() {
   document.getElementById('ship-initial-stock').value = '';
   document.getElementById('ship-final-stock').value = '';
 
-  const sel = document.getElementById('ship-medicine-select');
-  if (!sel) return;
+  const inputId = document.getElementById('ship-medicine-id');
+  const inputName = document.getElementById('ship-medicine-input');
+  
+  if (inputId) inputId.value = '';
+  if (inputName) inputName.value = '';
 
-  // Clear options except first
-  sel.innerHTML = '<option value="">-- Pilih Obat --</option>';
+  setupShipMedicineSearchable();
+}
 
-  // Populate options sorted by name
-  const sortedMeds = (appData.medicines || []).slice().sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
-  sortedMeds.forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m.id;
-    opt.textContent = `${m.nama} (Stok: ${m.stok !== undefined ? m.stok : 0} ${m.satuan || 'strip'})`;
-    sel.appendChild(opt);
+function setupShipMedicineSearchable() {
+  const wrap = document.getElementById('ship-med-searchable-wrap');
+  const input = document.getElementById('ship-medicine-input');
+  const menu = document.getElementById('ship-medicine-menu');
+  const idInput = document.getElementById('ship-medicine-id');
+  
+  if (!wrap || !input || !menu || !idInput) return;
+
+  function renderOptions(filterText = '') {
+    const cleanFilter = filterText.toLowerCase().trim();
+    const sortedMeds = (appData.medicines || []).slice().sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+    
+    const filtered = sortedMeds.filter(m => 
+      !cleanFilter || 
+      (m.nama && m.nama.toLowerCase().includes(cleanFilter))
+    );
+
+    if (filtered.length === 0) {
+      menu.innerHTML = `<div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Obat tidak ditemukan</div>`;
+      return;
+    }
+
+    menu.innerHTML = filtered.map(m => {
+      const hargaFormat = m.harga ? `Rp ${parseInt(m.harga).toLocaleString('id-ID')}` : 'Rp 0';
+      return `
+        <div class="searchable-option-item" data-id="${m.id}" data-nama="${m.nama}" data-stok="${m.stok !== undefined ? m.stok : 0}">
+          <div>
+            <strong>${m.nama}</strong>
+            <div class="option-sub">Stok: ${m.stok !== undefined ? m.stok : 0} ${m.satuan || ''} | Harga: ${hargaFormat}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    menu.querySelectorAll('.searchable-option-item').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const id = opt.getAttribute('data-id');
+        const nama = opt.getAttribute('data-nama');
+        const stok = opt.getAttribute('data-stok');
+
+        input.value = nama;
+        idInput.value = id;
+        wrap.classList.remove('active');
+        
+        // Populate Initial Stock and clear others
+        const initInput = document.getElementById('ship-initial-stock');
+        const qtyInput = document.getElementById('ship-qty-input');
+        const finalInput = document.getElementById('ship-final-stock');
+        
+        if (initInput) initInput.value = stok;
+        if (qtyInput) qtyInput.value = '';
+        if (finalInput) finalInput.value = '';
+      });
+    });
+  }
+
+  // Clone input to clear previous event listeners if initialized multiple times
+  const newInput = input.cloneNode(true);
+  input.parentNode.replaceChild(newInput, input);
+  
+  newInput.addEventListener('focus', () => {
+    document.querySelectorAll('.custom-searchable-wrap.active').forEach(w => {
+      if (w !== wrap) w.classList.remove('active');
+    });
+    renderOptions(newInput.value);
+    wrap.classList.add('active');
+  });
+
+  newInput.addEventListener('input', () => {
+    idInput.value = ''; // Reset ID when typing manually
+    renderOptions(newInput.value);
+    wrap.classList.add('active');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove('active');
+    }
   });
 }
 
 function handleShipMedChange() {
-  const sel = document.getElementById('ship-medicine-select');
-  const initInput = document.getElementById('ship-initial-stock');
-  const qtyInput = document.getElementById('ship-qty-input');
-  const finalInput = document.getElementById('ship-final-stock');
-
-  if (!sel || !initInput) return;
-
-  const id = sel.value;
-  if (!id) {
-    initInput.value = '';
-    qtyInput.value = '';
-    finalInput.value = '';
-    return;
-  }
-
-  const med = appData.medicines.find(m => m.id === id);
-  if (med) {
-    initInput.value = med.stok !== undefined ? med.stok : 0;
-    qtyInput.value = '';
-    finalInput.value = '';
-  }
+  // Logic is now handled directly by setupShipMedicineSearchable
 }
 
 function calculateShipFinalStock() {
@@ -1584,12 +1638,12 @@ function calculateShipFinalStock() {
 }
 
 function addMedToShipmentDraft() {
-  const sel = document.getElementById('ship-medicine-select');
+  const idInput = document.getElementById('ship-medicine-id');
   const qtyInput = document.getElementById('ship-qty-input');
 
-  if (!sel || !qtyInput) return;
+  if (!idInput || !qtyInput) return;
 
-  const id = sel.value;
+  const id = idInput.value;
   const qty = parseInt(qtyInput.value) || 0;
 
   if (!id) {
@@ -1623,7 +1677,8 @@ function addMedToShipmentDraft() {
   renderShipmentDraftTable();
 
   // Reset medicine selector
-  sel.value = '';
+  idInput.value = '';
+  document.getElementById('ship-medicine-input').value = '';
   qtyInput.value = '';
   document.getElementById('ship-initial-stock').value = '';
   document.getElementById('ship-final-stock').value = '';

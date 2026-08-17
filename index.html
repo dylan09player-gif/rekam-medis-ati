@@ -533,9 +533,14 @@
 
                 <div class="form-group" style="margin-bottom: 14px;">
                   <label class="form-label">Pilih Obat *</label>
-                  <select id="ship-medicine-select" class="form-control" onchange="handleShipMedChange()" style="font-weight: 700; background: var(--surface-1);">
-                    <option value="">-- Pilih Obat --</option>
-                  </select>
+                  <div class="custom-searchable-wrap" id="ship-med-searchable-wrap">
+                    <div class="searchable-input-box">
+                      <input type="text" class="form-control" id="ship-medicine-input" placeholder="🔍 Cari / ketik nama obat..." autocomplete="off" style="font-weight: 700; background: var(--surface-1);">
+                      <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+                    </div>
+                    <div class="searchable-dropdown-menu" id="ship-medicine-menu"></div>
+                  </div>
+                  <input type="hidden" id="ship-medicine-id">
                 </div>
 
                 <div class="pengiriman-stok-grid">
