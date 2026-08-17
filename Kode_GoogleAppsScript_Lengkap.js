@@ -91,19 +91,21 @@ function doGet(e) {
     }
   }
   
-  // 3. Tab Karyawan / Pasien
+  // 3. Tab Karyawan / Pasien (Col A: No, Col B: NPK, Col C: Nama, Col D: Dept, Col E: Gender, Col F: Gol Darah, Col G: Tgl Lahir, Col H: No HP)
   var kary = ss.getSheetByName('Karyawan') || ss.getSheetByName('Pasien') || ss.getSheetByName('Data Karyawan');
   if (kary) {
     var kVal = kary.getDataRange().getValues();
     if (kVal.length > 1) {
-      result.employees = kVal.slice(1).filter(function(r){ return r[0] || r[1]; }).map(function(r){ 
+      result.employees = kVal.slice(1).filter(function(r){ return r[1] || r[2]; }).map(function(r, idx){ 
         return {
-          nikPabrik: String(r[0] || '').trim(), 
-          nama: String(r[1] || '').trim(), 
-          dept: String(r[2] || '').trim(), 
-          gender: String(r[3] || '').trim(), 
-          tglLahir: String(r[4] || '').trim(), 
-          hp: String(r[5] || '').trim()
+          no: String(r[0] || (idx + 1)).trim(),
+          nikPabrik: String(r[1] || '').trim(), 
+          nama: String(r[2] || '').trim(), 
+          dept: String(r[3] || 'PT ATI').trim(), 
+          gender: String(r[4] || 'Laki-laki').trim(), 
+          golDarah: String(r[5] || '-').trim(), 
+          tglLahir: String(r[6] || '').trim(), 
+          hp: String(r[7] || '').trim()
         }; 
       });
     }

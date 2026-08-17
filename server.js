@@ -257,38 +257,47 @@ async function performGSheetSync(db, gsheetUrl) {
   }
 
   // 3. Mirror Employees (1,406 Pasien / Karyawan 100% Real dari Google Sheets)
-  let empList = Array.isArray(gData.employees) && gData.employees.length > 0 ? gData.employees : [];
-  if (empList.length === 0) {
-    try {
-      const csvKary = await fetchFromGSheet('https://docs.google.com/spreadsheets/d/1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY/export?format=csv&gid=2005972852');
-      if (typeof csvKary === 'string' && csvKary.includes(',')) {
-        const lines = csvKary.trim().split(/\r?\n/).filter(l => l.trim() !== '');
-        empList = [];
-        for (let i = 1; i < lines.length; i++) {
-          const cols = parseCSVLine(lines[i]);
-          const nik = cols[1] || '';
-          const nama = cols[2] || '';
-          if (!nik && !nama) continue;
-          empList.push({
-            nikPabrik: nik,
-            nama: nama,
-            dept: cols[3] || 'PT ATI',
-            gender: cols[4] || 'Laki-laki',
-            golDarah: cols[5] || '-',
-            tglLahir: cols[6] || '',
-            hp: cols[7] || ''
-          });
-        }
+  let empList = [];
+  try {
+    const csvKary = await fetchFromGSheet('https://docs.google.com/spreadsheets/d/1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY/export?format=csv&gid=2005972852');
+    if (typeof csvKary === 'string' && csvKary.includes(',')) {
+      const lines = csvKary.trim().split(/\r?\n/).filter(l => l.trim() !== '');
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        const noUrut = cols[0] || String(i);
+        const npk = cols[1] || '';
+        const nama = cols[2] || '';
+        if (!npk && !nama) continue;
+        empList.push({
+          id: 'EMP-' + i,
+          no: noUrut,
+          nikPabrik: npk,
+          nik: npk,
+          nama: nama,
+          dept: cols[3] || 'PT ATI',
+          departemen: cols[3] || 'PT ATI',
+          gender: cols[4] || 'Laki-laki',
+          golDarah: cols[5] || '-',
+          tglLahir: cols[6] || '',
+          tgl_lahir: cols[6] || '',
+          hp: cols[7] || '',
+          no_hp: cols[7] || ''
+        });
       }
-    } catch(e) {}
+    }
+  } catch(e) {
+    console.error('Error fetching direct CSV employees:', e);
   }
 
-  if (empList.length > 0) {
-    db.employees = empList.map((gEmp, i) => {
+  // Fallback to gData.employees if CSV fetch failed
+  if (empList.length === 0 && Array.isArray(gData.employees) && gData.employees.length > 0) {
+    empList = gData.employees.map((gEmp, i) => {
+      const noUrut = gEmp.no || String(i + 1);
       const empNik = String(gEmp.nikPabrik || gEmp.nik || '').trim();
       const empNama = String(gEmp.nama || '').trim();
       return {
         id: 'EMP-' + (i + 1),
+        no: noUrut,
         nikPabrik: empNik,
         nik: empNik,
         nama: empNama,
@@ -302,6 +311,10 @@ async function performGSheetSync(db, gsheetUrl) {
         no_hp: String(gEmp.hp || gEmp.no_hp || '').trim()
       };
     }).filter(e => e.nikPabrik || e.nama);
+  }
+
+  if (empList.length > 0) {
+    db.employees = empList;
     synced.employees = db.employees.length;
   }
 

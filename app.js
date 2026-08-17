@@ -1506,11 +1506,12 @@ function renderKaryawanTable() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan pencarian '${query}'</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan pencarian '${query}'</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = filtered.map(k => {
+  tbody.innerHTML = filtered.map((k, idx) => {
+    const no = k.no || String(idx + 1);
     const npk = k.nikPabrik || k.nik || '-';
     const nama = k.nama || '-';
     const dept = k.dept || k.departemen || 'PT ATI';
@@ -1530,6 +1531,7 @@ function renderKaryawanTable() {
 
     return `
       <tr>
+        <td style="text-align: center; color: var(--text-muted); font-weight: 500;">${no}</td>
         <td><span class="badge badge-info" style="font-weight: 700;">${npk}</span></td>
         <td><strong>${nama}</strong></td>
         <td>${dept}</td>
