@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMobileNav();
   initPoliForm();
   initDateInputs();
+  initMobileBackTrap();
 });
 
 // Theme Management
@@ -253,6 +254,28 @@ async function loadAllAppData() {
   }
 }
 
+// Helper for Diagnosis Badges
+function renderDiagnosisBadges(asesmenStr) {
+  if (!asesmenStr || asesmenStr === '-') return '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+  const diags = String(asesmenStr).split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
+  if (diags.length === 0) return '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+  return `<div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+    ${diags.map(d => `<span class="badge badge-info"><i class="fa-solid fa-stethoscope"></i> ${d}</span>`).join('')}
+  </div>`;
+}
+
+// Helper for Objektif Badges
+function renderObjektifBadges(objStr) {
+  if (!objStr || objStr === '-') return '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+  // Split by comma OR period followed by letter
+  const parts = String(objStr).split(/(?:,\s*)|(?:\.\s+(?=[A-Za-z]))/).map(p => p.trim()).filter(p => p && p !== '-');
+  if (parts.length === 0) return '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+  
+  return `<div style="display: flex; flex-direction: column; gap: 4px; padding-left: 8px; border-left: 2px solid var(--accent); color: var(--text-main); font-weight: 500;">
+    ${parts.map(p => `<span>${p}</span>`).join('')}
+  </div>`;
+}
+
 // Navigation Wiring
 function initNavigation() {
   const navBtns = document.querySelectorAll('.nav-btn[data-target]');
@@ -267,6 +290,46 @@ function initNavigation() {
       const targetView = document.getElementById(targetId);
       if (targetView) targetView.classList.add('active');
     });
+  });
+}
+
+// Mobile Back Button Protection & Navigation Trap
+function initMobileBackTrap() {
+  try {
+    history.pushState({ page: 'app' }, null, location.href);
+  } catch (e) {}
+
+  window.addEventListener('popstate', function () {
+    try {
+      history.pushState({ page: 'app' }, null, location.href);
+    } catch (err) {}
+
+    // 1. Close open modals if any (excluding gate login overlay)
+    const openModals = Array.from(document.querySelectorAll('.modal, .modal-backdrop, .photo-viewer-modal, [id^="modal-"]'))
+      .filter(m => m.id !== 'gate-login-overlay' && getComputedStyle(m).display !== 'none');
+
+    if (openModals.length > 0) {
+      openModals.forEach(m => {
+        m.style.display = 'none';
+      });
+      return;
+    }
+
+    // 2. Return to Home Poli if in another view
+    const activeView = document.querySelector('.page-view.active');
+    if (activeView && activeView.id !== 'view-poli') {
+      const homeBtn = document.querySelector('.nav-btn[data-target="view-poli"]');
+      if (homeBtn) homeBtn.click();
+      if (typeof switchMobileNav === 'function') {
+        const mNavPoli = document.getElementById('mnav-poli');
+        if (mNavPoli) switchMobileNav('view-poli', mNavPoli);
+      }
+      showToast('Kembali ke Menu Utama (Home Poli)', 'info');
+      return;
+    }
+
+    // 3. Already at Home Poli
+    showToast('Anda berada di Menu Utama (Home)', 'info');
   });
 }
 
@@ -771,12 +834,7 @@ function renderPatientHistoryTimeline(patient) {
     // Format Diagnosis (A)
     let diagHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
     if (r.asesmen) {
-      const diagList = String(r.asesmen).split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
-      if (diagList.length > 0) {
-        diagHTML = `<div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;">` +
-          diagList.map(d => `<span class="badge badge-info"><i class="fa-solid fa-stethoscope"></i> ${d}</span>`).join('') +
-          `</div>`;
-      }
+      diagHTML = renderDiagnosisBadges(r.asesmen);
     }
 
     // Format Resep Obat (P)
@@ -821,9 +879,9 @@ function renderPatientHistoryTimeline(patient) {
           <span style="font-weight: 700; color: var(--text-main);">${r.keluhan || '-'}</span>
         </div>
 
-        <div class="timeline-section-row">
+        <div class="timeline-section-row" style="align-items: flex-start;">
           <span class="timeline-label-chip chip-o">O</span>
-          <span style="color: var(--text-muted); font-weight: 500;">${r.objektif || '-'}</span>
+          <div style="flex:1;">${renderObjektifBadges(r.objektif)}</div>
         </div>
 
         <div class="timeline-section-row">
@@ -847,6 +905,106 @@ function renderPatientHistoryTimeline(patient) {
       </div>
     `;
   }).join('');
+}
+
+function openModalRiwayatPasien(identifier) {
+  // Auto-close Pasien Pantauan modal if it's open
+  const pantauanModal = document.getElementById('modal-hse-pantauan');
+  if (pantauanModal) pantauanModal.style.display = 'none';
+
+  // Auto-close Surkes modal if it's open
+  const surkesModal = document.getElementById('modal-hse-surkes');
+  if (surkesModal) surkesModal.style.display = 'none';
+
+  const container = document.getElementById('modal-riwayat-timeline-container');
+  const nameEl = document.getElementById('modal-riwayat-patient-name');
+  if (!container) return;
+
+  const history = appData.records.filter(r => 
+    (r.nikPabrik && String(r.nikPabrik) === String(identifier)) ||
+    (r.namaPasien && r.namaPasien.toLowerCase() === String(identifier).toLowerCase())
+  ).sort((a,b) => new Date(b.created_at || b.tanggal) - new Date(a.created_at || a.tanggal));
+
+  if (nameEl) {
+    nameEl.textContent = `Pasien: ${history.length > 0 ? history[0].namaPasien : identifier} | Total Kunjungan: ${history.length}`;
+  }
+
+  if (history.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding: 48px 20px; color: var(--text-muted);">
+        <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.35;"></i>
+        <p style="font-weight: 700;">Belum ada riwayat rekam medis</p>
+      </div>`;
+    document.getElementById('modal-riwayat-pasien').style.display = 'flex';
+    return;
+  }
+
+  container.innerHTML = history.map(r => {
+    let diagHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+    if (r.asesmen) {
+      diagHTML = renderDiagnosisBadges(r.asesmen);
+    }
+
+    let planHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+    if (r.plan) {
+      let totalMatch = String(r.plan).match(/\[Total:\s*Rp\s*([^\]]+)\]/i);
+      let totalDisplay = totalMatch ? `Rp ${totalMatch[1]}` : (r.totalBiaya && r.totalBiaya > 0 ? `Rp ${r.totalBiaya.toLocaleString('id-ID')}` : '');
+      let cleanedPlan = String(r.plan).replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '').trim();
+      const planItems = cleanedPlan.split(';').map(p => p.trim()).filter(p => p);
+      if (planItems.length > 0) {
+        planHTML = `<div class="timeline-medicines-list">` +
+          planItems.map(p => `<div class="med-pill-item">💊 ${p}</div>`).join('') +
+          (totalDisplay ? `
+            <div class="timeline-total-cost-row">
+              <span style="color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
+                <i class="fa-solid fa-receipt" style="color: var(--primary);"></i> Total Biaya Obat:
+              </span>
+              <span style="color: #38bdf8; font-weight: 800; font-size: 0.84rem;">${totalDisplay}</span>
+            </div>` : '') + `</div>`;
+      }
+    }
+
+    return `
+      <div class="timeline-item">
+        <div class="timeline-header">
+          <div class="timeline-date">
+            <i class="fa-regular fa-calendar-check"></i> ${r.tanggal || '-'}
+          </div>
+          <div style="display: flex; gap: 6px;">
+            ${r.isPantauan ? '<span class="badge badge-danger">🔴 Pantauan</span>' : ''}
+            ${r.izinSakit ? '<span class="badge badge-warning">📄 Surkes</span>' : ''}
+          </div>
+        </div>
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-s">S</span>
+          <span style="font-weight: 700; color: var(--text-main);">${r.keluhan || '-'}</span>
+        </div>
+
+        <div class="timeline-section-row" style="align-items: flex-start;">
+          <span class="timeline-label-chip chip-o">O</span>
+          <div style="flex:1;">${renderObjektifBadges(r.objektif)}</div>
+        </div>
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-a">A</span>
+          ${diagHTML}
+        </div>
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-p">P</span>
+          ${planHTML}
+        </div>
+
+        <div class="timeline-footer">
+          <div><i class="fa-solid fa-user-doctor"></i> ${r.pemeriksa || 'Nakes'}</div>
+          ${r.linkFoto ? `<button type="button" class="btn btn-sm btn-primary" style="font-size: 0.74rem; padding: 3px 8px;" onclick="openPhotoViewer('${r.id}')"><i class="fa-solid fa-image"></i> Lihat Foto</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('modal-riwayat-pasien').style.display = 'flex';
 }
 
 function copyRecordToPoliForm(recordOrId) {
@@ -1089,10 +1247,16 @@ function renderEditDataTable() {
   if (!tbody) return;
 
   const dateFilter = document.getElementById('filter-edit-date')?.value;
-  const searchFilter = document.getElementById('filter-edit-search')?.value.toLowerCase();
+  const searchFilter = document.getElementById('filter-edit-search')?.value.toLowerCase().trim();
 
-  let filtered = appData.records.slice().reverse();
+  // 1. Urutkan berdasarkan waktu simpan/input terbaru (created_at)
+  let filtered = appData.records.slice().sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : (a.id ? Number(a.id) || 0 : 0);
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : (b.id ? Number(b.id) || 0 : 0);
+    return timeB - timeA;
+  });
 
+  // 2. Filter Tanggal jika diisi
   if (dateFilter) {
     filtered = filtered.filter(r => {
       const d = parseRecordDate(r);
@@ -1104,40 +1268,70 @@ function renderEditDataTable() {
     });
   }
 
+  // 3. Filter Pencarian Nama / NPK / Keluhan / Asesmen jika diisi
   if (searchFilter) {
     filtered = filtered.filter(r => 
       (r.namaPasien && r.namaPasien.toLowerCase().includes(searchFilter)) ||
       (r.nikPabrik && r.nikPabrik.toLowerCase().includes(searchFilter)) ||
-      (r.keluhan && r.keluhan.toLowerCase().includes(searchFilter))
+      (r.keluhan && r.keluhan.toLowerCase().includes(searchFilter)) ||
+      (r.asesmen && r.asesmen.toLowerCase().includes(searchFilter))
     );
   }
 
-  tbody.innerHTML = filtered.map(r => `
-    <tr>
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Tidak ada data rekam medis yang cocok dengan pencarian/filter</td></tr>`;
+    return;
+  }
+
+  const isFiltered = Boolean(dateFilter || searchFilter);
+  const totalCount = filtered.length;
+
+  // Batasi 30 data diinput terbaru jika tanpa filter (agar UI di HP super ringan & responsif)
+  if (!isFiltered) {
+    filtered = filtered.slice(0, 30);
+  }
+
+  let html = filtered.map(r => `
+    <tr ondblclick="openModalRiwayatPasien('${r.nikPabrik || ''}')" style="cursor: pointer;" title="Klik 2x untuk melihat riwayat medis">
       <td data-label="Tanggal">${r.tanggal || '-'}</td>
       <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong><br><small class="text-muted">${r.nikPabrik || '-'}</small></td>
       <td data-label="Keluhan & Diagnosa">
-        <div><strong>S:</strong> ${r.keluhan || '-'}</div>
-        <div><strong>A:</strong> <span class="badge badge-info">${r.asesmen || '-'}</span></div>
-        <div style="margin-top:4px;"><strong>P:</strong><br>${formatPlanForDisplay(r.plan)}</div>
+        <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
+          <div><strong>S:</strong> ${r.keluhan || '-'}</div>
+          <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:4px;"><strong>A:</strong> ${renderDiagnosisBadges(r.asesmen)}</div>
+          <div><strong>P:</strong><br>${formatPlanForDisplay(r.plan)}</div>
+        </div>
       </td>
       <td data-label="Pemeriksa">${r.pemeriksa || '-'}</td>
       <td data-label="Aksi">
         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-          <button class="btn btn-sm btn-primary" onclick="openModalEditRecord('${r.id}')" title="Edit Data">
+          <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openModalEditRecord('${r.id}')" title="Edit Data">
             <i class="fa-solid fa-pen"></i> Edit
           </button>
-          <button class="btn btn-sm btn-danger" style="background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 5px 8px; font-weight: 700;" onclick="openModalDeleteRecord('${r.id}')" title="Hapus Rekam Medis & Kembalikan Stok">
+          <button class="btn btn-sm btn-danger" style="background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 5px 8px; font-weight: 700;" onclick="event.stopPropagation(); openModalDeleteRecord('${r.id}')" title="Hapus Rekam Medis & Kembalikan Stok">
             <i class="fa-solid fa-trash-can"></i> Hapus
           </button>
           ${r.linkFoto ? `
-            <button class="btn btn-sm btn-secondary" style="background: #0284c7; color: #fff; border: none; padding: 5px 8px;" onclick="openPhotoViewer('${r.id}')" title="Lihat Foto">
+            <button class="btn btn-sm btn-secondary" style="background: #0284c7; color: #fff; border: none; padding: 5px 8px;" onclick="event.stopPropagation(); openPhotoViewer('${r.id}')" title="Lihat Foto">
               <i class="fa-solid fa-image"></i> Foto
             </button>` : ''}
+          ${getPatientWABtnHTML(r.nikPabrik, 'WA')}
         </div>
       </td>
     </tr>
   `).join('');
+
+  if (!isFiltered && totalCount > 30) {
+    html += `
+      <tr>
+        <td colspan="5" style="text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 12px; background: rgba(255,255,255,0.02);">
+          <i class="fa-solid fa-circle-info" style="color: var(--primary); margin-right: 4px;"></i>
+          Menampilkan <strong>30 data di-input terbaru</strong> (dari total ${totalCount} data). Gunakan pencarian/filter tanggal untuk menampilkan data lainnya.
+        </td>
+      </tr>`;
+  }
+
+  tbody.innerHTML = html;
 }
 
 function filterEditDataTable() {
@@ -1175,12 +1369,13 @@ function addEditResepRow(medName = '', qty = 1) {
 
   const medList = getSortedMedicines();
 
-  let selectHTML = `<select class="form-control select-edit-medicine" style="flex: 2;"><option value="">-- Pilih Obat --</option>`;
+  const rowId = 'edit-med-' + Date.now() + Math.random().toString(36).substring(2,6);
+  let selectHTML = `<input type="text" class="form-control select-edit-medicine" list="${rowId}" style="flex: 2;" placeholder="Ketik/Pilih Obat..." value="${medName}">`;
+  selectHTML += `<datalist id="${rowId}">`;
   medList.forEach(m => {
-    const sel = (medName && m.nama.toLowerCase() === medName.toLowerCase()) ? 'selected' : '';
-    selectHTML += `<option value="${m.nama}" ${sel}>${m.nama} [Stok: ${m.stok}]</option>`;
+    selectHTML += `<option value="${m.nama}">[Stok: ${m.stok}]</option>`;
   });
-  selectHTML += `</select>`;
+  selectHTML += `</datalist>`;
 
   div.innerHTML = `
     ${selectHTML}
@@ -1265,6 +1460,8 @@ function openModalEditRecord(recordOrId) {
 
 function closeModalEditRecord() {
   document.getElementById('modal-edit-record').style.display = 'none';
+  const fileInput = document.getElementById('edit-upload-file');
+  if (fileInput) fileInput.value = '';
 }
 
 async function handleSaveEditRecord(e) {
@@ -1316,6 +1513,38 @@ async function handleSaveEditRecord(e) {
     pemeriksa: document.getElementById('edit-pemeriksa').value,
     isPantauan: document.getElementById('edit-is-pantauan').checked
   };
+
+  // Handle File Upload to Google Drive (if a new file is selected)
+  const fileInput = document.getElementById('edit-upload-file');
+  if (fileInput && fileInput.files && fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    showToast('Mengunggah foto penunjang ke Google Drive...', 'info');
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      
+      const upRes = await fetch('/api/upload-foto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileData: base64,
+          fileName: file.name,
+          mimeType: file.type
+        })
+      });
+      const upData = await upRes.json();
+      if (upData.fileUrl) {
+        updatedData.linkFoto = upData.fileUrl;
+      }
+    } catch(err) {
+      console.error('File upload error:', err);
+      showToast('Gagal mengunggah foto', 'error');
+    }
+  }
 
   try {
     const res = await fetch(`/api/records/${id}`, {
@@ -2196,11 +2425,13 @@ function addObatReqRowDropdown() {
   const tbody = document.getElementById('req-table-body');
   const tr = document.createElement('tr');
   
-  let selectHTML = `<select class="form-control req-med-name" required><option value="">-- Pilih Obat Gudang --</option>`;
+  const rowId = 'req-med-' + Date.now() + Math.random().toString(36).substring(2,6);
+  let selectHTML = `<input type="text" class="form-control req-med-name" list="${rowId}" placeholder="Ketik/Pilih Obat..." required>`;
+  selectHTML += `<datalist id="${rowId}">`;
   appData.medicines.forEach(m => {
-    selectHTML += `<option value="${m.nama}">${m.nama} (Sisa: ${m.stok} ${m.satuan})</option>`;
+    selectHTML += `<option value="${m.nama}">Sisa: ${m.stok} ${m.satuan}</option>`;
   });
-  selectHTML += `</select>`;
+  selectHTML += `</datalist>`;
 
   tr.innerHTML = `
     <td>${selectHTML}</td>
@@ -2325,6 +2556,18 @@ function cleanPhoneForWA(phone) {
   return p;
 }
 
+function getPatientWABtnHTML(nikPabrik, text = 'WA') {
+  if (!nikPabrik) return '';
+  const p = appData.patients.find(x => String(x.nikPabrik) === String(nikPabrik) || String(x.nik) === String(nikPabrik));
+  if (!p) return '';
+  const rawHp = p.hp || p.no_hp || '';
+  if (!rawHp) {
+    return `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; padding: 5px 8px; font-weight: 700; opacity: 0.5;" onclick="event.stopPropagation(); showToast('No HP pasien belum diisi', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> ${text}</button>`;
+  }
+  const cleanWA = cleanPhoneForWA(rawHp);
+  return `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; padding: 5px 8px; font-weight: 700;" onclick="event.stopPropagation(); window.open('https://wa.me/${cleanWA}','_blank')" title="Chat WA Pasien"><i class="fa-brands fa-whatsapp"></i> ${text}</button>`;
+}
+
 function renderKaryawanTable() {
   const tbody = document.getElementById('table-karyawan-body');
   if (!tbody) return;
@@ -2364,7 +2607,7 @@ function renderKaryawanTable() {
     }
 
     return `
-      <tr>
+      <tr ondblclick="openModalRiwayatPasien('${npk}')" style="cursor: pointer;" title="Klik 2x untuk melihat riwayat medis">
         <td style="text-align: center; color: var(--text-muted); font-weight: 500;">${no}</td>
         <td><span class="badge badge-info" style="font-weight: 700;">${npk}</span></td>
         <td><strong>${nama}</strong></td>
@@ -2609,25 +2852,37 @@ async function handleKirimShift2(e) {
 // -------------------------------------------------------------
 function switchHSESubTab(type) {
   const rmTab = document.getElementById('hse-subtab-rm');
-  const panTab = document.getElementById('hse-subtab-pantauan');
   const surkesTab = document.getElementById('hse-subtab-surkes');
   const btnRm = document.getElementById('subtab-btn-rm');
-  const btnPan = document.getElementById('subtab-btn-pantauan');
   const btnSurkes = document.getElementById('subtab-btn-surkes');
 
   if (rmTab) rmTab.style.display = (type === 'rm') ? 'block' : 'none';
-  if (panTab) panTab.style.display = (type === 'pantauan') ? 'block' : 'none';
   if (surkesTab) surkesTab.style.display = (type === 'surkes') ? 'block' : 'none';
 
   if (btnRm) btnRm.className = (type === 'rm') ? 'btn btn-primary' : 'btn btn-secondary';
-  if (btnPan) btnPan.className = (type === 'pantauan') ? 'btn btn-primary' : 'btn btn-secondary';
   if (btnSurkes) btnSurkes.className = (type === 'surkes') ? 'btn btn-primary' : 'btn btn-secondary';
 
-  if (type === 'pantauan') {
-    renderHSEPasienPantauanTable();
-  } else if (type === 'surkes') {
+  if (type === 'surkes') {
     renderHSESurkesTable();
   }
+}
+
+function openModalHSEPantauan() {
+  document.getElementById('modal-hse-pantauan').style.display = 'flex';
+  renderHSEPasienPantauanTable();
+}
+
+function closeModalHSEPantauan() {
+  document.getElementById('modal-hse-pantauan').style.display = 'none';
+}
+
+function openModalHSESurkes() {
+  document.getElementById('modal-hse-surkes').style.display = 'flex';
+  renderHSESurkesTable();
+}
+
+function closeModalHSESurkes() {
+  document.getElementById('modal-hse-surkes').style.display = 'none';
 }
 
 function renderHSERekamMedisTable(isButtonClick = false) {
@@ -2742,21 +2997,22 @@ function renderHSERekamMedisTable(isButtonClick = false) {
   }
 
   tbody.innerHTML = filtered.map((r, i) => `
-    <tr>
+    <tr ondblclick="openModalRiwayatPasien('${r.nikPabrik || ''}')" style="cursor: pointer;" title="Klik 2x untuk melihat riwayat medis">
       <td data-label="No">${i + 1}</td>
       <td data-label="Tanggal">${r.tanggal || '-'}</td>
       <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong></td>
       <td data-label="NIK Pabrik">${r.nikPabrik || '-'}</td>
       <td data-label="Bagian">${r.dept || '-'}</td>
       <td data-label="Keluhan">${r.keluhan || '-'}</td>
-      <td data-label="Diagnosis"><span class="badge badge-info">${r.asesmen || '-'}</span></td>
-      <td data-label="Pemeriksaan">${r.objektif || '-'}</td>
+      <td data-label="Diagnosis">${renderDiagnosisBadges(r.asesmen)}</td>
+      <td data-label="Pemeriksaan">${renderObjektifBadges(r.objektif)}</td>
       <td data-label="Obat/Terapi">${formatPlanForDisplay(r.plan)}</td>
       <td data-label="Status K3">${getStatusKelaikanBadges(r)}</td>
       <td data-label="Pemeriksa">
         <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
           <span>${r.pemeriksa || '-'}</span>
-          ${r.linkFoto ? `<button type="button" onclick="openPhotoViewer('${r.id}')" class="btn btn-sm btn-primary" style="background:#0284c7; border:none; padding: 2px 7px; font-size: 0.74rem;" title="Lihat Foto / Dokumen"><i class="fa-solid fa-image"></i> Foto</button>` : ''}
+          ${r.linkFoto ? `<button type="button" onclick="event.stopPropagation(); openPhotoViewer('${r.id}')" class="btn btn-sm btn-primary" style="background:#0284c7; border:none; padding: 2px 7px; font-size: 0.74rem;" title="Lihat Foto / Dokumen"><i class="fa-solid fa-image"></i> Foto</button>` : ''}
+          ${getPatientWABtnHTML(r.nikPabrik, '')}
         </div>
       </td>
     </tr>
@@ -2778,21 +3034,44 @@ function renderHSEPasienPantauanTable() {
     return;
   }
 
-  tbody.innerHTML = pantauanList.map(r => `
+  tbody.innerHTML = pantauanList.map(r => {
+    const patient = appData.patients.find(p => (p.nikPabrik || p.nik) === r.nikPabrik) || {};
+    const rawHp = patient.hp || patient.no_hp || '';
+    const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
+    
+    const waBtn = rawHp 
+      ? `<button class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; flex: 1;" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
+      : `<button class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; opacity: 0.5; flex: 1;" onclick="showToast('No HP belum diisi di data pasien.', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`;
+      
+    const fileBtn = r.linkFoto 
+      ? `<button class="btn btn-sm" style="background: var(--info); color: #fff; border: none; font-weight: 700; flex: 1;" onclick="openPhotoViewer('${r.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
+      : '';
+
+    return `
     <tr>
       <td data-label="Tanggal">${r.tanggal || '-'}</td>
       <td data-label="NIK Pabrik"><span class="badge badge-danger">${r.nikPabrik || '-'}</span></td>
       <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong></td>
       <td data-label="Bagian">${r.dept || '-'}</td>
-      <td data-label="Alasan Pantauan">${r.keluhan} (A: ${r.asesmen})</td>
+      <td data-label="Alasan Pantauan">
+        <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
+          <div><strong>S:</strong> ${r.keluhan || '-'}</div>
+          <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:4px;"><strong>A:</strong> ${renderDiagnosisBadges(r.asesmen)}</div>
+        </div>
+      </td>
       <td data-label="Status"><span class="badge badge-warning">Dalam Pemantauan</span></td>
       <td data-label="Aksi">
-        <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${r.nikPabrik || r.namaPasien}')">
-          Cek History Poli
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-sm btn-primary" style="flex: 1;" onclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat Rekam Medis">
+            <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+          </button>
+          ${waBtn}
+          ${fileBtn}
+        </div>
       </td>
     </tr>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function renderHSESurkesTable() {
@@ -2802,32 +3081,52 @@ function renderHSESurkesTable() {
   const surkesList = appData.records.filter(r => r.izinSakit === true);
 
   if (surkesList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Belum ada data pasien yang dipulangkan / diberikan izin istirahat sakit (Surkes)</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Belum ada data pasien yang dipulangkan / diberikan izin istirahat sakit (Surkes)</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = surkesList.slice().reverse().map((r, idx) => `
+  tbody.innerHTML = surkesList.slice().reverse().map((r, idx) => {
+    const patient = appData.patients.find(p => (p.nikPabrik || p.nik) === r.nikPabrik) || {};
+    const rawHp = patient.hp || patient.no_hp || '';
+    const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
+    
+    const waBtn = rawHp 
+      ? `<button class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; flex: 1;" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
+      : `<button class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; opacity: 0.5; flex: 1;" onclick="showToast('No HP belum diisi di data pasien.', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`;
+      
+    const fileBtn = r.linkFoto 
+      ? `<button class="btn btn-sm" style="background: var(--info); color: #fff; border: none; font-weight: 700; flex: 1;" onclick="openPhotoViewer('${r.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
+      : '';
+
+    return `
     <tr>
       <td data-label="No" style="text-align: center; font-weight: 500; color: var(--text-muted);">${idx + 1}</td>
       <td data-label="Tanggal">${r.tanggal || '-'}</td>
       <td data-label="NIK Pabrik"><span class="badge badge-info" style="font-weight: 700;">${r.nikPabrik || '-'}</span></td>
       <td data-label="Nama Pasien"><strong>${r.namaPasien || '-'}</strong></td>
       <td data-label="Bagian">${r.dept || '-'}</td>
-      <td data-label="Keluhan & Diagnosa">
-        <div><strong>S:</strong> ${r.keluhan || '-'}</div>
-        <div><strong>A:</strong> <span class="badge badge-info">${r.asesmen || '-'}</span></div>
+      <td data-label="Data Medis (S, O, A, P)">
+        <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
+          <div><strong>S:</strong> ${r.keluhan || '-'}</div>
+          <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:4px;"><strong>O:</strong> ${renderObjektifBadges(r.objektif)}</div>
+          <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:4px;"><strong>A:</strong> ${renderDiagnosisBadges(r.asesmen)}</div>
+          <div style="margin-top: 2px;"><strong>P:</strong> <div style="display:inline-block; margin-left: 4px;">${formatPlanForDisplay(r.plan)}</div></div>
+        </div>
       </td>
-      <td data-label="Hasil Pemeriksaan">${r.objektif || '-'}</td>
-      <td data-label="Terapi Obat">${formatPlanForDisplay(r.plan)}</td>
       <td data-label="Status"><span class="badge badge-warning" style="font-weight: 700;">📄 Istirahat Sakit</span></td>
       <td data-label="Nakes">${r.pemeriksa || '-'}</td>
       <td data-label="Aksi" style="text-align: center;">
-        <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat di Poli">
-          <i class="fa-solid fa-stethoscope"></i> Cek Poli
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-sm btn-primary" style="flex: 1;" onclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat Rekam Medis">
+            <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+          </button>
+          ${waBtn}
+          ${fileBtn}
+        </div>
       </td>
     </tr>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function exportHSERekamMedisExcel() {
@@ -2989,19 +3288,31 @@ function printHSEOfficialReport() {
   const penyakitMap = {};
 
   currRecords.forEach(r => {
-    let d = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
-    d = d.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
-    if (!d) d = 'Lainnya';
-    if (!penyakitMap[d]) penyakitMap[d] = { name: d, curr: 0, prev: 0 };
-    penyakitMap[d].curr += 1;
+    let diagStr = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
+    diagStr = diagStr.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
+    if (!diagStr) diagStr = 'Lainnya';
+
+    const diags = diagStr.split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
+    if (diags.length === 0) diags.push('Lainnya');
+
+    diags.forEach(d => {
+      if (!penyakitMap[d]) penyakitMap[d] = { name: d, curr: 0, prev: 0 };
+      penyakitMap[d].curr += 1;
+    });
   });
 
   prevRecords.forEach(r => {
-    let d = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
-    d = d.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
-    if (!d) d = 'Lainnya';
-    if (!penyakitMap[d]) penyakitMap[d] = { name: d, curr: 0, prev: 0 };
-    penyakitMap[d].prev += 1;
+    let diagStr = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
+    diagStr = diagStr.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
+    if (!diagStr) diagStr = 'Lainnya';
+
+    const diags = diagStr.split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
+    if (diags.length === 0) diags.push('Lainnya');
+
+    diags.forEach(d => {
+      if (!penyakitMap[d]) penyakitMap[d] = { name: d, curr: 0, prev: 0 };
+      penyakitMap[d].prev += 1;
+    });
   });
 
   const penyakitList = Object.values(penyakitMap).sort((a, b) => b.curr - a.curr || b.prev - a.prev);
@@ -4364,15 +4675,15 @@ function renderMobileKaryawanCards() {
     const genderColor = gender.toLowerCase().includes('perempuan') ? '#f472b6' : '#60a5fa';
 
     const waBtn = rawHp
-      ? `<button class="btn btn-sm btn-success" style="flex: 1.2; background: #10b981; color: #fff; border: none; font-weight: 700;" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp">
+      ? `<button class="btn btn-sm" style="flex: 1.2; background: #25D366; color: #fff; border: none; font-weight: 700;" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp">
            <i class="fa-brands fa-whatsapp"></i> Chat WA
          </button>`
-      : `<button class="btn btn-sm btn-secondary" style="flex: 1.2; opacity: 0.6;" onclick="showToast('No HP belum diisi. Silakan klik Edit untuk menambah No WhatsApp.', 'warning')" title="No WA belum diisi">
+      : `<button class="btn btn-sm" style="flex: 1.2; background: #25D366; color: #fff; border: none; font-weight: 700; opacity: 0.5;" onclick="showToast('No HP belum diisi. Silakan klik Edit untuk menambah No WhatsApp.', 'warning')" title="No WA belum diisi">
            <i class="fa-brands fa-whatsapp"></i> Chat WA
          </button>`;
 
     return `
-      <div class="mobile-patient-card">
+      <div class="mobile-patient-card" ondblclick="openModalRiwayatPasien('${npk}')" style="cursor: pointer;" title="Klik 2x untuk melihat riwayat medis">
         <div class="patient-card-row">
           <span class="patient-card-lbl">No :</span>
           <span class="patient-card-val" style="font-weight: 700; color: var(--text-muted);">#${no}</span>
@@ -4513,10 +4824,16 @@ function renderHSEComparisonCharts() {
   const getTopDiseases = (recs) => {
     const counts = {};
     recs.forEach(r => {
-      let diag = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
-      diag = diag.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
-      if (!diag) diag = 'Lainnya';
-      counts[diag] = (counts[diag] || 0) + 1;
+      let diagStr = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
+      diagStr = diagStr.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
+      if (!diagStr) diagStr = 'Lainnya';
+
+      const diags = diagStr.split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
+      if (diags.length === 0) diags.push('Lainnya');
+
+      diags.forEach(d => {
+        counts[d] = (counts[d] || 0) + 1;
+      });
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
   };

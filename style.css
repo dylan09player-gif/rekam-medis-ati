@@ -1025,6 +1025,12 @@ select.form-control {
   border: 1px solid var(--danger);
 }
 
+.badge-secondary {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
 /* ===================== STAT CARDS & HSE OVERVIEW ===================== */
 .hse-stat-grid {
   display: grid;
@@ -1690,8 +1696,8 @@ select.form-control {
     font-size: 1.4rem !important;
   }
 
-  /* --- DESKTOP TABLE: hide on mobile, show mobile cards --- */
-  .table-responsive { display: none !important; }
+  /* --- DESKTOP TABLE: hide specifically for Karyawan on mobile, show mobile cards --- */
+  #view-karyawan .table-responsive { display: none !important; }
   .mobile-card-list  { display: flex !important; }
 
   /* --- Karyawan section header: stack search + button --- */
@@ -2121,7 +2127,8 @@ select.form-control {
     grid-template-columns: 1fr !important;
   }
   .mobile-patient-card .card-actions {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: nowrap;
   }
   .hse-stat-grid {
     grid-template-columns: 1fr !important;
@@ -2462,6 +2469,22 @@ select.form-control {
   font-size: 1rem !important;
 }
 
+/* ===================== FILTER ACTION BAR (RESPONSIVE) ===================== */
+.filter-action-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  align-items: center;
+}
+@media (max-width: 768px) {
+  .filter-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-action-bar .form-control {
+    width: 100% !important;
+  }
+}
 
 /* ===================== SEARCHABLE DROPDOWN COMPONENT ===================== */
 .custom-searchable-wrap {
