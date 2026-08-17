@@ -2321,6 +2321,38 @@ select.form-control {
   transform: scale(0.99);
 }
 
+.patient-card-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.patient-card-lbl {
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 0.72rem;
+  min-width: 82px;
+  max-width: 95px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.patient-card-val {
+  color: var(--text-main);
+  text-align: left;
+  word-break: break-word;
+  flex: 1;
+}
+
 .card-top-row {
   display: flex;
   justify-content: space-between;

@@ -4364,36 +4364,51 @@ function renderMobileKaryawanCards() {
     const genderColor = gender.toLowerCase().includes('perempuan') ? '#f472b6' : '#60a5fa';
 
     const waBtn = rawHp
-      ? `<button class="btn card-wa-btn" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="WhatsApp ${rawHp}">
-           <i class="fa-brands fa-whatsapp"></i>
+      ? `<button class="btn btn-sm btn-success" style="flex: 1.2; background: #10b981; color: #fff; border: none; font-weight: 700;" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp">
+           <i class="fa-brands fa-whatsapp"></i> Chat WA
          </button>`
-      : '';
+      : `<button class="btn btn-sm btn-secondary" style="flex: 1.2; opacity: 0.6;" onclick="showToast('No HP belum diisi. Silakan klik Edit untuk menambah No WhatsApp.', 'warning')" title="No WA belum diisi">
+           <i class="fa-brands fa-whatsapp"></i> Chat WA
+         </button>`;
 
     return `
       <div class="mobile-patient-card">
-        <div class="card-top-row">
-          <span class="card-npk">${npk}</span>
-          <span class="card-no">#${no}</span>
+        <div class="patient-card-row">
+          <span class="patient-card-lbl">No :</span>
+          <span class="patient-card-val" style="font-weight: 700; color: var(--text-muted);">#${no}</span>
         </div>
-        <div class="card-name">${nama}</div>
-        <div class="card-meta-row">
-          <span class="card-meta-chip">
-            <i class="fa-solid fa-building"></i> ${dept}
-          </span>
-          <span class="card-meta-divider"></span>
-          <span class="card-meta-chip">
-            <i class="fa-solid ${genderIcon}" style="color:${genderColor};"></i> ${gender}
-          </span>
-          <span class="card-meta-divider"></span>
-          ${tgl ? `<span class="card-meta-chip"><i class="fa-solid fa-calendar-days"></i> ${tgl}</span>` : ''}
-          ${usia !== '-' ? `<span class="card-usia-badge">${usia}</span>` : ''}
-          <span class="card-gol-badge ${golClass}">${golDarah}</span>
+        <div class="patient-card-row">
+          <span class="patient-card-lbl">NPK :</span>
+          <span class="patient-card-val"><span class="card-npk">${npk}</span></span>
         </div>
-        <div class="card-actions">
-          <button class="btn btn-sm btn-primary" onclick='selectPatientDirectFromKaryawan(${patientJSON})'>
+        <div class="patient-card-row">
+          <span class="patient-card-lbl">Nama :</span>
+          <span class="patient-card-val"><strong>${nama}</strong></span>
+        </div>
+        <div class="patient-card-row">
+          <span class="patient-card-lbl">Bagian :</span>
+          <span class="patient-card-val">${dept}</span>
+        </div>
+        <div class="patient-card-row">
+          <span class="patient-card-lbl">Tgl Lahir :</span>
+          <span class="patient-card-val">${tgl || '-'}${usia !== '-' ? ` <span class="card-usia-badge" style="margin-left: 4px;">${usia}</span>` : ''}</span>
+        </div>
+        <div class="patient-card-row">
+          <span class="patient-card-lbl">Gender / Gol :</span>
+          <span class="patient-card-val">${gender} | <span class="card-gol-badge ${golClass}">${golDarah}</span></span>
+        </div>
+        <div class="patient-card-row">
+          <span class="patient-card-lbl">No. WhatsApp :</span>
+          <span class="patient-card-val" style="color: ${rawHp ? '#34d399' : 'var(--text-faint)'}; font-weight: 600;">
+            ${rawHp ? `<i class="fa-brands fa-whatsapp" style="color: #34d399; margin-right: 4px;"></i>${rawHp}` : '<span style="font-style: italic; color: var(--text-faint);">Belum diisi</span>'}
+          </span>
+        </div>
+        
+        <div class="card-actions" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 6px;">
+          <button class="btn btn-sm btn-primary" style="flex: 1;" onclick='selectPatientDirectFromKaryawan(${patientJSON})' title="Buka Riwayat di Poli">
             <i class="fa-solid fa-stethoscope"></i> Poli
           </button>
-          <button class="btn btn-sm btn-secondary" onclick="openModalEditKaryawan('${editId}')">
+          <button class="btn btn-sm btn-secondary" style="flex: 1;" onclick="openModalEditKaryawan('${editId}')" title="Edit Data Pasien">
             <i class="fa-solid fa-pen"></i> Edit
           </button>
           ${waBtn}
