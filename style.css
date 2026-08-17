@@ -14,10 +14,10 @@
   --surface-1:      #131c31;
   --surface-2:      #1a2642;
   --surface-3:      #243356;
-  --surface-hover:  #202e4d;
+  --surface-hover:  #1d2b4a;
 
   --border-subtle:  #1e293b;
-  --border-card:    #263554;
+  --border-card:    #2e416a;
   --border-focus:   #38bdf8;
 
   /* Typography */
@@ -84,7 +84,7 @@
   --surface-1:      #ffffff;
   --surface-2:      #f8fafc;
   --surface-3:      #eef2f6;
-  --surface-hover:  #f1f5f9;
+  --surface-hover:  #f0f7ff;
 
   --border-subtle:  #e2e8f0;
   --border-card:    #cbd5e1;
@@ -494,11 +494,16 @@ body {
 /* ===================== CARDS ===================== */
 .glass-card {
   background: var(--surface-1);
-  border: 1px solid var(--border-card);
+  border: 1.5px solid var(--border-card);
   border-radius: var(--r-lg);
   padding: 20px;
   box-shadow: var(--shadow-md);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: var(--shadow-lg);
 }
 
 /* ===================== SOAP 2-PANEL LAYOUT ===================== */
@@ -768,19 +773,20 @@ select.form-control {
 /* ===================== TIMELINE ENCOUNTER CARDS ===================== */
 .timeline-item {
   background: var(--surface-1);
-  border: 1px solid var(--border-card);
+  border: 1.5px solid var(--border-card);
   border-left: 4px solid var(--primary);
   border-radius: var(--r-md);
   padding: 14px 16px;
   margin-bottom: 14px;
   box-shadow: var(--shadow-sm);
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .timeline-item:hover {
-  border-color: var(--primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  background: var(--surface-hover);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
 }
 
 .timeline-header {
@@ -837,6 +843,25 @@ select.form-control {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-main);
+  line-height: 1.35;
+}
+
+.timeline-total-cost-row {
+  margin-top: 6px;
+  padding: 5px 10px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--r-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+[data-theme="light"] .timeline-total-cost-row {
+  background: #f0f9ff;
+  border-color: #bae6fd;
 }
 
 .timeline-footer {
@@ -999,43 +1024,182 @@ select.form-control {
   border: 1px solid var(--danger);
 }
 
-/* ===================== STAT CARDS ===================== */
+/* ===================== STAT CARDS & HSE OVERVIEW ===================== */
+.hse-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
 .stat-card {
   background: var(--surface-1);
-  border: 1px solid var(--border-card);
+  border: 1.5px solid var(--border-card);
   border-radius: var(--r-lg);
-  padding: 18px 20px;
+  padding: 14px 16px;
   box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 118px;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
 }
 
-.stat-card:hover {
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card:hover,
+.stat-card.clickable:hover {
+  background: var(--surface-hover);
   border-color: var(--border-focus);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.22), 0 2px 6px rgba(0, 0, 0, 0.25);
+  transform: translateY(-3px);
 }
 
-.stat-label {
-  font-size: 0.74rem;
+.stat-card:active,
+.stat-card.clickable:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-height: 24px;
+}
+
+.stat-card-header .stat-label {
+  margin-bottom: 0;
+  flex: 1;
+  font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  line-height: 1.2;
+  white-space: normal;
+  word-break: break-word;
 }
 
-.stat-value {
-  font-size: 1.9rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
+.stat-pill-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
   line-height: 1;
 }
 
+.stat-pill-badge.badge-cyan {
+  color: #00cbd5;
+  background: rgba(0, 203, 213, 0.12);
+  border: 1px solid rgba(0, 203, 213, 0.25);
+}
+
+.stat-pill-badge.badge-green {
+  color: #84cc16;
+  background: rgba(132, 204, 22, 0.12);
+  border: 1px solid rgba(132, 204, 22, 0.25);
+}
+
+.stat-pill-badge.badge-amber {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.stat-pill-badge.badge-danger {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.stat-pill-badge.badge-warning {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.stat-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
 .stat-sub {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
   font-weight: 600;
-  margin-top: 6px;
+  line-height: 1.2;
+}
+
+/* Stat Card Mini Lists (Dept & Patient) */
+.stat-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.stat-mini-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.stat-mini-item:last-child {
+  border-bottom: none;
+}
+
+.stat-mini-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 105px;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  display: block;
+}
+
+.stat-mini-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--primary-light);
+  border: 1px solid var(--border-card);
+  flex-shrink: 0;
+}
+
+/* HSE Dual Comparison Chart Pair Grid */
+.hse-chart-pair-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
 /* ===================== MODALS ===================== */
@@ -1058,7 +1222,7 @@ select.form-control {
 
 .modal-card {
   background: var(--surface-1);
-  border: 1px solid var(--border-card);
+  border: 1.5px solid var(--border-card);
   border-radius: var(--r-xl);
   padding: 26px;
   width: 100%;
@@ -1207,6 +1371,12 @@ select.form-control {
   .soap-panel {
     height: auto;
     min-height: auto;
+  }
+  .hse-stat-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .hse-chart-pair-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -1386,6 +1556,197 @@ select.form-control {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
+  /* --- Gudang sub-tabs: horizontal scroll on mobile --- */
+  .gudang-subtabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  .gudang-subtabs::-webkit-scrollbar { display: none; }
+  .gudang-subtabs .btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.76rem;
+    padding: 8px 12px;
+  }
+
+  /* --- Gudang header actions: stack on mobile --- */
+  .gudang-header-actions {
+    flex-direction: column !important;
+    width: 100%;
+  }
+  .gudang-header-actions .btn {
+    width: 100%;
+  }
+
+  /* --- Pengiriman Obat grid: single column on mobile --- */
+  .pengiriman-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* --- Pengiriman stok grid: keep 3 columns but smaller --- */
+  .pengiriman-stok-grid {
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* --- Obat Req add buttons: stack vertically --- */
+  .obat-req-actions {
+    flex-direction: column !important;
+  }
+  .obat-req-actions .btn {
+    width: 100%;
+    font-size: 0.78rem;
+  }
+
+  /* --- HSE filter row: full-width inputs --- */
+  .hse-filter-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .hse-filter-row input[type="text"],
+  .hse-filter-row input[type="date"] {
+    width: 100% !important;
+  }
+  .hse-filter-row .btn {
+    width: 100%;
+  }
+
+  /* --- HSE sub-tab & print buttons: stack --- */
+  .hse-subtab-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .hse-subtab-actions > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .hse-subtab-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* --- HSE stat cards: 2 columns on mobile --- */
+  .hse-stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .hse-stat-grid .stat-card {
+    padding: 12px 10px 10px !important;
+    min-height: 105px !important;
+    border-width: 1.5px !important;
+  }
+  .hse-stat-grid .stat-card .stat-label {
+    font-size: 0.68rem !important;
+  }
+  .hse-stat-grid .stat-value {
+    font-size: 1.5rem !important;
+  }
+  .hse-stat-grid .stat-sub {
+    font-size: 0.7rem !important;
+  }
+  .hse-stat-grid .stat-pill-badge {
+    font-size: 0.62rem !important;
+    padding: 2px 5px !important;
+  }
+  .hse-chart-pair-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* --- Manajemen nav row: stack --- */
+  .manajemen-nav-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .manajemen-nav-row > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .manajemen-nav-row .btn {
+    width: 100%;
+  }
+
+  /* --- Billing filter row: full-width --- */
+  .billing-filter-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .billing-filter-row input[type="date"] {
+    width: 100% !important;
+  }
+  .billing-filter-row .btn {
+    width: 100%;
+  }
+
+  /* --- WhaCenter device ID row: stack --- */
+  .whacenter-row {
+    flex-direction: column !important;
+    max-width: 100% !important;
+  }
+  .whacenter-row .btn {
+    width: 100%;
+  }
+
+  /* --- WA Contact form grid: stack --- */
+  .wa-contact-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* --- Tables WITHOUT mobile card alternatives: show with scroll --- */
+  #view-gudang .table-responsive,
+  #view-edit-data .table-responsive,
+  #view-hse .table-responsive,
+  #view-manajemen .table-responsive {
+    display: block !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #view-gudang .custom-table,
+  #view-edit-data .custom-table,
+  #view-hse .custom-table,
+  #view-manajemen .custom-table {
+    min-width: 600px;
+    font-size: 0.78rem;
+  }
+  #view-gudang .custom-table th,
+  #view-gudang .custom-table td,
+  #view-edit-data .custom-table th,
+  #view-edit-data .custom-table td,
+  #view-hse .custom-table th,
+  #view-hse .custom-table td,
+  #view-manajemen .custom-table th,
+  #view-manajemen .custom-table td {
+    padding: 8px 10px;
+    font-size: 0.76rem;
+  }
+
+  /* --- Karyawan search input full-width --- */
+  #search-karyawan-input {
+    width: 100% !important;
+  }
+
+  /* --- More menu grid: 5 columns for 5 items --- */
+  .mobile-more-grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 2px !important;
+  }
+  .mobile-more-item {
+    font-size: 0.58rem;
+    padding: 8px 2px;
+  }
+  .mobile-more-item i {
+    font-size: 1.1rem;
+  }
+
   /* --- Resep total summary card --- */
   .resep-total-summary-card { flex-direction: column; align-items: flex-start; gap: 6px; }
 
@@ -1403,6 +1764,15 @@ select.form-control {
   }
   .mobile-patient-card .card-actions {
     flex-direction: column;
+  }
+  .hse-stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .pengiriman-stok-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .mobile-more-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
   }
 }
 
@@ -1575,15 +1945,23 @@ select.form-control {
 
 .mobile-patient-card {
   background: var(--surface-1);
-  border: 1px solid var(--border-card);
+  border: 1.5px solid var(--border-card);
   border-radius: var(--r-lg);
   padding: 14px 14px 12px;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
+.mobile-patient-card:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.18);
+}
+
 .mobile-patient-card:active {
+  transform: translateY(0) scale(0.98);
   box-shadow: var(--shadow-md);
 }
 

@@ -74,6 +74,57 @@ function sendTelegramNotif(message) {
   }
 }
 
+// WhaCenter WhatsApp Helper Function
+function sendWhaCenterNotif(number, message) {
+  const db = readDB();
+  const deviceId = db.settings?.whacenter_device_id || "83f3428d66d811ef2f2d78e289bae57c";
+
+  if (!number || !message) return Promise.resolve(null);
+
+  let cleanNumber = String(number).replace(/[^0-9]/g, '');
+  if (cleanNumber.startsWith('0')) {
+    cleanNumber = '62' + cleanNumber.substring(1);
+  }
+
+  try {
+    const postData = JSON.stringify({
+      device_id: deviceId,
+      number: cleanNumber,
+      message: message
+    });
+
+    return new Promise((resolve) => {
+      const req = https.request({
+        hostname: 'app.whacenter.com',
+        path: '/api/send',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      }, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          console.log('WhaCenter API Response:', body);
+          resolve(body);
+        });
+      });
+
+      req.on('error', (err) => {
+        console.error('WhaCenter HTTP Error:', err);
+        resolve(null);
+      });
+
+      req.write(postData);
+      req.end();
+    });
+  } catch (e) {
+    console.error('WhaCenter Exception:', e);
+    return Promise.resolve(null);
+  }
+}
+
 // ============================================================
 // AUTHENTICATION ENDPOINTS
 // ============================================================
@@ -690,6 +741,61 @@ app.delete('/api/medicines/:id', (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/api/medicines/transfer', (req, res) => {
+  const db = readDB();
+  if (!db.medicines) return res.status(404).json({ error: 'Obat tidak ditemukan' });
+
+  const { sender, receiver, items } = req.body;
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Daftar obat kosong atau tidak valid' });
+  }
+
+  const updatedMedicines = [];
+  const auditLogs = [];
+
+  for (const item of items) {
+    const idx = db.medicines.findIndex(m => m.id === item.id);
+    if (idx !== -1) {
+      const oldMed = { ...db.medicines[idx] };
+      const qtySent = parseInt(item.qty) || 0;
+      const newStok = (parseInt(oldMed.stok) || 0) + qtySent;
+
+      db.medicines[idx] = {
+        ...oldMed,
+        stok: newStok
+      };
+
+      updatedMedicines.push(db.medicines[idx]);
+      auditLogs.push(`• ${oldMed.nama}: *${oldMed.stok || 0}* ➔ *${newStok}* (+${qtySent} ${oldMed.satuan || 'strip'})`);
+    }
+  }
+
+  if (updatedMedicines.length === 0) {
+    return res.status(400).json({ error: 'Tidak ada obat valid yang diperbarui' });
+  }
+
+  writeDB(db);
+  autoPushMedicinesToGSheet(db);
+
+  // Kirim Audit Log ke Telegram Bot
+  const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+  const telegramText = 
+`🚚 *[SURAT JALAN - PENGIRIMAN OBAT]* 🚚
+━━━━━━━━━━━━━━━━━━━━
+👤 *Pengirim (Apotek):* ${sender || '-'}
+👤 *Penerima (PT ATI):* ${receiver || '-'}
+━━━━━━━━━━━━━━━━━━━━
+📦 *Daftar Obat Terkirim:*
+${auditLogs.join('\n')}
+
+⏱ _Waktu: ${nowWIB} WIB_
+🏥 _Sistem Rekam Medis PT ATI_`;
+
+  sendTelegramNotif(telegramText);
+
+  res.json({ success: true, updated: updatedMedicines });
+});
+
 // ============================================================
 // MASTER DATA: EMPLOYEES / PATIENTS
 // ============================================================
@@ -774,7 +880,7 @@ app.get('/api/records', (req, res) => {
   let records = db.records || [];
   if (nik) records = records.filter(r => r.nik === nik || r.nikPabrik === nik);
   if (nikPabrik) records = records.filter(r => r.nikPabrik === nikPabrik);
-  records.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+  records.sort((a, b) => new Date(b.created_at || b.tanggal) - new Date(a.created_at || a.tanggal));
   res.json(records);
 });
 
@@ -783,7 +889,7 @@ app.post('/api/records', (req, res) => {
   const newRecord = req.body;
   
   newRecord.id = 'REC-' + Date.now();
-  newRecord.created_at = new Date().toISOString();
+  newRecord.created_at = newRecord.created_at || new Date().toISOString();
   
   // Auto-Deduct Stock from resep list
   const logObatTeks = [];
@@ -912,10 +1018,96 @@ app.put('/api/records/:id', (req, res) => {
 
 app.delete('/api/records/:id', (req, res) => {
   const db = readDB();
-  if (!db.records) return res.status(404).json({ error: 'Record tidak ditemukan' });
-  db.records = db.records.filter(r => r.id !== req.params.id);
+  if (!db.records) return res.status(404).json({ error: 'Data rekam medis tidak ditemukan' });
+  
+  const recordIndex = db.records.findIndex(r => r.id === req.params.id);
+  if (recordIndex === -1) {
+    return res.status(404).json({ error: 'Data rekam medis tidak ditemukan' });
+  }
+
+  const oldRecord = db.records[recordIndex];
+  const deletedBy = req.body?.deletedBy || 'Petugas Medis';
+  const reason = req.body?.reason || 'Pasien batal berobat / Koreksi data';
+
+  // 1. Restore medicine stock
+  const restoredMeds = [];
+  if (Array.isArray(oldRecord.resep) && oldRecord.resep.length > 0 && db.medicines) {
+    oldRecord.resep.forEach(item => {
+      const namaObat = item.namaObat || item.obat || '';
+      const qty = parseInt(item.qty || item.jumlah) || 1;
+      if (namaObat) {
+        const med = db.medicines.find(m => m.nama && m.nama.trim().toLowerCase() === namaObat.trim().toLowerCase());
+        if (med) {
+          med.stok = (parseInt(med.stok) || 0) + qty;
+          restoredMeds.push(`${med.nama} (+${qty} ${med.satuan || 'item'})`);
+        }
+      }
+    });
+  } else if (oldRecord.plan && db.medicines) {
+    const planItems = String(oldRecord.plan).split(';').map(p => p.trim()).filter(Boolean);
+    planItems.forEach(p => {
+      const match = p.match(/^(.+?)(?:\s+\d+x\d+)?\s+No\.(\d+)/i) || p.match(/^(.+?)(?:\s+(\d+))?$/);
+      const name = match ? match[1].replace(/\[.*?\]/g, '').trim() : p.replace(/\[.*?\]/g, '').trim();
+      const qty = match && match[2] ? parseInt(match[2]) : 1;
+      if (name) {
+        const med = db.medicines.find(m => m.nama && m.nama.trim().toLowerCase().includes(name.toLowerCase()));
+        if (med) {
+          med.stok = (parseInt(med.stok) || 0) + qty;
+          restoredMeds.push(`${med.nama} (+${qty} ${med.satuan || 'item'})`);
+        }
+      }
+    });
+  }
+
+  // 2. Remove record from db.records
+  db.records.splice(recordIndex, 1);
+
+  // 3. Remove from pantauan if applicable
+  if (Array.isArray(db.pantauan) && oldRecord.nikPabrik) {
+    db.pantauan = db.pantauan.filter(p => p.nikPabrik !== oldRecord.nikPabrik);
+  }
+
+  // 4. Save to database
   writeDB(db);
-  res.json({ success: true });
+
+  // 5. Send Telegram Audit Notification
+  const resepText = restoredMeds.length > 0
+    ? restoredMeds.map(m => `• ${m}`).join('\n')
+    : (Array.isArray(oldRecord.resep) && oldRecord.resep.length > 0
+        ? oldRecord.resep.map(r => `• ${r.namaObat || r.obat} (${r.qty || 1} item)`).join('\n')
+        : '• Tidak ada obat yang diresepkan');
+
+  const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
+  const telegramMsg = 
+`🗑️ <b>AUDIT TRAIL: PENGHAPUSAN REKAM MEDIS</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 <b>Pasien:</b> ${oldRecord.namaPasien || '-'} (NPK: ${oldRecord.nikPabrik || '-'})
+🏢 <b>Bagian/Dept:</b> ${oldRecord.dept || 'PT ATI'}
+📅 <b>Tgl Berobat:</b> ${oldRecord.tanggal || '-'}
+🩺 <b>Keluhan / Diag:</b> ${oldRecord.keluhan || '-'} | ${oldRecord.asesmen || '-'}
+
+💊 <b>Stok Obat Dikembalikan ke Gudang:</b>
+${resepText}
+
+💰 <b>Billing Dibatalkan:</b> Rp ${(oldRecord.totalBiaya || 0).toLocaleString('id-ID')}
+
+⚠️ <b>Alasan Penghapusan:</b>
+<i>"${reason}"</i>
+
+👨‍⚕️ <b>Dihapus Oleh:</b> <b>${deletedBy}</b>
+⏰ <b>Waktu Hapus:</b> ${nowWIB} WIB
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ <i>Status: Data rekam medis telah dihapus, stok obat otomatis dikembalikan, dan penagihan billing telah dikoreksi.</i>`;
+
+  sendTelegramNotif(telegramMsg);
+
+  res.json({
+    success: true,
+    message: 'Rekam medis berhasil dihapus, stok obat dikembalikan, dan laporan audit terkirim ke Telegram.',
+    restoredMedicines: restoredMeds,
+    deletedRecord: oldRecord
+  });
 });
 
 // ============================================================
@@ -1059,6 +1251,33 @@ app.post('/api/shift/format2', (req, res) => {
 // ============================================================
 // SETTINGS & BACKUP
 // ============================================================
+
+app.post('/api/send-wa', async (req, res) => {
+  try {
+    const { number, message } = req.body;
+    if (!number || !message) {
+      return res.status(400).json({ success: false, error: 'Nomor dan pesan wajib diisi' });
+    }
+
+    const rawResponse = await sendWhaCenterNotif(number, message);
+    let parsed = null;
+    let isOk = false;
+    try {
+      if (rawResponse) {
+        parsed = typeof rawResponse === 'string' ? JSON.parse(rawResponse) : rawResponse;
+        if (parsed.status === true || parsed.status === 'true' || parsed.status === 'success' || parsed.status === 200 || parsed.status === '200') {
+          isOk = true;
+        }
+      }
+    } catch (errParse) {
+      console.log('Error parsing JSON from WhaCenter:', errParse.message);
+    }
+
+    res.json({ success: isOk, response: parsed || rawResponse });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 app.get('/api/settings', (req, res) => {
   const db = readDB();

@@ -14,6 +14,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <link rel="stylesheet" href="style.css">
+  
+  <!-- Chart.js & DataLabels Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
 <body>
 
@@ -197,6 +201,14 @@
             </div>
 
             <form id="form-poli-entry" onsubmit="handleSavePoli(event)">
+
+              <!-- TANGGAL BEROBAT -->
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label marunda-section-label" for="poli-tanggal-berobat">
+                  <i class="fa-regular fa-calendar-check" style="color: var(--accent);"></i> TANGGAL BEROBAT / KUNJUNGAN
+                </label>
+                <input type="date" id="poli-tanggal-berobat" class="form-control" style="max-width: 250px;" required>
+              </div>
 
               <!-- 1. KELUHAN UTAMA (Subjektif - S) -->
               <div class="form-group">
@@ -416,7 +428,7 @@
               <h2><i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i> Stok Obat Gudang Apotek Nafila</h2>
               <p style="color: var(--text-muted); font-size: 0.85rem;">Manajemen stok obat, sisa stok, &amp; cetak lembar stok opname manual PT ATI.</p>
             </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <div class="gudang-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button class="btn btn-warning" onclick="syncNowFromGSheet(this)" style="background: #f59e0b; color: #000; font-weight: 700;">
                 <i class="fa-solid fa-arrows-rotate"></i> Sync G-Sheet Sekarang
               </button>
@@ -427,12 +439,15 @@
           </div>
 
           <!-- SUB-TAB BUTTONS GUDANG -->
-          <div style="display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px;">
+          <div class="gudang-subtabs" style="display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px; flex-wrap: wrap;">
             <button class="btn btn-primary" id="gudang-subtab-list" onclick="switchGudangSubTab('list')">
               <i class="fa-solid fa-table-list"></i> Data Obat Lengkap
             </button>
             <button class="btn btn-secondary" id="gudang-subtab-opname" onclick="switchGudangSubTab('opname')" style="background: #0284c7; color: #fff; border: none;">
               <i class="fa-solid fa-clipboard-check"></i> Stok Opname Manual (PT ATI)
+            </button>
+            <button class="btn btn-secondary" id="gudang-subtab-pengiriman" onclick="switchGudangSubTab('pengiriman')" style="background: #ec4899; color: #fff; border: none; font-weight: 700;">
+              <i class="fa-solid fa-truck-ramp-box"></i> Pengiriman Obat &amp; Surat Jalan
             </button>
           </div>
 
@@ -494,6 +509,83 @@
             </div>
           </div>
 
+          <!-- VIEW 3: PENGIRIMAN OBAT & SURAT JALAN -->
+          <div id="gudang-view-pengiriman" style="display: none;">
+            <div class="info-banner" style="margin-bottom: 16px; background: rgba(236, 72, 153, 0.1); border: 1.5px solid rgba(236, 72, 153, 0.35); color: #f472b6; padding: 12px; border-radius: 6px; font-size: 0.9rem; font-weight: 600;">
+              ℹ️ Input data rencana pengiriman obat dari Apotek Nafila ke PT ATI. Stok obat di PT ATI akan otomatis bertambah setelah surat jalan dikonfirmasi.
+            </div>
+
+            <div class="pengiriman-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 20px; align-items: start;">
+              <!-- Input Form -->
+              <div class="glass-card" style="padding: 16px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
+                <h4 style="margin-top: 0; color: #ec4899; font-weight: 700; margin-bottom: 14px; font-size: 1.05rem;"><i class="fa-solid fa-file-medical"></i> Form Pengiriman</h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Nama Pengirim (Apotek) *</label>
+                    <input type="text" id="ship-sender" class="form-control" placeholder="Nama Petugas Apotek..." style="font-weight: 700;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Nama Penerima (Perawat PT) *</label>
+                    <input type="text" id="ship-receiver" class="form-control" placeholder="Nama Perawat PT ATI..." style="font-weight: 700;">
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label class="form-label">Pilih Obat *</label>
+                  <select id="ship-medicine-select" class="form-control" onchange="handleShipMedChange()" style="font-weight: 700; background: var(--surface-1);">
+                    <option value="">-- Pilih Obat --</option>
+                  </select>
+                </div>
+
+                <div class="pengiriman-stok-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Stok Awal PT ATI</label>
+                    <input type="number" id="ship-initial-stock" class="form-control" readonly style="font-weight: 700; background: var(--surface-1); color: var(--text-muted);">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Jumlah Kirim *</label>
+                    <input type="number" id="ship-qty-input" class="form-control" oninput="calculateShipFinalStock()" min="1" placeholder="0" style="font-weight: 700;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Total Akhir PT ATI</label>
+                    <input type="number" id="ship-final-stock" class="form-control" readonly style="font-weight: 700; background: var(--surface-1); color: #4ade80;">
+                  </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="addMedToShipmentDraft()" style="background: #ec4899; border: none; font-weight: 700; width: 100%;">
+                  <i class="fa-solid fa-plus"></i> Tambah Ke Daftar Kirim
+                </button>
+              </div>
+
+              <!-- Draft List -->
+              <div class="glass-card" style="padding: 16px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.02); min-height: 290px; display: flex; flex-direction: column;">
+                <h4 style="margin-top: 0; color: var(--text-color); font-weight: 700; margin-bottom: 14px; font-size: 1.05rem;"><i class="fa-solid fa-list-check"></i> Daftar Obat Rencana Kirim</h4>
+                
+                <div style="flex: 1; overflow-y: auto; max-height: 190px; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px;">
+                  <table class="custom-table" style="font-size: 0.85rem; width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr>
+                        <th style="padding: 4px;">Obat</th>
+                        <th style="text-align: center; padding: 4px;">Awal</th>
+                        <th style="text-align: center; padding: 4px;">Kirim</th>
+                        <th style="text-align: center; padding: 4px;">Akhir</th>
+                        <th style="text-align: center; padding: 4px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ship-draft-body">
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <button class="btn btn-warning" onclick="processShipmentAndPrint()" style="background: #f59e0b; color: #000; font-weight: 700; width: 100%; border: none; margin-top: auto; padding: 12px;">
+                  <i class="fa-solid fa-truck-fast"></i> 🚚 KONFIRMASI &amp; CETAK SURAT JALAN PDF
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
@@ -514,6 +606,13 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label marunda-section-label">KIRIM PERMINTAAN KE (TUJUAN WHATSAPP)</label>
+            <select id="req-target-wa" class="form-control" required style="font-weight: 700;">
+              <!-- Rendered dynamically -->
+            </select>
+          </div>
+
+          <div class="form-group">
             <label class="form-label marunda-section-label">DAFTAR PERMINTAAN OBAT</label>
             <table class="resep-table">
               <thead>
@@ -528,7 +627,7 @@
               </tbody>
             </table>
 
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <div class="obat-req-actions" style="display: flex; gap: 10px; margin-top: 10px;">
               <button type="button" class="btn btn-sm btn-secondary" onclick="addObatReqRowDropdown()">
                 + OBAT DARI DAFTAR (DROPDOWN)
               </button>
@@ -673,32 +772,81 @@
     <section id="view-hse" class="page-view">
       <div class="glass-card" style="margin-bottom: 20px;">
         
+        <!-- TITLE RINGKASAN STATISTIK -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 700; color: var(--text-color);">
+          <span style="font-size: 1rem;"><i class="fa-solid fa-chart-pie" style="color: var(--info); margin-right: 6px;"></i> RINGKASAN STATISTIK HSE <span id="hse-period-title" style="color: #0284c7; font-size: 0.95rem; font-weight: 600; margin-left: 6px;">— BULAN INI</span></span>
+        </div>
+
         <!-- CARDS STATISTIK K3 / HSE OVERVIEW -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px;">
-          <div class="stat-card">
-            <div class="stat-label">Total Kunjungan K3</div>
-            <div id="hse-stat-total-visits" class="stat-value" style="color: var(--info);">0</div>
-            <div class="stat-sub">Rekam Medis Terdata</div>
+        <div class="hse-stat-grid">
+          <div class="stat-card clickable" onclick="openHSEChartModal('penyakit')" title="Klik untuk melihat Grafik 10 Penyakit Terbanyak">
+            <div class="stat-card-header">
+              <span class="stat-label">Kunjungan K3</span>
+              <span class="stat-pill-badge badge-cyan"><i class="fa-solid fa-chart-column"></i> Grafik</span>
+            </div>
+            <div class="stat-body">
+              <div id="hse-stat-total-visits" class="stat-value" style="color: var(--info);">0</div>
+              <div class="stat-sub" style="color: #00cbd5; font-weight: 600;">Rekam Medis (Klik)</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Pasien Pantauan</div>
-            <div id="hse-stat-pantauan-count" class="stat-value" style="color: var(--danger);">0</div>
-            <div class="stat-sub">High Risk — Perlu Monitoring</div>
+
+          <div class="stat-card clickable" onclick="switchHSESubTab('pantauan')" title="Klik untuk melihat Daftar Pasien Pantauan">
+            <div class="stat-card-header">
+              <span class="stat-label">Pasien Pantauan</span>
+              <span class="stat-pill-badge badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> K3</span>
+            </div>
+            <div class="stat-body">
+              <div id="hse-stat-pantauan-count" class="stat-value" style="color: var(--danger);">0</div>
+              <div class="stat-sub" style="color: #f87171; font-weight: 600;">High Risk (Klik)</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Surkes / Izin Sakit</div>
-            <div id="hse-stat-surkes-count" class="stat-value" style="color: var(--warning);">0</div>
-            <div class="stat-sub">Kasus Istirahat Sakit</div>
+
+          <div class="stat-card clickable" onclick="switchHSESubTab('surkes')" title="Klik untuk melihat Rekam Medis Pasien Izin Sakit / Surkes">
+            <div class="stat-card-header">
+              <span class="stat-label">Surat / Izin Sakit</span>
+              <span class="stat-pill-badge badge-warning"><i class="fa-solid fa-file-medical"></i> Surkes</span>
+            </div>
+            <div class="stat-body">
+              <div id="hse-stat-surkes-count" class="stat-value" style="color: var(--warning);">0</div>
+              <div class="stat-sub" style="color: #f59e0b; font-weight: 600;">Izin Sakit (Klik)</div>
+            </div>
+          </div>
+
+          <div class="stat-card clickable" onclick="openHSEChartModal('dept')" title="Klik untuk melihat Grafik 10 Department Terbanyak">
+            <div class="stat-card-header">
+              <span class="stat-label">Departemen</span>
+              <span class="stat-pill-badge badge-green"><i class="fa-solid fa-building"></i> Grafik</span>
+            </div>
+            <div class="stat-body">
+              <div id="hse-stat-dept-list" class="stat-mini-list">
+                <div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Memuat data...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card clickable" onclick="openHSEChartModal('pasien')" title="Klik untuk melihat Grafik 10 Pasien Terbanyak">
+            <div class="stat-card-header">
+              <span class="stat-label">Pasien Terbanyak</span>
+              <span class="stat-pill-badge badge-amber"><i class="fa-solid fa-user-group"></i> Grafik</span>
+            </div>
+            <div class="stat-body">
+              <div id="hse-stat-patient-list" class="stat-mini-list">
+                <div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Memuat data...</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap;">
-          <div style="display: flex; gap: 10px;">
+        <div class="hse-subtab-actions" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button class="btn btn-primary" id="subtab-btn-rm" onclick="switchHSESubTab('rm')">
               <i class="fa-solid fa-file-medical"></i> REKAM MEDIS PASIEN
             </button>
             <button class="btn btn-secondary" id="subtab-btn-pantauan" onclick="switchHSESubTab('pantauan')">
               <i class="fa-solid fa-circle-exclamation" style="color: var(--danger);"></i> 🔴 PASIEN PANTAUAN
+            </button>
+            <button class="btn btn-secondary" id="subtab-btn-surkes" onclick="switchHSESubTab('surkes')">
+              <i class="fa-solid fa-file-signature" style="color: var(--warning);"></i> 📄 SURAT / IZIN SAKIT
             </button>
           </div>
           <button class="btn btn-primary" onclick="printHSEOfficialReport()" style="background: #0284c7; border: none; font-weight: 700;">
@@ -708,7 +856,7 @@
 
         <!-- SUB-TAB 1: REKAM MEDIS PASIEN -->
         <div id="hse-subtab-rm">
-          <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+          <div class="hse-filter-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
             <input type="text" id="hse-rm-search" class="form-control" placeholder="Ketik NIK Pabrik Pasien..." style="width: 250px;">
             <input type="date" id="hse-rm-start" class="form-control" style="width: 180px;">
             <input type="date" id="hse-rm-end" class="form-control" style="width: 180px;">
@@ -733,6 +881,7 @@
                   <th>Diagnosis</th>
                   <th>Hasil Pemeriksaan</th>
                   <th>Obat</th>
+                  <th>Status Kelaikan (K3)</th>
                   <th>Perawat / Nakes</th>
                 </tr>
               </thead>
@@ -768,6 +917,35 @@
           </div>
         </div>
 
+        <!-- SUB-TAB 3: SURAT / IZIN SAKIT (SURKES) -->
+        <div id="hse-subtab-surkes" style="display: none;">
+          <div class="info-banner info-banner-yellow" style="margin-bottom: 16px;">
+            📄 <strong>Rekapitulasi Pasien Izin Sakit (Surkes)</strong> — Pasien yang dipulangkan atau diberikan izin istirahat sakit dari PT ATI melalui input poli pemeriksaan.
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Tanggal</th>
+                  <th>NIK Pabrik</th>
+                  <th>Nama Pasien</th>
+                  <th>Bagian</th>
+                  <th>Keluhan &amp; Diagnosis</th>
+                  <th>Hasil Pemeriksaan (O)</th>
+                  <th>Terapi Obat (P)</th>
+                  <th>Status</th>
+                  <th>Nakes Pemeriksa</th>
+                  <th style="text-align: center;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-hse-surkes-body">
+                <!-- Rendered dynamically via renderHSESurkesTable() -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -791,10 +969,9 @@
       <!-- Unlocked State -->
       <div id="manajemen-unlocked-view" style="display: none;">
         <div class="glass-card" style="margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
+          <div class="manajemen-nav-row" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
             <div style="display: flex; gap: 10px;">
-              <button class="btn btn-primary" id="mj-nav-analisis" onclick="switchManajemenTab('analisis')">📊 Analisis Anggaran Obat</button>
-              <button class="btn btn-secondary" id="mj-nav-billing" onclick="switchManajemenTab('billing')">🧾 Billing PT &amp; Biaya</button>
+              <button class="btn btn-primary" id="mj-nav-billing" onclick="switchManajemenTab('billing')">🧾 Billing PT &amp; Biaya</button>
               <button class="btn btn-warning" id="mj-nav-kontak" onclick="switchManajemenTab('kontak')">📲 Kontak WA</button>
             </div>
             <button class="btn btn-primary" onclick="printExecutiveReport()" style="background: #10b981; border: none; font-weight: 700;">
@@ -802,26 +979,12 @@
             </button>
           </div>
 
-          <!-- 1. ANALISIS OBAT -->
-          <div id="mj-tab-analisis" style="margin-top: 16px;">
-            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
-              <select id="mj-bulan" class="form-control" style="width: 160px;"></select>
-              <select id="mj-tahun" class="form-control" style="width: 140px;"></select>
-              <button class="btn btn-primary" onclick="renderAnalisisObat()">Go</button>
-            </div>
-            <div class="info-banner info-banner-green" style="padding: 20px; text-align: center; border-radius: 12px;">
-              <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; margin-bottom: 6px;">Total Modal Pemakaian Obat</div>
-              <div style="font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em;" id="mj-modal-total">Rp 0</div>
-              <p style="font-size: 0.78rem; opacity: 0.7; margin-top: 6px;">Target Anggaran Efisiensi: Rp 2.000.000 / Bulan</p>
-            </div>
-          </div>
-
-          <!-- 2. BILLING PT -->
-          <div id="mj-tab-billing" style="display: none; margin-top: 16px;">
+          <!-- 1. BILLING PT -->
+          <div id="mj-tab-billing" style="display: block; margin-top: 16px;">
             <div class="info-banner info-banner-blue" style="margin-bottom: 14px;">
-              🧾 Laporan tagihan &amp; akumulasi biaya berobat rawat jalan karyawan PT. Andalan Manis Sejahtera &amp; PT ATI.
+              🧾 Laporan tagihan &amp; akumulasi biaya berobat rawat jalan karyawan PT ATI.
             </div>
-            <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+            <div class="billing-filter-row" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
               <input type="date" id="billing-start" class="form-control" style="width: 180px;">
               <input type="date" id="billing-end" class="form-control" style="width: 180px;">
               <button class="btn btn-primary" onclick="renderBillingPTTable()">CARI</button>
@@ -833,15 +996,18 @@
                   <tr>
                     <th>NO</th>
                     <th>TGL</th>
-                    <th>KARYAWAN</th>
-                    <th>NIK PABRIK</th>
+                    <th>NPK</th>
+                    <th>NAMA PASIEN</th>
                     <th>BAGIAN</th>
                     <th>DIAGNOSA</th>
+                    <th>NAMA OBAT</th>
+                    <th>QTY</th>
+                    <th>HARGA OBAT</th>
                     <th>TOTAL BIAYA</th>
                   </tr>
                 </thead>
                 <tbody id="table-billing-body">
-                  <!-- Dynamic -->
+                  <tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--text-muted);"><i class="fa-solid fa-calendar-days" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>Silakan pilih rentang tanggal dan klik CARI untuk menampilkan laporan.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -849,13 +1015,59 @@
 
           <!-- 3. KONTAK WA -->
           <div id="mj-tab-kontak" style="display: none; margin-top: 16px;">
-            <h3>📲 Kontak WA Apoteker &amp; Pimpinan</h3>
-            <div class="form-group" style="margin-top: 12px; max-width: 500px;">
-              <label class="form-label">Nomor WhatsApp Apoteker / Nakes</label>
-              <input type="text" id="mj-wa-num" class="form-control" value="6281234567890">
-              <button class="btn btn-primary" onclick="saveWAPhoneSetting()" style="margin-top: 10px;">
-                <i class="fa-solid fa-floppy-disk"></i> Simpan Nomor WA
-              </button>
+            <h3>📲 Kelola Daftar Kontak WA &amp; Gateway API WhaCenter</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Pengiriman pesan otomatis via WhatsApp Center API &amp; kelola kontak penerima.</p>
+
+            <!-- WHACENTER API DEVICE ID CONFIG -->
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+              <div style="font-weight: 700; color: #34d399; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> WhatsApp Center Gateway (Device Connected: Hp Klinik Nafila)
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Device ID aktif dari WhaCenter untuk mengirim pesan otomatis secara instan.</p>
+              <div class="whacenter-row" style="display: flex; gap: 10px; align-items: center; max-width: 650px;">
+                <input type="text" id="whacenter-device-id" class="form-control" value="83f3428d66d811ef2f2d78e289bae57c" style="font-weight: 700; font-family: monospace;">
+                <button class="btn btn-primary" onclick="saveWhaCenterDeviceId()" style="white-space: nowrap; background: var(--success); border: none; font-weight: 700;">
+                  <i class="fa-solid fa-floppy-disk"></i> Simpan Device ID
+                </button>
+              </div>
+            </div>
+
+            <form onsubmit="handleTambahWAContact(event)" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; margin-bottom: 20px;">
+              <div style="font-weight: 700; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-user-plus"></i> Tambah Kontak WA Baru</div>
+              <div class="wa-contact-form-grid" style="display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 120px; gap: 10px; align-items: flex-end;">
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Nama Kontak *</label>
+                  <input type="text" id="new-wa-nama" class="form-control" placeholder="Contoh: Apt. Nafila" required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Jabatan / Peran</label>
+                  <input type="text" id="new-wa-jabatan" class="form-control" placeholder="Contoh: Apoteker Utama">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Nomor WhatsApp *</label>
+                  <input type="text" id="new-wa-hp" class="form-control" placeholder="Contoh: 6281234567890" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 10px;">
+                  <i class="fa-solid fa-plus"></i> Tambah
+                </button>
+              </div>
+            </form>
+
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th style="width: 5%;">NO</th>
+                    <th style="width: 25%;">NAMA KONTAK</th>
+                    <th style="width: 25%;">JABATAN / PERAN</th>
+                    <th style="width: 25%;">NOMOR WHATSAPP</th>
+                    <th style="width: 20%; text-align: center;">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody id="table-wa-contacts-body">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -1002,6 +1214,12 @@ function setupTabDanHeader() {
         <input type="hidden" id="edit-record-id">
         <input type="hidden" id="edit-nama-pasien">
         
+        <!-- TANGGAL BEROBAT -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 700; text-transform: uppercase; color: var(--accent);"><i class="fa-regular fa-calendar-check"></i> TANGGAL BEROBAT</label>
+          <input type="date" id="edit-tanggal" class="form-control" required>
+        </div>
+
         <div class="form-group">
           <label class="form-label" style="font-weight: 700; text-transform: uppercase;">KELUHAN</label>
           <textarea id="edit-keluhan" class="form-control" rows="2" placeholder="Keluhan utama..."></textarea>
@@ -1046,6 +1264,63 @@ function setupTabDanHeader() {
           <button type="button" class="btn btn-secondary" onclick="closeModalEditRecord()" style="flex: 1;">Batal</button>
           <button type="submit" class="btn btn-warning" style="flex: 2; font-weight: 800; background: #eab308; color: #000; padding: 12px; border: none;">
             <i class="fa-solid fa-floppy-disk"></i> UPDATE &amp; REVISI STOK
+          </button>
+        </div>
+
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border-color); text-align: center;">
+          <button type="button" class="btn btn-danger" onclick="openModalDeleteRecord(document.getElementById('edit-record-id').value)" style="width: 100%; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); font-weight: 700; padding: 10px;">
+            <i class="fa-solid fa-trash-can"></i> Hapus Rekam Medis Pasien Ini (Kembalikan Stok)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL HAPUS REKAM MEDIS (DENGAN AUDIT TELEGRAM & KOREKSI STOK) -->
+  <div id="modal-delete-record" class="modal-overlay" style="display: none; z-index: 10001;">
+    <div class="modal-card" style="max-width: 540px; width: 92vw; padding: 22px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; color: #f87171; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-trash-can"></i> Hapus Rekam Medis Pasien
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalDeleteRecord()">&times;</button>
+      </div>
+
+      <form id="form-delete-record" onsubmit="handleConfirmDeleteRecord(event)">
+        <input type="hidden" id="delete-record-id">
+
+        <div class="info-banner info-banner-red" style="margin-bottom: 16px;">
+          ⚠️ <strong>Perhatian:</strong> Menghapus rekam medis akan <strong>mengembalikan stok obat</strong> ke gudang secara otomatis dan mengirimkan <strong>laporan audit resmi ke Telegram</strong>.
+        </div>
+
+        <!-- Summary Box of the Record -->
+        <div id="delete-record-summary-box" style="background: var(--surface-2); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.85rem;">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 700;">Nama Petugas / Nakes yang Menghapus *</label>
+          <input type="text" id="delete-record-by" class="form-control" placeholder="Contoh: Bidan Dian / Chandra" required style="font-weight: 600;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 700;">Alasan Penghapusan *</label>
+          <select id="delete-record-reason-select" class="form-control" onchange="handleDeleteReasonSelectChange()" style="margin-bottom: 8px; font-weight: 600;">
+            <option value="Pasien Batal Berobat / Salah Input">Pasien Batal Berobat / Salah Input</option>
+            <option value="Uji Coba Sistem / Testing Input">Uji Coba Sistem / Testing Input</option>
+            <option value="Duplikasi Data Rekam Medis">Duplikasi Data Rekam Medis</option>
+            <option value="Salah Pasien / NPK Tertukar">Salah Pasien / NPK Tertukar</option>
+            <option value="lainnya">Lainnya (Tuliskan Keterangan Khusus)...</option>
+          </select>
+          <textarea id="delete-record-reason-text" class="form-control" rows="2" placeholder="Tuliskan keterangan detail alasan penghapusan..." required style="font-size: 0.88rem;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalDeleteRecord()" style="flex: 1;">
+            Batal
+          </button>
+          <button type="submit" id="btn-submit-delete-record" class="btn btn-danger" style="flex: 1.5; font-weight: 800; background: #ef4444; color: white; border: none; padding: 12px;">
+            <i class="fa-solid fa-trash-can"></i> Hapus &amp; Kembalikan Stok
           </button>
         </div>
       </form>
@@ -1275,6 +1550,136 @@ function setupTabDanHeader() {
           <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Simpan Data Pasien</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL GRAFIK ANALISIS 10 PENYAKIT & 10 DEPT TERBANYAK -->
+  <div id="modal-hse-charts" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 1100px; width: 95vw; max-height: 92vh; overflow-y: auto; padding: 20px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-chart-column" style="color: #0284c7;"></i>
+          GRAFIK ANALISIS KUNJUNGAN K3
+        </h3>
+        
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="chart-tab-penyakit-btn" class="btn btn-sm btn-primary" onclick="switchHSEChartTab('penyakit')" style="background: #00cbd5; border: none; font-weight: 700;">
+            <i class="fa-solid fa-virus"></i> 10 Penyakit
+          </button>
+          <button id="chart-tab-dept-btn" class="btn btn-sm btn-secondary" onclick="switchHSEChartTab('dept')" style="font-weight: 700;">
+            <i class="fa-solid fa-building"></i> 10 Department
+          </button>
+          <button id="chart-tab-pasien-btn" class="btn btn-sm btn-secondary" onclick="switchHSEChartTab('pasien')" style="font-weight: 700;">
+            <i class="fa-solid fa-user-injured"></i> 10 Pasien Terbanyak
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeHSEChartModal()"><i class="fa-solid fa-xmark"></i> Tutup</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- BARIS 1: 10 PENYAKIT TERBANYAK -->
+        <div id="section-chart-penyakit">
+          <div style="text-align: center; margin-bottom: 14px; font-weight: 800; font-size: 1.1rem; color: #00cbd5; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-virus"></i> 10 PENYAKIT TERBANYAK (PERBANDINGAN BULAN INI VS BULAN KEMARIN)
+          </div>
+          <div class="hse-chart-pair-grid">
+            <div style="background: rgba(0, 203, 213, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(0, 203, 213, 0.2);">
+              <h5 id="title-chart-penyakit-curr" style="text-align: center; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-color);">
+                10 PENYAKIT TERBANYAK (BULAN INI)
+              </h5>
+              <div style="position: relative; height: 280px;">
+                <canvas id="chartPenyakitCurrent"></canvas>
+              </div>
+            </div>
+
+            <div style="background: rgba(0, 203, 213, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(0, 203, 213, 0.2);">
+              <h5 id="title-chart-penyakit-prev" style="text-align: center; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-color);">
+                10 PENYAKIT TERBANYAK (BULAN KEMARIN)
+              </h5>
+              <div style="position: relative; height: 280px;">
+                <canvas id="chartPenyakitPrev"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARIS 2: 10 DEPARTMENT TERBANYAK -->
+        <div id="section-chart-dept" style="display: none;">
+          <div style="text-align: center; margin-bottom: 14px; font-weight: 800; font-size: 1.1rem; color: #84cc16; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-building"></i> 10 DEPARTMENT TERBANYAK (PERBANDINGAN BULAN INI VS BULAN KEMARIN)
+          </div>
+          <div class="hse-chart-pair-grid">
+            <div style="background: rgba(132, 204, 22, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(132, 204, 22, 0.2);">
+              <h5 id="title-chart-dept-curr" style="text-align: center; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-color);">
+                10 DEPARTMENT TERBANYAK (BULAN INI)
+              </h5>
+              <div style="position: relative; height: 280px;">
+                <canvas id="chartDeptCurrent"></canvas>
+              </div>
+            </div>
+
+            <div style="background: rgba(132, 204, 22, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(132, 204, 22, 0.2);">
+              <h5 id="title-chart-dept-prev" style="text-align: center; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-color);">
+                10 DEPARTMENT TERBANYAK (BULAN KEMARIN)
+              </h5>
+              <div style="position: relative; height: 280px;">
+                <canvas id="chartDeptPrev"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARIS 3: 10 PASIEN TERBANYAK -->
+        <div id="section-chart-pasien" style="display: none;">
+          <div style="text-align: center; margin-bottom: 14px; font-weight: 800; font-size: 1.1rem; color: #f59e0b; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-user-injured"></i> 10 PASIEN TERBANYAK KUNJUNGAN (PERBANDINGAN BULAN INI VS BULAN KEMARIN)
+          </div>
+          <div class="hse-chart-pair-grid">
+            <div style="background: rgba(245, 158, 11, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.2);">
+              <h5 id="title-chart-pasien-curr" style="text-align: center; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-color);">
+                10 PASIEN TERBANYAK (BULAN INI)
+              </h5>
+              <div style="position: relative; height: 280px;">
+                <canvas id="chartPasienCurrent"></canvas>
+              </div>
+            </div>
+
+            <div style="background: rgba(245, 158, 11, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.2);">
+              <h5 id="title-chart-pasien-prev" style="text-align: center; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-color);">
+                10 PASIEN TERBANYAK (BULAN KEMARIN)
+              </h5>
+              <div style="position: relative; height: 280px;">
+                <canvas id="chartPasienPrev"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL VIEWER FOTO / DOKUMEN REKAM MEDIS -->
+  <div id="modal-photo-viewer" class="modal-overlay" style="display: none; z-index: 10000;">
+    <div class="modal-card" style="max-width: 680px; width: 92vw; max-height: 90vh; display: flex; flex-direction: column; padding: 20px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px;">
+        <h3 id="photo-viewer-title" class="modal-title" style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-image" style="color: var(--primary);"></i>
+          Dokumen / Foto Rekam Medis
+        </h3>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="closePhotoViewer()">
+          <i class="fa-solid fa-xmark"></i> Tutup
+        </button>
+      </div>
+      <div class="modal-body" style="flex: 1; overflow-y: auto; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px;">
+        <div id="photo-viewer-container" style="width: 100%; display: flex; justify-content: center; align-items: center;">
+          <img id="photo-viewer-img" src="" alt="Foto Rekam Medis" style="max-width: 100%; max-height: 65vh; border-radius: 8px; object-fit: contain; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+        </div>
+        <div id="photo-viewer-drive-link" style="margin-top: 14px; display: none;">
+          <a id="photo-viewer-drive-btn" href="#" target="_blank" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; background: #0284c7; border: none; text-decoration: none;">
+            <i class="fa-brands fa-google-drive"></i> Buka File Asli di Google Drive
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 

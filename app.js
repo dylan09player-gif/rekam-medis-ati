@@ -1,4 +1,3 @@
-// Application State
 let appData = {
   patients: [],
   records: [],
@@ -6,9 +5,94 @@ let appData = {
   icd10: [],
   absenDokter: [],
   pantauan: [],
-  waPhone: '6281234567890',
+  waContacts: [
+    { id: '1', nama: 'Apt. Nafila Medika', hp: '6281234567890', jabatan: 'Apoteker Utama' }
+  ],
   currentPoliPatient: null
 };
+
+function formatPlanForDisplay(planStr) {
+  if (!planStr) return '-';
+  let cleaned = String(planStr)
+    .replace(/\[Harga:\s*Rp\s*[^\]]+\]/gi, '')
+    .replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '')
+    .trim();
+  
+  const items = cleaned.split(';').map(p => p.trim()).filter(p => p);
+  if (items.length === 0) return '-';
+  return items.map(p => '• ' + p).join('<br>');
+}
+
+function getStatusKelaikanBadges(r) {
+  let list = [];
+  if (r.izinSakit) list.push('<span class="badge badge-warning">📄 SURKES</span>');
+  if (r.isPantauan) list.push('<span class="badge badge-danger">🔴 PANTAUAN</span>');
+  if (list.length === 0) list.push('<span class="badge badge-success" style="background:#22c55e; color:white; padding:3px 8px; border-radius:4px; font-weight:600; font-size:0.75rem;">🟢 FIT TO WORK</span>');
+  return list.join(' ');
+}
+
+function getStatusKelaikanText(r) {
+  let list = [];
+  if (r.izinSakit) list.push('ISTIRAHAT SAKIT (Surkes)');
+  if (r.isPantauan) list.push('PANTAUAN (High Risk)');
+  if (list.length === 0) return 'FIT TO WORK';
+  return list.join(' & ');
+}
+
+function parseRecordDate(rec) {
+  if (!rec) return null;
+  let d = null;
+  if (rec.tanggal) {
+    if (typeof rec.tanggal === 'string' && rec.tanggal.includes('/')) {
+      const parts = rec.tanggal.split('/');
+      if (parts.length === 3) {
+        d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      }
+    } else if (typeof rec.tanggal === 'string' && rec.tanggal.includes('-')) {
+      const parts = rec.tanggal.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else {
+          d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
+      }
+    } else {
+      d = new Date(rec.tanggal);
+    }
+  }
+  if ((!d || isNaN(d.getTime())) && rec.created_at) {
+    d = new Date(rec.created_at);
+  }
+  return d;
+}
+
+function getHSERecordsFiltered() {
+  const search = document.getElementById('hse-rm-search')?.value.toLowerCase().trim() || '';
+  const startVal = document.getElementById('hse-rm-start')?.value;
+  const endVal = document.getElementById('hse-rm-end')?.value;
+
+  const start = startVal ? new Date(`${startVal}T00:00:00`) : null;
+  const end = endVal ? new Date(`${endVal}T23:59:59`) : null;
+
+  return appData.records.filter(r => {
+    if (search) {
+      const matchNik = r.nikPabrik && String(r.nikPabrik).toLowerCase().includes(search);
+      const matchNama = r.namaPasien && r.namaPasien.toLowerCase().includes(search);
+      const matchDept = r.dept && r.dept.toLowerCase().includes(search);
+      if (!matchNik && !matchNama && !matchDept) return false;
+    }
+
+    if (start || end) {
+      const d = parseRecordDate(r);
+      if (!d || isNaN(d.getTime())) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+    }
+
+    return true;
+  });
+}
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', async () => {
@@ -117,9 +201,12 @@ async function loadAllAppData() {
     appData.absenDokter = await safeJson(absRes);
     appData.pantauan = await safeJson(panRes);
 
-    // Load GSheet URL setting
+    // Load Settings (GSheet & No WA Apoteker)
     try {
-      const gRes = await fetch('/api/gsheet/settings');
+      const [gRes, sRes] = await Promise.all([
+        fetch('/api/gsheet/settings'),
+        fetch('/api/settings')
+      ]);
       if (gRes.ok) {
         const gData = await gRes.json();
         if (gData.gsheetUrl) {
@@ -131,6 +218,18 @@ async function loadAllAppData() {
           if (el) el.textContent = 'Terakhir sync: ' + new Date(gData.lastSync).toLocaleString('id-ID');
         }
       }
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (Array.isArray(sData.wa_contacts) && sData.wa_contacts.length > 0) {
+          appData.waContacts = sData.wa_contacts;
+        } else if (sData.wa_phone) {
+          appData.waContacts = [{ id: '1', nama: 'Apt. Nafila Medika', hp: sData.wa_phone, jabatan: 'Apoteker Utama' }];
+        }
+        if (sData.whacenter_device_id) {
+          const inp = document.getElementById('whacenter-device-id');
+          if (inp) inp.value = sData.whacenter_device_id;
+        }
+      }
     } catch {}
 
     renderEditDataTable();
@@ -138,10 +237,13 @@ async function loadAllAppData() {
     renderKaryawanTable();
     renderHSERekamMedisTable();
     renderHSEPasienPantauanTable();
-    renderBillingPTTable();
+    renderHSESurkesTable();
+    // renderBillingPTTable(); // Dihapus agar tidak langsung diload berat, menunggu user klik CARI
     renderAbsenDirekturTable();
     renderNakesSuggestions();
     renderMobileKaryawanCards();
+    renderWAContactsTable();
+    renderWATargetSelectOptions();
 
     console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}`);
 
@@ -169,12 +271,21 @@ function initNavigation() {
 }
 
 function initDateInputs() {
-  const today = new Date().toISOString().split('T')[0];
-  const dateInputs = ['absen-tgl', 'shift1-tgl-mulai', 'shift1-tgl-selesai', 'shift2-tgl-mulai', 'shift2-tgl-selesai', 'hse-rm-start', 'hse-rm-end', 'billing-start', 'billing-end'];
-  dateInputs.forEach(id => {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const firstDayOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+  const dateInputsToday = ['absen-tgl', 'shift1-tgl-mulai', 'shift1-tgl-selesai', 'shift2-tgl-mulai', 'shift2-tgl-selesai', 'hse-rm-end', 'billing-end'];
+  dateInputsToday.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = today;
   });
+
+  const hseStart = document.getElementById('hse-rm-start');
+  if (hseStart) hseStart.value = firstDayOfMonth;
+
+  const billingStart = document.getElementById('billing-start');
+  if (billingStart) billingStart.value = firstDayOfMonth;
 }
 
 // -------------------------------------------------------------
@@ -324,6 +435,15 @@ function initPoliForm() {
   addPoliMedicineRow();
   
   renderNakesSuggestions();
+
+  // Set default visit date to today
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const formattedToday = `${yyyy}-${mm}-${dd}`;
+  const tglInput = document.getElementById('poli-tanggal-berobat');
+  if (tglInput) tglInput.value = formattedToday;
 }
 
 function addICD10Row(defaultValue = '') {
@@ -633,7 +753,7 @@ function renderPatientHistoryTimeline(patient) {
   const history = appData.records.filter(r => 
     (r.nikPabrik && String(r.nikPabrik) === String(patient.nikPabrik)) ||
     (r.namaPasien && r.namaPasien.toLowerCase() === patient.nama.toLowerCase())
-  ).sort((a,b) => new Date(b.tanggal || b.created_at) - new Date(a.tanggal || a.created_at));
+  ).sort((a,b) => new Date(b.created_at || b.tanggal) - new Date(a.created_at || a.tanggal));
 
   countEl.textContent = `${history.length} Kunjungan`;
 
@@ -662,10 +782,24 @@ function renderPatientHistoryTimeline(patient) {
     // Format Resep Obat (P)
     let planHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
     if (r.plan) {
-      const planItems = String(r.plan).split(';').map(p => p.trim()).filter(p => p);
+      // Extract Total from string if present, e.g. [Total: Rp 28.860]
+      let totalMatch = String(r.plan).match(/\[Total:\s*Rp\s*([^\]]+)\]/i);
+      let totalDisplay = totalMatch ? `Rp ${totalMatch[1]}` : (r.totalBiaya && r.totalBiaya > 0 ? `Rp ${r.totalBiaya.toLocaleString('id-ID')}` : '');
+
+      // Clean plan items so none of them have [Total: ...] attached
+      let cleanedPlan = String(r.plan).replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '').trim();
+      const planItems = cleanedPlan.split(';').map(p => p.trim()).filter(p => p);
+
       if (planItems.length > 0) {
         planHTML = `<div class="timeline-medicines-list">` +
           planItems.map(p => `<div class="med-pill-item">💊 ${p}</div>`).join('') +
+          (totalDisplay ? `
+            <div class="timeline-total-cost-row">
+              <span style="color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
+                <i class="fa-solid fa-receipt" style="color: var(--primary);"></i> Total Biaya Obat:
+              </span>
+              <span style="color: #38bdf8; font-weight: 800; font-size: 0.84rem;">${totalDisplay}</span>
+            </div>` : '') +
           `</div>`;
       }
     }
@@ -704,10 +838,10 @@ function renderPatientHistoryTimeline(patient) {
 
         <div class="timeline-footer">
           <div><i class="fa-solid fa-user-doctor"></i> ${r.pemeriksa || 'Nakes'}</div>
-          ${r.linkFoto ? `<a href="${r.linkFoto}" target="_blank" class="btn btn-sm btn-primary" style="font-size: 0.74rem; padding: 3px 8px;"><i class="fa-solid fa-image"></i> Lihat Foto</a>` : ''}
+          ${r.linkFoto ? `<button type="button" class="btn btn-sm btn-primary" style="font-size: 0.74rem; padding: 3px 8px;" onclick="openPhotoViewer('${r.id}')"><i class="fa-solid fa-image"></i> Lihat Foto</button>` : ''}
         </div>
 
-        <button class="btn btn-sm btn-secondary btn-block" style="margin-top: 10px; font-weight: 700;" onclick='copyRecordToPoliForm(${JSON.stringify(r).replace(/'/g, "&apos;")})'>
+        <button class="btn btn-sm btn-secondary btn-block" style="margin-top: 10px; font-weight: 700;" onclick="copyRecordToPoliForm('${r.id}')">
           <i class="fa-solid fa-copy"></i> Salin ke Form Input
         </button>
       </div>
@@ -715,7 +849,13 @@ function renderPatientHistoryTimeline(patient) {
   }).join('');
 }
 
-function copyRecordToPoliForm(record) {
+function copyRecordToPoliForm(recordOrId) {
+  let record = recordOrId;
+  if (typeof recordOrId === 'string' || typeof recordOrId === 'number') {
+    record = appData.records.find(r => String(r.id) === String(recordOrId));
+  }
+  if (!record) return;
+
   document.getElementById('poli-keluhan').value = record.keluhan || '';
   document.getElementById('poli-objektif-detail').value = record.objektif || '';
   if (record.pemeriksa) {
@@ -742,6 +882,54 @@ function copyRecordToPoliForm(record) {
   }
 
   showToast('Data riwayat disalin ke form pemeriksaan!', 'info');
+}
+
+function openPhotoViewer(recordOrId) {
+  let record = recordOrId;
+  if (typeof recordOrId === 'string' || typeof recordOrId === 'number') {
+    record = appData.records.find(r => String(r.id) === String(recordOrId));
+  }
+  if (!record || !record.linkFoto) {
+    showToast('Foto / dokumen tidak ditemukan pada rekam medis ini', 'warning');
+    return;
+  }
+
+  const modal = document.getElementById('modal-photo-viewer');
+  const imgEl = document.getElementById('photo-viewer-img');
+  const titleEl = document.getElementById('photo-viewer-title');
+  const driveWrap = document.getElementById('photo-viewer-drive-link');
+  const driveBtn = document.getElementById('photo-viewer-drive-btn');
+
+  if (!modal) return;
+
+  const patientName = record.namaPasien || 'Pasien';
+  const tgl = record.tanggal || '';
+  if (titleEl) {
+    titleEl.innerHTML = `<i class="fa-solid fa-image" style="color: var(--primary);"></i> Foto RM: ${patientName} (${tgl})`;
+  }
+
+  const photoUrl = record.linkFoto;
+
+  if (imgEl) {
+    imgEl.src = photoUrl;
+    imgEl.style.display = 'block';
+  }
+
+  if (driveWrap && driveBtn) {
+    if (photoUrl.includes('drive.google.com') || photoUrl.includes('googleusercontent.com')) {
+      driveWrap.style.display = 'block';
+      driveBtn.href = photoUrl;
+    } else {
+      driveWrap.style.display = 'none';
+    }
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closePhotoViewer() {
+  const modal = document.getElementById('modal-photo-viewer');
+  if (modal) modal.style.display = 'none';
 }
 
 async function handleSavePoli(e) {
@@ -831,11 +1019,28 @@ async function handleSavePoli(e) {
   // Record Nakes frequency
   recordNakesUsage(pemeriksa);
 
+  const selectedDateVal = document.getElementById('poli-tanggal-berobat').value;
+  let tanggalFormatted = '';
+  let customCreatedAt = '';
+  if (selectedDateVal) {
+    const [yr, mo, dy] = selectedDateVal.split('-');
+    tanggalFormatted = `${parseInt(dy)}/${parseInt(mo)}/${yr}`;
+    
+    const now = new Date();
+    const customDateObj = new Date(yr, mo - 1, dy, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+    customCreatedAt = customDateObj.toISOString();
+  } else {
+    const now = new Date();
+    tanggalFormatted = now.toLocaleDateString('id-ID');
+    customCreatedAt = now.toISOString();
+  }
+
   const newRecord = {
     nikPabrik: appData.currentPoliPatient.nikPabrik || '',
     namaPasien: appData.currentPoliPatient.nama,
     dept: appData.currentPoliPatient.dept || '',
-    tanggal: new Date().toLocaleDateString('id-ID'),
+    tanggal: tanggalFormatted,
+    created_at: customCreatedAt,
     keluhan,
     objektif: objektifFull,
     asesmen: selectedICD || 'Pemeriksaan Umum',
@@ -888,6 +1093,17 @@ function renderEditDataTable() {
 
   let filtered = appData.records.slice().reverse();
 
+  if (dateFilter) {
+    filtered = filtered.filter(r => {
+      const d = parseRecordDate(r);
+      if (!d) return false;
+      const targetDate = new Date(`${dateFilter}T00:00:00`);
+      return d.getFullYear() === targetDate.getFullYear() &&
+             d.getMonth() === targetDate.getMonth() &&
+             d.getDate() === targetDate.getDate();
+    });
+  }
+
   if (searchFilter) {
     filtered = filtered.filter(r => 
       (r.namaPasien && r.namaPasien.toLowerCase().includes(searchFilter)) ||
@@ -903,13 +1119,22 @@ function renderEditDataTable() {
       <td>
         <div><strong>S:</strong> ${r.keluhan || '-'}</div>
         <div><strong>A:</strong> <span class="badge badge-info">${r.asesmen || '-'}</span></div>
-        <div><strong>P:</strong> ${r.plan || '-'}</div>
+        <div style="margin-top:4px;"><strong>P:</strong><br>${formatPlanForDisplay(r.plan)}</div>
       </td>
       <td>${r.pemeriksa || '-'}</td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick='openModalEditRecord(${JSON.stringify(r).replace(/'/g, "&apos;")})'>
-          <i class="fa-solid fa-pen"></i> Edit
-        </button>
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-sm btn-primary" onclick="openModalEditRecord('${r.id}')" title="Edit Data">
+            <i class="fa-solid fa-pen"></i> Edit
+          </button>
+          <button class="btn btn-sm btn-danger" style="background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 5px 8px; font-weight: 700;" onclick="openModalDeleteRecord('${r.id}')" title="Hapus Rekam Medis & Kembalikan Stok">
+            <i class="fa-solid fa-trash-can"></i> Hapus
+          </button>
+          ${r.linkFoto ? `
+            <button class="btn btn-sm btn-secondary" style="background: #0284c7; color: #fff; border: none; padding: 5px 8px;" onclick="openPhotoViewer('${r.id}')" title="Lihat Foto">
+              <i class="fa-solid fa-image"></i>
+            </button>` : ''}
+        </div>
       </td>
     </tr>
   `).join('');
@@ -966,13 +1191,39 @@ function addEditResepRow(medName = '', qty = 1) {
   container.appendChild(div);
 }
 
-function openModalEditRecord(record) {
+function openModalEditRecord(recordOrId) {
+  let record = recordOrId;
+  if (typeof recordOrId === 'string' || typeof recordOrId === 'number') {
+    record = appData.records.find(r => String(r.id) === String(recordOrId));
+  }
+  if (!record) {
+    showToast('Data rekam medis tidak ditemukan', 'error');
+    return;
+  }
+
   document.getElementById('edit-record-id').value = record.id;
   document.getElementById('edit-nama-pasien').value = record.namaPasien || '';
   document.getElementById('edit-keluhan').value = record.keluhan || '';
   document.getElementById('edit-objektif').value = record.objektif || '';
   document.getElementById('edit-pemeriksa').value = record.pemeriksa || 'dr. Dylan Fadhilah';
   document.getElementById('edit-is-pantauan').checked = record.isPantauan === true;
+
+  // Set date picker value
+  if (record.tanggal) {
+    const parts = record.tanggal.split('/');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      document.getElementById('edit-tanggal').value = `${year}-${month}-${day}`;
+    } else {
+      document.getElementById('edit-tanggal').value = new Date().toISOString().split('T')[0];
+    }
+  } else if (record.created_at) {
+    document.getElementById('edit-tanggal').value = record.created_at.split('T')[0];
+  } else {
+    document.getElementById('edit-tanggal').value = new Date().toISOString().split('T')[0];
+  }
 
   // Populate ICD-10 Diagnosis Multi
   const containerICD = document.getElementById('edit-container-icd10');
@@ -1037,7 +1288,26 @@ async function handleSaveEditRecord(e) {
 
   const planText = resepList.map(r => `${r.namaObat} No.${r.qty}`).join('; ');
 
+  // Get date value and format it
+  const selectedDateVal = document.getElementById('edit-tanggal').value;
+  let tanggalFormatted = '';
+  let customCreatedAt = '';
+  if (selectedDateVal) {
+    const [yr, mo, dy] = selectedDateVal.split('-');
+    tanggalFormatted = `${parseInt(dy)}/${parseInt(mo)}/${yr}`;
+    
+    const record = appData.records.find(r => r.id === id);
+    let originalTime = new Date();
+    if (record && record.created_at) {
+      originalTime = new Date(record.created_at);
+    }
+    const customDateObj = new Date(yr, mo - 1, dy, originalTime.getHours(), originalTime.getMinutes(), originalTime.getSeconds(), originalTime.getMilliseconds());
+    customCreatedAt = customDateObj.toISOString();
+  }
+
   const updatedData = {
+    tanggal: tanggalFormatted,
+    created_at: customCreatedAt,
     keluhan: document.getElementById('edit-keluhan').value,
     objektif: document.getElementById('edit-objektif').value,
     asesmen: selectedICD || 'Pemeriksaan Umum',
@@ -1063,6 +1333,128 @@ async function handleSaveEditRecord(e) {
     }
   } catch (err) {
     showToast('Terjadi kesalahan', 'error');
+  }
+}
+
+function openModalDeleteRecord(recordOrId) {
+  let record = recordOrId;
+  if (typeof recordOrId === 'string' || typeof recordOrId === 'number') {
+    record = appData.records.find(r => String(r.id) === String(recordOrId));
+  }
+  if (!record) {
+    showToast('Data rekam medis tidak ditemukan', 'error');
+    return;
+  }
+
+  document.getElementById('delete-record-id').value = record.id;
+  
+  // Prefill deleter name if exists
+  const defaultNakes = document.getElementById('poli-pemeriksa')?.value || record.pemeriksa || '';
+  const delByInput = document.getElementById('delete-record-by');
+  if (delByInput) delByInput.value = defaultNakes;
+
+  // Reset reason select and textarea
+  const reasonSel = document.getElementById('delete-record-reason-select');
+  const reasonText = document.getElementById('delete-record-reason-text');
+  if (reasonSel) reasonSel.value = 'Pasien Batal Berobat / Salah Input';
+  if (reasonText) reasonText.value = 'Pasien Batal Berobat / Salah Input';
+
+  // Render Summary Box
+  const summaryBox = document.getElementById('delete-record-summary-box');
+  if (summaryBox) {
+    const resepItems = Array.isArray(record.resep) && record.resep.length > 0
+      ? record.resep.map(r => `• ${r.namaObat || r.obat} (${r.qty || 1} item)`).join('<br>')
+      : (record.plan ? formatPlanForDisplay(record.plan) : 'Tidak ada resep obat');
+
+    summaryBox.innerHTML = `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">
+        <span style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${record.namaPasien || '-'}</span>
+        <span class="badge badge-info" style="font-weight: 700;">${record.nikPabrik || '-'}</span>
+      </div>
+      <div style="color: var(--text-muted); margin-bottom: 4px;"><strong>Tanggal:</strong> ${record.tanggal || '-'} | <strong>Bagian:</strong> ${record.dept || 'PT ATI'}</div>
+      <div style="color: var(--text-muted); margin-bottom: 4px;"><strong>Keluhan:</strong> ${record.keluhan || '-'} (A: ${record.asesmen || '-'})</div>
+      <div style="margin-top: 6px; padding: 6px 8px; background: rgba(239, 68, 68, 0.06); border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.15);">
+        <strong style="color: #f87171;"><i class="fa-solid fa-pills"></i> Obat yang akan dikembalikan ke stok gudang:</strong>
+        <div style="margin-top: 3px; font-weight: 600; font-size: 0.8rem;">${resepItems}</div>
+      </div>
+      <div style="margin-top: 6px; display: flex; justify-content: space-between; font-weight: 700;">
+        <span style="color: var(--text-muted);">Total Billing Dikoreksi:</span>
+        <span style="color: #38bdf8;">Rp ${(record.totalBiaya || 0).toLocaleString('id-ID')}</span>
+      </div>
+    `;
+  }
+
+  const modal = document.getElementById('modal-delete-record');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalDeleteRecord() {
+  const modal = document.getElementById('modal-delete-record');
+  if (modal) modal.style.display = 'none';
+}
+
+function handleDeleteReasonSelectChange() {
+  const sel = document.getElementById('delete-record-reason-select');
+  const text = document.getElementById('delete-record-reason-text');
+  if (!sel || !text) return;
+  if (sel.value === 'lainnya') {
+    text.value = '';
+    text.focus();
+  } else {
+    text.value = sel.value;
+  }
+}
+
+async function handleConfirmDeleteRecord(e) {
+  e.preventDefault();
+  const id = document.getElementById('delete-record-id').value;
+  const deletedBy = document.getElementById('delete-record-by').value.trim();
+  const reason = document.getElementById('delete-record-reason-text').value.trim();
+
+  if (!id) {
+    showToast('ID Rekam Medis tidak valid', 'error');
+    return;
+  }
+  if (!deletedBy) {
+    showToast('Harap isi nama petugas yang menghapus', 'warning');
+    return;
+  }
+  if (!reason) {
+    showToast('Harap tuliskan alasan penghapusan', 'warning');
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-submit-delete-record');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghapus &amp; Mengirim Audit...';
+  }
+
+  try {
+    const res = await fetch(`/api/records/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deletedBy, reason })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      showToast('✅ Rekam medis berhasil dihapus! Stok obat dikembalikan & audit terkirim ke Telegram.', 'success');
+      closeModalDeleteRecord();
+      closeModalEditRecord();
+      await loadAllAppData();
+    } else {
+      showToast(data.error || 'Gagal menghapus rekam medis', 'error');
+    }
+  } catch (err) {
+    console.error('Error deleting record:', err);
+    showToast('Terjadi kesalahan jaringan saat menghapus data', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Hapus &amp; Kembalikan Stok';
+    }
   }
 }
 
@@ -1095,21 +1487,381 @@ async function handleUnlockGudang(e) {
 function switchGudangSubTab(type) {
   const vList = document.getElementById('gudang-view-list');
   const vOpname = document.getElementById('gudang-view-opname');
+  const vPengiriman = document.getElementById('gudang-view-pengiriman');
+
   const bList = document.getElementById('gudang-subtab-list');
   const bOpname = document.getElementById('gudang-subtab-opname');
+  const bPengiriman = document.getElementById('gudang-subtab-pengiriman');
+
+  // Hide all views
+  if (vList) vList.style.display = 'none';
+  if (vOpname) vOpname.style.display = 'none';
+  if (vPengiriman) vPengiriman.style.display = 'none';
+
+  // Reset active classes
+  if (bList) { bList.className = 'btn btn-secondary'; bList.style.background = ''; }
+  if (bOpname) { bOpname.className = 'btn btn-secondary'; bOpname.style.background = ''; bOpname.style.color = ''; }
+  if (bPengiriman) { bPengiriman.className = 'btn btn-secondary'; bPengiriman.style.background = ''; bPengiriman.style.color = ''; }
 
   if (type === 'opname') {
-    if (vList) vList.style.display = 'none';
     if (vOpname) vOpname.style.display = 'block';
-    if (bList) bList.className = 'btn btn-secondary';
-    if (bOpname) bOpname.className = 'btn btn-primary';
+    if (bOpname) { bOpname.className = 'btn btn-primary'; bOpname.style.background = '#0284c7'; bOpname.style.color = '#fff'; }
     renderStokOpnameTable();
+  } else if (type === 'pengiriman') {
+    if (vPengiriman) vPengiriman.style.display = 'block';
+    if (bPengiriman) { bPengiriman.className = 'btn btn-primary'; bPengiriman.style.background = '#ec4899'; bPengiriman.style.color = '#fff'; bPengiriman.style.border = 'none'; }
+    initShipmentView();
   } else {
     if (vList) vList.style.display = 'block';
-    if (vOpname) vOpname.style.display = 'none';
     if (bList) bList.className = 'btn btn-primary';
-    if (bOpname) bOpname.className = 'btn btn-secondary';
   }
+}
+
+let shipmentDraft = [];
+
+function initShipmentView() {
+  shipmentDraft = [];
+  renderShipmentDraftTable();
+
+  // Reset fields
+  document.getElementById('ship-sender').value = '';
+  document.getElementById('ship-receiver').value = '';
+  document.getElementById('ship-qty-input').value = '';
+  document.getElementById('ship-initial-stock').value = '';
+  document.getElementById('ship-final-stock').value = '';
+
+  const sel = document.getElementById('ship-medicine-select');
+  if (!sel) return;
+
+  // Clear options except first
+  sel.innerHTML = '<option value="">-- Pilih Obat --</option>';
+
+  // Populate options sorted by name
+  const sortedMeds = (appData.medicines || []).slice().sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+  sortedMeds.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = `${m.nama} (Stok: ${m.stok !== undefined ? m.stok : 0} ${m.satuan || 'strip'})`;
+    sel.appendChild(opt);
+  });
+}
+
+function handleShipMedChange() {
+  const sel = document.getElementById('ship-medicine-select');
+  const initInput = document.getElementById('ship-initial-stock');
+  const qtyInput = document.getElementById('ship-qty-input');
+  const finalInput = document.getElementById('ship-final-stock');
+
+  if (!sel || !initInput) return;
+
+  const id = sel.value;
+  if (!id) {
+    initInput.value = '';
+    qtyInput.value = '';
+    finalInput.value = '';
+    return;
+  }
+
+  const med = appData.medicines.find(m => m.id === id);
+  if (med) {
+    initInput.value = med.stok !== undefined ? med.stok : 0;
+    qtyInput.value = '';
+    finalInput.value = '';
+  }
+}
+
+function calculateShipFinalStock() {
+  const initInput = document.getElementById('ship-initial-stock');
+  const qtyInput = document.getElementById('ship-qty-input');
+  const finalInput = document.getElementById('ship-final-stock');
+
+  if (!initInput || !qtyInput || !finalInput) return;
+
+  const initial = parseInt(initInput.value) || 0;
+  const qty = parseInt(qtyInput.value) || 0;
+
+  finalInput.value = qty > 0 ? (initial + qty) : '';
+}
+
+function addMedToShipmentDraft() {
+  const sel = document.getElementById('ship-medicine-select');
+  const qtyInput = document.getElementById('ship-qty-input');
+
+  if (!sel || !qtyInput) return;
+
+  const id = sel.value;
+  const qty = parseInt(qtyInput.value) || 0;
+
+  if (!id) {
+    showToast('Silakan pilih obat terlebih dahulu', 'error');
+    return;
+  }
+  if (qty <= 0) {
+    showToast('Jumlah kirim harus lebih besar dari 0', 'error');
+    return;
+  }
+
+  const med = appData.medicines.find(m => m.id === id);
+  if (!med) return;
+
+  // Check if already in draft
+  const exists = shipmentDraft.some(item => item.id === id);
+  if (exists) {
+    showToast('Obat tersebut sudah ada di daftar kirim. Hapus item di daftar untuk mengubah.', 'warning');
+    return;
+  }
+
+  shipmentDraft.push({
+    id: med.id,
+    name: med.nama,
+    initial: med.stok !== undefined ? med.stok : 0,
+    qty: qty,
+    final: (med.stok !== undefined ? med.stok : 0) + qty,
+    satuan: med.satuan || 'strip'
+  });
+
+  renderShipmentDraftTable();
+
+  // Reset medicine selector
+  sel.value = '';
+  qtyInput.value = '';
+  document.getElementById('ship-initial-stock').value = '';
+  document.getElementById('ship-final-stock').value = '';
+
+  showToast('Obat ditambahkan ke daftar kirim', 'success');
+}
+
+function removeMedFromShipmentDraft(idx) {
+  shipmentDraft.splice(idx, 1);
+  renderShipmentDraftTable();
+  showToast('Obat dihapus dari daftar kirim', 'info');
+}
+
+function renderShipmentDraftTable() {
+  const tbody = document.getElementById('ship-draft-body');
+  if (!tbody) return;
+
+  if (shipmentDraft.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 12px;">Belum ada obat dalam daftar</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = shipmentDraft.map((item, idx) => `
+    <tr>
+      <td style="font-weight: 600; text-transform: uppercase;">${item.name}</td>
+      <td style="text-align: center;">${item.initial}</td>
+      <td style="text-align: center; font-weight: bold; color: #ec4899;">${item.qty} ${item.satuan}</td>
+      <td style="text-align: center; font-weight: bold; color: #4ade80;">${item.final}</td>
+      <td style="text-align: center;">
+        <button class="btn btn-secondary" onclick="removeMedFromShipmentDraft(${idx})" style="padding: 2px 6px; background: #ef4444; border: none; color: #fff; font-size: 0.75rem;">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function processShipmentAndPrint() {
+  const sender = document.getElementById('ship-sender').value.trim();
+  const receiver = document.getElementById('ship-receiver').value.trim();
+
+  if (!sender) {
+    showToast('Nama pengirim harus diisi', 'error');
+    return;
+  }
+  if (!receiver) {
+    showToast('Nama penerima harus diisi', 'error');
+    return;
+  }
+  if (shipmentDraft.length === 0) {
+    showToast('Daftar obat kirim kosong', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/medicines/transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: sender,
+        receiver: receiver,
+        items: shipmentDraft.map(item => ({ id: item.id, qty: item.qty }))
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('✅ Pengiriman Obat berhasil dikonfirmasi!', 'success');
+
+      // Print Delivery Order / Surat Jalan
+      printSuratJalanPDF(sender, receiver, shipmentDraft);
+
+      // Reload and re-render
+      await loadAllAppData();
+      renderGudangTable();
+
+      // Reset form
+      initShipmentView();
+    } else {
+      showToast('Gagal memproses pengiriman: ' + (data.error || 'Terjadi kesalahan'), 'error');
+    }
+  } catch (err) {
+    showToast('Gagal koneksi ke server: ' + err.message, 'error');
+  }
+}
+
+function printSuratJalanPDF(sender, receiver, items) {
+  const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const noSurat = `SJ-${Date.now()}`;
+
+  const rowsHTML = items.map((item, idx) => `
+    <tr>
+      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold;">${idx + 1}</td>
+      <td style="border: 1px solid #000; padding: 6px; text-transform: uppercase; font-weight: 600;">${item.name}</td>
+      <td style="text-align: center; border: 1px solid #000; padding: 6px;">${item.initial} ${item.satuan}</td>
+      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold; font-size: 11pt;">${item.qty} ${item.satuan}</td>
+      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold; color: green; font-size: 11pt;">${item.final} ${item.satuan}</td>
+    </tr>
+  `).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Surat Jalan Pengiriman Obat - Klinik PT ATI</title>
+      <style>
+        @page {
+          size: A5 landscape;
+          margin: 1cm;
+        }
+        body {
+          font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+          color: #000;
+          background: #fff;
+          margin: 0;
+          padding: 0;
+          font-size: 9.5pt;
+        }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          border-bottom: 2px solid #000;
+          padding-bottom: 8px;
+          margin-bottom: 12px;
+        }
+        .header-left h2 {
+          margin: 0;
+          font-size: 12pt;
+          font-weight: bold;
+        }
+        .header-left p {
+          margin: 2px 0;
+          font-size: 8pt;
+        }
+        .header-right {
+          text-align: right;
+        }
+        .header-right h3 {
+          margin: 0;
+          font-size: 11pt;
+          text-decoration: underline;
+        }
+        .header-right p {
+          margin: 2px 0;
+          font-size: 8.5pt;
+        }
+        .meta-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          margin-bottom: 12px;
+          font-size: 9.5pt;
+          line-height: 1.4;
+        }
+        table.sj-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 16px;
+        }
+        table.sj-table th {
+          border: 1px solid #000;
+          border-top: 2px solid #000;
+          border-bottom: 2px solid #000;
+          padding: 6px;
+          background: #f3f4f6;
+          font-weight: bold;
+          text-transform: uppercase;
+        }
+        .ttd-grid {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 20px;
+          text-align: center;
+          font-size: 9.5pt;
+        }
+        .ttd-box {
+          width: 40%;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="header-left">
+          <h2>APOTEK NAFILA MEDIKA</h2>
+          <p>Klinik Medis &amp; Distributor Obat In-House PT ATI</p>
+        </div>
+        <div class="header-right">
+          <h3>SURAT JALAN PENGIRIMAN OBAT</h3>
+          <p>No: ${noSurat}</p>
+        </div>
+      </div>
+
+      <div class="meta-grid">
+        <div>
+          <strong>Pengirim:</strong> ${sender} (Apotek Nafila)<br>
+          <strong>Tujuan:</strong> In-House Klinik PT ATI
+        </div>
+        <div style="text-align: right;">
+          <strong>Tanggal:</strong> ${tglIndo}<br>
+          <strong>Status:</strong> Dikirim &amp; Diserahterimakan
+        </div>
+      </div>
+
+      <table class="sj-table">
+        <thead>
+          <tr>
+            <th style="width: 8%;">NO</th>
+            <th style="text-align: left;">NAMA ITEM OBAT</th>
+            <th style="width: 22%;">STOK AWAL (PT ATI)</th>
+            <th style="width: 22%;">JUMLAH KIRIM (SURAT JALAN)</th>
+            <th style="width: 22%;">TOTAL AKHIR (PT ATI)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHTML}
+        </tbody>
+      </table>
+
+      <div style="margin-top: 10px; font-style: italic; font-size: 8.5pt;">
+        *Catatan: Stok di PT ATI telah otomatis disesuaikan secara online dalam database sistem.
+      </div>
+
+      <div class="ttd-grid">
+        <div class="ttd-box">
+          Penerima,<br><strong>Perawat Jaga PT ATI</strong><br><br><br><br>
+          ( ${receiver} )
+        </div>
+        <div class="ttd-box">
+          Pengirim,<br><strong>Petugas Apotek Nafila</strong><br><br><br><br>
+          ( ${sender} )
+        </div>
+      </div>
+
+      <script>window.onload = function() { window.print(); };</script>
+    </body>
+    </html>
+  `);
+  win.document.close();
 }
 
 function renderStokOpnameTable() {
@@ -1170,7 +1922,7 @@ function printStokOpnameDoc() {
     <body>
       <div class="header">
         <h2>STOK OPNAME SISTEM APOTIK NAFILA</h2>
-        <h3>KLINIK NAFILA MEDIKA - PT MARUNDA & PT ATI</h3>
+        <h3>KLINIK NAFILA MEDIKA - PT ATI</h3>
       </div>
       
       <div class="meta">
@@ -1414,17 +2166,23 @@ function addObatReqRowManual() {
   tbody.appendChild(tr);
 }
 
-function handleSendObatReqWA(e) {
+async function handleSendObatReqWA(e) {
   e.preventDefault();
   const perawat = document.getElementById('req-nama-perawat').value.trim();
+  const targetHP = document.getElementById('req-target-wa')?.value;
   const rows = document.querySelectorAll('#req-table-body tr');
+
+  if (!targetHP) {
+    showToast('Pilih tujuan nomor WhatsApp terlebih dahulu!', 'error');
+    return;
+  }
 
   if (rows.length === 0) {
     showToast('Tambahkan minimal 1 item obat yang diminta!', 'error');
     return;
   }
 
-  let textWA = `*PERMINTAAN OBAT KLINIK PT MARUNDA*\n`;
+  let textWA = `*PERMINTAAN OBAT KLINIK PT ATI*\n`;
   textWA += `Pengirim (Nakes): *${perawat}*\n`;
   textWA += `Tanggal: ${new Date().toLocaleDateString('id-ID')}\n\n`;
   textWA += `*Daftar Obat Yang Diminta:*\n`;
@@ -1440,9 +2198,28 @@ function handleSendObatReqWA(e) {
 
   textWA += `\nMohon segera diproses ke Apotek Nafila. Terima kasih.`;
 
-  const encoded = encodeURIComponent(textWA);
-  const waUrl = `https://wa.me/${appData.waPhone}?text=${encoded}`;
-  window.open(waUrl, '_blank');
+  showToast('🚀 Mengirim pesan via WhatsApp WhaCenter API...', 'info');
+
+  try {
+    const res = await fetch('/api/send-wa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: targetHP, message: textWA })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ Permintaan Obat Berhasil Terkirim via WhaCenter WA API!', 'success');
+    } else {
+      const errMsg = data.response?.message || data.error || 'Server API Offline';
+      showToast(`⚠️ API WA: ${errMsg}. Membuka WhatsApp Web...`, 'warning');
+      const encoded = encodeURIComponent(textWA);
+      window.open(`https://wa.me/${targetHP}?text=${encoded}`, '_blank');
+    }
+  } catch (err) {
+    showToast('⚠️ Gagal menghubungi server WA. Membuka WhatsApp Web...', 'warning');
+    const encoded = encodeURIComponent(textWA);
+    window.open(`https://wa.me/${targetHP}?text=${encoded}`, '_blank');
+  }
 }
 
 // -------------------------------------------------------------
@@ -1544,7 +2321,7 @@ function renderKaryawanTable() {
         <td>${waHTML}</td>
         <td style="text-align: center;">
           <div style="display: flex; gap: 6px; justify-content: center;">
-            <button class="btn btn-sm btn-primary" onclick='selectPatientDirectFromKaryawan(${JSON.stringify(k).replace(/'/g, "&apos;")})' title="Periksa di Poli">
+            <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${k.id || npk}')" title="Periksa di Poli">
               <i class="fa-solid fa-stethoscope"></i> Poli
             </button>
             <button class="btn btn-sm btn-secondary" onclick="openModalEditKaryawan('${k.id || npk}')" title="Edit Data & No WhatsApp Pasien">
@@ -1562,14 +2339,32 @@ function filterKaryawanTable() {
   renderMobileKaryawanCards();
 }
 
-function selectPatientDirectFromKaryawan(patient) {
+function selectPatientDirectFromKaryawan(idOrNpkOrPatient) {
+  let patient = null;
+  if (typeof idOrNpkOrPatient === 'object' && idOrNpkOrPatient !== null) {
+    patient = idOrNpkOrPatient;
+  } else if (typeof idOrNpkOrPatient === 'string' || typeof idOrNpkOrPatient === 'number') {
+    const q = String(idOrNpkOrPatient).toLowerCase().trim();
+    patient = appData.patients.find(x => 
+      (x.id && String(x.id).toLowerCase() === q) || 
+      (x.nikPabrik && String(x.nikPabrik).toLowerCase() === q) || 
+      (x.nik && String(x.nik).toLowerCase() === q) ||
+      (x.nama && String(x.nama).toLowerCase() === q)
+    );
+    if (!patient) {
+      patient = { nikPabrik: idOrNpkOrPatient, nama: idOrNpkOrPatient };
+    }
+  }
+
+  if (!patient) return;
   appData.currentPoliPatient = patient;
+
   // Navigate using both desktop nav and mobile nav
   const desktopBtn = document.querySelector('.nav-btn[data-target="view-poli"]');
   if (desktopBtn) desktopBtn.click();
   switchMobileNav('view-poli', document.getElementById('mnav-poli'));
   setTimeout(() => {
-    document.getElementById('poli-search-nik').value = patient.nikPabrik || patient.nik || patient.nama;
+    document.getElementById('poli-search-nik').value = patient.nikPabrik || patient.nik || patient.nama || '';
     searchPatientByNIK();
   }, 100);
 }
@@ -1760,40 +2555,136 @@ async function handleKirimShift2(e) {
 function switchHSESubTab(type) {
   const rmTab = document.getElementById('hse-subtab-rm');
   const panTab = document.getElementById('hse-subtab-pantauan');
+  const surkesTab = document.getElementById('hse-subtab-surkes');
   const btnRm = document.getElementById('subtab-btn-rm');
   const btnPan = document.getElementById('subtab-btn-pantauan');
+  const btnSurkes = document.getElementById('subtab-btn-surkes');
 
-  if (type === 'rm') {
-    rmTab.style.display = 'block';
-    panTab.style.display = 'none';
-    btnRm.className = 'btn btn-primary';
-    btnPan.className = 'btn btn-secondary';
-  } else {
-    rmTab.style.display = 'none';
-    panTab.style.display = 'block';
-    btnRm.className = 'btn btn-secondary';
-    btnPan.className = 'btn btn-primary';
+  if (rmTab) rmTab.style.display = (type === 'rm') ? 'block' : 'none';
+  if (panTab) panTab.style.display = (type === 'pantauan') ? 'block' : 'none';
+  if (surkesTab) surkesTab.style.display = (type === 'surkes') ? 'block' : 'none';
+
+  if (btnRm) btnRm.className = (type === 'rm') ? 'btn btn-primary' : 'btn btn-secondary';
+  if (btnPan) btnPan.className = (type === 'pantauan') ? 'btn btn-primary' : 'btn btn-secondary';
+  if (btnSurkes) btnSurkes.className = (type === 'surkes') ? 'btn btn-primary' : 'btn btn-secondary';
+
+  if (type === 'pantauan') {
+    renderHSEPasienPantauanTable();
+  } else if (type === 'surkes') {
+    renderHSESurkesTable();
   }
 }
 
-function renderHSERekamMedisTable() {
+function renderHSERekamMedisTable(isButtonClick = false) {
   const tbody = document.getElementById('table-hse-rm-body');
   if (!tbody) return;
 
-  const search = document.getElementById('hse-rm-search')?.value.toLowerCase() || '';
+  const filtered = getHSERecordsFiltered();
 
-  const filtered = appData.records.filter(r => 
-    !search || (r.nikPabrik && String(r.nikPabrik).toLowerCase().includes(search)) || (r.namaPasien && r.namaPasien.toLowerCase().includes(search))
-  );
+  // Update Period Title
+  const periodTitleEl = document.getElementById('hse-period-title');
+  if (periodTitleEl) {
+    const startVal = document.getElementById('hse-rm-start')?.value;
+    const endVal = document.getElementById('hse-rm-end')?.value;
+
+    if (startVal && endVal) {
+      const dStart = new Date(`${startVal}T00:00:00`);
+      const dEnd = new Date(`${endVal}T00:00:00`);
+      
+      if (!isNaN(dStart.getTime()) && !isNaN(dEnd.getTime())) {
+        if (dStart.getMonth() === dEnd.getMonth() && dStart.getFullYear() === dEnd.getFullYear()) {
+          const monthName = dStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+          periodTitleEl.textContent = `— BULAN ${monthName.toUpperCase()}`;
+        } else {
+          const sStr = dStart.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+          const eStr = dEnd.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+          periodTitleEl.textContent = `— PERIODE ${sStr.toUpperCase()} S/D ${eStr.toUpperCase()}`;
+        }
+      }
+    } else if (startVal) {
+      const dStart = new Date(`${startVal}T00:00:00`);
+      if (!isNaN(dStart.getTime())) {
+        const monthName = dStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        periodTitleEl.textContent = `— BULAN ${monthName.toUpperCase()}`;
+      }
+    } else {
+      const now = new Date();
+      const monthName = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+      periodTitleEl.textContent = `— BULAN ${monthName.toUpperCase()}`;
+    }
+  }
 
   // Update HSE Stats
   const statTotal = document.getElementById('hse-stat-total-visits');
   const statPantauan = document.getElementById('hse-stat-pantauan-count');
   const statSurkes = document.getElementById('hse-stat-surkes-count');
+  const statDeptList = document.getElementById('hse-stat-dept-list');
+  const statPatientList = document.getElementById('hse-stat-patient-list');
 
-  if (statTotal) statTotal.textContent = appData.records.length;
-  if (statPantauan) statPantauan.textContent = appData.records.filter(r => r.isPantauan === true).length;
-  if (statSurkes) statSurkes.textContent = appData.records.filter(r => r.izinSakit === true).length;
+  if (statTotal) statTotal.textContent = filtered.length;
+  if (statPantauan) statPantauan.textContent = filtered.filter(r => r.isPantauan === true).length;
+  if (statSurkes) statSurkes.textContent = filtered.filter(r => r.izinSakit === true).length;
+
+  if (statDeptList) {
+    const deptCounts = {};
+    filtered.forEach(r => {
+      const dept = r.dept && r.dept.trim() !== '' ? r.dept.trim() : 'Lainnya';
+      deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+    });
+
+    const sortedDepts = Object.entries(deptCounts).sort((a, b) => b[1] - a[1]);
+    
+    if (sortedDepts.length === 0) {
+      statDeptList.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic; padding: 4px 0;">Belum ada data</div>';
+    } else {
+      statDeptList.innerHTML = sortedDepts.slice(0, 3).map(d => `
+        <div class="stat-mini-item">
+          <span class="stat-mini-name" title="${d[0]}">${d[0]}</span>
+          <span class="stat-mini-count">${d[1]}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  if (statPatientList) {
+    const patientCounts = {};
+    filtered.forEach(r => {
+      if (r.namaPasien) {
+        const key = `${r.namaPasien}`;
+        patientCounts[key] = (patientCounts[key] || 0) + 1;
+      }
+    });
+
+    const sortedPatients = Object.entries(patientCounts).sort((a, b) => b[1] - a[1]);
+    
+    if (sortedPatients.length === 0) {
+      statPatientList.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic; padding: 4px 0;">Belum ada data</div>';
+    } else {
+      statPatientList.innerHTML = sortedPatients.slice(0, 3).map(p => `
+        <div class="stat-mini-item">
+          <span class="stat-mini-name" title="${p[0]}">${p[0]}</span>
+          <span class="stat-mini-count">${p[1]}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  if (!isButtonClick) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" style="text-align: center; color: var(--text-muted); font-weight: 500; padding: 30px; background: rgba(2, 132, 199, 0.03);">
+          <i class="fa-solid fa-circle-info" style="color: #0284c7; margin-right: 8px; font-size: 1.1rem;"></i>
+          Silakan tentukan rentang tanggal di atas, lalu klik tombol <strong style="color: #0284c7;"><i class="fa-solid fa-magnifying-glass"></i> Tampil</strong> untuk memuat data tabel rekam medis.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Tidak ada data rekam medis pada rentang tanggal/filter ini</td></tr>`;
+    return;
+  }
 
   tbody.innerHTML = filtered.map((r, i) => `
     <tr>
@@ -1805,16 +2696,20 @@ function renderHSERekamMedisTable() {
       <td>${r.keluhan || '-'}</td>
       <td><span class="badge badge-info">${r.asesmen || '-'}</span></td>
       <td>${r.objektif || '-'}</td>
-      <td>${r.plan || '-'}</td>
+      <td>${formatPlanForDisplay(r.plan)}</td>
+      <td>${getStatusKelaikanBadges(r)}</td>
       <td>
-        ${r.linkFoto ? `<a href="${r.linkFoto}" target="_blank" class="btn btn-sm btn-primary" style="background:#0284c7; border:none; text-decoration:none;"><i class="fa-solid fa-image"></i> Foto</a>` : '-'}
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span>${r.pemeriksa || '-'}</span>
+          ${r.linkFoto ? `<button type="button" onclick="openPhotoViewer('${r.id}')" class="btn btn-sm btn-primary" style="background:#0284c7; border:none; padding: 2px 7px; font-size: 0.74rem;" title="Lihat Foto / Dokumen"><i class="fa-solid fa-image"></i> Foto</button>` : ''}
+        </div>
       </td>
     </tr>
   `).join('');
 }
 
 function filterHSERekamMedisTable() {
-  renderHSERekamMedisTable();
+  renderHSERekamMedisTable(true);
 }
 
 function renderHSEPasienPantauanTable() {
@@ -1822,6 +2717,11 @@ function renderHSEPasienPantauanTable() {
   if (!tbody) return;
 
   const pantauanList = appData.records.filter(r => r.isPantauan === true);
+
+  if (pantauanList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Belum ada data pasien dalam pemantauan K3</td></tr>`;
+    return;
+  }
 
   tbody.innerHTML = pantauanList.map(r => `
     <tr>
@@ -1832,7 +2732,7 @@ function renderHSEPasienPantauanTable() {
       <td>${r.keluhan} (A: ${r.asesmen})</td>
       <td><span class="badge badge-warning">Dalam Pemantauan</span></td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan({nikPabrik: '${r.nikPabrik}', nama: '${r.namaPasien}'})">
+        <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${r.nikPabrik || r.namaPasien}')">
           Cek History Poli
         </button>
       </td>
@@ -1840,28 +2740,466 @@ function renderHSEPasienPantauanTable() {
   `).join('');
 }
 
-function exportHSERekamMedisExcel() {
-  let csv = 'No,Tanggal,Nama,NIK Pabrik,Bagian,Keluhan,Diagnosis,Hasil Pemeriksaan,Obat,Pemeriksa\n';
-  appData.records.forEach((r, i) => {
-    csv += `"${i+1}","${r.tanggal}","${r.namaPasien}","${r.nikPabrik}","${r.dept}","${r.keluhan}","${r.asesmen}","${r.objektif}","${r.plan}","${r.pemeriksa}"\n`;
-  });
+function renderHSESurkesTable() {
+  const tbody = document.getElementById('table-hse-surkes-body');
+  if (!tbody) return;
 
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Rekam_Medis_HSE_K3_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
+  const surkesList = appData.records.filter(r => r.izinSakit === true);
+
+  if (surkesList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Belum ada data pasien yang dipulangkan / diberikan izin istirahat sakit (Surkes)</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = surkesList.slice().reverse().map((r, idx) => `
+    <tr>
+      <td style="text-align: center; font-weight: 500; color: var(--text-muted);">${idx + 1}</td>
+      <td>${r.tanggal || '-'}</td>
+      <td><span class="badge badge-info" style="font-weight: 700;">${r.nikPabrik || '-'}</span></td>
+      <td><strong>${r.namaPasien || '-'}</strong></td>
+      <td>${r.dept || '-'}</td>
+      <td>
+        <div><strong>S:</strong> ${r.keluhan || '-'}</div>
+        <div><strong>A:</strong> <span class="badge badge-info">${r.asesmen || '-'}</span></div>
+      </td>
+      <td>${r.objektif || '-'}</td>
+      <td>${formatPlanForDisplay(r.plan)}</td>
+      <td><span class="badge badge-warning" style="font-weight: 700;">📄 Istirahat Sakit</span></td>
+      <td>${r.pemeriksa || '-'}</td>
+      <td style="text-align: center;">
+        <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat di Poli">
+          <i class="fa-solid fa-stethoscope"></i> Cek Poli
+        </button>
+      </td>
+    </tr>
+  `).join('');
 }
 
-// 🖨️ CETAK LAPORAN RESMI K3 / HSE BULANAN (PROFESIONAL A4)
-function printHSEOfficialReport() {
-  const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const totalVisits = appData.records.length;
-  const totalPantauan = appData.records.filter(r => r.isPantauan === true).length;
-  const totalSurkes = appData.records.filter(r => r.izinSakit === true).length;
+function exportHSERekamMedisExcel() {
+  const startVal = document.getElementById('hse-rm-start')?.value;
+  const endVal = document.getElementById('hse-rm-end')?.value;
 
-  const rowsRM = appData.records.map((r, i) => `
+  const recordsToExport = getHSERecordsFiltered();
+
+  if (recordsToExport.length === 0) {
+    showToast('Tidak ada data rekam medis pada rentang tanggal yang dipilih!', 'warning');
+    return;
+  }
+
+  let periodeInfo = 'Semua Periode Data';
+  if (startVal && endVal) {
+    const dStart = new Date(`${startVal}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const dEnd = new Date(`${endVal}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    periodeInfo = `Periode Tanggal: ${dStart} s/d ${dEnd}`;
+  } else if (startVal) {
+    const dStart = new Date(`${startVal}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    periodeInfo = `Periode Tanggal: Mulai ${dStart}`;
+  } else if (endVal) {
+    const dEnd = new Date(`${endVal}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    periodeInfo = `Periode Tanggal: Sampai ${dEnd}`;
+  }
+
+  let rows = '';
+  recordsToExport.forEach((r, i) => {
+    rows += `
+      <tr>
+        <td style="text-align: center;">${i + 1}</td>
+        <td>${r.tanggal || ''}</td>
+        <td><strong>${r.namaPasien || ''}</strong></td>
+        <td>${r.nikPabrik || ''}</td>
+        <td>${r.dept || ''}</td>
+        <td>${r.keluhan || ''}</td>
+        <td>${r.asesmen || ''}</td>
+        <td>${r.objektif || ''}</td>
+        <td>${formatPlanForDisplay(r.plan)}</td>
+        <td>${getStatusKelaikanText(r)}</td>
+        <td>${r.pemeriksa || ''}</td>
+      </tr>
+    `;
+  });
+
+  const excelTemplate = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8">
+      <!--[if gte mso 9]>
+      <xml>
+        <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+            <x:ExcelWorksheet>
+              <x:Name>Rekam Medis K3</x:Name>
+              <x:WorksheetOptions>
+                <x:DisplayGridlines/>
+              </x:WorksheetOptions>
+            </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+      </xml>
+      <![endif]-->
+      <style>
+        table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 10pt; }
+        th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #0369a1; padding: 8px; text-align: left; }
+        td { border: 1px solid #cbd5e1; padding: 6px; }
+        .title { font-size: 14pt; font-weight: bold; color: #0369a1; margin-bottom: 4px; }
+        .subtitle { font-size: 10pt; color: #0284c7; font-weight: bold; margin-bottom: 8px; }
+      </style>
+    </head>
+    <body>
+      <div class="title">LAPORAN REKAM MEDIS & K3 KLINIK PT ATI</div>
+      <div class="subtitle">${periodeInfo}</div>
+      <div>Tanggal Export: ${new Date().toLocaleDateString('id-ID')} | Total Data: ${recordsToExport.length} Record</div>
+      <br>
+      <table>
+        <thead>
+          <tr>
+            <th>NO</th>
+            <th>TANGGAL</th>
+            <th>NAMA PASIEN</th>
+            <th>NIK PABRIK</th>
+            <th>BAGIAN</th>
+            <th>KELUHAN</th>
+            <th>DIAGNOSIS</th>
+            <th>HASIL PEMERIKSAAN</th>
+            <th>RESEP OBAT</th>
+            <th>STATUS KELAIKAN (K3)</th>
+            <th>NAKES / PEMERIKSA</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="11">Tidak ada data rekam medis</td></tr>'}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast(`File Excel (${recordsToExport.length} data) berhasil diunduh!`, 'success');
+}
+
+// 🖨️ CETAK LAPORAN RESMI K3 / HSE BULANAN (PROFESIONAL A4 DENGAN PERBANDINGAN BULAN LALU)
+function printHSEOfficialReport() {
+  const recordsToPrint = getHSERecordsFiltered();
+  const startVal = document.getElementById('hse-rm-start')?.value;
+  const endVal = document.getElementById('hse-rm-end')?.value;
+
+  const monthNames = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+
+  let currDate = new Date();
+  if (startVal) {
+    const parsed = new Date(`${startVal}T00:00:00`);
+    if (!isNaN(parsed.getTime())) currDate = parsed;
+  }
+
+  const currYear = currDate.getFullYear();
+  const currMonth = currDate.getMonth();
+
+  const prevYear = currMonth === 0 ? currYear - 1 : currYear;
+  const prevMonth = currMonth === 0 ? 11 : currMonth - 1;
+
+  const currMonthName = monthNames[currMonth];
+  const prevMonthName = monthNames[prevMonth];
+
+  const currPeriodTitle = `${currMonthName} - ${currYear}`;
+
+  let periodeInfo = `PERIODE: ${currMonthName} ${currYear}`;
+  if (startVal && endVal) {
+    const dStart = new Date(`${startVal}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const dEnd = new Date(`${endVal}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    periodeInfo = `PERIODE: ${dStart.toUpperCase()} S/D ${dEnd.toUpperCase()}`;
+  }
+
+  const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Get current & previous month records from appData.records
+  const currRecords = appData.records.filter(r => {
+    const d = parseRecordDate(r);
+    return d && d.getFullYear() === currYear && d.getMonth() === currMonth;
+  });
+
+  const prevRecords = appData.records.filter(r => {
+    const d = parseRecordDate(r);
+    return d && d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  });
+
+  // ==========================================
+  // 1. COMPUTATION FOR PENYAKIT (DIAGNOSIS)
+  // ==========================================
+  const penyakitMap = {};
+
+  currRecords.forEach(r => {
+    let d = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
+    d = d.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
+    if (!d) d = 'Lainnya';
+    if (!penyakitMap[d]) penyakitMap[d] = { name: d, curr: 0, prev: 0 };
+    penyakitMap[d].curr += 1;
+  });
+
+  prevRecords.forEach(r => {
+    let d = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
+    d = d.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
+    if (!d) d = 'Lainnya';
+    if (!penyakitMap[d]) penyakitMap[d] = { name: d, curr: 0, prev: 0 };
+    penyakitMap[d].prev += 1;
+  });
+
+  const penyakitList = Object.values(penyakitMap).sort((a, b) => b.curr - a.curr || b.prev - a.prev);
+
+  penyakitList.forEach(item => {
+    item.selisih = item.curr - item.prev;
+    if (item.prev === 0 && item.curr > 0) {
+      item.pct = 100;
+    } else if (item.prev === 0 && item.curr === 0) {
+      item.pct = 0;
+    } else {
+      item.pct = Math.round(((item.curr - item.prev) / item.prev) * 100);
+    }
+
+    if (item.selisih > 0) {
+      item.status = 'NAIK(↑)';
+      item.statusBg = '#fecdd3';
+      item.statusColor = '#9f1239';
+      item.pctStr = `${item.pct}%`;
+      item.selisihStr = `${item.selisih}`;
+    } else if (item.selisih < 0) {
+      item.status = 'TURUN(↓)';
+      item.statusBg = '#dcfce7';
+      item.statusColor = '#166534';
+      item.pctStr = `${item.pct}%`;
+      item.selisihStr = `${item.selisih}`;
+    } else {
+      item.status = 'TETAP(=)';
+      item.statusBg = '#f3f4f6';
+      item.statusColor = '#374151';
+      item.pctStr = `0%`;
+      item.selisihStr = `0`;
+    }
+  });
+
+  const totalCurrPenyakit = currRecords.length;
+  const totalPrevPenyakit = prevRecords.length;
+  const generalPenyakitTrend = totalCurrPenyakit >= totalPrevPenyakit ? 'KENAIKAN' : 'PENURUNAN';
+
+  const decPenyakitItems = penyakitList.filter(i => i.selisih < 0).sort((a, b) => a.pct - b.pct);
+  const incPenyakitItems = penyakitList.filter(i => i.selisih > 0).sort((a, b) => b.pct - a.pct);
+
+  const biggestDecreasePenyakit = decPenyakitItems.length > 0 ? `${decPenyakitItems[0].name.toUpperCase()} (${decPenyakitItems[0].pct}%)` : 'NIHIL (0%)';
+  const biggestIncreasePenyakit = incPenyakitItems.length > 0 ? `${incPenyakitItems[0].name.toUpperCase()} (${incPenyakitItems[0].pct}%)` : 'NIHIL (0%)';
+
+  // ==========================================
+  // 2. COMPUTATION FOR DEPARTMENT
+  // ==========================================
+  const deptMap = {};
+
+  currRecords.forEach(r => {
+    let d = r.dept && r.dept.trim() !== '' ? r.dept.trim() : 'Lainnya';
+    if (!deptMap[d]) deptMap[d] = { name: d, curr: 0, prev: 0 };
+    deptMap[d].curr += 1;
+  });
+
+  prevRecords.forEach(r => {
+    let d = r.dept && r.dept.trim() !== '' ? r.dept.trim() : 'Lainnya';
+    if (!deptMap[d]) deptMap[d] = { name: d, curr: 0, prev: 0 };
+    deptMap[d].prev += 1;
+  });
+
+  const deptList = Object.values(deptMap).sort((a, b) => b.curr - a.curr || b.prev - a.prev);
+
+  deptList.forEach(item => {
+    item.selisih = item.curr - item.prev;
+    if (item.prev === 0 && item.curr > 0) {
+      item.pct = 100;
+    } else if (item.prev === 0 && item.curr === 0) {
+      item.pct = 0;
+    } else {
+      item.pct = Math.round(((item.curr - item.prev) / item.prev) * 100);
+    }
+
+    if (item.selisih > 0) {
+      item.status = 'NAIK(↑)';
+      item.statusBg = '#fecdd3';
+      item.statusColor = '#9f1239';
+      item.pctStr = `${item.pct}%`;
+      item.selisihStr = `${item.selisih}`;
+    } else if (item.selisih < 0) {
+      item.status = 'TURUN(↓)';
+      item.statusBg = '#dcfce7';
+      item.statusColor = '#166534';
+      item.pctStr = `${item.pct}%`;
+      item.selisihStr = `${item.selisih}`;
+    } else {
+      item.status = 'TETAP(=)';
+      item.statusBg = '#f3f4f6';
+      item.statusColor = '#374151';
+      item.pctStr = `0%`;
+      item.selisihStr = `0`;
+    }
+  });
+
+  const generalDeptTrend = totalCurrPenyakit >= totalPrevPenyakit ? 'KENAIKAN' : 'PENURUNAN';
+
+  const decDeptItems = deptList.filter(i => i.selisih < 0).sort((a, b) => a.pct - b.pct);
+  const incDeptItems = deptList.filter(i => i.selisih > 0).sort((a, b) => b.pct - a.pct);
+
+  const biggestDecreaseDept = decDeptItems.length > 0 ? `${decDeptItems[0].name.toUpperCase()} (${decDeptItems[0].pct}%)` : 'NIHIL (0%)';
+  const biggestIncreaseDept = incDeptItems.length > 0 ? `${incDeptItems[0].name.toUpperCase()} (${incDeptItems[0].pct}%)` : 'NIHIL (0%)';
+
+  // ==========================================
+  // 3. COMPUTATION FOR PATIENT / KARYAWAN (NAMA & NPK)
+  // ==========================================
+  const patientMap = {};
+
+  currRecords.forEach(r => {
+    if (r.namaPasien) {
+      const key = `${r.namaPasien.trim()}||${r.nikPabrik ? r.nikPabrik.trim() : '-'}`;
+      if (!patientMap[key]) {
+        patientMap[key] = {
+          name: r.namaPasien.trim(),
+          nik: r.nikPabrik ? r.nikPabrik.trim() : '-',
+          dept: r.dept ? r.dept.trim() : '-',
+          curr: 0,
+          prev: 0
+        };
+      }
+      patientMap[key].curr += 1;
+    }
+  });
+
+  prevRecords.forEach(r => {
+    if (r.namaPasien) {
+      const key = `${r.namaPasien.trim()}||${r.nikPabrik ? r.nikPabrik.trim() : '-'}`;
+      if (!patientMap[key]) {
+        patientMap[key] = {
+          name: r.namaPasien.trim(),
+          nik: r.nikPabrik ? r.nikPabrik.trim() : '-',
+          dept: r.dept ? r.dept.trim() : '-',
+          curr: 0,
+          prev: 0
+        };
+      }
+      patientMap[key].prev += 1;
+    }
+  });
+
+  const patientList = Object.values(patientMap).sort((a, b) => b.curr - a.curr || b.prev - a.prev);
+
+  patientList.forEach(item => {
+    item.selisih = item.curr - item.prev;
+    if (item.prev === 0 && item.curr > 0) {
+      item.pct = 100;
+    } else if (item.prev === 0 && item.curr === 0) {
+      item.pct = 0;
+    } else {
+      item.pct = Math.round(((item.curr - item.prev) / item.prev) * 100);
+    }
+
+    if (item.selisih > 0) {
+      item.status = 'NAIK(↑)';
+      item.statusBg = '#fecdd3';
+      item.statusColor = '#9f1239';
+      item.pctStr = `${item.pct}%`;
+      item.selisihStr = `${item.selisih}`;
+    } else if (item.selisih < 0) {
+      item.status = 'TURUN(↓)';
+      item.statusBg = '#dcfce7';
+      item.statusColor = '#166534';
+      item.pctStr = `${item.pct}%`;
+      item.selisihStr = `${item.selisih}`;
+    } else {
+      item.status = 'TETAP(=)';
+      item.statusBg = '#f3f4f6';
+      item.statusColor = '#374151';
+      item.pctStr = `0%`;
+      item.selisihStr = `0`;
+    }
+  });
+
+  const totalCurrPatients = new Set(currRecords.map(r => r.namaPasien).filter(Boolean)).size;
+  const totalPrevPatients = new Set(prevRecords.map(r => r.namaPasien).filter(Boolean)).size;
+  const generalPatientTrend = totalCurrPatients >= totalPrevPatients ? 'KENAIKAN' : 'PENURUNAN';
+
+  const decPatientItems = patientList.filter(i => i.selisih < 0).sort((a, b) => a.pct - b.pct);
+  const incPatientItems = patientList.filter(i => i.selisih > 0).sort((a, b) => b.pct - a.pct);
+
+  const biggestDecreasePatient = decPatientItems.length > 0 ? `${decPatientItems[0].name.toUpperCase()} (${decPatientItems[0].nik}) (${decPatientItems[0].pct}%)` : 'NIHIL (0%)';
+  const biggestIncreasePatient = incPatientItems.length > 0 ? `${incPatientItems[0].name.toUpperCase()} (${incPatientItems[0].nik}) (${incPatientItems[0].pct}%)` : 'NIHIL (0%)';
+
+  // ==========================================
+  // HTML TABLE ROWS GENERATION
+  // ==========================================
+  const rowsPenyakitHTML = penyakitList.map((item, idx) => `
+    <tr>
+      <td style="text-align: center; font-weight: bold; border-right: 2px solid #000; padding: 6px;">${idx + 1}</td>
+      <td style="padding: 6px; font-weight: 600; text-transform: uppercase;">${item.name}</td>
+      <td style="text-align: center; padding: 6px;">${item.curr}</td>
+      <td style="text-align: center; padding: 6px;">${item.prev}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; font-style: italic; padding: 6px;">${item.status}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; padding: 6px;">${item.selisihStr}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; padding: 6px;">${item.pctStr}</td>
+    </tr>
+  `).join('');
+
+  const rowsDeptHTML = deptList.map((item, idx) => `
+    <tr>
+      <td style="text-align: center; font-weight: bold; border-right: 2px solid #000; padding: 6px;">${idx + 1}</td>
+      <td style="padding: 6px; font-weight: 600; text-transform: uppercase;">${item.name}</td>
+      <td style="text-align: center; padding: 6px;">${item.curr}</td>
+      <td style="text-align: center; padding: 6px;">${item.prev}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; font-style: italic; padding: 6px;">${item.status}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; padding: 6px;">${item.selisihStr}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; padding: 6px;">${item.pctStr}</td>
+    </tr>
+  `).join('');
+
+  const rowsPatientsHTML = patientList.map((item, idx) => `
+    <tr>
+      <td style="text-align: center; font-weight: bold; border-right: 2px solid #000; padding: 6px;">${idx + 1}</td>
+      <td style="padding: 6px; font-weight: 600; text-transform: uppercase;">${item.name}</td>
+      <td style="text-align: center; padding: 6px; font-weight: bold;">${item.nik}</td>
+      <td style="padding: 6px; text-transform: uppercase;">${item.dept}</td>
+      <td style="text-align: center; padding: 6px;">${item.curr}</td>
+      <td style="text-align: center; padding: 6px;">${item.prev}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; font-style: italic; padding: 6px;">${item.status}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; padding: 6px;">${item.selisihStr}</td>
+      <td style="text-align: center; background-color: ${item.statusBg}; color: ${item.statusColor}; font-weight: bold; padding: 6px;">${item.pctStr}</td>
+    </tr>
+  `).join('');
+
+  const totalVisits = recordsToPrint.length;
+  const totalPantauan = recordsToPrint.filter(r => r.isPantauan === true).length;
+  const totalSurkes = recordsToPrint.filter(r => r.izinSakit === true).length;
+
+  const currTotalVisits = currRecords.length;
+  const prevTotalVisits = prevRecords.length;
+  const diffVisits = currTotalVisits - prevTotalVisits;
+  let trendVisits = 'TETAP(=)';
+  let colorVisits = '#475569';
+  if (diffVisits > 0) { trendVisits = `NAIK (↑ +${diffVisits})`; colorVisits = '#dc2626'; }
+  else if (diffVisits < 0) { trendVisits = `TURUN (↓ ${diffVisits})`; colorVisits = '#166534'; }
+
+  const currPantauan = currRecords.filter(r => r.isPantauan === true).length;
+  const prevPantauan = prevRecords.filter(r => r.isPantauan === true).length;
+  const diffPantauan = currPantauan - prevPantauan;
+  let trendPantauan = 'TETAP(=)';
+  let colorPantauan = '#475569';
+  if (diffPantauan > 0) { trendPantauan = `NAIK (↑ +${diffPantauan})`; colorPantauan = '#dc2626'; }
+  else if (diffPantauan < 0) { trendPantauan = `TURUN (↓ ${diffPantauan})`; colorPantauan = '#166534'; }
+
+  const currSurkes = currRecords.filter(r => r.izinSakit === true).length;
+  const prevSurkes = prevRecords.filter(r => r.izinSakit === true).length;
+  const diffSurkes = currSurkes - prevSurkes;
+  let trendSurkes = 'TETAP(=)';
+  let colorSurkes = '#475569';
+  if (diffSurkes > 0) { trendSurkes = `NAIK (↑ +${diffSurkes})`; colorSurkes = '#dc2626'; }
+  else if (diffSurkes < 0) { trendSurkes = `TURUN (↓ ${diffSurkes})`; colorSurkes = '#166534'; }
+
+  const rowsRM = recordsToPrint.map((r, i) => `
     <tr>
       <td style="text-align:center; padding: 6px;">${i + 1}</td>
       <td style="padding: 6px;">${r.tanggal || '-'}</td>
@@ -1869,8 +3207,8 @@ function printHSEOfficialReport() {
       <td style="padding: 6px;">${r.dept || '-'}</td>
       <td style="padding: 6px;">${r.keluhan || '-'}</td>
       <td style="padding: 6px; font-weight: bold; color: #0284c7;">${r.asesmen || '-'}</td>
-      <td style="padding: 6px;">${r.plan || '-'}</td>
-      <td style="text-align:center; padding: 6px;">${r.isPantauan ? '🔴 PANTAUAN' : 'NORMAL'}</td>
+      <td style="padding: 6px;">${formatPlanForDisplay(r.plan)}</td>
+      <td style="text-align:center; padding: 6px;">${getStatusKelaikanText(r)}</td>
     </tr>
   `).join('');
 
@@ -1879,71 +3217,320 @@ function printHSEOfficialReport() {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Laporan K3 & HSE Klinik Medis - PT ATI & PT ATI</title>
+      <title>Laporan Rekap K3 & HSE Klinik Medis - PT ATI</title>
       <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #1e293b; background: #fff; }
-        .header { text-align: center; border-bottom: 3px double #0284c7; padding-bottom: 12px; margin-bottom: 20px; }
-        .header h2 { margin: 0; font-size: 16pt; color: #0f172a; text-transform: uppercase; letter-spacing: 1px; }
-        .header h4 { margin: 4px 0 0 0; font-size: 11pt; color: #475569; font-weight: normal; }
-        .summary-grid { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 10px; }
-        .box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; width: 30%; text-align: center; background: #f8fafc; }
-        .box-val { font-size: 16pt; font-weight: bold; color: #0284c7; margin-top: 4px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 9pt; }
-        th, td { border: 1px solid #94a3b8; padding: 6px; }
-        th { background: #f1f5f9; text-transform: uppercase; font-size: 8.5pt; text-align: left; }
-        .ttd-grid { display: flex; justify-content: space-between; margin-top: 40px; text-align: center; font-size: 10pt; }
-        @media print { @page { size: A4 landscape; margin: 1.2cm; } }
+        @page {
+          size: A4 portrait;
+          margin: 1.2cm;
+        }
+        body {
+          font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+          color: #000;
+          background: #fff;
+          margin: 0;
+          padding: 0;
+          font-size: 10pt;
+        }
+        .page {
+          page-break-after: always;
+          break-after: page;
+          padding-bottom: 20px;
+        }
+        .page:last-child {
+          page-break-after: avoid;
+          break-after: avoid;
+        }
+        .report-header {
+          text-align: center;
+          margin-bottom: 24px;
+        }
+        .report-header h2 {
+          margin: 0;
+          font-size: 14pt;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+        .report-header h3 {
+          margin: 4px 0;
+          font-size: 12pt;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        .report-header h4 {
+          margin: 4px 0;
+          font-size: 11pt;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #333;
+        }
+        table.cmp-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+          margin-bottom: 16px;
+        }
+        table.cmp-table th, table.cmp-table td {
+          border: 1px solid #000;
+          padding: 6px 8px;
+          font-size: 9.5pt;
+        }
+        table.cmp-table th {
+          background-color: #ffffff;
+          font-weight: 800;
+          text-transform: uppercase;
+          text-align: center;
+          border-top: 2px solid #000;
+          border-bottom: 2px solid #000;
+        }
+        .th-urutan {
+          width: 8%;
+          border-right: 2px solid #000 !important;
+        }
+        .notes-box {
+          margin-top: 18px;
+          font-size: 9.5pt;
+          line-height: 1.6;
+        }
+        .notes-box p {
+          margin: 4px 0;
+          font-weight: 600;
+        }
+        .summary-grid {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 20px;
+          gap: 10px;
+        }
+        .box {
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          padding: 10px;
+          width: 30%;
+          text-align: center;
+          background: #f8fafc;
+        }
+        .box-val {
+          font-size: 15pt;
+          font-weight: bold;
+          color: #0284c7;
+          margin-top: 4px;
+        }
+        table.rm-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+          font-size: 8.5pt;
+        }
+        table.rm-table th, table.rm-table td {
+          border: 1px solid #94a3b8;
+          padding: 5px;
+        }
+        table.rm-table th {
+          background: #f1f5f9;
+          text-transform: uppercase;
+          font-size: 8pt;
+          text-align: left;
+        }
+        .ttd-grid {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 40px;
+          text-align: center;
+          font-size: 9.5pt;
+        }
       </style>
     </head>
     <body>
-      <div class="header">
-        <h2>LAPORAN KESEHATAN KESELAMATAN KERJA (K3 / HSE)</h2>
-        <h4>KLINIK NAFILA MEDIKA — PT MARUNDA UTARA & PT ATI MEDIKA</h4>
-        <div style="font-size: 9pt; margin-top: 6px; font-weight: bold; color: #0284c7;">Periode Laporan: ${tglIndo}</div>
+
+      <!-- LEMBAR 1: REKAPITULASI PENYAKIT -->
+      <div class="page">
+        <div class="report-header">
+          <h2>REKAP DATA KUNJUNGAN KARYAWAN PT ATI DI IN-HOUSE KLINIK NAFILA</h2>
+          <h3>REKAPITULASI DATA PENYAKIT KARYAWAN</h3>
+          <h4>${currPeriodTitle}</h4>
+        </div>
+
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th class="th-urutan">URUTAN</th>
+              <th style="text-align: left;">NAMA PENYAKIT</th>
+              <th style="width: 14%;">JML BLN<br>${currMonthName}</th>
+              <th style="width: 14%;">JML BLN<br>${prevMonthName}</th>
+              <th style="width: 15%;">STATUS</th>
+              <th style="width: 10%;">SELISIH</th>
+              <th style="width: 10%;">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsPenyakitHTML || '<tr><td colspan="7" style="text-align:center;">Tidak ada data penyakit</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="notes-box">
+          <p>*Jumlah penyakit pada bulan ${currMonthName} secara umum mengalami <strong>${generalPenyakitTrend}</strong></p>
+          <p>*Penyakit dengan persentase <strong>PENURUNAN TERBESAR</strong> dalam satu bulan adalah <strong>${biggestDecreasePenyakit}</strong></p>
+          <p>*Penyakit dengan persentase <strong>KENAIKAN TERBESAR</strong> dalam satu bulan adalah <strong>${biggestIncreasePenyakit}</strong></p>
+        </div>
+
+        <div class="ttd-grid" style="margin-top: 50px;">
+          <div>
+            Disiapkan Oleh,<br><strong>Officer K3 / HSE Klinik</strong><br><br><br><br>
+            ( ______________________ )
+          </div>
+          <div>
+            Mengetahui,<br><strong>Dokter Penanggung Jawab Klinik</strong><br><br><br><br>
+            <strong>dr. Dylan Fadhilah / dr. Isda Laily</strong>
+          </div>
+        </div>
       </div>
 
-      <div class="summary-grid">
-        <div class="box">
-          <div style="font-size: 9pt; font-weight: bold; color: #475569;">TOTAL KUNJUNGAN PASIEN</div>
-          <div class="box-val">${totalVisits} Pasien</div>
+      <!-- LEMBAR 2: REKAPITULASI DEPARTMENT -->
+      <div class="page">
+        <div class="report-header">
+          <h2>REKAP DATA KUNJUNGAN KARYAWAN PT ATI DI IN-HOUSE KLINIK NAFILA</h2>
+          <h3>KUNJUNGAN DEPARTMENT TERBANYAK</h3>
+          <h4>${currPeriodTitle}</h4>
         </div>
-        <div class="box">
-          <div style="font-size: 9pt; font-weight: bold; color: #dc2626;">PASIEN HIGH RISK / PANTAUAN</div>
-          <div class="box-val" style="color: #dc2626;">${totalPantauan} Pasien</div>
+
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th class="th-urutan">URUTAN</th>
+              <th style="text-align: left;">DEPARTMENT</th>
+              <th style="width: 14%;">JML BLN<br>${currMonthName}</th>
+              <th style="width: 14%;">JML BLN<br>${prevMonthName}</th>
+              <th style="width: 15%;">STATUS</th>
+              <th style="width: 10%;">SELISIH</th>
+              <th style="width: 10%;">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsDeptHTML || '<tr><td colspan="7" style="text-align:center;">Tidak ada data department</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="notes-box">
+          <p>*Jumlah kunjungan pada bulan ${currMonthName} secara umum mengalami <strong>${generalDeptTrend}</strong></p>
+          <p>*Department dengan persentase <strong>PENURUNAN TERBESAR</strong> dalam kunjungan satu bulan adalah <strong>${biggestDecreaseDept}</strong></p>
+          <p>*Department dengan persentase <strong>KENAIKAN TERBESAR</strong> dalam kunjungan satu bulan adalah <strong>${biggestIncreaseDept}</strong></p>
         </div>
-        <div class="box">
-          <div style="font-size: 9pt; font-weight: bold; color: #d97706;">SURKES / IZIN SAKIT</div>
-          <div class="box-val" style="color: #d97706;">${totalSurkes} Kasus</div>
+
+        <div class="ttd-grid" style="margin-top: 50px;">
+          <div>
+            Disiapkan Oleh,<br><strong>Officer K3 / HSE Klinik</strong><br><br><br><br>
+            ( ______________________ )
+          </div>
+          <div>
+            Mengetahui,<br><strong>Dokter Penanggung Jawab Klinik</strong><br><br><br><br>
+            <strong>dr. Dylan Fadhilah / dr. Isda Laily</strong>
+          </div>
         </div>
       </div>
 
-      <h3 style="font-size: 11pt; margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">Daftar Rekam Medis Kunjungan Karyawan:</h3>
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 4%;">No</th>
-            <th style="width: 10%;">Tanggal</th>
-            <th style="width: 22%;">Nama & NIK Pasien</th>
-            <th style="width: 14%;">Departemen</th>
-            <th style="width: 20%;">Keluhan (S)</th>
-            <th style="width: 15%;">Diagnosis ICD-10 (A)</th>
-            <th style="width: 15%;">Resep & Plan (P)</th>
-            <th style="width: 10%;">Status K3</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rowsRM || '<tr><td colspan="8" style="text-align:center;">Belum ada data kunjungan</td></tr>'}
-        </tbody>
-      </table>
-
-      <div class="ttd-grid">
-        <div>
-          Disiapkan Oleh,<br><strong>Officer K3 / HSE Klinik</strong><br><br><br><br>
-          ( ______________________ )
+      <!-- LEMBAR 3: REKAPITULASI KUNJUNGAN KARYAWAN / PASIEN -->
+      <div class="page">
+        <div class="report-header">
+          <h2>REKAP DATA KUNJUNGAN KARYAWAN PT ATI DI IN-HOUSE KLINIK NAFILA</h2>
+          <h3>REKAPITULASI KUNJUNGAN PASIEN / KARYAWAN</h3>
+          <h4>${currPeriodTitle}</h4>
         </div>
-        <div>
-          Mengetahui,<br><strong>Dokter Penanggung Jawab Klinik</strong><br><br><br><br>
-          <strong>dr. Dylan Fadhilah / dr. Isda Laily</strong>
+
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th class="th-urutan">URUTAN</th>
+              <th style="text-align: left;">NAMA KARYAWAN / PASIEN</th>
+              <th style="width: 14%;">NPK / NIK PABRIK</th>
+              <th style="text-align: left; width: 15%;">DEPARTMENT</th>
+              <th style="width: 10%;">JML BLN<br>${currMonthName}</th>
+              <th style="width: 10%;">JML BLN<br>${prevMonthName}</th>
+              <th style="width: 12%;">STATUS</th>
+              <th style="width: 8%;">SELISIH</th>
+              <th style="width: 8%;">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsPatientsHTML || '<tr><td colspan="9" style="text-align:center;">Tidak ada data kunjungan karyawan</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="notes-box">
+          <p>*Jumlah kunjungan unik pasien pada bulan ${currMonthName} secara umum mengalami <strong>${generalPatientTrend}</strong></p>
+          <p>*Karyawan dengan persentase <strong>PENURUNAN TERBESAR</strong> kunjungan dalam satu bulan adalah <strong>${biggestDecreasePatient}</strong></p>
+          <p>*Karyawan dengan persentase <strong>KENAIKAN TERBESAR</strong> kunjungan dalam satu bulan adalah <strong>${biggestIncreasePatient}</strong></p>
+        </div>
+
+        <div class="ttd-grid" style="margin-top: 50px;">
+          <div>
+            Disiapkan Oleh,<br><strong>Officer K3 / HSE Klinik</strong><br><br><br><br>
+            ( ______________________ )
+          </div>
+          <div>
+            Mengetahui,<br><strong>Dokter Penanggung Jawab Klinik</strong><br><br><br><br>
+            <strong>dr. Dylan Fadhilah / dr. Isda Laily</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEMBAR 4: DETAIL REKAM MEDIS KUNJUNGAN -->
+      <div class="page">
+        <div class="report-header">
+          <h2>LAPORAN KESEHATAN KESELAMATAN KERJA (K3 / HSE)</h2>
+          <h3>KLINIK NAFILA MEDIKA — PT ATI MEDIKA</h3>
+          <div style="font-size: 9pt; margin-top: 6px; font-weight: bold; color: #0284c7;">${periodeInfo} | Dicetak: ${tglIndo}</div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="box">
+            <div style="font-size: 8.5pt; font-weight: bold; color: #475569;">TOTAL KUNJUNGAN PASIEN</div>
+            <div class="box-val">${currTotalVisits} Pasien</div>
+            <div style="font-size: 8pt; margin-top: 3px; color: #475569; font-weight: 600;">Bulan Lalu: ${prevTotalVisits} Pasien</div>
+            <div style="font-size: 8pt; font-weight: bold; color: ${colorVisits}; margin-top: 2px;">${trendVisits}</div>
+          </div>
+          <div class="box">
+            <div style="font-size: 8.5pt; font-weight: bold; color: #dc2626;">PASIEN HIGH RISK / PANTAUAN</div>
+            <div class="box-val" style="color: #dc2626;">${currPantauan} Pasien</div>
+            <div style="font-size: 8pt; margin-top: 3px; color: #475569; font-weight: 600;">Bulan Lalu: ${prevPantauan} Pasien</div>
+            <div style="font-size: 8pt; font-weight: bold; color: ${colorPantauan}; margin-top: 2px;">${trendPantauan}</div>
+          </div>
+          <div class="box">
+            <div style="font-size: 8.5pt; font-weight: bold; color: #d97706;">SURKES / IZIN SAKIT</div>
+            <div class="box-val" style="color: #d97706;">${currSurkes} Kasus</div>
+            <div style="font-size: 8pt; margin-top: 3px; color: #475569; font-weight: 600;">Bulan Lalu: ${prevSurkes} Kasus</div>
+            <div style="font-size: 8pt; font-weight: bold; color: ${colorSurkes}; margin-top: 2px;">${trendSurkes}</div>
+          </div>
+        </div>
+
+        <h3 style="font-size: 10.5pt; margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">Daftar Rekam Medis Kunjungan Karyawan:</h3>
+        <table class="rm-table">
+          <thead>
+            <tr>
+              <th style="width: 4%;">No</th>
+              <th style="width: 10%;">Tanggal</th>
+              <th style="width: 22%;">Nama & NIK Pasien</th>
+              <th style="width: 14%;">Departemen</th>
+              <th style="width: 20%;">Keluhan (S)</th>
+              <th style="width: 15%;">Diagnosis ICD-10 (A)</th>
+              <th style="width: 15%;">Resep & Plan (P)</th>
+              <th style="width: 10%;">Status K3</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsRM || '<tr><td colspan="8" style="text-align:center;">Belum ada data kunjungan</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="ttd-grid">
+          <div>
+            Disiapkan Oleh,<br><strong>Officer K3 / HSE Klinik</strong><br><br><br><br>
+            ( ______________________ )
+          </div>
+          <div>
+            Mengetahui,<br><strong>Dokter Penanggung Jawab Klinik</strong><br><br><br><br>
+            <strong>dr. Dylan Fadhilah / dr. Isda Laily</strong>
+          </div>
         </div>
       </div>
 
@@ -2005,7 +3592,7 @@ async function handleUnlockGSheetSync(e) {
 }
 
 function switchManajemenTab(tabName) {
-  const tabs = ['analisis', 'billing', 'kontak'];
+  const tabs = ['billing', 'kontak'];
   tabs.forEach(t => {
     const el = document.getElementById(`mj-tab-${t}`);
     const btn = document.getElementById(`mj-nav-${t}`);
@@ -2021,59 +3608,217 @@ function switchManajemenTab(tabName) {
   });
 }
 
-function renderAnalisisObat() {
-  const totalRecords = appData.records.length;
-  const estimatedCost = totalRecords * 25000;
-  document.getElementById('mj-modal-total').textContent = `Rp ${estimatedCost.toLocaleString('id-ID')} (Target Maksimal Rp 2.000.000 / Bulan)`;
+function getFilteredBillingRecords() {
+  const startVal = document.getElementById('billing-start')?.value;
+  const endVal = document.getElementById('billing-end')?.value;
+  
+  if (!startVal || !endVal) return appData.records;
+  
+  const start = new Date(`${startVal}T00:00:00`);
+  const end = new Date(`${endVal}T23:59:59`);
+  
+  return appData.records.filter(r => {
+    let d = null;
+    if (r.tanggal) {
+      if (typeof r.tanggal === 'string' && r.tanggal.includes('/')) {
+        const parts = r.tanggal.split('/');
+        if (parts.length === 3) {
+          d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
+      } else if (typeof r.tanggal === 'string' && r.tanggal.includes('-')) {
+        const parts = r.tanggal.split('-');
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          } else {
+            d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          }
+        }
+      } else {
+        d = new Date(r.tanggal);
+      }
+    }
+    if ((!d || isNaN(d.getTime())) && r.created_at) {
+      d = new Date(r.created_at);
+    }
+    if (!d || isNaN(d.getTime())) return false;
+    return d >= start && d <= end;
+  });
 }
 
 function renderBillingPTTable() {
   const tbody = document.getElementById('table-billing-body');
   if (!tbody) return;
 
-  tbody.innerHTML = appData.records.map((r, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td>${r.tanggal || '-'}</td>
-      <td><strong>${r.namaPasien}</strong></td>
-      <td>${r.nikPabrik || '-'}</td>
-      <td>${r.dept || '-'}</td>
-      <td>${r.asesmen || '-'}</td>
-      <td style="font-weight: 700; color: #38bdf8;">Rp 75.000</td>
-    </tr>
-  `).join('');
+  const filtered = getFilteredBillingRecords();
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data tagihan pada rentang tanggal tersebut.</td></tr>`;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach((r, i) => {
+    if (r.resep && r.resep.length > 0) {
+      r.resep.forEach((med, idx) => {
+        html += `
+          <tr>
+            <td>${idx === 0 ? i + 1 : ''}</td>
+            <td>${idx === 0 ? (r.tanggal || '-') : ''}</td>
+            <td>${idx === 0 ? (r.nikPabrik || '-') : ''}</td>
+            <td><strong>${idx === 0 ? r.namaPasien : ''}</strong></td>
+            <td>${idx === 0 ? (r.dept || '-') : ''}</td>
+            <td>${idx === 0 ? (r.asesmen || '-') : ''}</td>
+            <td>${med.namaObat || med.obat || '-'}</td>
+            <td style="text-align: center;">${med.qty || '-'}</td>
+            <td style="text-align: right;">Rp ${(med.subtotal || 0).toLocaleString('id-ID')}</td>
+            <td style="font-weight: 700; color: #38bdf8; text-align: right;">${idx === 0 ? `Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}` : ''}</td>
+          </tr>
+        `;
+      });
+    } else {
+      html += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${r.tanggal || '-'}</td>
+          <td>${r.nikPabrik || '-'}</td>
+          <td><strong>${r.namaPasien}</strong></td>
+          <td>${r.dept || '-'}</td>
+          <td>${r.asesmen || '-'}</td>
+          <td>-</td>
+          <td style="text-align: center;">-</td>
+          <td style="text-align: right;">Rp 0</td>
+          <td style="font-weight: 700; color: #38bdf8; text-align: right;">Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}</td>
+        </tr>
+      `;
+    }
+  });
+
+  tbody.innerHTML = html;
 }
 
 function exportBillingExcel() {
-  let csv = 'No,Tanggal,Nama Pasien,NIK Pabrik,Departemen,Diagnosis,Biaya Billing (Rp)\n';
-  appData.records.forEach((r, i) => {
-    csv += `"${i+1}","${r.tanggal || ''}","${r.namaPasien || ''}","${r.nikPabrik || ''}","${r.dept || ''}","${r.asesmen || ''}","75000"\n`;
+  const filtered = getFilteredBillingRecords();
+  const dateStr = new Date().toISOString().split('T')[0];
+  
+  let rows = '';
+  filtered.forEach((r, i) => {
+    if (r.resep && r.resep.length > 0) {
+      r.resep.forEach((med, idx) => {
+        rows += `
+          <tr>
+            <td style="text-align: center;">${idx === 0 ? i + 1 : ''}</td>
+            <td>${r.tanggal || ''}</td>
+            <td>${r.nikPabrik || ''}</td>
+            <td><strong>${r.namaPasien || ''}</strong></td>
+            <td>${r.dept || ''}</td>
+            <td>${r.asesmen || ''}</td>
+            <td>${med.namaObat || med.obat || ''}</td>
+            <td style="text-align: center;">${med.qty || 0}</td>
+            <td style="text-align: right;">${med.subtotal || 0}</td>
+            <td style="text-align: right; font-weight: bold;">${idx === 0 ? (r.totalBiaya || 0) : ''}</td>
+          </tr>
+        `;
+      });
+    } else {
+      rows += `
+        <tr>
+          <td style="text-align: center;">${i + 1}</td>
+          <td>${r.tanggal || ''}</td>
+          <td>${r.nikPabrik || ''}</td>
+          <td><strong>${r.namaPasien || ''}</strong></td>
+          <td>${r.dept || ''}</td>
+          <td>${r.asesmen || ''}</td>
+          <td>-</td>
+          <td style="text-align: center;">0</td>
+          <td style="text-align: right;">0</td>
+          <td style="text-align: right; font-weight: bold;">${r.totalBiaya || 0}</td>
+        </tr>
+      `;
+    }
   });
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const excelTemplate = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8">
+      <!--[if gte mso 9]>
+      <xml>
+        <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+            <x:ExcelWorksheet>
+              <x:Name>Billing Klinik PT ATI</x:Name>
+              <x:WorksheetOptions>
+                <x:DisplayGridlines/>
+              </x:WorksheetOptions>
+            </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+      </xml>
+      <![endif]-->
+      <style>
+        table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 11pt; }
+        th { background-color: #10b981; color: #ffffff; font-weight: bold; border: 1px solid #059669; padding: 8px; text-align: left; }
+        td { border: 1px solid #d1d5db; padding: 6px; }
+        .title { font-size: 14pt; font-weight: bold; color: #065f46; margin-bottom: 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="title">LAPORAN TAGIHAN & BIAYA BEROBAT - KLINIK PT ATI</div>
+      <div>Tanggal Export: ${new Date().toLocaleDateString('id-ID')}</div>
+      <br>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 50px;">NO</th>
+            <th style="width: 100px;">TANGGAL</th>
+            <th style="width: 120px;">NPK</th>
+            <th style="width: 180px;">NAMA PASIEN</th>
+            <th style="width: 120px;">DEPARTEMEN</th>
+            <th style="width: 180px;">DIAGNOSA</th>
+            <th style="width: 180px;">NAMA OBAT</th>
+            <th style="width: 60px;">QTY</th>
+            <th style="width: 120px;">HARGA OBAT (RP)</th>
+            <th style="width: 140px;">TOTAL BIAYA VISIT (RP)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="10">Tidak ada data tagihan</td></tr>'}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Billing_Klinik_PT_ATI_PT ATI_${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `Billing_Klinik_PT_ATI_${dateStr}.xls`;
+  document.body.appendChild(a);
   a.click();
-  showToast('Laporan Billing Excel berhasil diunduh!', 'success');
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('File Excel (.xls) berhasil diunduh!', 'success');
 }
 
 // 🖨️ CETAK LAPORAN DIREKSI & FINANSIAL EKSEKUTIF (PROFESIONAL A4)
 function printExecutiveReport() {
   const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const totalVisits = appData.records.length;
-  const totalBilling = totalVisits * 75000;
-  const modalObat = totalVisits * 25000;
+  const filtered = getFilteredBillingRecords();
+  const totalVisits = filtered.length;
+  const totalBilling = filtered.reduce((sum, r) => sum + (r.totalBiaya || 0), 0);
 
-  const rowsBilling = appData.records.map((r, i) => `
+  const rowsBilling = filtered.map((r, i) => `
     <tr>
       <td style="text-align:center; padding: 6px;">${i + 1}</td>
       <td style="padding: 6px;">${r.tanggal || '-'}</td>
-      <td style="padding: 6px; font-weight: bold;">${r.namaPasien} (${r.nikPabrik || '-'})</td>
+      <td style="padding: 6px; font-weight: bold;">${r.nikPabrik || '-'}</td>
+      <td style="padding: 6px; font-weight: bold;">${r.namaPasien}</td>
       <td style="padding: 6px;">${r.dept || '-'}</td>
       <td style="padding: 6px;">${r.asesmen || '-'}</td>
-      <td style="text-align:right; padding: 6px; font-weight: bold;">Rp 75.000</td>
+      <td style="text-align:right; padding: 6px; font-weight: bold;">Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}</td>
     </tr>
   `).join('');
 
@@ -2089,7 +3834,7 @@ function printExecutiveReport() {
         .header h2 { margin: 0; font-size: 17pt; color: #065f46; text-transform: uppercase; letter-spacing: 1px; }
         .header h4 { margin: 4px 0 0 0; font-size: 11pt; color: #334155; font-weight: normal; }
         .finance-summary { display: flex; justify-content: space-between; margin-bottom: 25px; gap: 12px; }
-        .fin-box { border: 1px solid #10b981; border-radius: 8px; padding: 14px; width: 31%; text-align: center; background: #f0fdf4; }
+        .fin-box { border: 1px solid #10b981; border-radius: 8px; padding: 14px; width: 48%; text-align: center; background: #f0fdf4; }
         .fin-val { font-size: 16pt; font-weight: 800; color: #059669; margin-top: 4px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 9.5pt; }
         th, td { border: 1px solid #94a3b8; padding: 7px; }
@@ -2101,7 +3846,7 @@ function printExecutiveReport() {
     <body>
       <div class="header">
         <h2>LAPORAN MANAJERIAL & BIAYA MEDIK KLINIK</h2>
-        <h4>KLINIK NAFILA MEDIKA — PT MARUNDA & PT ATI MEDIKA</h4>
+        <h4>KLINIK NAFILA MEDIKA — PT ATI MEDIKA</h4>
         <div style="font-size: 9.5pt; margin-top: 6px; font-weight: bold; color: #059669;">Tanggal Laporan: ${tglIndo}</div>
       </div>
 
@@ -2114,10 +3859,6 @@ function printExecutiveReport() {
           <div style="font-size: 8.5pt; font-weight: bold; color: #065f46;">TOTAL REKAP BIAYA BILLING</div>
           <div class="fin-val">Rp ${totalBilling.toLocaleString('id-ID')}</div>
         </div>
-        <div class="fin-box">
-          <div style="font-size: 8.5pt; font-weight: bold; color: #065f46;">MODAL PEMAKAIAN OBAT</div>
-          <div class="fin-val" style="color: #2563eb;">Rp ${modalObat.toLocaleString('id-ID')}</div>
-        </div>
       </div>
 
       <h3 style="font-size: 11pt; margin-bottom: 8px; text-transform: uppercase; border-bottom: 2px solid #10b981; padding-bottom: 4px;">Rincian Tagihan Layanan Kesehatan Pasien Rawat Jalan:</h3>
@@ -2126,14 +3867,15 @@ function printExecutiveReport() {
           <tr>
             <th style="width: 5%;">No</th>
             <th style="width: 12%;">Tanggal</th>
-            <th style="width: 25%;">Nama Pasien & NIK</th>
-            <th style="width: 18%;">Departemen / Bagian</th>
-            <th style="width: 25%;">Diagnosis Utama (A)</th>
-            <th style="width: 15%; text-align:right;">Tarif Billing (Rp)</th>
+            <th style="width: 15%;">NPK</th>
+            <th style="width: 20%;">Nama Pasien</th>
+            <th style="width: 15%;">Departemen / Bagian</th>
+            <th style="width: 20%;">Diagnosis Utama (A)</th>
+            <th style="width: 13%; text-align:right;">Tarif Billing (Rp)</th>
           </tr>
         </thead>
         <tbody>
-          ${rowsBilling || '<tr><td colspan="6" style="text-align:center;">Belum ada data billing</td></tr>'}
+          ${rowsBilling || '<tr><td colspan="7" style="text-align:center;">Belum ada data billing</td></tr>'}
         </tbody>
       </table>
 
@@ -2143,8 +3885,8 @@ function printExecutiveReport() {
           ( ______________________ )
         </div>
         <div>
-          Menyetujui,<br><strong>Direktur Utama Klinik Medika</strong><br><br><br><br>
-          <strong>dr. Dylan Fadhilah / dr. Isda Laily</strong>
+          Menyetujui,<br><strong>Koordinator Pelayanan Medis</strong><br><br><br><br>
+          <strong>drg. Nafila Alam Islami, MARS</strong>
         </div>
       </div>
 
@@ -2170,16 +3912,137 @@ function renderAbsenDirekturTable() {
   `).join('');
 }
 
-function saveWAPhoneSetting() {
-  const phone = document.getElementById('mj-wa-num').value.trim();
-  appData.waPhone = phone;
-  // Simpan juga ke server settings
-  fetch('/api/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ wa_phone: phone })
-  });
-  showToast('Nomor WA Apoteker Berhasil Disimpan', 'success');
+function renderWAContactsTable() {
+  const tbody = document.getElementById('table-wa-contacts-body');
+  if (!tbody) return;
+
+  if (!appData.waContacts || appData.waContacts.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-muted);">Belum ada kontak WA tersimpan. Silakan tambahkan di atas.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = appData.waContacts.map((c, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${c.nama}</strong></td>
+      <td>${c.jabatan || '-'}</td>
+      <td><span style="font-weight: 700; color: #34d399;">${c.hp}</span></td>
+      <td style="text-align: center;">
+        <button class="btn btn-sm btn-primary" onclick="testWAContact('${c.hp}', '${(c.nama || '').replace(/'/g, "\\'")}')" style="padding: 3px 8px; font-size: 0.75rem;" title="Test Kirim WA"><i class="fa-brands fa-whatsapp"></i> Test</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteWAContact('${c.id}')" style="padding: 3px 8px; font-size: 0.75rem;" title="Hapus Kontak"><i class="fa-solid fa-trash-can"></i> Hapus</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderWATargetSelectOptions() {
+  const sel = document.getElementById('req-target-wa');
+  if (!sel) return;
+
+  if (!appData.waContacts || appData.waContacts.length === 0) {
+    sel.innerHTML = `<option value="">⚠️ Belum ada kontak (Tambahkan di Tab Manajemen > Kontak WA)</option>`;
+    return;
+  }
+
+  sel.innerHTML = appData.waContacts.map(c => `
+    <option value="${c.hp}">${c.nama} (${c.hp})${c.jabatan ? ` — ${c.jabatan}` : ''}</option>
+  `).join('');
+}
+
+async function handleTambahWAContact(e) {
+  e.preventDefault();
+  const nama = document.getElementById('new-wa-nama').value.trim();
+  const jabatan = document.getElementById('new-wa-jabatan').value.trim();
+  let hp = document.getElementById('new-wa-hp').value.trim().replace(/[^0-9]/g, '');
+
+  if (!nama || !hp) {
+    showToast('Nama dan Nomor WA wajib diisi!', 'error');
+    return;
+  }
+
+  if (hp.startsWith('0')) {
+    hp = '62' + hp.substring(1);
+  }
+
+  const newContact = {
+    id: 'WA-' + Date.now(),
+    nama,
+    jabatan: jabatan || 'Petugas Klinik',
+    hp
+  };
+
+  if (!appData.waContacts) appData.waContacts = [];
+  appData.waContacts.push(newContact);
+  await saveWAContactsToServer();
+
+  document.getElementById('new-wa-nama').value = '';
+  document.getElementById('new-wa-jabatan').value = '';
+  document.getElementById('new-wa-hp').value = '';
+
+  renderWAContactsTable();
+  renderWATargetSelectOptions();
+  showToast(`Kontak WA ${nama} berhasil ditambahkan!`, 'success');
+}
+
+async function deleteWAContact(id) {
+  if (confirm('Hapus kontak WA ini dari daftar?')) {
+    appData.waContacts = appData.waContacts.filter(c => String(c.id) !== String(id));
+    await saveWAContactsToServer();
+    renderWAContactsTable();
+    renderWATargetSelectOptions();
+    showToast('Kontak WA berhasil dihapus.', 'info');
+  }
+}
+
+async function saveWAContactsToServer() {
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wa_contacts: appData.waContacts })
+    });
+  } catch (e) {
+    console.error('Error saving WA contacts:', e);
+  }
+}
+
+async function testWAContact(hp, nama) {
+  const msg = `Halo ${nama}, ini adalah tes pesan otomatis dari Mobile Klinik System PT ATI (Device WhaCenter Active).`;
+  showToast(`Mengirim tes WA ke ${nama}...`, 'info');
+  try {
+    const res = await fetch('/api/send-wa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: hp, message: msg })
+    });
+    const d = await res.json();
+    if (res.ok && d.success) {
+      showToast(`✅ Pesan tes WA terkirim ke ${nama}!`, 'success');
+    } else {
+      showToast(`Gagal kirim WA: ${d.error || 'Periksa Device ID WhaCenter'}`, 'error');
+    }
+  } catch (e) {
+    showToast('Gagal koneksi ke server kirim WA', 'error');
+  }
+}
+
+async function saveWhaCenterDeviceId() {
+  const deviceId = document.getElementById('whacenter-device-id').value.trim();
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ whacenter_device_id: deviceId })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('Device ID WhaCenter berhasil disimpan!', 'success');
+    } else {
+      showToast('Gagal menyimpan Device ID', 'error');
+    }
+  } catch (e) {
+    showToast('Terjadi kesalahan jaringan', 'error');
+  }
 }
 
 // -------------------------------------------------------------
@@ -2187,7 +4050,7 @@ function saveWAPhoneSetting() {
 // -------------------------------------------------------------
 function importMCUCSVFile() {
   const fileInput = document.getElementById('mcu-file-input');
-  if (!fileInput.files || fileInput.files.length === 0) {
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
     showToast('Pilih file CSV MCU terlebih dahulu', 'error');
     return;
   }
@@ -2214,17 +4077,14 @@ async function syncNowFromGSheet(btnEl = null) {
       body: JSON.stringify({})
     });
     const data = await res.json();
-    if (data.success) {
-      showToast(`✅ ${data.message}`, 'success');
-      const el = document.getElementById('gsheet-last-sync');
-      if (el) el.textContent = 'Terakhir sync: ' + new Date(data.lastSync).toLocaleString('id-ID');
+    if (res.ok && data.success) {
+      showToast(`✅ Sinkronisasi Berhasil! (${data.totalRows || 0} baris diperbarui)`, 'success');
       await loadAllAppData();
-      if (typeof renderGudangTable === 'function') renderGudangTable();
     } else {
-      showToast('Gagal sync: ' + (data.error || 'Error tidak diketahui'), 'error');
+      showToast(`Gagal sinkronisasi: ${data.error || 'Periksa koneksi spreadsheet'}`, 'error');
     }
   } catch (err) {
-    showToast('Error koneksi ke server: ' + err.message, 'error');
+    showToast('Gagal terhubung ke server untuk sinkronisasi Google Sheets', 'error');
   } finally {
     if (btnEl) {
       btnEl.innerHTML = origText;
@@ -2233,39 +4093,28 @@ async function syncNowFromGSheet(btnEl = null) {
   }
 }
 
-async function syncWithGoogleSheetNow() {
-  const url = document.getElementById('gsheet-app-url')?.value.trim();
-  const btn = event ? event.target : null;
-  let origText = '';
-  if (btn) {
-    origText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyinkronkan...';
-    btn.disabled = true;
+async function handleSaveGSheetUrl(e) {
+  e.preventDefault();
+  const url = document.getElementById('gsheet-app-url').value.trim();
+  if (!url) {
+    showToast('Masukkan URL Web App Google Apps Script', 'error');
+    return;
   }
 
   try {
-    const res = await fetch('/api/gsheet/sync', {
+    const res = await fetch('/api/gsheet/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ gsheetUrl: url })
     });
     const data = await res.json();
-    if (data.success) {
-      showToast(data.message, 'success');
-      const el = document.getElementById('gsheet-last-sync');
-      if (el) el.textContent = 'Terakhir sync: ' + new Date(data.lastSync).toLocaleString('id-ID');
-      await loadAllAppData();
-      if (typeof renderGudangTable === 'function') renderGudangTable();
+    if (res.ok && data.success) {
+      showToast('URL Google Sheets berhasil disimpan!', 'success');
     } else {
-      showToast('Gagal sync: ' + (data.error || 'Error tidak diketahui'), 'error');
+      showToast('Gagal menyimpan URL: ' + (data.error || 'Terjadi kesalahan'), 'error');
     }
   } catch (err) {
-    showToast('Error koneksi ke server: ' + err.message, 'error');
-  } finally {
-    if (btn) {
-      btn.innerHTML = origText;
-      btn.disabled = false;
-    }
+    showToast('Terjadi kesalahan jaringan', 'error');
   }
 }
 
@@ -2496,4 +4345,209 @@ function renderMobileKaryawanCards() {
         </div>
       </div>`;
   }).join('');
+}
+
+// =============================================================
+// GRAFIK ANALISIS HSE (10 PENYAKIT & 10 DEPARTMENT TERBANYAK)
+// =============================================================
+let hseChartInstances = {};
+
+function openHSEChartModal(targetTab = 'penyakit') {
+  const modal = document.getElementById('modal-hse-charts');
+  if (modal) modal.style.display = 'flex';
+  switchHSEChartTab(targetTab);
+  renderHSEComparisonCharts();
+}
+
+function switchHSEChartTab(tab) {
+  const secPenyakit = document.getElementById('section-chart-penyakit');
+  const secDept = document.getElementById('section-chart-dept');
+  const secPasien = document.getElementById('section-chart-pasien');
+
+  const btnPenyakit = document.getElementById('chart-tab-penyakit-btn');
+  const btnDept = document.getElementById('chart-tab-dept-btn');
+  const btnPasien = document.getElementById('chart-tab-pasien-btn');
+
+  if (secPenyakit) secPenyakit.style.display = 'none';
+  if (secDept) secDept.style.display = 'none';
+  if (secPasien) secPasien.style.display = 'none';
+
+  if (btnPenyakit) { btnPenyakit.className = 'btn btn-sm btn-secondary'; btnPenyakit.style.background = ''; }
+  if (btnDept) { btnDept.className = 'btn btn-sm btn-secondary'; btnDept.style.background = ''; }
+  if (btnPasien) { btnPasien.className = 'btn btn-sm btn-secondary'; btnPasien.style.background = ''; }
+
+  if (tab === 'dept') {
+    if (secDept) secDept.style.display = 'block';
+    if (btnDept) { btnDept.className = 'btn btn-sm btn-primary'; btnDept.style.background = '#84cc16'; btnDept.style.border = 'none'; }
+  } else if (tab === 'pasien') {
+    if (secPasien) secPasien.style.display = 'block';
+    if (btnPasien) { btnPasien.className = 'btn btn-sm btn-primary'; btnPasien.style.background = '#f59e0b'; btnPasien.style.border = 'none'; }
+  } else {
+    if (secPenyakit) secPenyakit.style.display = 'block';
+    if (btnPenyakit) { btnPenyakit.className = 'btn btn-sm btn-primary'; btnPenyakit.style.background = '#00cbd5'; btnPenyakit.style.border = 'none'; }
+  }
+}
+
+function closeHSEChartModal() {
+  const modal = document.getElementById('modal-hse-charts');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderHSEComparisonCharts() {
+  const startVal = document.getElementById('hse-rm-start')?.value;
+  let currDate = new Date();
+  if (startVal) {
+    const parsed = new Date(`${startVal}T00:00:00`);
+    if (!isNaN(parsed.getTime())) currDate = parsed;
+  }
+
+  const currYear = currDate.getFullYear();
+  const currMonth = currDate.getMonth(); // 0 - 11
+
+  // Previous Month
+  const prevYear = currMonth === 0 ? currYear - 1 : currYear;
+  const prevMonth = currMonth === 0 ? 11 : currMonth - 1;
+
+  const monthNamesIndo = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+
+  const currMonthLabel = `${monthNamesIndo[currMonth]} - ${currYear}`;
+  const prevMonthLabel = `${monthNamesIndo[prevMonth]} - ${prevYear}`;
+
+  // Update titles in modal
+  const titlePenyakitCurr = document.getElementById('title-chart-penyakit-curr');
+  const titlePenyakitPrev = document.getElementById('title-chart-penyakit-prev');
+  const titleDeptCurr = document.getElementById('title-chart-dept-curr');
+  const titleDeptPrev = document.getElementById('title-chart-dept-prev');
+  const titlePasienCurr = document.getElementById('title-chart-pasien-curr');
+  const titlePasienPrev = document.getElementById('title-chart-pasien-prev');
+
+  if (titlePenyakitCurr) titlePenyakitCurr.innerHTML = `10 PENYAKIT TERBANYAK<br><span style="color:#00cbd5; font-size:0.85rem;">${currMonthLabel}</span>`;
+  if (titlePenyakitPrev) titlePenyakitPrev.innerHTML = `10 PENYAKIT TERBANYAK<br><span style="color:#00cbd5; font-size:0.85rem;">${prevMonthLabel}</span>`;
+  if (titleDeptCurr) titleDeptCurr.innerHTML = `10 DEPARTMENT TERBANYAK<br><span style="color:#84cc16; font-size:0.85rem;">${currMonthLabel}</span>`;
+  if (titleDeptPrev) titleDeptPrev.innerHTML = `10 DEPARTMENT TERBANYAK<br><span style="color:#84cc16; font-size:0.85rem;">${prevMonthLabel}</span>`;
+  if (titlePasienCurr) titlePasienCurr.innerHTML = `10 PASIEN TERBANYAK<br><span style="color:#f59e0b; font-size:0.85rem;">${currMonthLabel}</span>`;
+  if (titlePasienPrev) titlePasienPrev.innerHTML = `10 PASIEN TERBANYAK<br><span style="color:#f59e0b; font-size:0.85rem;">${prevMonthLabel}</span>`;
+
+  // Filter records
+  const currRecords = appData.records.filter(r => {
+    const d = parseRecordDate(r);
+    return d && d.getFullYear() === currYear && d.getMonth() === currMonth;
+  });
+
+  const prevRecords = appData.records.filter(r => {
+    const d = parseRecordDate(r);
+    return d && d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  });
+
+  // Calculate Top 10 Penyakit
+  const getTopDiseases = (recs) => {
+    const counts = {};
+    recs.forEach(r => {
+      let diag = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
+      diag = diag.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
+      if (!diag) diag = 'Lainnya';
+      counts[diag] = (counts[diag] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  };
+
+  // Calculate Top 10 Dept
+  const getTopDepts = (recs) => {
+    const counts = {};
+    recs.forEach(r => {
+      let dept = r.dept && r.dept.trim() !== '' ? r.dept.trim() : 'Lainnya';
+      counts[dept] = (counts[dept] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  };
+
+  // Calculate Top 10 Pasien
+  const getTopPatients = (recs) => {
+    const counts = {};
+    recs.forEach(r => {
+      if (r.namaPasien) {
+        const nameKey = `${r.namaPasien} (${r.nikPabrik || '-'})`;
+        counts[nameKey] = (counts[nameKey] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  };
+
+  const topPenyakitCurr = getTopDiseases(currRecords);
+  const topPenyakitPrev = getTopDiseases(prevRecords);
+  const topDeptCurr = getTopDepts(currRecords);
+  const topDeptPrev = getTopDepts(prevRecords);
+  const topPasienCurr = getTopPatients(currRecords);
+  const topPasienPrev = getTopPatients(prevRecords);
+
+  // Render Charts
+  renderBarChart('chartPenyakitCurrent', topPenyakitCurr.map(d => d[0]), topPenyakitCurr.map(d => d[1]), '#00cbd5');
+  renderBarChart('chartPenyakitPrev', topPenyakitPrev.map(d => d[0]), topPenyakitPrev.map(d => d[1]), '#00cbd5');
+  renderBarChart('chartDeptCurrent', topDeptCurr.map(d => d[0]), topDeptCurr.map(d => d[1]), '#84cc16');
+  renderBarChart('chartDeptPrev', topDeptPrev.map(d => d[0]), topDeptPrev.map(d => d[1]), '#84cc16');
+  renderBarChart('chartPasienCurrent', topPasienCurr.map(d => d[0]), topPasienCurr.map(d => d[1]), '#f59e0b');
+  renderBarChart('chartPasienPrev', topPasienPrev.map(d => d[0]), topPasienPrev.map(d => d[1]), '#f59e0b');
+}
+
+function renderBarChart(canvasId, labels, dataValues, barColor) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  if (hseChartInstances[canvasId]) {
+    hseChartInstances[canvasId].destroy();
+  }
+
+  // Fallback if empty
+  if (labels.length === 0) {
+    labels = ['Belum Ada Data'];
+    dataValues = [0];
+  }
+
+  const ctx = canvas.getContext('2d');
+  const plugins = (typeof ChartDataLabels !== 'undefined') ? [ChartDataLabels] : [];
+
+  hseChartInstances[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: dataValues,
+        backgroundColor: barColor,
+        borderRadius: 4,
+        barPercentage: 0.65
+      }]
+    },
+    plugins: plugins,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true },
+        datalabels: {
+          anchor: 'end',
+          align: 'top',
+          color: '#ffffff',
+          font: { weight: 'bold', size: 11 },
+          formatter: (val) => val > 0 ? val : ''
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#94a3b8',
+            font: { size: 10, weight: '700' },
+            maxRotation: 45,
+            minRotation: 45
+          },
+          grid: { display: false }
+        },
+        y: {
+          ticks: { color: '#94a3b8', precision: 0 },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          beginAtZero: true
+        }
+      }
+    }
+  });
 }
