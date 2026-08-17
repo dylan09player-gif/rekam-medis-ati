@@ -1747,21 +1747,23 @@ select.form-control {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  /* --- Gudang sub-tabs: horizontal scroll on mobile --- */
+  /* --- Gudang sub-tabs: stack vertically on mobile (Atas-Bawah) --- */
   .gudang-subtabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    display: flex !important;
+    flex-direction: column !important;
     flex-wrap: nowrap !important;
     gap: 8px !important;
-    padding-bottom: 8px !important;
+    width: 100% !important;
+    overflow-x: visible !important;
   }
-  .gudang-subtabs::-webkit-scrollbar { display: none; }
   .gudang-subtabs .btn {
-    white-space: nowrap;
-    flex-shrink: 0;
-    font-size: 0.76rem;
-    padding: 8px 12px;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    font-size: 0.86rem !important;
+    padding: 11px 14px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    white-space: normal !important;
   }
 
   /* --- Gudang header actions: stack on mobile --- */
@@ -1773,17 +1775,65 @@ select.form-control {
     width: 100%;
   }
 
-  /* --- Gudang subtabs: compact and wrap evenly --- */
-  .gudang-subtabs {
-    gap: 6px !important;
+  /* ============================================================
+     UNIVERSAL TABLE-TO-CARD MOBILE TRANSFORMATION
+     Transforms wide tables (Gudang, HSE, Billing, Opname, WA) into stacked cards
+     ============================================================ */
+  .table-responsive .custom-table {
+    display: block !important;
+    width: 100% !important;
+    border: none !important;
+  }
+  .table-responsive .custom-table thead {
+    display: none !important;
+  }
+  .table-responsive .custom-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
     width: 100% !important;
   }
-  .gudang-subtabs .btn {
-    flex: 1 1 calc(50% - 6px) !important;
-    font-size: 0.75rem !important;
-    padding: 8px 6px !important;
-    text-align: center !important;
-    justify-content: center !important;
+  .table-responsive .custom-table tbody tr {
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--surface-1) !important;
+    border: 1.5px solid var(--border-card) !important;
+    border-radius: var(--r-lg) !important;
+    padding: 14px 14px 12px !important;
+    box-shadow: var(--shadow-sm) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .table-responsive .custom-table tbody tr td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 6px 0 !important;
+    border: none !important;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08) !important;
+    font-size: 0.86rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    text-align: right !important;
+  }
+  .table-responsive .custom-table tbody tr td:last-child {
+    border-bottom: none !important;
+    padding-top: 8px !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+  }
+  .table-responsive .custom-table tbody tr td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--primary-light);
+    font-size: 0.78rem;
+    margin-right: 12px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    text-align: left !important;
   }
 
   /* --- Pengiriman Obat grid: single column on mobile --- */

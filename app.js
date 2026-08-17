@@ -1114,16 +1114,16 @@ function renderEditDataTable() {
 
   tbody.innerHTML = filtered.map(r => `
     <tr>
-      <td>${r.tanggal || '-'}</td>
-      <td><strong>${r.namaPasien}</strong><br><small class="text-muted">${r.nikPabrik || '-'}</small></td>
-      <td>
+      <td data-label="Tanggal">${r.tanggal || '-'}</td>
+      <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong><br><small class="text-muted">${r.nikPabrik || '-'}</small></td>
+      <td data-label="Keluhan & Diagnosa">
         <div><strong>S:</strong> ${r.keluhan || '-'}</div>
         <div><strong>A:</strong> <span class="badge badge-info">${r.asesmen || '-'}</span></div>
         <div style="margin-top:4px;"><strong>P:</strong><br>${formatPlanForDisplay(r.plan)}</div>
       </td>
-      <td>${r.pemeriksa || '-'}</td>
-      <td>
-        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+      <td data-label="Pemeriksa">${r.pemeriksa || '-'}</td>
+      <td data-label="Aksi">
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
           <button class="btn btn-sm btn-primary" onclick="openModalEditRecord('${r.id}')" title="Edit Data">
             <i class="fa-solid fa-pen"></i> Edit
           </button>
@@ -1132,7 +1132,7 @@ function renderEditDataTable() {
           </button>
           ${r.linkFoto ? `
             <button class="btn btn-sm btn-secondary" style="background: #0284c7; color: #fff; border: none; padding: 5px 8px;" onclick="openPhotoViewer('${r.id}')" title="Lihat Foto">
-              <i class="fa-solid fa-image"></i>
+              <i class="fa-solid fa-image"></i> Foto
             </button>` : ''}
         </div>
       </td>
@@ -1925,13 +1925,13 @@ function renderStokOpnameTable() {
 
   tbody.innerHTML = appData.medicines.map((m, i) => `
     <tr>
-      <td>${i + 1}</td>
-      <td><strong>${m.nama}</strong></td>
-      <td>Rp ${(m.harga || 1000).toLocaleString('id-ID')}</td>
-      <td style="font-weight: 700;">${m.stok} ${m.satuan || 'strip'}</td>
-      <td style="background: rgba(255,255,255,0.05); text-align: center; color: var(--text-muted);">_______</td>
-      <td style="text-align: center; color: var(--text-muted);">_______</td>
-      <td style="text-align: center; color: var(--text-muted);">Rp _______</td>
+      <td data-label="No">${i + 1}</td>
+      <td data-label="Nama Obat"><strong>${m.nama}</strong></td>
+      <td data-label="Harga Modal">Rp ${(m.harga || 1000).toLocaleString('id-ID')}</td>
+      <td data-label="Stok Sistem" style="font-weight: 700;">${m.stok} ${m.satuan || 'strip'}</td>
+      <td data-label="Stok Real (Fisik)" style="background: rgba(255,255,255,0.05); text-align: center; color: var(--text-muted);">_______</td>
+      <td data-label="Selisih" style="text-align: center; color: var(--text-muted);">_______</td>
+      <td data-label="Total Harga Selisih" style="text-align: center; color: var(--text-muted);">Rp _______</td>
     </tr>
   `).join('');
 }
@@ -2057,16 +2057,16 @@ function renderGudangTable() {
 
     return `
       <tr>
-        <td>${m.kode || '-'}</td>
-        <td><strong>${m.nama}</strong></td>
-        <td>${m.kategori || 'Gudang PT ATI'}</td>
-        <td style="font-weight: 700; font-size: 1.05rem; ${isLow ? 'color: var(--danger);' : ''}">${m.stok}</td>
-        <td style="font-weight: 700; color: #38bdf8;">Rp ${(parseInt(m.harga) || 0).toLocaleString('id-ID')}</td>
-        <td>${m.satuan || 'strip'}</td>
-        <td>${statusBadge}</td>
-        <td style="white-space: nowrap;">
-          <button class="btn btn-sm btn-secondary" onclick="openModalEditObat('${m.id}')" title="Edit Data &amp; Harga Obat"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-sm btn-danger" onclick="deleteObatDirect('${m.id}')" title="Hapus Obat">&times;</button>
+        <td data-label="Kode">${m.kode || '-'}</td>
+        <td data-label="Nama Obat"><strong>${m.nama}</strong></td>
+        <td data-label="Kategori">${m.kategori || 'Gudang PT ATI'}</td>
+        <td data-label="Sisa Stok" style="font-weight: 700; font-size: 1.05rem; ${isLow ? 'color: var(--danger);' : ''}">${m.stok}</td>
+        <td data-label="Harga (Rp)" style="font-weight: 700; color: #38bdf8;">Rp ${(parseInt(m.harga) || 0).toLocaleString('id-ID')}</td>
+        <td data-label="Satuan">${m.satuan || 'strip'}</td>
+        <td data-label="Status">${statusBadge}</td>
+        <td data-label="Aksi">
+          <button class="btn btn-sm btn-secondary" onclick="openModalEditObat('${m.id}')" title="Edit Data &amp; Harga Obat"><i class="fa-solid fa-pen"></i> Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteObatDirect('${m.id}')" title="Hapus Obat"><i class="fa-solid fa-trash"></i> Hapus</button>
         </td>
       </tr>
     `;
@@ -2743,18 +2743,18 @@ function renderHSERekamMedisTable(isButtonClick = false) {
 
   tbody.innerHTML = filtered.map((r, i) => `
     <tr>
-      <td>${i + 1}</td>
-      <td>${r.tanggal || '-'}</td>
-      <td><strong>${r.namaPasien}</strong></td>
-      <td>${r.nikPabrik || '-'}</td>
-      <td>${r.dept || '-'}</td>
-      <td>${r.keluhan || '-'}</td>
-      <td><span class="badge badge-info">${r.asesmen || '-'}</span></td>
-      <td>${r.objektif || '-'}</td>
-      <td>${formatPlanForDisplay(r.plan)}</td>
-      <td>${getStatusKelaikanBadges(r)}</td>
-      <td>
-        <div style="display: flex; align-items: center; gap: 6px;">
+      <td data-label="No">${i + 1}</td>
+      <td data-label="Tanggal">${r.tanggal || '-'}</td>
+      <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong></td>
+      <td data-label="NIK Pabrik">${r.nikPabrik || '-'}</td>
+      <td data-label="Bagian">${r.dept || '-'}</td>
+      <td data-label="Keluhan">${r.keluhan || '-'}</td>
+      <td data-label="Diagnosis"><span class="badge badge-info">${r.asesmen || '-'}</span></td>
+      <td data-label="Pemeriksaan">${r.objektif || '-'}</td>
+      <td data-label="Obat/Terapi">${formatPlanForDisplay(r.plan)}</td>
+      <td data-label="Status K3">${getStatusKelaikanBadges(r)}</td>
+      <td data-label="Pemeriksa">
+        <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
           <span>${r.pemeriksa || '-'}</span>
           ${r.linkFoto ? `<button type="button" onclick="openPhotoViewer('${r.id}')" class="btn btn-sm btn-primary" style="background:#0284c7; border:none; padding: 2px 7px; font-size: 0.74rem;" title="Lihat Foto / Dokumen"><i class="fa-solid fa-image"></i> Foto</button>` : ''}
         </div>
@@ -2780,13 +2780,13 @@ function renderHSEPasienPantauanTable() {
 
   tbody.innerHTML = pantauanList.map(r => `
     <tr>
-      <td>${r.tanggal || '-'}</td>
-      <td><span class="badge badge-danger">${r.nikPabrik || '-'}</span></td>
-      <td><strong>${r.namaPasien}</strong></td>
-      <td>${r.dept || '-'}</td>
-      <td>${r.keluhan} (A: ${r.asesmen})</td>
-      <td><span class="badge badge-warning">Dalam Pemantauan</span></td>
-      <td>
+      <td data-label="Tanggal">${r.tanggal || '-'}</td>
+      <td data-label="NIK Pabrik"><span class="badge badge-danger">${r.nikPabrik || '-'}</span></td>
+      <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong></td>
+      <td data-label="Bagian">${r.dept || '-'}</td>
+      <td data-label="Alasan Pantauan">${r.keluhan} (A: ${r.asesmen})</td>
+      <td data-label="Status"><span class="badge badge-warning">Dalam Pemantauan</span></td>
+      <td data-label="Aksi">
         <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${r.nikPabrik || r.namaPasien}')">
           Cek History Poli
         </button>
@@ -2808,20 +2808,20 @@ function renderHSESurkesTable() {
 
   tbody.innerHTML = surkesList.slice().reverse().map((r, idx) => `
     <tr>
-      <td style="text-align: center; font-weight: 500; color: var(--text-muted);">${idx + 1}</td>
-      <td>${r.tanggal || '-'}</td>
-      <td><span class="badge badge-info" style="font-weight: 700;">${r.nikPabrik || '-'}</span></td>
-      <td><strong>${r.namaPasien || '-'}</strong></td>
-      <td>${r.dept || '-'}</td>
-      <td>
+      <td data-label="No" style="text-align: center; font-weight: 500; color: var(--text-muted);">${idx + 1}</td>
+      <td data-label="Tanggal">${r.tanggal || '-'}</td>
+      <td data-label="NIK Pabrik"><span class="badge badge-info" style="font-weight: 700;">${r.nikPabrik || '-'}</span></td>
+      <td data-label="Nama Pasien"><strong>${r.namaPasien || '-'}</strong></td>
+      <td data-label="Bagian">${r.dept || '-'}</td>
+      <td data-label="Keluhan & Diagnosa">
         <div><strong>S:</strong> ${r.keluhan || '-'}</div>
         <div><strong>A:</strong> <span class="badge badge-info">${r.asesmen || '-'}</span></div>
       </td>
-      <td>${r.objektif || '-'}</td>
-      <td>${formatPlanForDisplay(r.plan)}</td>
-      <td><span class="badge badge-warning" style="font-weight: 700;">📄 Istirahat Sakit</span></td>
-      <td>${r.pemeriksa || '-'}</td>
-      <td style="text-align: center;">
+      <td data-label="Hasil Pemeriksaan">${r.objektif || '-'}</td>
+      <td data-label="Terapi Obat">${formatPlanForDisplay(r.plan)}</td>
+      <td data-label="Status"><span class="badge badge-warning" style="font-weight: 700;">📄 Istirahat Sakit</span></td>
+      <td data-label="Nakes">${r.pemeriksa || '-'}</td>
+      <td data-label="Aksi" style="text-align: center;">
         <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat di Poli">
           <i class="fa-solid fa-stethoscope"></i> Cek Poli
         </button>
@@ -3718,32 +3718,32 @@ function renderBillingPTTable() {
       r.resep.forEach((med, idx) => {
         html += `
           <tr>
-            <td>${idx === 0 ? i + 1 : ''}</td>
-            <td>${idx === 0 ? (r.tanggal || '-') : ''}</td>
-            <td>${idx === 0 ? (r.nikPabrik || '-') : ''}</td>
-            <td><strong>${idx === 0 ? r.namaPasien : ''}</strong></td>
-            <td>${idx === 0 ? (r.dept || '-') : ''}</td>
-            <td>${idx === 0 ? (r.asesmen || '-') : ''}</td>
-            <td>${med.namaObat || med.obat || '-'}</td>
-            <td style="text-align: center;">${med.qty || '-'}</td>
-            <td style="text-align: right;">Rp ${(med.subtotal || 0).toLocaleString('id-ID')}</td>
-            <td style="font-weight: 700; color: #38bdf8; text-align: right;">${idx === 0 ? `Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}` : ''}</td>
+            <td data-label="No">${idx === 0 ? i + 1 : ''}</td>
+            <td data-label="Tanggal">${idx === 0 ? (r.tanggal || '-') : ''}</td>
+            <td data-label="NPK">${idx === 0 ? (r.nikPabrik || '-') : ''}</td>
+            <td data-label="Nama Pasien"><strong>${idx === 0 ? r.namaPasien : ''}</strong></td>
+            <td data-label="Bagian">${idx === 0 ? (r.dept || '-') : ''}</td>
+            <td data-label="Diagnosa">${idx === 0 ? (r.asesmen || '-') : ''}</td>
+            <td data-label="Nama Obat">${med.namaObat || med.obat || '-'}</td>
+            <td data-label="Qty">${med.qty || '-'}</td>
+            <td data-label="Harga Obat">Rp ${(med.subtotal || 0).toLocaleString('id-ID')}</td>
+            <td data-label="Total Biaya" style="font-weight: 700; color: #38bdf8;">${idx === 0 ? `Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}` : ''}</td>
           </tr>
         `;
       });
     } else {
       html += `
         <tr>
-          <td>${i + 1}</td>
-          <td>${r.tanggal || '-'}</td>
-          <td>${r.nikPabrik || '-'}</td>
-          <td><strong>${r.namaPasien}</strong></td>
-          <td>${r.dept || '-'}</td>
-          <td>${r.asesmen || '-'}</td>
-          <td>-</td>
-          <td style="text-align: center;">-</td>
-          <td style="text-align: right;">Rp 0</td>
-          <td style="font-weight: 700; color: #38bdf8; text-align: right;">Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}</td>
+          <td data-label="No">${i + 1}</td>
+          <td data-label="Tanggal">${r.tanggal || '-'}</td>
+          <td data-label="NPK">${r.nikPabrik || '-'}</td>
+          <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong></td>
+          <td data-label="Bagian">${r.dept || '-'}</td>
+          <td data-label="Diagnosa">${r.asesmen || '-'}</td>
+          <td data-label="Nama Obat">-</td>
+          <td data-label="Qty">-</td>
+          <td data-label="Harga Obat">Rp 0</td>
+          <td data-label="Total Biaya" style="font-weight: 700; color: #38bdf8;">Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}</td>
         </tr>
       `;
     }
@@ -3978,11 +3978,11 @@ function renderWAContactsTable() {
 
   tbody.innerHTML = appData.waContacts.map((c, i) => `
     <tr>
-      <td>${i + 1}</td>
-      <td><strong>${c.nama}</strong></td>
-      <td>${c.jabatan || '-'}</td>
-      <td><span style="font-weight: 700; color: #34d399;">${c.hp}</span></td>
-      <td style="text-align: center;">
+      <td data-label="No">${i + 1}</td>
+      <td data-label="Nama Kontak"><strong>${c.nama}</strong></td>
+      <td data-label="Jabatan">${c.jabatan || '-'}</td>
+      <td data-label="Nomor WA"><span style="font-weight: 700; color: #34d399;">${c.hp}</span></td>
+      <td data-label="Aksi" style="text-align: center;">
         <button class="btn btn-sm btn-primary" onclick="testWAContact('${c.hp}', '${(c.nama || '').replace(/'/g, "\\'")}')" style="padding: 3px 8px; font-size: 0.75rem;" title="Test Kirim WA"><i class="fa-brands fa-whatsapp"></i> Test</button>
         <button class="btn btn-sm btn-danger" onclick="deleteWAContact('${c.id}')" style="padding: 3px 8px; font-size: 0.75rem;" title="Hapus Kontak"><i class="fa-solid fa-trash-can"></i> Hapus</button>
       </td>
