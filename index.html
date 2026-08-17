@@ -515,12 +515,12 @@
               ℹ️ Input data rencana pengiriman obat dari Apotek Nafila ke PT ATI. Stok obat di PT ATI akan otomatis bertambah setelah surat jalan dikonfirmasi.
             </div>
 
-            <div class="pengiriman-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 20px; align-items: start;">
+            <div class="pengiriman-grid">
               <!-- Input Form -->
-              <div class="glass-card" style="padding: 16px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
+              <div class="glass-card" style="padding: 16px; background: rgba(255,255,255,0.02); width: 100%; box-sizing: border-box;">
                 <h4 style="margin-top: 0; color: #ec4899; font-weight: 700; margin-bottom: 14px; font-size: 1.05rem;"><i class="fa-solid fa-file-medical"></i> Form Pengiriman</h4>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div class="pengiriman-name-grid">
                   <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label">Nama Pengirim (Apotek) *</label>
                     <input type="text" id="ship-sender" class="form-control" placeholder="Nama Petugas Apotek..." style="font-weight: 700;">
@@ -538,7 +538,7 @@
                   </select>
                 </div>
 
-                <div class="pengiriman-stok-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div class="pengiriman-stok-grid">
                   <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label">Stok Awal PT ATI</label>
                     <input type="number" id="ship-initial-stock" class="form-control" readonly style="font-weight: 700; background: var(--surface-1); color: var(--text-muted);">
@@ -559,7 +559,7 @@
               </div>
 
               <!-- Draft List -->
-              <div class="glass-card" style="padding: 16px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.02); min-height: 290px; display: flex; flex-direction: column;">
+              <div class="glass-card" style="padding: 16px; background: rgba(255,255,255,0.02); min-height: 290px; display: flex; flex-direction: column; width: 100%; box-sizing: border-box;">
                 <h4 style="margin-top: 0; color: var(--text-color); font-weight: 700; margin-bottom: 14px; font-size: 1.05rem;"><i class="fa-solid fa-list-check"></i> Daftar Obat Rencana Kirim</h4>
                 
                 <div style="flex: 1; overflow-y: auto; max-height: 190px; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px;">

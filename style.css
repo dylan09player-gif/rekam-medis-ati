@@ -1361,6 +1361,42 @@ select.form-control {
   line-height: 1.6;
 }
 
+/* ===================== APOTEK & PENGIRIMAN OBAT ===================== */
+.pengiriman-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 18px;
+  margin-bottom: 20px;
+  align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pengiriman-name-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pengiriman-stok-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.gudang-subtabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* ===================== RESPONSIVE BREAKPOINTS ===================== */
 
 /* Tablet: SOAP panels go single column */
@@ -1582,16 +1618,47 @@ select.form-control {
     width: 100%;
   }
 
+  /* --- Gudang subtabs: compact and wrap evenly --- */
+  .gudang-subtabs {
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  .gudang-subtabs .btn {
+    flex: 1 1 calc(50% - 6px) !important;
+    font-size: 0.75rem !important;
+    padding: 8px 6px !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
   /* --- Pengiriman Obat grid: single column on mobile --- */
   .pengiriman-grid {
     grid-template-columns: 1fr !important;
     gap: 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
-  /* --- Pengiriman stok grid: keep 3 columns but smaller --- */
+  .pengiriman-name-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* --- Pengiriman stok grid: keep 3 columns but compact --- */
   .pengiriman-stok-grid {
     grid-template-columns: 1fr 1fr 1fr !important;
-    gap: 8px !important;
+    gap: 6px !important;
+  }
+  .pengiriman-stok-grid .form-control {
+    font-size: 0.85rem !important;
+    padding: 8px 4px !important;
+    text-align: center !important;
+  }
+  .pengiriman-stok-grid .form-label {
+    font-size: 0.7rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   /* --- Obat Req add buttons: stack vertically --- */
