@@ -3718,16 +3718,16 @@ function renderBillingPTTable() {
       r.resep.forEach((med, idx) => {
         html += `
           <tr>
-            <td data-label="No">${idx === 0 ? i + 1 : ''}</td>
-            <td data-label="Tanggal">${idx === 0 ? (r.tanggal || '-') : ''}</td>
-            <td data-label="NPK">${idx === 0 ? (r.nikPabrik || '-') : ''}</td>
-            <td data-label="Nama Pasien"><strong>${idx === 0 ? r.namaPasien : ''}</strong></td>
-            <td data-label="Bagian">${idx === 0 ? (r.dept || '-') : ''}</td>
-            <td data-label="Diagnosa">${idx === 0 ? (r.asesmen || '-') : ''}</td>
+            <td data-label="No">${i + 1}${r.resep.length > 1 ? `.${idx + 1}` : ''}</td>
+            <td data-label="Tanggal">${r.tanggal || '-'}</td>
+            <td data-label="NPK">${r.nikPabrik || '-'}</td>
+            <td data-label="Nama Pasien"><strong>${r.namaPasien || '-'}</strong></td>
+            <td data-label="Bagian">${r.dept || '-'}</td>
+            <td data-label="Diagnosa">${r.asesmen || '-'}</td>
             <td data-label="Nama Obat">${med.namaObat || med.obat || '-'}</td>
             <td data-label="Qty">${med.qty || '-'}</td>
             <td data-label="Harga Obat">Rp ${(med.subtotal || 0).toLocaleString('id-ID')}</td>
-            <td data-label="Total Biaya" style="font-weight: 700; color: #38bdf8;">${idx === 0 ? `Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}` : ''}</td>
+            <td data-label="Total Biaya" style="font-weight: 700; color: #38bdf8;">Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}</td>
           </tr>
         `;
       });
@@ -3737,7 +3737,7 @@ function renderBillingPTTable() {
           <td data-label="No">${i + 1}</td>
           <td data-label="Tanggal">${r.tanggal || '-'}</td>
           <td data-label="NPK">${r.nikPabrik || '-'}</td>
-          <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong></td>
+          <td data-label="Nama Pasien"><strong>${r.namaPasien || '-'}</strong></td>
           <td data-label="Bagian">${r.dept || '-'}</td>
           <td data-label="Diagnosa">${r.asesmen || '-'}</td>
           <td data-label="Nama Obat">-</td>

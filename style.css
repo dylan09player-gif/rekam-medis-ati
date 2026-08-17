@@ -1443,15 +1443,15 @@ select.form-control {
   /* Hide desktop nav links entirely — replaced by bottom nav */
   .nav-links { display: none !important; }
 
-  /* --- Main container: add bottom padding for bottom nav bar --- */
+  /* --- Main container: compact padding for 360px portrait mobile --- */
   .app-container {
-    padding: 12px 12px 82px;
+    padding: 6px 6px 76px !important;
   }
 
   /* --- SOAP layout: always single column --- */
   .soap-split-layout {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
   .soap-panel {
     height: auto;
@@ -1461,6 +1461,7 @@ select.form-control {
   /* --- Vitals grid: 2 columns (more comfortable than 5) --- */
   .vitals-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 6px !important;
   }
 
   /* --- Form grids: collapse to single column --- */
@@ -1468,7 +1469,7 @@ select.form-control {
     grid-template-columns: 1fr !important;
   }
   [style*="grid-template-columns: 1fr 1fr 1fr"] {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr !important;
   }
   [style*="grid-template-columns: 1fr 1.5fr"] {
     grid-template-columns: 1fr !important;
@@ -1477,24 +1478,24 @@ select.form-control {
     grid-template-columns: 1fr !important;
   }
 
-  /* --- Buttons: ensure minimum 44px touch target --- */
+  /* --- Buttons: ensure minimum 42px touch target --- */
   .btn {
-    min-height: 44px;
-    padding: 10px 14px;
+    min-height: 42px;
+    padding: 9px 12px;
     font-size: 0.84rem;
   }
   .btn-sm {
-    min-height: 36px;
-    padding: 7px 12px;
+    min-height: 34px;
+    padding: 6px 10px;
     font-size: 0.78rem;
   }
   .btn-block { width: 100%; }
 
-  /* --- Form controls: larger for finger tap --- */
+  /* --- Form controls: compact for 360px --- */
   .form-control {
-    min-height: 44px;
+    min-height: 42px;
     font-size: 16px; /* prevents iOS auto-zoom on focus */
-    padding: 10px 13px;
+    padding: 8px 10px;
   }
   select.form-control { font-size: 16px; }
   textarea.form-control { min-height: 80px; font-size: 16px; }
@@ -1515,8 +1516,12 @@ select.form-control {
     gap: 8px;
   }
 
-  /* --- Glass cards: reduce padding --- */
-  .glass-card { padding: 14px 12px; }
+  /* --- Glass cards: snug padding & crisp border on mobile --- */
+  .glass-card {
+    padding: 10px 8px !important;
+    border-radius: 8px !important;
+    border: 1.5px solid #243356 !important;
+  }
 
   /* --- POLI RESEP TABLE TO MOBILE CARD TRANSFORMATION --- */
   .resep-table {
@@ -1776,8 +1781,8 @@ select.form-control {
   }
 
   /* ============================================================
-     UNIVERSAL TABLE-TO-CARD MOBILE TRANSFORMATION
-     Transforms wide tables (Gudang, HSE, Billing, Opname, WA) into stacked cards
+     UNIVERSAL TABLE-TO-CARD MOBILE TRANSFORMATION (360px OPTIMIZED)
+     Transforms wide tables (Gudang, HSE, Billing, Opname, WA) into crisp cards
      ============================================================ */
   .table-responsive .custom-table {
     display: block !important;
@@ -1790,48 +1795,55 @@ select.form-control {
   .table-responsive .custom-table tbody {
     display: flex !important;
     flex-direction: column !important;
-    gap: 12px !important;
+    gap: 10px !important;
     width: 100% !important;
   }
   .table-responsive .custom-table tbody tr {
     display: flex !important;
     flex-direction: column !important;
-    background: var(--surface-1) !important;
-    border: 1.5px solid var(--border-card) !important;
-    border-radius: var(--r-lg) !important;
-    padding: 14px 14px 12px !important;
-    box-shadow: var(--shadow-sm) !important;
-    gap: 6px !important;
+    background: #111a2e !important;
+    border: 1.5px solid #2e4a7a !important;
+    border-radius: 8px !important;
+    padding: 10px 10px 8px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    gap: 4px !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }
+  .table-responsive .custom-table tbody tr:hover,
+  .table-responsive .custom-table tbody tr:active {
+    border-color: #38bdf8 !important;
+  }
   .table-responsive .custom-table tbody tr td {
     display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 6px 0 !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    padding: 4px 0 !important;
     border: none !important;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.08) !important;
-    font-size: 0.86rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    font-size: 0.84rem !important;
     width: 100% !important;
     box-sizing: border-box !important;
     white-space: normal !important;
     word-break: break-word !important;
-    text-align: right !important;
+    text-align: left !important;
+    gap: 6px !important;
   }
   .table-responsive .custom-table tbody tr td:last-child {
     border-bottom: none !important;
-    padding-top: 8px !important;
-    justify-content: flex-end !important;
+    padding-top: 6px !important;
+    justify-content: flex-start !important;
     gap: 8px !important;
   }
   .table-responsive .custom-table tbody tr td[data-label]::before {
-    content: attr(data-label);
+    content: attr(data-label) ":";
     font-weight: 700;
-    color: var(--primary-light);
-    font-size: 0.78rem;
-    margin-right: 12px;
-    flex-shrink: 0;
+    color: #38bdf8 !important;
+    font-size: 0.76rem;
+    min-width: 90px !important;
+    max-width: 105px !important;
+    flex-shrink: 0 !important;
     text-transform: uppercase;
     text-align: left !important;
   }
