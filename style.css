@@ -1517,8 +1517,162 @@ select.form-control {
   /* --- Glass cards: reduce padding --- */
   .glass-card { padding: 14px 12px; }
 
-  /* --- Stat cards: smaller value text --- */
-  .stat-value { font-size: 1.5rem; }
+  /* --- POLI RESEP TABLE TO MOBILE CARD TRANSFORMATION --- */
+  .resep-table {
+    display: block !important;
+    width: 100% !important;
+    border: none !important;
+  }
+
+  .resep-table thead {
+    display: none !important;
+  }
+
+  .resep-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  #poli-resep-body tr {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    background: var(--surface-2) !important;
+    border: 1.5px solid var(--border-card) !important;
+    border-radius: var(--r-md) !important;
+    padding: 12px 10px !important;
+    box-shadow: var(--shadow-sm) !important;
+    position: relative !important;
+    gap: 8px !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  #poli-resep-body tr:hover {
+    border-color: rgba(56, 189, 248, 0.5) !important;
+  }
+
+  /* Cell 1: Searchable Medicine Input (Full Width - delete button width) */
+  #poli-resep-body tr td:nth-child(1) {
+    display: block !important;
+    flex: 1 1 calc(100% - 48px) !important;
+    width: calc(100% - 48px) !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  /* Cell 5: Delete Trash Button (Top Right) */
+  #poli-resep-body tr td:nth-child(5) {
+    display: flex !important;
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    padding: 0 !important;
+    justify-content: flex-end !important;
+    align-items: flex-start !important;
+    border: none !important;
+  }
+
+  #poli-resep-body tr td:nth-child(5) .btn {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* Cell 2: Aturan Pakai / Dosis (Full Width on 2nd row) */
+  #poli-resep-body tr td:nth-child(2) {
+    display: block !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  /* Cell 3: Jumlah / Qty */
+  #poli-resep-body tr td:nth-child(3) {
+    display: block !important;
+    flex: 1 1 calc(38% - 4px) !important;
+    width: calc(38% - 4px) !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  /* Cell 4: Total Harga Badge */
+  #poli-resep-body tr td:nth-child(4) {
+    display: block !important;
+    flex: 1 1 calc(62% - 4px) !important;
+    width: calc(62% - 4px) !important;
+    padding: 0 !important;
+    border: none !important;
+    text-align: right !important;
+  }
+
+  #poli-resep-body tr td:nth-child(4) .med-subtotal-badge {
+    width: 100% !important;
+    height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+    border-radius: var(--r-sm) !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+
+  /* Searchable dropdown menu full width and spacious on mobile */
+  .med-searchable-wrap .searchable-dropdown-menu {
+    width: 100% !important;
+    min-width: 270px !important;
+    max-width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    max-height: 230px !important;
+  }
+
+  .med-searchable-wrap .searchable-option-item {
+    padding: 11px 12px !important;
+  }
+
+  .med-searchable-wrap .searchable-option-item strong {
+    font-size: 0.92rem !important;
+  }
+
+  .med-searchable-wrap .searchable-option-item .option-sub {
+    font-size: 0.76rem !important;
+  }
+
+  /* Diagnosis ICD-10 Row on Mobile */
+  .poli-icd10-row {
+    display: flex !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-bottom: 8px !important;
+    align-items: center !important;
+  }
+
+  .poli-icd10-row .custom-searchable-wrap {
+    flex: 1 1 auto !important;
+    width: calc(100% - 48px) !important;
+  }
+
+  .poli-icd10-row .btn-danger {
+    width: 40px !important;
+    height: 40px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Total Biaya Card on Mobile */
+  .resep-total-summary-card {
+    padding: 12px 14px !important;
+    margin: 10px 0 14px 0 !important;
+  }
+
+  .resep-total-amount {
+    font-size: 1.4rem !important;
+  }
 
   /* --- DESKTOP TABLE: hide on mobile, show mobile cards --- */
   .table-responsive { display: none !important; }
