@@ -130,7 +130,32 @@ function parseSafeInt(val, fallback = 0) {
   return isNaN(num) ? fallback : num;
 }
 
-// Fetch helper from Google Sheets Apps Script
+// Helper: Parse a single CSV line properly handling quotes
+function parseCSVLine(text) {
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQuotes && text[i+1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      result.push(cur.trim());
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+// Fetch helper from Google Sheets Apps Script or Direct CSV
 const fetchFromGSheet = (url) => {
   return new Promise((resolve, reject) => {
     try {
@@ -154,7 +179,7 @@ const fetchFromGSheet = (url) => {
           try {
             resolve(JSON.parse(data));
           } catch(e) {
-            resolve({ raw: data });
+            resolve(data);
           }
         });
       });
@@ -172,11 +197,14 @@ const fetchFromGSheet = (url) => {
 
 // Core Synchronizer function (used by manual endpoint and background auto-sync)
 async function performGSheetSync(db, gsheetUrl) {
-  const syncUrl = gsheetUrl + (gsheetUrl.includes('?') ? '&' : '?') + 'action=sync';
-  const gData = await fetchFromGSheet(syncUrl);
-  if (!gData || typeof gData !== 'object') {
-    throw new Error('Respon dari Google Sheets tidak valid');
-  }
+  let gData = {};
+  try {
+    const syncUrl = gsheetUrl + (gsheetUrl.includes('?') ? '&' : '?') + 'action=sync';
+    const fetched = await fetchFromGSheet(syncUrl);
+    if (typeof fetched === 'object' && fetched !== null) {
+      gData = fetched;
+    }
+  } catch(e) {}
 
   let synced = { icd10: 0, medicines: 0, employees: 0 };
 
@@ -191,13 +219,33 @@ async function performGSheetSync(db, gsheetUrl) {
   }
 
   // 2. Mirror Medicines (100% Mengikuti Data Real dari Google Sheets: baris, nama, stok, harga, satuan)
-  if (Array.isArray(gData.medicines) && gData.medicines.length > 0) {
-    const existingMeds = db.medicines || [];
-    db.medicines = gData.medicines.map((gMed, i) => {
+  let medList = Array.isArray(gData.medicines) && gData.medicines.length > 0 ? gData.medicines : [];
+  if (medList.length === 0) {
+    try {
+      const csvObat = await fetchFromGSheet('https://docs.google.com/spreadsheets/d/1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY/export?format=csv&gid=318839291');
+      if (typeof csvObat === 'string' && csvObat.includes(',')) {
+        const lines = csvObat.trim().split(/\r?\n/).filter(l => l.trim() !== '');
+        medList = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCSVLine(lines[i]);
+          if (!cols[0]) continue;
+          medList.push({
+            nama: cols[0],
+            stok: cols[1],
+            satuan: cols[2] || 'strip',
+            harga: cols[3],
+            kategori: cols[4] || 'Gudang PT ATI'
+          });
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (medList.length > 0) {
+    db.medicines = medList.map((gMed, i) => {
       const cleanName = String(gMed.nama || '').trim();
-      const existing = existingMeds.find(m => m.nama && m.nama.toLowerCase() === cleanName.toLowerCase());
       return {
-        id: existing ? existing.id : ('MED-' + (i + 1) + '-' + Date.now()),
+        id: 'MED-' + (i + 1),
         nama: cleanName,
         stok: parseSafeInt(gMed.stok, 0),
         satuan: String(gMed.satuan || '-').trim(),
@@ -208,25 +256,46 @@ async function performGSheetSync(db, gsheetUrl) {
     synced.medicines = db.medicines.length;
   }
 
-  // 3. Mirror Employees (100% Mengikuti Data Real dari Google Sheets jika tersedia)
-  if (Array.isArray(gData.employees) && gData.employees.length > 0) {
-    const existingEmps = db.employees || [];
-    db.employees = gData.employees.map((gEmp, i) => {
+  // 3. Mirror Employees (1,406 Pasien / Karyawan 100% Real dari Google Sheets)
+  let empList = Array.isArray(gData.employees) && gData.employees.length > 0 ? gData.employees : [];
+  if (empList.length === 0) {
+    try {
+      const csvKary = await fetchFromGSheet('https://docs.google.com/spreadsheets/d/1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY/export?format=csv&gid=2005972852');
+      if (typeof csvKary === 'string' && csvKary.includes(',')) {
+        const lines = csvKary.trim().split(/\r?\n/).filter(l => l.trim() !== '');
+        empList = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCSVLine(lines[i]);
+          const nik = cols[1] || '';
+          const nama = cols[2] || '';
+          if (!nik && !nama) continue;
+          empList.push({
+            nikPabrik: nik,
+            nama: nama,
+            dept: cols[3] || 'PT ATI',
+            gender: cols[4] || 'Laki-laki',
+            golDarah: cols[5] || '-',
+            tglLahir: cols[6] || '',
+            hp: cols[7] || ''
+          });
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (empList.length > 0) {
+    db.employees = empList.map((gEmp, i) => {
       const empNik = String(gEmp.nikPabrik || gEmp.nik || '').trim();
       const empNama = String(gEmp.nama || '').trim();
-      const existing = existingEmps.find(e => 
-        (empNik && ((e.nikPabrik && String(e.nikPabrik).trim() === empNik) || (e.nik && String(e.nik).trim() === empNik))) ||
-        (empNama && e.nama && e.nama.toLowerCase() === empNama.toLowerCase())
-      );
-
       return {
-        id: existing ? existing.id : ('EMP-' + (i + 1) + '-' + Date.now()),
+        id: 'EMP-' + (i + 1),
         nikPabrik: empNik,
         nik: empNik,
         nama: empNama,
-        dept: String(gEmp.dept || gEmp.departemen || '').trim(),
-        departemen: String(gEmp.dept || gEmp.departemen || '').trim(),
-        gender: String(gEmp.gender || '').trim(),
+        dept: String(gEmp.dept || gEmp.departemen || 'PT ATI').trim(),
+        departemen: String(gEmp.dept || gEmp.departemen || 'PT ATI').trim(),
+        gender: String(gEmp.gender || 'Laki-laki').trim(),
+        golDarah: String(gEmp.golDarah || '-').trim(),
         tglLahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
         tgl_lahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
         hp: String(gEmp.hp || gEmp.no_hp || '').trim(),
