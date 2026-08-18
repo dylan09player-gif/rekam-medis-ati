@@ -69,20 +69,20 @@
       <button class="nav-btn" data-target="view-edit-data">
         <i class="fa-solid fa-clock-rotate-left"></i> EDIT DATA
       </button>
-      <button class="nav-btn" data-target="view-gudang">
-        <i class="fa-solid fa-boxes-stacked"></i> GUDANG
+      <button class="nav-btn" data-target="view-karyawan">
+        <i class="fa-solid fa-id-card"></i> KARYAWAN
+      </button>
+      <button class="nav-btn" data-target="view-hse">
+        <i class="fa-solid fa-chart-pie"></i> HSE
       </button>
       <button class="nav-btn" data-target="view-obat-req">
         <i class="fa-solid fa-capsules"></i> OBAT REQ
       </button>
-      <button class="nav-btn" data-target="view-karyawan">
-        <i class="fa-solid fa-id-card"></i> KARYAWAN
+      <button class="nav-btn" data-target="view-gudang">
+        <i class="fa-solid fa-boxes-stacked"></i> GUDANG
       </button>
       <button class="nav-btn" data-target="view-shift">
         <i class="fa-solid fa-paper-plane"></i> SHIFT
-      </button>
-      <button class="nav-btn" data-target="view-hse">
-        <i class="fa-solid fa-chart-pie"></i> HSE
       </button>
       <button class="nav-btn" data-target="view-manajemen">
         <i class="fa-solid fa-sack-dollar"></i> MANAJEMEN
@@ -90,13 +90,16 @@
       <button class="nav-btn" data-target="view-gsheet">
         <i class="fa-brands fa-google-drive"></i> G-SHEET SYNC
       </button>
-      <button class="theme-toggle-btn" id="btn-toggle-theme" title="Ubah Tema">
+    </nav>
+
+    <div class="app-navbar-actions" style="display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: auto;">
+      <button class="theme-toggle-btn" id="btn-toggle-theme" title="Ubah Tema" style="width: 32px; height: 32px;">
         <i class="fa-solid fa-moon"></i>
       </button>
-      <button class="btn btn-sm btn-secondary" onclick="handleLogout()" title="Keluar">
+      <button class="btn btn-sm btn-secondary" onclick="handleLogout()" title="Keluar" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
         <i class="fa-solid fa-right-from-bracket"></i>
       </button>
-    </nav>
+    </div>
   </header>
 
   <!-- ========================================================
@@ -223,29 +226,7 @@
                 <label class="form-label marunda-section-label">
                   <span class="soap-chip soap-chip-o">O</span> 2. TTV &amp; PEMERIKSAAN FISIK (Objektif)
                 </label>
-                <div class="vitals-grid">
-                  <div class="vital-item">
-                    <label><i class="fa-solid fa-heart-pulse" style="color:#ef4444;"></i> TD (mmHg)</label>
-                    <input type="text" id="poli-td" class="form-control" placeholder="120/80">
-                  </div>
-                  <div class="vital-item">
-                    <label><i class="fa-solid fa-wave-square" style="color:#0ea5e9;"></i> Nadi (bpm)</label>
-                    <input type="text" id="poli-nadi" class="form-control" placeholder="80">
-                  </div>
-                  <div class="vital-item">
-                    <label><i class="fa-solid fa-temperature-three-quarters" style="color:#f59e0b;"></i> Suhu (°C)</label>
-                    <input type="text" id="poli-suhu" class="form-control" placeholder="36.5">
-                  </div>
-                  <div class="vital-item">
-                    <label><i class="fa-solid fa-weight-scale" style="color:#10b981;"></i> BB (kg)</label>
-                    <input type="text" id="poli-bb" class="form-control" placeholder="65">
-                  </div>
-                  <div class="vital-item">
-                    <label><i class="fa-solid fa-ruler-vertical" style="color:#8b5cf6;"></i> TB (cm)</label>
-                    <input type="text" id="poli-tb" class="form-control" placeholder="168">
-                  </div>
-                </div>
-                <textarea id="poli-objektif-detail" class="form-control" placeholder="Detail pemeriksaan fisik dasar (farings, auskultasi, dll)..."></textarea>
+                <textarea id="poli-objektif-detail" class="form-control" placeholder="Tuliskan hasil pemeriksaan (contoh: TD 120/80, Nadi 80, farings hiperemis, dll)..." style="min-height: 100px;"></textarea>
               </div>
 
               <!-- 3. DIAGNOSIS (MULTI - ICD 10) (Asesmen - A) -->
@@ -256,23 +237,21 @@
                 <div id="container-icd10-list">
                   <!-- Dynamic ICD10 Select Inputs -->
                 </div>
-                <button type="button" class="btn btn-sm btn-secondary btn-block" style="margin-top: 6px;" onclick="addICD10Row()">
-                  <i class="fa-solid fa-plus"></i> Tambah Diagnosis
-                </button>
               </div>
 
               <!-- 4. RESEP OBAT (STOK TERLIHAT, SEARCHABLE & TOTAL BIAYA) (Plan - P) -->
               <div class="form-group">
-                <label class="form-label marunda-section-label">
-                  <span class="soap-chip soap-chip-p">P</span> 4. RESEP OBAT (Stok Live, Searchable &amp; Total Biaya)
-                </label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <label class="form-label marunda-section-label" style="margin-bottom: 0;">
+                    <span class="soap-chip soap-chip-p">P</span> 4. RESEP OBAT
+                  </label>
+                </div>
                 <table class="resep-table">
                   <thead>
                     <tr>
-                      <th style="width: 38%;">Obat &amp; Stok</th>
-                      <th style="width: 28%;">Aturan Pakai / Dosis</th>
-                      <th style="width: 14%;">Jumlah</th>
-                      <th style="width: 16%; text-align: right;">Total Harga</th>
+                      <th style="width: 56%;">Obat &amp; Stok</th>
+                      <th style="width: 20%;">Jumlah</th>
+                      <th style="width: 20%; text-align: right;">Total Harga</th>
                       <th style="width: 4%;"></th>
                     </tr>
                   </thead>
@@ -280,6 +259,16 @@
                     <!-- Dynamic Medicine Rows with Live Stock & Price Calculation -->
                   </tbody>
                 </table>
+                <datalist id="qty-suggestions">
+                  <option value="1">
+                  <option value="2">
+                  <option value="3">
+                  <option value="5">
+                  <option value="6">
+                  <option value="10">
+                  <option value="15">
+                  <option value="30">
+                </datalist>
                 <div class="resep-total-summary-card">
                   <div class="resep-total-info">
                     <i class="fa-solid fa-calculator" style="color: var(--accent);"></i>
@@ -287,9 +276,20 @@
                   </div>
                   <div class="resep-total-amount" id="poli-resep-grand-total">Rp 0</div>
                 </div>
-                <button type="button" class="btn btn-sm btn-secondary btn-block" onclick="addPoliMedicineRow()">
-                  <i class="fa-solid fa-plus"></i> Tambah Obat
-                </button>
+
+                <div class="resep-total-summary-card" style="margin-top: 10px; background: rgba(52, 211, 153, 0.1); border: 1.5px solid rgba(52, 211, 153, 0.3);">
+                  <div style="display: flex; flex-direction: column; width: 100%; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); font-size: 0.9rem;">
+                      <span><i class="fa-solid fa-wallet"></i> Saldo Uang Obat Saat Ini:</span>
+                      <strong id="poli-saldo-awal" style="color: var(--text-primary);">Rp 0</strong>
+                    </div>
+                    <div style="height: 1px; background: rgba(52, 211, 153, 0.2); width: 100%;"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem;">
+                      <span style="color: #34d399; font-weight: 600;"><i class="fa-solid fa-money-bill-transfer"></i> Sisa Saldo Setelah Berobat:</span>
+                      <strong id="poli-sisa-saldo" style="color: #34d399; font-weight: 700;">Rp 0</strong>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- 5. NAMA NAKES / PEMERIKSA (SEARCHABLE & FREKUENSI TERPOPULER) -->
@@ -306,28 +306,35 @@
                     <!-- Quick Select Chips for Top Frequent Nakes -->
                   </div>
                 </div>
-                <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
-                  <input type="checkbox" id="poli-izin-sakit" style="width: 18px; height: 18px;">
-                  <label for="poli-izin-sakit" style="font-weight: 700; font-size: 0.88rem; cursor: pointer;">
-                    <i class="fa-solid fa-file-medical"></i> Izin Sakit / Surat Istirahat Dokter (Surkes)?
+              </div>
+
+              <!-- 3 KOTAK: IZIN SAKIT, PANTAUAN, UPLOAD -->
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+                
+                <!-- Izin Sakit (Kuning) -->
+                <div style="border: 1.5px dashed #f59e0b; background: rgba(245, 158, 11, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; align-items: center; gap: 12px;">
+                  <input type="checkbox" id="poli-izin-sakit" style="width: 20px; height: 20px; cursor: pointer;">
+                  <label for="poli-izin-sakit" style="color: #d97706; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; width: 100%;">
+                    <i class="fa-solid fa-file-medical"></i> IZIN SAKIT / SURAT ISTIRAHAT DOKTER (SURKES)
                   </label>
                 </div>
-              </div>
 
-              <!-- RED BANNER: TANDAI PASIEN DALAM PANTAUAN -->
-              <div class="pantauan-banner">
-                <input type="checkbox" id="poli-pantauan" style="width: 20px; height: 20px;">
-                <label for="poli-pantauan">
-                  <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
-                </label>
-              </div>
+                <!-- Pantauan (Merah) -->
+                <div style="border: 1.5px dashed #ef4444; background: rgba(239, 68, 68, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; align-items: center; gap: 12px;">
+                  <input type="checkbox" id="poli-pantauan" style="width: 20px; height: 20px; cursor: pointer;">
+                  <label for="poli-pantauan" style="color: #b91c1c; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; width: 100%;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
+                  </label>
+                </div>
 
-              <!-- 6. UPLOAD FOTO / DOKUMEN REKAM MEDIS (Opsional) -->
-              <div class="form-group">
-                <label class="form-label marunda-section-label">
-                  <i class="fa-solid fa-paperclip"></i> 6. UPLOAD FOTO / DOKUMEN REKAM MEDIS (Opsional)
-                </label>
-                <input type="file" id="poli-upload-file" class="form-control" accept="image/*,.pdf">
+                <!-- Upload File (Hijau) -->
+                <div style="border: 1.5px dashed #10b981; background: rgba(16, 185, 129, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+                  <label for="poli-upload-file" style="color: #047857; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i class="fa-solid fa-paperclip"></i> UPLOAD DATA PENUNJANG DARI LUAR (OPSIONAL)
+                  </label>
+                  <input type="file" id="poli-upload-file" class="form-control" accept="image/*,.pdf" style="border: 1px solid rgba(16, 185, 129, 0.3); background: #ffffff;">
+                </div>
+
               </div>
 
               <!-- Submit Button -->
@@ -597,55 +604,86 @@
 
     <!-- 4. TAB OBAT REQ (PERMINTAAN OBAT KE APOTEK NAFILA VIA WHATSAPP API) -->
     <section id="view-obat-req" class="page-view">
-      <div class="glass-card" style="max-width: 750px; margin: 0 auto;">
-        <h2><i class="fa-solid fa-capsules" style="color: var(--warning);"></i> 💊 Permintaan Obat ke Apotek Nafila</h2>
+      <div class="soap-split-layout">
         
-        <div class="info-banner info-banner-yellow" style="margin: 16px 0 24px 0;">
-          ⚠️ Form ini hanya mengirimkan <strong>PERMINTAAN via WhatsApp</strong> secara otomatis ke nomor WhatsApp Apoteker Nafila.
-        </div>
-
-        <form id="form-obat-req" onsubmit="handleSendObatReqWA(event)">
-          <div class="form-group">
-            <label class="form-label marunda-section-label">NAMA PERAWAT / PENGIRIM</label>
-            <input type="text" id="req-nama-perawat" class="form-control" placeholder="Nama perawat..." required>
+        <!-- PANEL KIRI: Catalog/Daftar Obat A-Z & Monitoring Stok -->
+        <div class="glass-card soap-panel" style="height: auto; min-height: 520px;">
+          <div class="soap-panel-header" style="flex-wrap: wrap; gap: 8px;">
+            <div class="soap-panel-title">
+              <i class="fa-solid fa-list-check" style="color: var(--primary);"></i> 💊 Daftar Stok &amp; Pilih Obat (A-Z)
+            </div>
+            <input type="text" id="req-search-medicines" class="form-control form-control-sm" placeholder="🔍 Cari nama obat..." style="max-width: 220px; font-size: 0.85rem;" onkeyup="filterReqMedicines()">
           </div>
-
-          <div class="form-group">
-            <label class="form-label marunda-section-label">KIRIM PERMINTAAN KE (TUJUAN WHATSAPP)</label>
-            <select id="req-target-wa" class="form-control" required style="font-weight: 700;">
-              <!-- Rendered dynamically -->
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label marunda-section-label">DAFTAR PERMINTAAN OBAT</label>
-            <table class="resep-table">
+          
+          <div class="table-responsive" style="flex: 1; overflow-y: auto; max-height: calc(100vh - 200px);">
+            <table class="custom-table" style="font-size: 0.88rem;">
               <thead>
                 <tr>
-                  <th style="width: 60%;">Nama Obat</th>
-                  <th style="width: 30%;">Jumlah Req</th>
-                  <th></th>
+                  <th>Nama Obat</th>
+                  <th style="width: 28%; text-align: center;">Stok Saat Ini</th>
+                  <th style="width: 32%; text-align: center;">Tambah Ke Request</th>
                 </tr>
               </thead>
-              <tbody id="req-table-body">
-                <!-- Dynamic Rows -->
+              <tbody id="req-catalog-body">
+                <!-- Rendered dynamically from appData.medicines -->
               </tbody>
             </table>
+          </div>
+        </div>
 
-            <div class="obat-req-actions" style="display: flex; gap: 10px; margin-top: 10px;">
-              <button type="button" class="btn btn-sm btn-secondary" onclick="addObatReqRowDropdown()">
-                + OBAT DARI DAFTAR (DROPDOWN)
-              </button>
-              <button type="button" class="btn btn-sm btn-secondary" onclick="addObatReqRowManual()">
-                + OBAT BARU (KETIK MANUAL)
-              </button>
+        <!-- PANEL KANAN: Form Permintaan (Keranjang & Submit WA) -->
+        <div class="glass-card soap-panel" style="height: auto;">
+          <div class="soap-panel-header">
+            <div class="soap-panel-title">
+              <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> Form Permintaan via WA
             </div>
           </div>
+          
+          <div class="info-banner info-banner-yellow" style="margin-bottom: 12px; font-size: 0.82rem; padding: 10px 14px;">
+            ⚠️ Form ini hanya mengirimkan <strong>PERMINTAAN via WhatsApp</strong> secara otomatis ke nomor WhatsApp Apoteker Nafila.
+          </div>
 
-          <button type="submit" class="btn btn-warning" style="width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 700; background: #f59e0b; color: #000; margin-top: 20px;">
-            <i class="fa-brands fa-whatsapp"></i> KIRIM PERMINTAAN via WhatsApp
-          </button>
-        </form>
+          <form id="form-obat-req" onsubmit="handleSendObatReqWA(event)">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label marunda-section-label" style="font-size: 0.76rem;">NAMA PERAWAT / PENGIRIM</label>
+              <input type="text" id="req-nama-perawat" class="form-control" placeholder="Nama perawat..." required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label marunda-section-label" style="font-size: 0.76rem;">KIRIM PERMINTAAN KE (TUJUAN WHATSAPP)</label>
+              <select id="req-target-wa" class="form-control" required style="font-weight: 700;">
+                <!-- Rendered dynamically -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label marunda-section-label" style="font-size: 0.76rem;">DAFTAR PERMINTAAN OBAT (DRAFT)</label>
+              <table class="resep-table" style="font-size: 0.86rem; margin-bottom: 8px;">
+                <thead>
+                  <tr>
+                    <th style="width: 60%;">Nama Obat</th>
+                    <th style="width: 30%;">Jumlah Req</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="req-table-body">
+                  <!-- Dynamic Rows added from Catalog or manually -->
+                </tbody>
+              </table>
+
+              <div class="obat-req-actions" style="display: flex; gap: 8px; margin-top: 6px;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="addObatReqRowManual()" style="font-size: 0.75rem; padding: 6px 10px;">
+                  <i class="fa-solid fa-plus"></i> + KETIK OBAT MANUAL BARU
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-warning" style="width: 100%; padding: 12px; font-size: 0.98rem; font-weight: 700; background: #f59e0b; color: #000; margin-top: 15px; border-radius: var(--r-md); border: none;">
+              <i class="fa-brands fa-whatsapp"></i> KIRIM PERMINTAAN via WhatsApp
+            </button>
+          </form>
+        </div>
+
       </div>
     </section>
 
@@ -671,16 +709,16 @@
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width: 5%; text-align: center;">NO</th>
-                <th style="width: 12%;">NPK PABRIK</th>
-                <th style="width: 20%;">NAMA KARYAWAN / PASIEN</th>
-                <th style="width: 14%;">DEPARTEMEN</th>
-                <th style="width: 11%;">TGL LAHIR</th>
-                <th style="width: 8%;">USIA</th>
-                <th style="width: 8%;">GENDER</th>
-                <th style="width: 7%;">GOL. DARAH</th>
-                <th style="width: 14%;">NO. WHATSAPP</th>
-                <th style="width: 11%; text-align: center;">AKSI</th>
+                <th style="width: 4%; text-align: center;">NO</th>
+                <th style="width: 10%;">NPK PABRIK</th>
+                <th style="width: 17%;">NAMA KARYAWAN / PASIEN</th>
+                <th style="width: 12%;">DEPARTEMEN</th>
+                <th style="width: 10%;">TGL LAHIR</th>
+                <th style="width: 6%;">USIA</th>
+                <th style="width: 6%;">GENDER</th>
+                <th style="width: 11%;">NO. WHATSAPP</th>
+                <th style="width: 12%;">SALDO OBAT</th>
+                <th style="width: 12%; text-align: center;">AKSI</th>
               </tr>
             </thead>
             <tbody id="table-karyawan-body">
@@ -1183,18 +1221,34 @@ function setupTabDanHeader() {
         <div class="form-group">
           <label class="form-label" style="font-weight: 700; text-transform: uppercase;">DIAGNOSIS (MULTI)</label>
           <div id="edit-container-icd10" style="margin-bottom: 8px;"></div>
-          <button type="button" class="btn btn-sm btn-secondary" onclick="addEditICD10Row()" style="width: 100%; border: 1px dashed var(--border-color); background: rgba(255,255,255,0.04); font-weight: 600;">
-            + Tambah
-          </button>
         </div>
 
         <!-- OBAT (KOREKSI OTOMATIS) -->
         <div class="form-group">
           <label class="form-label" style="font-weight: 700; text-transform: uppercase; color: #38bdf8;">OBAT (KOREKSI OTOMATIS)</label>
           <div id="edit-container-resep" style="margin-bottom: 8px;"></div>
-          <button type="button" class="btn btn-sm btn-secondary" onclick="addEditResepRow()" style="width: 100%; border: 1px dashed #38bdf8; background: rgba(56, 189, 248, 0.05); color: #38bdf8; font-weight: 600;">
-            + Tambah
-          </button>
+          
+          <div class="resep-total-summary-card" style="margin-top: 10px;">
+            <div class="resep-total-info">
+              <i class="fa-solid fa-calculator" style="color: var(--accent);"></i>
+              <span>Total Biaya Berobat / Obat:</span>
+            </div>
+            <div class="resep-total-amount" id="edit-resep-grand-total">Rp 0</div>
+          </div>
+
+          <div class="resep-total-summary-card" style="margin-top: 10px; background: rgba(52, 211, 153, 0.1); border: 1.5px solid rgba(52, 211, 153, 0.3);">
+            <div style="display: flex; flex-direction: column; width: 100%; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); font-size: 0.9rem;">
+                <span><i class="fa-solid fa-wallet"></i> Saldo Uang Obat Saat Ini:</span>
+                <strong id="edit-saldo-awal" style="color: var(--text-primary);">Rp 0</strong>
+              </div>
+              <div style="height: 1px; background: rgba(52, 211, 153, 0.2); width: 100%;"></div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem;">
+                <span style="color: #34d399; font-weight: 600;"><i class="fa-solid fa-money-bill-transfer"></i> Sisa Saldo Setelah Edit:</span>
+                <strong id="edit-sisa-saldo" style="color: #34d399; font-weight: 700;">Rp 0</strong>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -1202,19 +1256,33 @@ function setupTabDanHeader() {
           <input type="text" id="edit-pemeriksa" class="form-control" placeholder="Nama Nakes / Dokter">
         </div>
 
-        <div class="form-group">
-          <label class="form-label" style="font-weight: 700; text-transform: uppercase;">
-            <i class="fa-solid fa-paperclip"></i> UPLOAD FOTO / DOKUMEN (Opsional)
-          </label>
-          <input type="file" id="edit-upload-file" class="form-control" accept="image/*,.pdf">
-        </div>
+        <!-- 3 KOTAK: IZIN SAKIT, PANTAUAN, UPLOAD (Disamakan dengan Poli) -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px; margin-bottom: 20px;">
+          
+          <!-- Izin Sakit (Kuning) -->
+          <div style="border: 1.5px dashed #f59e0b; background: rgba(245, 158, 11, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; align-items: center; gap: 12px;">
+            <input type="checkbox" id="edit-izin-sakit" style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="edit-izin-sakit" style="color: #d97706; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; width: 100%;">
+              <i class="fa-solid fa-file-medical"></i> IZIN SAKIT / SURAT ISTIRAHAT DOKTER (SURKES)
+            </label>
+          </div>
 
+          <!-- Pantauan (Merah) -->
+          <div style="border: 1.5px dashed #ef4444; background: rgba(239, 68, 68, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; align-items: center; gap: 12px;">
+            <input type="checkbox" id="edit-is-pantauan" style="width: 20px; height: 20px; cursor: pointer; accent-color: #ef4444;">
+            <label for="edit-is-pantauan" style="color: #b91c1c; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; width: 100%;">
+              <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
+            </label>
+          </div>
 
-        <div class="form-group" style="margin-top: 14px; margin-bottom: 18px;">
-          <label style="display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; color: #ef4444; cursor: pointer; border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; background: rgba(239, 68, 68, 0.08);">
-            <input type="checkbox" id="edit-is-pantauan" style="width: 18px; height: 18px; accent-color: #ef4444;">
-            <span>🔴 TANDAI PASIEN DALAM PANTAUAN</span>
-          </label>
+          <!-- Upload File (Hijau) -->
+          <div style="border: 1.5px dashed #10b981; background: rgba(16, 185, 129, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+            <label for="edit-upload-file" style="color: #047857; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; margin: 0;">
+              <i class="fa-solid fa-paperclip"></i> UPLOAD DATA PENUNJANG DARI LUAR (OPSIONAL)
+            </label>
+            <input type="file" id="edit-upload-file" class="form-control" accept="image/*,.pdf" style="border: 1px solid rgba(16, 185, 129, 0.3); background: #ffffff;">
+          </div>
+
         </div>
 
         <div style="display: flex; gap: 10px;">
@@ -1331,6 +1399,11 @@ function setupTabDanHeader() {
           </div>
         </div>
 
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label">Saldo Uang Obat Saat Ini (Rp)</label>
+          <input type="number" id="karyawan-saldo-obat" class="form-control" placeholder="Contoh: 100000" min="0" value="0">
+        </div>
+
         <div class="form-group" style="background: rgba(16, 185, 129, 0.1); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: var(--r-md); padding: 12px; margin-top: 10px;">
           <label class="form-label" style="color: #34d399; font-weight: 700; display: flex; align-items: center; gap: 6px;">
             <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> No. HP WhatsApp (Pemantauan Pasien)
@@ -1405,7 +1478,7 @@ function setupTabDanHeader() {
           </div>
           <div class="form-group">
             <label class="form-label">Harga Satuan (Rp) *</label>
-            <input type="number" id="edit-obat-harga" class="form-control" required min="0" step="10" style="font-weight: 700; color: #38bdf8;">
+            <input type="number" id="edit-obat-harga" class="form-control" required min="0" step="any" style="font-weight: 700; color: #38bdf8;">
           </div>
           <div class="form-group">
             <label class="form-label">Satuan *</label>
@@ -1491,6 +1564,11 @@ function setupTabDanHeader() {
             <label class="form-label">Tanggal Lahir</label>
             <input type="text" id="edit-karyawan-tgllahir" class="form-control" placeholder="DD-MM-YYYY">
           </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label">Saldo Uang Obat Saat Ini (Rp)</label>
+          <input type="number" id="edit-karyawan-saldo-obat" class="form-control" placeholder="Contoh: 100000">
         </div>
 
         <!-- NO HP WHATSAPP UNTUK PEMANTAUAN -->

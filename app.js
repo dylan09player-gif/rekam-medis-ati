@@ -245,6 +245,7 @@ async function loadAllAppData() {
     renderMobileKaryawanCards();
     renderWAContactsTable();
     renderWATargetSelectOptions();
+    renderReqMedicineCatalog();
 
     console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}`);
 
@@ -289,6 +290,10 @@ function initNavigation() {
       document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active'));
       const targetView = document.getElementById(targetId);
       if (targetView) targetView.classList.add('active');
+
+      if (targetId === 'view-obat-req') {
+        renderReqMedicineCatalog();
+      }
     });
   });
 }
@@ -585,20 +590,35 @@ function addICD10Row(defaultValue = '') {
     }
   });
 
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'btn btn-sm btn-secondary';
+  addBtn.title = 'Tambah Diagnosis Baru';
+  addBtn.style.cssText = 'width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.3); border-radius: var(--r-md); font-weight: 700;';
+  addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+  addBtn.onclick = () => addICD10Row();
+
   const deleteBtn = document.createElement('button');
   deleteBtn.type = 'button';
   deleteBtn.className = 'btn btn-sm btn-danger';
   deleteBtn.title = 'Hapus Diagnosis';
-  deleteBtn.style.cssText = 'width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
+  deleteBtn.style.cssText = 'width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: var(--r-md);';
   deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
-  deleteBtn.onclick = () => row.remove();
+  deleteBtn.onclick = () => {
+    if (container.querySelectorAll('.icd10-row').length > 1) {
+      row.remove();
+    } else {
+      input.value = '';
+    }
+  };
 
+  row.appendChild(addBtn);
   row.appendChild(wrap);
   row.appendChild(deleteBtn);
   container.appendChild(row);
 }
 
-function addPoliMedicineRow(medName = '', dosageOrAturan = '3x1 sesudah makan', qty = 1) {
+function addPoliMedicineRow(medName = '', qty = 1) {
   const body = document.getElementById('poli-resep-body');
   const tr = document.createElement('tr');
   const medList = getSortedMedicines();
@@ -608,31 +628,33 @@ function addPoliMedicineRow(medName = '', dosageOrAturan = '3x1 sesudah makan', 
     initialMed = medList.find(m => m.nama.toLowerCase() === medName.toLowerCase());
   }
 
-  const defaultPrice = initialMed ? (parseInt(initialMed.harga) || 0) : 0;
+  const defaultPrice = initialMed ? (parseFloat(initialMed.harga) || 0) : 0;
   tr.dataset.unitPrice = defaultPrice;
 
   tr.innerHTML = `
     <td style="vertical-align: top;">
-      <div class="custom-searchable-wrap med-searchable-wrap">
-        <div class="searchable-input-box">
-          <input type="text" class="form-control med-search-input select-medicine" placeholder="🔍 Cari obat (A-Z)..." value="${initialMed ? initialMed.nama : medName}" autocomplete="off">
-          <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <button type="button" class="btn btn-sm btn-secondary" onclick="addPoliMedicineRow()" title="Tambah Obat Baru" style="flex-shrink: 0; width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.3); border-radius: var(--r-md); font-weight: 700;">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="custom-searchable-wrap med-searchable-wrap" style="flex: 1;">
+          <div class="searchable-input-box">
+            <input type="text" class="form-control med-search-input select-medicine" placeholder="🔍 Cari obat (A-Z)..." value="${initialMed ? initialMed.nama : medName}" autocomplete="off">
+            <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+          </div>
+          <div class="searchable-dropdown-menu"></div>
         </div>
-        <div class="searchable-dropdown-menu"></div>
       </div>
-      <small class="stock-badge-info"></small>
+      <small class="stock-badge-info" style="margin-left: 46px;"></small>
     </td>
     <td style="vertical-align: top;">
-      <input type="text" class="form-control med-aturan" value="${dosageOrAturan}" placeholder="Contoh: 3x1 sesudah makan">
-    </td>
-    <td style="vertical-align: top;">
-      <input type="number" class="form-control med-qty" value="${qty}" min="1" step="1" placeholder="Qty" style="text-align: center; font-weight: 700;">
+      <input type="number" class="form-control med-qty" value="${qty}" min="1" step="1" placeholder="Qty" list="qty-suggestions" style="text-align: center; font-weight: 700; height: 38px;">
     </td>
     <td style="vertical-align: top; text-align: right;">
-      <div class="med-subtotal-badge">Rp 0</div>
+      <div class="med-subtotal-badge" style="height: 38px; display: flex; align-items: center; justify-content: flex-end;">Rp 0</div>
     </td>
     <td style="vertical-align: top; text-align: center;">
-      <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); calculateResepGrandTotal();" title="Hapus Obat" style="width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center;"><i class="fa-solid fa-trash-can"></i></button>
+      <button type="button" class="btn btn-sm btn-danger" onclick="const tbody = document.getElementById('poli-resep-body'); const tr = this.closest('tr'); if (tbody.querySelectorAll('tr').length > 1) { tr.remove(); } else { tr.querySelector('.select-medicine').value = ''; tr.querySelector('.med-qty').value = 1; tr.dataset.unitPrice = 0; const badge = tr.querySelector('.med-subtotal-badge'); if(badge) badge.textContent = 'Rp 0'; tr.querySelector('.stock-badge-info').textContent = ''; } calculateResepGrandTotal();" title="Hapus Obat" style="width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-md);"><i class="fa-solid fa-trash-can"></i></button>
     </td>
   `;
 
@@ -641,7 +663,6 @@ function addPoliMedicineRow(medName = '', dosageOrAturan = '3x1 sesudah makan', 
   const wrap = tr.querySelector('.med-searchable-wrap');
   const input = tr.querySelector('.med-search-input');
   const menu = tr.querySelector('.searchable-dropdown-menu');
-  const aturanInput = tr.querySelector('.med-aturan');
   const qtyInput = tr.querySelector('.med-qty');
   const stockInfo = tr.querySelector('.stock-badge-info');
 
@@ -658,7 +679,7 @@ function addPoliMedicineRow(medName = '', dosageOrAturan = '3x1 sesudah makan', 
     }
 
     menu.innerHTML = filtered.map(m => {
-      const hargaFormat = m.harga ? `Rp ${parseInt(m.harga).toLocaleString('id-ID')}` : 'Rp 0';
+      const hargaFormat = m.harga ? `Rp ${parseFloat(m.harga).toLocaleString('id-ID')}` : 'Rp 0';
       return `
         <div class="searchable-option-item ${m.nama.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" 
              data-nama="${m.nama}" 
@@ -679,7 +700,7 @@ function addPoliMedicineRow(medName = '', dosageOrAturan = '3x1 sesudah makan', 
         const nama = opt.getAttribute('data-nama');
         const stok = parseInt(opt.getAttribute('data-stok')) || 0;
         const satuan = opt.getAttribute('data-satuan');
-        const harga = parseInt(opt.getAttribute('data-harga')) || 0;
+        const harga = parseFloat(opt.getAttribute('data-harga')) || 0;
 
         input.value = nama;
         tr.dataset.unitPrice = harga;
@@ -704,7 +725,7 @@ function addPoliMedicineRow(medName = '', dosageOrAturan = '3x1 sesudah makan', 
     wrap.classList.add('active');
     const matched = medList.find(m => m.nama.toLowerCase() === input.value.toLowerCase().trim());
     if (matched) {
-      tr.dataset.unitPrice = parseInt(matched.harga) || 0;
+      tr.dataset.unitPrice = parseFloat(matched.harga) || 0;
       updateStockBadgeEl(stockInfo, matched.stok, matched.satuan);
     }
     calculateRowSubtotal(tr);
@@ -744,7 +765,7 @@ function updateStockBadgeEl(infoEl, stok, satuan) {
 }
 
 function calculateRowSubtotal(tr) {
-  const unitPrice = parseInt(tr.dataset.unitPrice) || 0;
+  const unitPrice = parseFloat(tr.dataset.unitPrice) || 0;
   const qty = parseInt(tr.querySelector('.med-qty')?.value) || 1;
   const subtotal = unitPrice * qty;
   const badge = tr.querySelector('.med-subtotal-badge');
@@ -758,7 +779,7 @@ function calculateResepGrandTotal() {
   const rows = document.querySelectorAll('#poli-resep-body tr');
   let grandTotal = 0;
   rows.forEach(tr => {
-    const unitPrice = parseInt(tr.dataset.unitPrice) || 0;
+    const unitPrice = parseFloat(tr.dataset.unitPrice) || 0;
     const qty = parseInt(tr.querySelector('.med-qty')?.value) || 1;
     const medName = tr.querySelector('.select-medicine')?.value.trim();
     if (medName) {
@@ -802,7 +823,8 @@ function searchPatientByNIK() {
 
   // Update Right Panel Banner
   document.getElementById('poli-banner-name').textContent = `${p.nama} (${p.nikPabrik || p.nik || '-'})`;
-  document.getElementById('poli-banner-sub').textContent = `Dept: ${p.dept || p.departemen || '-'} | Usia: ${ageStr} | Gender: ${p.gender || '-'}`;
+  const saldoInfo = (p.saldoObat !== undefined) ? ` | <strong style="color:${parseInt(p.saldoObat)<0?'#ef4444':'#059669'}; background: ${parseInt(p.saldoObat)<0?'rgba(239,68,68,0.1)':'rgba(16,185,129,0.1)'}; padding: 2px 6px; border-radius: 4px;">Sisa Saldo: Rp ${(parseInt(p.saldoObat)||0).toLocaleString('id-ID')}</strong>` : '';
+  document.getElementById('poli-banner-sub').innerHTML = `Dept: ${p.dept || p.departemen || '-'} | Usia: ${ageStr} | Gender: ${p.gender || '-'}${saldoInfo}`;
   document.getElementById('poli-banner-alergi').textContent = p.alergi ? `⚠️ Alergi: ${p.alergi}` : '';
 
   renderPatientHistoryTimeline(p);
@@ -867,6 +889,9 @@ function renderPatientHistoryTimeline(patient) {
         <div class="timeline-header">
           <div class="timeline-date">
             <i class="fa-regular fa-calendar-check"></i> ${r.tanggal || '-'}
+            <button class="btn btn-sm" onclick="openModalEditRecord('${r.id}')" title="Edit Rekam Medis" style="background: rgba(14, 165, 233, 0.08); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 700; box-shadow: none;">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
           </div>
           <div style="display: flex; gap: 6px;">
             ${r.isPantauan ? '<span class="badge badge-danger">🔴 Pantauan</span>' : ''}
@@ -1035,7 +1060,7 @@ function copyRecordToPoliForm(recordOrId) {
     const resepBody = document.getElementById('poli-resep-body');
     resepBody.innerHTML = '';
     record.resep.forEach(r => {
-      addPoliMedicineRow(r.namaObat || r.obat, r.harga, r.qty || 1);
+      addPoliMedicineRow(r.namaObat || r.obat, r.qty || 1);
     });
   }
 
@@ -1098,17 +1123,11 @@ async function handleSavePoli(e) {
   }
 
   const keluhan = document.getElementById('poli-keluhan').value.trim();
-  const td = document.getElementById('poli-td').value.trim();
-  const nadi = document.getElementById('poli-nadi').value.trim();
-  const suhu = document.getElementById('poli-suhu').value.trim();
-  const bb = document.getElementById('poli-bb').value.trim();
-  const tb = document.getElementById('poli-tb').value.trim();
-  const detailObj = document.getElementById('poli-objektif-detail').value.trim();
   const pemeriksa = document.getElementById('poli-pemeriksa').value.trim() || 'Nakes Pemeriksa';
   const isIzinSakit = document.getElementById('poli-izin-sakit').checked;
   const isPantauan = document.getElementById('poli-pantauan').checked;
 
-  const objektifFull = `TD: ${td || '-'}, Nadi: ${nadi || '-'}, Suhu: ${suhu || '-'}, BB: ${bb || '-'}, TB: ${tb || '-'}. ${detailObj}`;
+  const objektifFull = document.getElementById('poli-objektif-detail').value.trim();
 
   // Gather ICD-10 Diagnoses & Record Frequencies
   const icdSelects = document.querySelectorAll('.select-icd10');
@@ -1123,7 +1142,6 @@ async function handleSavePoli(e) {
 
   resepRows.forEach(tr => {
     const medSel = tr.querySelector('.select-medicine')?.value.trim();
-    const aturan = tr.querySelector('.med-aturan')?.value.trim() || 'sesudah makan';
     const unitPrice = parseInt(tr.dataset.unitPrice) || 0;
     const qty = parseInt(tr.querySelector('.med-qty')?.value) || 1;
     const subtotal = unitPrice * qty;
@@ -1131,7 +1149,6 @@ async function handleSavePoli(e) {
     if (medSel) {
       resepList.push({ 
         namaObat: medSel, 
-        aturan,
         harga: unitPrice, 
         qty, 
         subtotal 
@@ -1141,7 +1158,7 @@ async function handleSavePoli(e) {
   });
 
   const planText = resepList.length > 0
-    ? resepList.map(r => `${r.namaObat} No.${r.qty} (${r.aturan}) [Harga: Rp ${r.subtotal.toLocaleString('id-ID')}]`).join('; ') + (grandTotalBiaya > 0 ? ` [Total: Rp ${grandTotalBiaya.toLocaleString('id-ID')}]` : '')
+    ? resepList.map(r => `${r.namaObat} No.${r.qty} [Harga: Rp ${r.subtotal.toLocaleString('id-ID')}]`).join('; ') + (grandTotalBiaya > 0 ? ` [Total: Rp ${grandTotalBiaya.toLocaleString('id-ID')}]` : '')
     : 'Edukasi Istirahat & Hidrasi Cukup';
 
   // Handle File Upload to Google Drive
@@ -1220,10 +1237,50 @@ async function handleSavePoli(e) {
 
     if (res.ok) {
       showToast('Rekam Medis Berhasil Disimpan & Stok Berkurang!', 'success');
+      
+      // DEDUCT SALDO OBAT
+      if (grandTotalBiaya > 0 && appData.currentPoliPatient) {
+        const p = appData.currentPoliPatient;
+        const oldSaldo = parseInt(p.saldoObat) || 0;
+        const newSaldo = oldSaldo - grandTotalBiaya;
+        
+        const updatedPatient = { ...p, saldoObat: newSaldo };
+        try {
+          const patientId = p.id || p.nikPabrik || p.nik;
+          await fetch(`/api/patients/${encodeURIComponent(patientId)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedPatient)
+          });
+        } catch (e) {
+          console.error('Gagal update saldo obat:', e);
+        }
+      }
+
       resetFormPoli();
       await loadAllAppData();
+      
       if (appData.currentPoliPatient) {
+        // Refetch current patient to get the updated saldoObat
+        const refreshedPatient = appData.patients.find(x => 
+          (x.id && x.id === appData.currentPoliPatient.id) ||
+          (x.nikPabrik && x.nikPabrik === appData.currentPoliPatient.nikPabrik) ||
+          (x.nik && x.nik === appData.currentPoliPatient.nik)
+        );
+        if (refreshedPatient) {
+          appData.currentPoliPatient = refreshedPatient;
+        }
+        
         renderPatientHistoryTimeline(appData.currentPoliPatient);
+        
+        // Update UI Saldo Obat
+        const saldoAwalEl = document.getElementById('poli-saldo-awal');
+        if (saldoAwalEl) {
+          const saldoObat = parseInt(appData.currentPoliPatient.saldoObat) || 0;
+          saldoAwalEl.textContent = `Rp ${saldoObat.toLocaleString('id-ID')}`;
+          saldoAwalEl.style.color = saldoObat < 0 ? '#ef4444' : 'var(--text-primary)';
+        }
+        calculateResepGrandTotal();
       }
     } else {
       showToast('Gagal menyimpan data', 'error');
@@ -1341,23 +1398,111 @@ function filterEditDataTable() {
 function addEditICD10Row(defaultValue = '') {
   const container = document.getElementById('edit-container-icd10');
   if (!container) return;
-  const div = document.createElement('div');
-  div.className = 'edit-icd10-row';
-  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 6px; align-items: center;';
+  const row = document.createElement('div');
+  row.className = 'edit-icd10-row';
+  row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;';
 
   const icdList = getICD10WithFrequency();
 
-  let selectHTML = `<select class="form-control select-edit-icd10" style="flex: 1;"><option value="">-- Pilih Diagnosis ICD-10 --</option>`;
-  icdList.forEach(item => {
-    const label = item.fullLabel;
-    const isTop = item.freq > 0 ? ` (🔥 ${item.freq}x)` : '';
-    const sel = (defaultValue && (item.code === defaultValue || item.desc === defaultValue || label === defaultValue || defaultValue.includes(item.code))) ? 'selected' : '';
-    selectHTML += `<option value="${label}" ${sel}>${label}${isTop}</option>`;
-  });
-  selectHTML += `</select><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus" style="width: 36px; height: 36px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button>`;
+  const wrap = document.createElement('div');
+  wrap.className = 'custom-searchable-wrap';
+  wrap.style.flex = '1';
 
-  div.innerHTML = selectHTML;
-  container.appendChild(div);
+  let displayValue = defaultValue;
+  if (defaultValue) {
+    const match = icdList.find(i => i.code === defaultValue || i.desc === defaultValue || i.fullLabel === defaultValue || defaultValue.includes(i.code));
+    if (match) displayValue = match.fullLabel;
+  }
+
+  wrap.innerHTML = `
+    <div class="searchable-input-box">
+      <input type="text" class="form-control icd-search-input select-edit-icd10" placeholder="🔍 Cari diagnosis ICD-10..." value="${displayValue}" autocomplete="off">
+      <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+    </div>
+    <div class="searchable-dropdown-menu"></div>
+  `;
+
+  const input = wrap.querySelector('.icd-search-input');
+  const menu = wrap.querySelector('.searchable-dropdown-menu');
+
+  function renderOptions(filterText = '') {
+    const cleanFilter = filterText.toLowerCase().trim();
+    const filtered = icdList.filter(item => 
+      !cleanFilter || 
+      item.fullLabel.toLowerCase().includes(cleanFilter) ||
+      item.code.toLowerCase().includes(cleanFilter) ||
+      item.desc.toLowerCase().includes(cleanFilter)
+    );
+
+    if (filtered.length === 0) {
+      menu.innerHTML = `<div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Diagnosis tidak ditemukan (Ketik bebas untuk diagnosis manual)</div>`;
+      return;
+    }
+
+    menu.innerHTML = filtered.map(item => `
+      <div class="searchable-option-item ${item.fullLabel.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" data-value="${item.fullLabel}">
+        <span style="display: flex; align-items: center; gap: 6px; flex: 1; margin-right: 8px;">
+          ${item.freq > 0 ? `<span class="freq-tag"><i class="fa-solid fa-fire"></i> ${item.freq}x</span>` : ''}
+          <span>${item.fullLabel}</span>
+        </span>
+        ${item.freq > 0 ? `<span class="option-sub" style="font-size: 0.7rem; white-space: nowrap;">Tersering</span>` : ''}
+      </div>
+    `).join('');
+
+    menu.querySelectorAll('.searchable-option-item').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const val = opt.getAttribute('data-value');
+        input.value = val;
+        wrap.classList.remove('active');
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => {
+    document.querySelectorAll('.custom-searchable-wrap.active').forEach(w => {
+      if (w !== wrap) w.classList.remove('active');
+    });
+    renderOptions(input.value);
+    wrap.classList.add('active');
+  });
+
+  input.addEventListener('input', () => {
+    renderOptions(input.value);
+    wrap.classList.add('active');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove('active');
+    }
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'btn btn-sm btn-secondary';
+  addBtn.title = 'Tambah Diagnosis Baru';
+  addBtn.style.cssText = 'width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.3); border-radius: var(--r-md); font-weight: 700;';
+  addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+  addBtn.onclick = () => addEditICD10Row();
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'btn btn-sm btn-danger';
+  deleteBtn.title = 'Hapus Diagnosis';
+  deleteBtn.style.cssText = 'width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: var(--r-md);';
+  deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+  deleteBtn.onclick = () => {
+    if (container.querySelectorAll('.edit-icd10-row').length > 1) {
+      row.remove();
+    } else {
+      input.value = '';
+    }
+  };
+
+  row.appendChild(addBtn);
+  row.appendChild(wrap);
+  row.appendChild(deleteBtn);
+  container.appendChild(row);
 }
 
 function addEditResepRow(medName = '', qty = 1) {
@@ -1365,26 +1510,183 @@ function addEditResepRow(medName = '', qty = 1) {
   if (!container) return;
   const div = document.createElement('div');
   div.className = 'edit-resep-row';
-  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 6px; align-items: center;';
+  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;';
 
   const medList = getSortedMedicines();
+  let initialMed = null;
+  if (medName) {
+    initialMed = medList.find(m => m.nama.toLowerCase() === medName.toLowerCase());
+  }
 
-  const rowId = 'edit-med-' + Date.now() + Math.random().toString(36).substring(2,6);
-  let selectHTML = `<input type="text" class="form-control select-edit-medicine" list="${rowId}" style="flex: 2;" placeholder="Ketik/Pilih Obat..." value="${medName}">`;
-  selectHTML += `<datalist id="${rowId}">`;
-  medList.forEach(m => {
-    selectHTML += `<option value="${m.nama}">[Stok: ${m.stok}]</option>`;
-  });
-  selectHTML += `</datalist>`;
+  const defaultPrice = initialMed ? (parseFloat(initialMed.harga) || 0) : 0;
+  div.dataset.unitPrice = defaultPrice;
 
   div.innerHTML = `
-    ${selectHTML}
-    <input type="number" class="form-control edit-med-qty" value="${qty}" min="1" style="width: 80px; text-align: center;" placeholder="Jumlah">
-    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" title="Hapus" style="width: 36px; height: 36px; padding: 0;"><i class="fa-solid fa-trash-can"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary" onclick="addEditResepRow()" title="Tambah Obat Baru" style="flex-shrink: 0; width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.3); border-radius: var(--r-md); font-weight: 700;">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+    <div style="flex: 2; display: flex; flex-direction: column;">
+      <div class="custom-searchable-wrap med-searchable-wrap">
+        <div class="searchable-input-box">
+          <input type="text" class="form-control med-search-input select-edit-medicine" placeholder="🔍 Cari obat (A-Z)..." value="${initialMed ? initialMed.nama : medName}" autocomplete="off">
+          <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+        </div>
+        <div class="searchable-dropdown-menu"></div>
+      </div>
+      <small class="stock-badge-info" style="margin-top: 4px;"></small>
+    </div>
+    <input type="number" class="form-control edit-med-qty" value="${qty}" min="1" step="1" placeholder="Qty" style="width: 70px; text-align: center; font-weight: 700; height: 38px; flex-shrink: 0;">
+    <div class="med-subtotal-badge" style="height: 38px; display: flex; align-items: center; justify-content: flex-end; width: 90px; font-weight: 700; flex-shrink: 0;">Rp 0</div>
+    <button type="button" class="btn btn-sm btn-danger" onclick="const p = this.closest('#edit-container-resep'); const row = this.closest('.edit-resep-row'); if(p.querySelectorAll('.edit-resep-row').length > 1) { row.remove(); } else { row.querySelector('.select-edit-medicine').value = ''; row.querySelector('.edit-med-qty').value = 1; row.dataset.unitPrice = 0; const badge = row.querySelector('.med-subtotal-badge'); if(badge) badge.textContent = 'Rp 0'; row.querySelector('.stock-badge-info').textContent = ''; } calculateEditResepGrandTotal();" title="Hapus" style="flex-shrink: 0; width: 38px; height: 38px; padding: 0; border-radius: var(--r-md); display: inline-flex; align-items: center; justify-content: center;"><i class="fa-solid fa-trash-can"></i></button>
   `;
 
   container.appendChild(div);
+
+  const wrap = div.querySelector('.med-searchable-wrap');
+  const input = div.querySelector('.med-search-input');
+  const menu = div.querySelector('.searchable-dropdown-menu');
+  const qtyInput = div.querySelector('.edit-med-qty');
+  const stockInfo = div.querySelector('.stock-badge-info');
+
+  function renderMedOptions(filterText = '') {
+    const cleanFilter = filterText.toLowerCase().trim();
+    const filtered = medList.filter(m => 
+      !cleanFilter || 
+      (m.nama && m.nama.toLowerCase().includes(cleanFilter))
+    );
+
+    if (filtered.length === 0) {
+      menu.innerHTML = `<div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Obat tidak ditemukan (Bisa ketik nama obat manual)</div>`;
+      return;
+    }
+
+    menu.innerHTML = filtered.map(m => {
+      const hargaFormat = m.harga ? `Rp ${parseFloat(m.harga).toLocaleString('id-ID')}` : 'Rp 0';
+      return `
+        <div class="searchable-option-item ${m.nama.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" 
+             data-nama="${m.nama}" 
+             data-stok="${m.stok}" 
+             data-satuan="${m.satuan || '-'}" 
+             data-harga="${m.harga || 0}">
+          <div>
+            <strong>${m.nama}</strong>
+            <div class="option-sub">Stok: ${m.stok} ${m.satuan || ''} | Harga: ${hargaFormat}</div>
+          </div>
+          <span class="price-tag">${hargaFormat}</span>
+        </div>
+      `;
+    }).join('');
+
+    menu.querySelectorAll('.searchable-option-item').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const nama = opt.getAttribute('data-nama');
+        const stok = parseInt(opt.getAttribute('data-stok')) || 0;
+        const satuan = opt.getAttribute('data-satuan');
+        const harga = parseFloat(opt.getAttribute('data-harga')) || 0;
+
+        input.value = nama;
+        div.dataset.unitPrice = harga;
+        wrap.classList.remove('active');
+
+        updateStockBadgeEl(stockInfo, stok, satuan);
+        calculateEditRowSubtotal(div);
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => {
+    document.querySelectorAll('.custom-searchable-wrap.active').forEach(w => {
+      if (w !== wrap) w.classList.remove('active');
+    });
+    renderMedOptions(input.value);
+    wrap.classList.add('active');
+  });
+
+  input.addEventListener('input', () => {
+    renderMedOptions(input.value);
+    wrap.classList.add('active');
+    const matched = medList.find(m => m.nama.toLowerCase() === input.value.toLowerCase().trim());
+    if (matched) {
+      div.dataset.unitPrice = parseFloat(matched.harga) || 0;
+      updateStockBadgeEl(stockInfo, matched.stok, matched.satuan);
+    }
+    calculateEditRowSubtotal(div);
+  });
+
+  qtyInput.addEventListener('input', () => calculateEditRowSubtotal(div));
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove('active');
+    }
+  });
+
+  if (initialMed) {
+    updateStockBadgeEl(stockInfo, initialMed.stok, initialMed.satuan);
+  }
+  calculateEditRowSubtotal(div);
 }
+
+function calculateEditRowSubtotal(rowEl) {
+  const price = parseFloat(rowEl.dataset.unitPrice) || 0;
+  const qtyEl = rowEl.querySelector('.edit-med-qty');
+  const qty = parseInt(qtyEl.value) || 0;
+  const subtotal = price * qty;
+  const badge = rowEl.querySelector('.med-subtotal-badge');
+  if (badge) {
+    badge.textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
+  }
+  calculateEditResepGrandTotal();
+}
+
+function calculateEditResepGrandTotal() {
+  const rows = document.querySelectorAll('.edit-resep-row');
+  let grandTotal = 0;
+
+  rows.forEach(row => {
+    const price = parseFloat(row.dataset.unitPrice) || 0;
+    const qtyEl = row.querySelector('.edit-med-qty');
+    const qty = qtyEl ? (parseInt(qtyEl.value) || 0) : 0;
+    grandTotal += (price * qty);
+  });
+
+  const grandTotalEl = document.getElementById('edit-resep-grand-total');
+  if (grandTotalEl) {
+    grandTotalEl.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+  }
+
+  updateSisaSaldoEdit();
+}
+
+function updateSisaSaldoEdit() {
+  const currentRecord = appData.records.find(r => r.id === document.getElementById('edit-record-id').value);
+  if (!currentRecord) return;
+  
+  const emp = appData.patients.find(e => e.nikPabrik === currentRecord.nikPabrik || e.nik === currentRecord.nikPabrik);
+  if (!emp) return;
+
+  const currentSaldo = parseInt(emp.saldoObat) || 0;
+  const oldBiaya = parseInt(currentRecord.totalBiaya) || 0;
+  
+  // Refund the old biaya, then subtract the new calculated total
+  const grandTotalStr = document.getElementById('edit-resep-grand-total').textContent.replace(/[^0-9]/g, '');
+  const newBiaya = parseInt(grandTotalStr) || 0;
+
+  const sisaSaldo = currentSaldo + oldBiaya - newBiaya;
+
+  const saldoAwalEl = document.getElementById('edit-saldo-awal');
+  if (saldoAwalEl) {
+    saldoAwalEl.textContent = `Rp ${currentSaldo.toLocaleString('id-ID')}`;
+    saldoAwalEl.style.color = currentSaldo < 0 ? '#ef4444' : 'var(--text-primary)';
+  }
+
+  const sisaSaldoEl = document.getElementById('edit-sisa-saldo');
+  if (sisaSaldoEl) {
+    sisaSaldoEl.textContent = `Rp ${sisaSaldo.toLocaleString('id-ID')}`;
+    sisaSaldoEl.style.color = sisaSaldo < 0 ? '#ef4444' : '#34d399';
+  }
+}
+
 
 function openModalEditRecord(recordOrId) {
   let record = recordOrId;
@@ -1402,6 +1704,7 @@ function openModalEditRecord(recordOrId) {
   document.getElementById('edit-objektif').value = record.objektif || '';
   document.getElementById('edit-pemeriksa').value = record.pemeriksa || 'dr. Dylan Fadhilah';
   document.getElementById('edit-is-pantauan').checked = record.isPantauan === true;
+  document.getElementById('edit-izin-sakit').checked = record.izinSakit === true;
 
   // Set date picker value
   if (record.tanggal) {
@@ -1511,7 +1814,8 @@ async function handleSaveEditRecord(e) {
     plan: planText || 'Edukasi Istirahat',
     resep: resepList,
     pemeriksa: document.getElementById('edit-pemeriksa').value,
-    isPantauan: document.getElementById('edit-is-pantauan').checked
+    isPantauan: document.getElementById('edit-is-pantauan').checked,
+    izinSakit: document.getElementById('edit-izin-sakit').checked
   };
 
   // Handle File Upload to Google Drive (if a new file is selected)
@@ -1546,7 +1850,14 @@ async function handleSaveEditRecord(e) {
     }
   }
 
+  // Update totalBiaya
+  const grandTotalStr = document.getElementById('edit-resep-grand-total')?.textContent.replace(/[^0-9]/g, '') || '0';
+  const newBiaya = parseInt(grandTotalStr) || 0;
+  updatedData.totalBiaya = newBiaya;
+
   try {
+    const currentRecord = appData.records.find(r => r.id === id);
+    
     const res = await fetch(`/api/records/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -1554,6 +1865,30 @@ async function handleSaveEditRecord(e) {
     });
 
     if (res.ok) {
+      // HANDLE SALDO OBAT REFUND/DEDUCTION
+      if (currentRecord) {
+        const emp = appData.patients.find(e => e.nikPabrik === currentRecord.nikPabrik || e.nik === currentRecord.nikPabrik);
+        if (emp) {
+          const currentSaldo = parseInt(emp.saldoObat) || 0;
+          const oldBiaya = parseInt(currentRecord.totalBiaya) || 0;
+          const newSaldo = currentSaldo + oldBiaya - newBiaya;
+          
+          if (newSaldo !== currentSaldo) {
+            const updatedPatient = { ...emp, saldoObat: newSaldo };
+            const patientId = emp.id || emp.nikPabrik || emp.nik;
+            try {
+              await fetch(`/api/patients/${encodeURIComponent(patientId)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedPatient)
+              });
+            } catch (err) {
+              console.error('Failed to update saldo obat during edit:', err);
+            }
+          }
+        }
+      }
+
       showToast('Rekam Medis & Revisi Stok Berhasil Diperbarui!', 'success');
       closeModalEditRecord();
       await loadAllAppData();
@@ -1666,9 +2001,32 @@ async function handleConfirmDeleteRecord(e) {
       body: JSON.stringify({ deletedBy, reason })
     });
 
+    const record = appData.records.find(r => String(r.id) === String(id));
     const data = await res.json();
 
     if (res.ok && data.success) {
+      // Refund patient's saldoObat
+      if (record) {
+        const emp = appData.patients.find(e => e.nikPabrik === record.nikPabrik || e.nik === record.nikPabrik);
+        if (emp) {
+          const currentSaldo = parseInt(emp.saldoObat) || 0;
+          const refundAmount = parseInt(record.totalBiaya) || 0;
+          const newSaldo = currentSaldo + refundAmount;
+          
+          const updatedPatient = { ...emp, saldoObat: newSaldo };
+          const patientId = emp.id || emp.nikPabrik || emp.nik;
+          try {
+            await fetch(`/api/patients/${encodeURIComponent(patientId)}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedPatient)
+            });
+          } catch (err) {
+            console.error('Failed to refund saldo obat during deletion:', err);
+          }
+        }
+      }
+
       showToast('✅ Rekam medis berhasil dihapus! Stok obat dikembalikan & audit terkirim ke Telegram.', 'success');
       closeModalDeleteRecord();
       closeModalEditRecord();
@@ -1791,7 +2149,7 @@ function setupShipMedicineSearchable() {
     }
 
     menu.innerHTML = filtered.map(m => {
-      const hargaFormat = m.harga ? `Rp ${parseInt(m.harga).toLocaleString('id-ID')}` : 'Rp 0';
+      const hargaFormat = m.harga ? `Rp ${parseFloat(m.harga).toLocaleString('id-ID')}` : 'Rp 0';
       return `
         <div class="searchable-option-item" data-id="${m.id}" data-nama="${m.nama}" data-stok="${m.stok !== undefined ? m.stok : 0}">
           <div>
@@ -2290,7 +2648,7 @@ function renderGudangTable() {
         <td data-label="Nama Obat"><strong>${m.nama}</strong></td>
         <td data-label="Kategori">${m.kategori || 'Gudang PT ATI'}</td>
         <td data-label="Sisa Stok" style="font-weight: 700; font-size: 1.05rem; ${isLow ? 'color: var(--danger);' : ''}">${m.stok}</td>
-        <td data-label="Harga (Rp)" style="font-weight: 700; color: #38bdf8;">Rp ${(parseInt(m.harga) || 0).toLocaleString('id-ID')}</td>
+        <td data-label="Harga (Rp)" style="font-weight: 700; color: #38bdf8;">Rp ${(parseFloat(m.harga) || 0).toLocaleString('id-ID')}</td>
         <td data-label="Satuan">${m.satuan || 'strip'}</td>
         <td data-label="Status">${statusBadge}</td>
         <td data-label="Aksi">
@@ -2314,7 +2672,7 @@ async function handleSaveTambahObat(e) {
   const newObat = {
     nama: document.getElementById('obat-nama').value,
     stok: parseInt(document.getElementById('obat-stok').value) || 0,
-    harga: parseInt(document.getElementById('obat-harga').value) || 0,
+    harga: parseFloat(document.getElementById('obat-harga').value) || 0,
     satuan: document.getElementById('obat-satuan').value,
     kategori: document.getElementById('obat-kategori').value || 'Gudang PT ATI'
   };
@@ -2346,7 +2704,7 @@ function openModalEditObat(id) {
   document.getElementById('edit-obat-id').value = med.id;
   document.getElementById('edit-obat-nama').value = med.nama || '';
   document.getElementById('edit-obat-stok').value = med.stok !== undefined ? med.stok : 0;
-  document.getElementById('edit-obat-harga').value = parseInt(med.harga) || 0;
+  document.getElementById('edit-obat-harga').value = parseFloat(med.harga) || 0;
   document.getElementById('edit-obat-satuan').value = med.satuan || 'strip';
   document.getElementById('edit-obat-kategori').value = med.kategori || 'Gudang PT ATI';
   document.getElementById('edit-obat-petugas').value = '';
@@ -2365,7 +2723,7 @@ async function handleSaveEditObat(e) {
   const payload = {
     nama: document.getElementById('edit-obat-nama').value.trim(),
     stok: parseInt(document.getElementById('edit-obat-stok').value) || 0,
-    harga: parseInt(document.getElementById('edit-obat-harga').value) || 0,
+    harga: parseFloat(document.getElementById('edit-obat-harga').value) || 0,
     satuan: document.getElementById('edit-obat-satuan').value.trim(),
     kategori: document.getElementById('edit-obat-kategori').value.trim() || 'Gudang PT ATI',
     petugas: document.getElementById('edit-obat-petugas').value.trim(),
@@ -2421,33 +2779,162 @@ async function deleteObatDirect(id) {
 // -------------------------------------------------------------
 // 4. TAB OBAT REQ LOGIC (WHATSAPP API)
 // -------------------------------------------------------------
-function addObatReqRowDropdown() {
-  const tbody = document.getElementById('req-table-body');
-  const tr = document.createElement('tr');
+function renderReqMedicineCatalog() {
+  const tbody = document.getElementById('req-catalog-body');
+  if (!tbody) return;
+  const medList = getSortedMedicines();
   
-  const rowId = 'req-med-' + Date.now() + Math.random().toString(36).substring(2,6);
-  let selectHTML = `<input type="text" class="form-control req-med-name" list="${rowId}" placeholder="Ketik/Pilih Obat..." required>`;
-  selectHTML += `<datalist id="${rowId}">`;
-  appData.medicines.forEach(m => {
-    selectHTML += `<option value="${m.nama}">Sisa: ${m.stok} ${m.satuan}</option>`;
-  });
-  selectHTML += `</datalist>`;
+  tbody.innerHTML = medList.map(m => {
+    const stok = parseInt(m.stok) || 0;
+    let badgeHTML = '';
+    if (stok <= 10) {
+      badgeHTML = `<span class="badge badge-danger" style="display:block; text-align:center; padding: 4px;">Kritis: ${stok} ${m.satuan || ''}</span>`;
+    } else if (stok <= 50) {
+      badgeHTML = `<span class="badge badge-warning" style="display:block; text-align:center; padding: 4px;">Tipis: ${stok} ${m.satuan || ''}</span>`;
+    } else {
+      badgeHTML = `<span class="badge badge-success" style="display:block; text-align:center; padding: 4px;">Aman: ${stok} ${m.satuan || ''}</span>`;
+    }
 
-  tr.innerHTML = `
-    <td>${selectHTML}</td>
-    <td><input type="number" class="form-control req-med-qty" value="1" min="1" required></td>
-    <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">&times;</button></td>
-  `;
-  tbody.appendChild(tr);
+    const escapedName = m.nama.replace(/'/g, "\\'");
+    const inputId = `catalog-qty-${m.nama.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+    let existingQty = 0;
+    const existingRow = Array.from(document.querySelectorAll('#req-table-body tr')).find(tr => {
+      const nameEl = tr.querySelector('.req-med-name');
+      return nameEl && nameEl.value === m.nama;
+    });
+    if (existingRow) {
+      const qtyEl = existingRow.querySelector('.req-med-qty');
+      if (qtyEl) existingQty = parseInt(qtyEl.value) || 0;
+    }
+
+    return `
+      <tr>
+        <td class="catalog-med-name" style="font-weight: 700;">${m.nama}</td>
+        <td>${badgeHTML}</td>
+        <td>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <button type="button" class="btn btn-sm btn-secondary" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-sm);" onclick="adjustReqCatalogQty('${escapedName}', -1)">-</button>
+            <input type="number" id="${inputId}" class="form-control form-control-sm catalog-qty-input" value="${existingQty}" min="0" style="width: 55px; text-align: center; font-weight: bold; height: 28px;" onchange="updateReqCatalogQty('${escapedName}')">
+            <button type="button" class="btn btn-sm btn-secondary" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-sm);" onclick="adjustReqCatalogQty('${escapedName}', 1)">+</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function adjustReqCatalogQty(name, amount) {
+  const inputId = `catalog-qty-${name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  let val = parseInt(input.value) || 0;
+  val = Math.max(0, val + amount);
+  input.value = val;
+  syncCatalogItemToCart(name, val);
+}
+
+function updateReqCatalogQty(name) {
+  const inputId = `catalog-qty-${name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  let val = parseInt(input.value) || 0;
+  if (val < 0) val = 0;
+  input.value = val;
+  syncCatalogItemToCart(name, val);
+}
+
+function syncCatalogItemToCart(name, qty) {
+  const tbody = document.getElementById('req-table-body');
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const existingRow = rows.find(tr => {
+    const nameEl = tr.querySelector('.req-med-name');
+    return nameEl && nameEl.value === name;
+  });
+
+  if (qty > 0) {
+    if (existingRow) {
+      const qtyInput = existingRow.querySelector('.req-med-qty');
+      if (qtyInput) qtyInput.value = qty;
+    } else {
+      const tr = document.createElement('tr');
+      tr.className = 'catalog-cart-row';
+      tr.innerHTML = `
+        <td><input type="text" class="form-control req-med-name" value="${name}" readonly style="font-weight: 700; background: var(--bg-card);"></td>
+        <td><input type="number" class="form-control req-med-qty" value="${qty}" min="1" onchange="syncCartQtyToCatalog('${name.replace(/'/g, "\\'")}', this.value)" required style="text-align: center; font-weight: 700;"></td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="removeCartItem('${name.replace(/'/g, "\\'")}')" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-sm);">&times;</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  } else {
+    if (existingRow) {
+      existingRow.remove();
+    }
+  }
+}
+
+function syncCartQtyToCatalog(name, qtyVal) {
+  const inputId = `catalog-qty-${name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const input = document.getElementById(inputId);
+  let qty = parseInt(qtyVal) || 1;
+  if (qty < 1) qty = 1;
+  if (input) {
+    input.value = qty;
+  }
+  
+  const rows = Array.from(document.querySelectorAll('#req-table-body tr'));
+  const row = rows.find(tr => {
+    const nameEl = tr.querySelector('.req-med-name');
+    return nameEl && nameEl.value === name;
+  });
+  if (row) {
+    const qtyEl = row.querySelector('.req-med-qty');
+    if (qtyEl) qtyEl.value = qty;
+  }
+}
+
+function removeCartItem(name) {
+  const inputId = `catalog-qty-${name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const input = document.getElementById(inputId);
+  if (input) {
+    input.value = 0;
+  }
+  
+  const rows = Array.from(document.querySelectorAll('#req-table-body tr'));
+  const row = rows.find(tr => {
+    const nameEl = tr.querySelector('.req-med-name');
+    return nameEl && nameEl.value === name;
+  });
+  if (row) {
+    row.remove();
+  }
+}
+
+function filterReqMedicines() {
+  const filter = document.getElementById('req-search-medicines').value.toLowerCase().trim();
+  const rows = document.querySelectorAll('#req-catalog-body tr');
+  rows.forEach(tr => {
+    const nameEl = tr.querySelector('.catalog-med-name');
+    if (nameEl) {
+      const name = nameEl.textContent.toLowerCase();
+      if (name.includes(filter)) {
+        tr.style.display = '';
+      } else {
+        tr.style.display = 'none';
+      }
+    }
+  });
 }
 
 function addObatReqRowManual() {
   const tbody = document.getElementById('req-table-body');
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><input type="text" class="form-control req-med-name" placeholder="Ketik nama obat manual..." required></td>
-    <td><input type="number" class="form-control req-med-qty" value="1" min="1" required></td>
-    <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">&times;</button></td>
+    <td><input type="text" class="form-control req-med-name" placeholder="Ketik nama obat manual..." required style="font-weight: 700;"></td>
+    <td><input type="number" class="form-control req-med-qty" value="1" min="1" required style="text-align: center; font-weight: 700;"></td>
+    <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-sm);">&times;</button></td>
   `;
   tbody.appendChild(tr);
 }
@@ -2597,6 +3084,7 @@ function renderKaryawanTable() {
     const gender = k.gender || '-';
     const golDarah = k.golDarah || '-';
     const rawHp = k.hp || k.no_hp || '';
+    const saldoObat = parseInt(k.saldoObat) || 0;
     const cleanWA = cleanPhoneForWA(rawHp);
 
     let waHTML = `<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">-</span>`;
@@ -2605,6 +3093,8 @@ function renderKaryawanTable() {
         <i class="fa-brands fa-whatsapp"></i> ${rawHp}
       </a>`;
     }
+    
+    let saldoHTML = `<span style="font-weight: 700; color: ${saldoObat < 0 ? '#ef4444' : '#10b981'};">Rp ${saldoObat.toLocaleString('id-ID')}</span>`;
 
     return `
       <tr ondblclick="openModalRiwayatPasien('${npk}')" style="cursor: pointer;" title="Klik 2x untuk melihat riwayat medis">
@@ -2617,6 +3107,7 @@ function renderKaryawanTable() {
         <td>${gender}</td>
         <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; font-weight: 700;">${golDarah}</span></td>
         <td>${waHTML}</td>
+        <td>${saldoHTML}</td>
         <td style="text-align: center;">
           <div style="display: flex; gap: 6px; justify-content: center;">
             <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${k.id || npk}')" title="Periksa di Poli">
@@ -2695,6 +3186,7 @@ function openModalEditKaryawan(idOrNpk) {
   document.getElementById('edit-karyawan-goldarah').value = p.golDarah || '-';
   document.getElementById('edit-karyawan-tgllahir').value = p.tglLahir || p.tgl_lahir || '';
   document.getElementById('edit-karyawan-hp').value = p.hp || p.no_hp || '';
+  document.getElementById('edit-karyawan-saldo-obat').value = p.saldoObat || 0;
 
   const modal = document.getElementById('modal-edit-karyawan');
   if (modal) {
@@ -2716,7 +3208,8 @@ async function handleSaveEditKaryawan(e) {
     gender: document.getElementById('edit-karyawan-gender').value,
     golDarah: document.getElementById('edit-karyawan-goldarah').value,
     tglLahir: document.getElementById('edit-karyawan-tgllahir').value.trim(),
-    hp: document.getElementById('edit-karyawan-hp').value.trim()
+    hp: document.getElementById('edit-karyawan-hp').value.trim(),
+    saldoObat: parseInt(document.getElementById('edit-karyawan-saldo-obat').value) || 0
   };
 
   try {
@@ -2748,7 +3241,8 @@ async function handleSaveKaryawan(e) {
     tglLahir: document.getElementById('karyawan-tgl-lahir').value.trim(),
     gender: document.getElementById('karyawan-gender').value,
     golDarah: document.getElementById('karyawan-goldarah')?.value || '-',
-    hp: document.getElementById('karyawan-hp').value.trim()
+    hp: document.getElementById('karyawan-hp').value.trim(),
+    saldoObat: parseInt(document.getElementById('karyawan-saldo-obat').value) || 0
   };
 
   try {
@@ -4587,6 +5081,10 @@ function switchMobileNav(viewId, mobileBtn, fromMore = false) {
 
   // Close more menu
   if (fromMore) closeMobileMore();
+
+  if (viewId === 'view-obat-req') {
+    renderReqMedicineCatalog();
+  }
 }
 
 function syncMobileNavHighlight(viewId, explicitBtn) {

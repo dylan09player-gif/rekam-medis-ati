@@ -522,7 +522,7 @@ app.post('/api/gsheet/push-all-master', async (req, res) => {
   const payload = {
     action: 'seedMaster',
     icd10: (db.icd10 || []).map(i => ({ code: i.code || '', description: i.description || '' })),
-    medicines: (db.medicines || []).map(m => ({ nama: m.nama || '', stok: parseInt(m.stok) || 0, satuan: m.satuan || 'strip', kategori: m.kategori || 'Obat' })),
+    medicines: (db.medicines || []).map(m => ({ nama: m.nama || '', stok: parseSafeInt(m.stok, 0), satuan: m.satuan || 'strip', kategori: m.kategori || 'Obat' })),
     employees: (db.employees || []).map(e => ({ nikPabrik: e.nik || e.nikPabrik || '', nama: e.nama || '', dept: e.departemen || e.dept || '', gender: e.gender || '', tglLahir: e.tgl_lahir || e.tglLahir || '', hp: e.no_hp || e.hp || '' }))
   };
 
@@ -636,9 +636,9 @@ function autoPushMedicinesToGSheet(db) {
       action: 'seedMaster',
       medicines: meds.map(m => ({
         nama: m.nama || '',
-        stok: parseInt(m.stok) || 0,
+        stok: parseSafeInt(m.stok, 0),
         satuan: m.satuan || 'strip',
-        harga: parseInt(m.harga) || 0,
+        harga: parseSafeInt(m.harga, 0),
         kategori: m.kategori || 'Obat'
       }))
     });
@@ -670,8 +670,8 @@ app.post('/api/medicines', (req, res) => {
   const db = readDB();
   const newMed = req.body;
   if (!newMed.id) newMed.id = 'MED-' + Date.now();
-  newMed.stok = parseInt(newMed.stok) || 0;
-  newMed.harga = parseInt(newMed.harga) || 0;
+  newMed.stok = parseSafeInt(newMed.stok, 0);
+  newMed.harga = parseSafeInt(newMed.harga, 0);
   if (!db.medicines) db.medicines = [];
   db.medicines.unshift(newMed);
   db.medicines.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
@@ -757,8 +757,8 @@ app.post('/api/medicines/transfer', (req, res) => {
     const idx = db.medicines.findIndex(m => m.id === item.id);
     if (idx !== -1) {
       const oldMed = { ...db.medicines[idx] };
-      const qtySent = parseInt(item.qty) || 0;
-      const newStok = (parseInt(oldMed.stok) || 0) + qtySent;
+      const qtySent = parseSafeInt(item.qty, 0);
+      const newStok = (parseSafeInt(oldMed.stok, 0)) + qtySent;
 
       db.medicines[idx] = {
         ...oldMed,
@@ -897,7 +897,7 @@ app.post('/api/records', (req, res) => {
     if (!db.medicines) db.medicines = [];
     newRecord.resep.forEach(item => {
       const namaObat = item.namaObat || item.obat || '';
-      const qty = parseInt(item.qty || item.jumlah) || 1;
+      const qty = parseSafeInt(item.qty || item.jumlah, 1);
       if (namaObat) {
         const med = db.medicines.find(m => m.nama && m.nama.toLowerCase() === namaObat.toLowerCase());
         if (med) {
