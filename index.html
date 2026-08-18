@@ -203,7 +203,7 @@
               </button>
             </div>
 
-            <form id="form-poli-entry" onsubmit="handleSavePoli(event)">
+            <form id="form-poli-entry" onsubmit="event.preventDefault(); return false;">
 
               <!-- TANGGAL BEROBAT -->
               <div class="form-group" style="margin-bottom: 16px;">
@@ -337,8 +337,8 @@
 
               </div>
 
-              <!-- Submit Button -->
-              <button type="submit" class="btn btn-primary btn-block" style="padding: 13px; font-size: 0.95rem; font-weight: 800; margin-top: 12px;">
+              <!-- Submit Button (Explicit Click Only) -->
+              <button type="button" class="btn btn-primary btn-block" onclick="handleSavePoli(event)" style="padding: 13px; font-size: 0.95rem; font-weight: 800; margin-top: 12px;">
                 <i class="fa-solid fa-floppy-disk"></i> SIMPAN REKAM MEDIS &amp; POTONG STOK
               </button>
 

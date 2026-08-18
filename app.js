@@ -512,6 +512,18 @@ function initPoliForm() {
   const formattedToday = `${yyyy}-${mm}-${dd}`;
   const tglInput = document.getElementById('poli-tanggal-berobat');
   if (tglInput) tglInput.value = formattedToday;
+
+  // Prevent Enter key in form from submitting/saving (only explicit button click saves)
+  const formPoli = document.getElementById('form-poli-entry');
+  if (formPoli && !formPoli.dataset.enterSuppressed) {
+    formPoli.dataset.enterSuppressed = 'true';
+    formPoli.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        return false;
+      }
+    });
+  }
 }
 
 function addICD10Row(defaultValue = '') {
@@ -1116,13 +1128,26 @@ function closePhotoViewer() {
 }
 
 async function handleSavePoli(e) {
-  e.preventDefault();
+  if (e && e.preventDefault) e.preventDefault();
   if (!appData.currentPoliPatient) {
     showToast('Silakan cari dan pilih pasien terlebih dahulu!', 'error');
     return;
   }
 
+  const tanggalVal = document.getElementById('poli-tanggal-berobat').value;
+  if (!tanggalVal) {
+    showToast('Silakan tentukan tanggal kunjungan/berobat!', 'warning');
+    document.getElementById('poli-tanggal-berobat').focus();
+    return;
+  }
+
   const keluhan = document.getElementById('poli-keluhan').value.trim();
+  if (!keluhan) {
+    showToast('Silakan isi keluhan utama pasien!', 'warning');
+    document.getElementById('poli-keluhan').focus();
+    return;
+  }
+
   const pemeriksa = document.getElementById('poli-pemeriksa').value.trim() || 'Nakes Pemeriksa';
   const isIzinSakit = document.getElementById('poli-izin-sakit').checked;
   const isPantauan = document.getElementById('poli-pantauan').checked;
