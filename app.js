@@ -1892,6 +1892,21 @@ async function handleSaveEditRecord(e) {
       showToast('Rekam Medis & Revisi Stok Berhasil Diperbarui!', 'success');
       closeModalEditRecord();
       await loadAllAppData();
+      if (appData.currentPoliPatient) {
+        const refreshedPatient = appData.patients.find(x => 
+          (x.id && x.id === appData.currentPoliPatient.id) ||
+          (x.nikPabrik && x.nikPabrik === appData.currentPoliPatient.nikPabrik) ||
+          (x.nik && x.nik === appData.currentPoliPatient.nik)
+        );
+        if (refreshedPatient) {
+          appData.currentPoliPatient = refreshedPatient;
+          renderPatientHistoryTimeline(refreshedPatient);
+          document.getElementById('poli-banner-name').textContent = `${refreshedPatient.nama} (${refreshedPatient.nikPabrik || refreshedPatient.nik || '-'})`;
+          const saldoInfo = (refreshedPatient.saldoObat !== undefined) ? ` | <strong style="color:${parseInt(refreshedPatient.saldoObat)<0?'#ef4444':'#059669'}; background: ${parseInt(refreshedPatient.saldoObat)<0?'rgba(239,68,68,0.1)':'rgba(16,185,129,0.1)'}; padding: 2px 6px; border-radius: 4px;">Sisa Saldo: Rp ${(parseInt(refreshedPatient.saldoObat)||0).toLocaleString('id-ID')}</strong>` : '';
+          const ageStr = calculateAge(refreshedPatient.tglLahir || refreshedPatient.tgl_lahir);
+          document.getElementById('poli-banner-sub').innerHTML = `Dept: ${refreshedPatient.dept || refreshedPatient.departemen || '-'} | Usia: ${ageStr} | Gender: ${refreshedPatient.gender || '-'}${saldoInfo}`;
+        }
+      }
     } else {
       showToast('Gagal mengedit data', 'error');
     }
@@ -2031,6 +2046,21 @@ async function handleConfirmDeleteRecord(e) {
       closeModalDeleteRecord();
       closeModalEditRecord();
       await loadAllAppData();
+      if (appData.currentPoliPatient) {
+        const refreshedPatient = appData.patients.find(x => 
+          (x.id && x.id === appData.currentPoliPatient.id) ||
+          (x.nikPabrik && x.nikPabrik === appData.currentPoliPatient.nikPabrik) ||
+          (x.nik && x.nik === appData.currentPoliPatient.nik)
+        );
+        if (refreshedPatient) {
+          appData.currentPoliPatient = refreshedPatient;
+          renderPatientHistoryTimeline(refreshedPatient);
+          document.getElementById('poli-banner-name').textContent = `${refreshedPatient.nama} (${refreshedPatient.nikPabrik || refreshedPatient.nik || '-'})`;
+          const saldoInfo = (refreshedPatient.saldoObat !== undefined) ? ` | <strong style="color:${parseInt(refreshedPatient.saldoObat)<0?'#ef4444':'#059669'}; background: ${parseInt(refreshedPatient.saldoObat)<0?'rgba(239,68,68,0.1)':'rgba(16,185,129,0.1)'}; padding: 2px 6px; border-radius: 4px;">Sisa Saldo: Rp ${(parseInt(refreshedPatient.saldoObat)||0).toLocaleString('id-ID')}</strong>` : '';
+          const ageStr = calculateAge(refreshedPatient.tglLahir || refreshedPatient.tgl_lahir);
+          document.getElementById('poli-banner-sub').innerHTML = `Dept: ${refreshedPatient.dept || refreshedPatient.departemen || '-'} | Usia: ${ageStr} | Gender: ${refreshedPatient.gender || '-'}${saldoInfo}`;
+        }
+      }
     } else {
       showToast(data.error || 'Gagal menghapus rekam medis', 'error');
     }
