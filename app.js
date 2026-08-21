@@ -803,6 +803,16 @@ function calculateResepGrandTotal() {
   if (grandTotalEl) {
     grandTotalEl.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
   }
+
+  // Update Sisa Saldo Setelah Berobat
+  const sisaSaldoEl = document.getElementById('poli-sisa-saldo');
+  if (sisaSaldoEl && appData.currentPoliPatient) {
+    const saldoAwal = parseInt(appData.currentPoliPatient.saldoObat) || 0;
+    const sisa = saldoAwal - grandTotal;
+    sisaSaldoEl.textContent = `Rp ${sisa.toLocaleString('id-ID')}`;
+    sisaSaldoEl.style.color = sisa < 0 ? '#ef4444' : '#34d399';
+  }
+
   return grandTotal;
 }
 
@@ -838,6 +848,15 @@ function searchPatientByNIK() {
   const saldoInfo = (p.saldoObat !== undefined) ? ` | <strong style="color:${parseInt(p.saldoObat)<0?'#ef4444':'#059669'}; background: ${parseInt(p.saldoObat)<0?'rgba(239,68,68,0.1)':'rgba(16,185,129,0.1)'}; padding: 2px 6px; border-radius: 4px;">Sisa Saldo: Rp ${(parseInt(p.saldoObat)||0).toLocaleString('id-ID')}</strong>` : '';
   document.getElementById('poli-banner-sub').innerHTML = `Dept: ${p.dept || p.departemen || '-'} | Usia: ${ageStr} | Gender: ${p.gender || '-'}${saldoInfo}`;
   document.getElementById('poli-banner-alergi').textContent = p.alergi ? `⚠️ Alergi: ${p.alergi}` : '';
+
+  // Update Saldo Uang Obat Saat Ini and Sisa Saldo Setelah Berobat
+  const saldoAwalEl = document.getElementById('poli-saldo-awal');
+  if (saldoAwalEl) {
+    const saldoObat = parseInt(p.saldoObat) || 0;
+    saldoAwalEl.textContent = `Rp ${saldoObat.toLocaleString('id-ID')}`;
+    saldoAwalEl.style.color = saldoObat < 0 ? '#ef4444' : 'var(--text-primary)';
+  }
+  calculateResepGrandTotal();
 
   renderPatientHistoryTimeline(p);
   showToast(`Pasien ${p.nama} dipilih`, 'info');
