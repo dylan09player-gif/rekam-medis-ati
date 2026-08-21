@@ -2892,7 +2892,7 @@ function renderReqMedicineCatalog() {
         <td>
           <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
             <button type="button" class="btn btn-sm btn-secondary" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-sm);" onclick="adjustReqCatalogQty('${escapedName}', -1)">-</button>
-            <input type="number" id="${inputId}" class="form-control form-control-sm catalog-qty-input" value="${existingQty}" min="0" style="width: 55px; text-align: center; font-weight: bold; height: 28px;" onchange="updateReqCatalogQty('${escapedName}')">
+            <input type="number" id="${inputId}" class="form-control form-control-sm catalog-qty-input" value="${existingQty}" min="0" style="width: 80px; text-align: center; font-weight: bold; height: 28px;" onchange="updateReqCatalogQty('${escapedName}')">
             <button type="button" class="btn btn-sm btn-secondary" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-sm);" onclick="adjustReqCatalogQty('${escapedName}', 1)">+</button>
           </div>
         </td>

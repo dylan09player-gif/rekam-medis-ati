@@ -2940,3 +2940,13 @@ select.form-control {
   border-color: #38bdf8 !important; /* Vibrant light blue/cyan border focus */
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25) !important; /* Soft cyan focus glow */
 }
+
+/* Hide spin buttons for catalog qty inputs */
+.catalog-qty-input::-webkit-outer-spin-button,
+.catalog-qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.catalog-qty-input[type=number] {
+  -moz-appearance: textfield;
+}
