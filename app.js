@@ -1712,16 +1712,19 @@ function updateSisaSaldoEdit() {
   const currentSaldo = parseInt(emp.saldoObat) || 0;
   const oldBiaya = parseInt(currentRecord.totalBiaya) || 0;
   
-  // Refund the old biaya, then subtract the new calculated total
+  // Saldo sebelum transaksi ini dilakukan (dikembalikan dulu)
+  const saldoSebelumTransaksi = currentSaldo + oldBiaya;
+  
+  // Subtract the new calculated total
   const grandTotalStr = document.getElementById('edit-resep-grand-total').textContent.replace(/[^0-9]/g, '');
   const newBiaya = parseInt(grandTotalStr) || 0;
 
-  const sisaSaldo = currentSaldo + oldBiaya - newBiaya;
+  const sisaSaldo = saldoSebelumTransaksi - newBiaya;
 
   const saldoAwalEl = document.getElementById('edit-saldo-awal');
   if (saldoAwalEl) {
-    saldoAwalEl.textContent = `Rp ${currentSaldo.toLocaleString('id-ID')}`;
-    saldoAwalEl.style.color = currentSaldo < 0 ? '#ef4444' : 'var(--text-primary)';
+    saldoAwalEl.textContent = `Rp ${saldoSebelumTransaksi.toLocaleString('id-ID')}`;
+    saldoAwalEl.style.color = saldoSebelumTransaksi < 0 ? '#ef4444' : 'var(--text-primary)';
   }
 
   const sisaSaldoEl = document.getElementById('edit-sisa-saldo');
