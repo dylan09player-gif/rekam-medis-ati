@@ -160,9 +160,9 @@ function doPost(e) {
       if (data.employees && Array.isArray(data.employees)) {
         var kary = ss.getSheetByName('Karyawan') || ss.insertSheet('Karyawan');
         kary.clear();
-        kary.appendRow(['nikPabrik', 'nama', 'dept', 'gender', 'tglLahir', 'hp']);
-        var rowsE = data.employees.map(function(e){ return [e.nikPabrik || e.nik || '', e.nama || '', e.dept || e.departemen || '', e.gender || '', e.tglLahir || e.tgl_lahir || '', e.hp || e.no_hp || '']; });
-        if (rowsE.length > 0) kary.getRange(2, 1, rowsE.length, 6).setValues(rowsE);
+        kary.appendRow(['nikPabrik', 'nama', 'dept', 'gender', 'tglLahir', 'hp', 'saldoObat', 'sectionName', 'birthPlace']);
+        var rowsE = data.employees.map(function(e){ return [e.nikPabrik || e.nik || '', e.nama || '', e.dept || e.departemen || '', e.gender || '', e.tglLahir || e.tgl_lahir || '', e.hp || e.no_hp || '', e.saldoObat || '', e.sectionName || '', e.birthPlace || '']; });
+        if (rowsE.length > 0) kary.getRange(2, 1, rowsE.length, 9).setValues(rowsE);
       }
       return ContentService.createTextOutput(JSON.stringify({success:true, message:'Master data synced'}))
         .setMimeType(ContentService.MimeType.JSON);

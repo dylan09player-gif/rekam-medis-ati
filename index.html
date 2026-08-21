@@ -710,14 +710,15 @@
             <thead>
               <tr>
                 <th style="width: 4%; text-align: center;">NO</th>
-                <th style="width: 10%;">NPK PABRIK</th>
-                <th style="width: 17%;">NAMA KARYAWAN / PASIEN</th>
-                <th style="width: 12%;">DEPARTEMEN</th>
-                <th style="width: 10%;">TGL LAHIR</th>
-                <th style="width: 6%;">USIA</th>
+                <th style="width: 9%;">NPK PABRIK</th>
+                <th style="width: 15%;">NAMA KARYAWAN / PASIEN</th>
+                <th style="width: 10%;">DEPARTEMEN</th>
+                <th style="width: 10%;">SECTION</th>
+                <th style="width: 9%;">TGL LAHIR</th>
+                <th style="width: 5%;">USIA</th>
                 <th style="width: 6%;">GENDER</th>
-                <th style="width: 11%;">NO. WHATSAPP</th>
-                <th style="width: 12%;">SALDO OBAT</th>
+                <th style="width: 10%;">NO. WHATSAPP</th>
+                <th style="width: 10%;">SALDO OBAT</th>
                 <th style="width: 12%; text-align: center;">AKSI</th>
               </tr>
             </thead>
@@ -874,6 +875,18 @@
             </div>
             <div class="stat-body">
               <div id="hse-stat-patient-list" class="stat-mini-list">
+                <div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Memuat data...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card clickable" onclick="openHSEChartModal('section')" title="Klik untuk melihat Grafik Section Terbanyak">
+            <div class="stat-card-header">
+              <span class="stat-label">Section Terbanyak</span>
+              <span class="stat-pill-badge badge-purple"><i class="fa-solid fa-layer-group"></i> Grafik</span>
+            </div>
+            <div class="stat-body">
+              <div id="hse-stat-section-list" class="stat-mini-list">
                 <div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Memuat data...</div>
               </div>
             </div>
@@ -1607,6 +1620,9 @@ function setupTabDanHeader() {
           <button id="chart-tab-pasien-btn" class="btn btn-sm btn-secondary" onclick="switchHSEChartTab('pasien')" style="font-weight: 700;">
             <i class="fa-solid fa-user-injured"></i> 10 Pasien Terbanyak
           </button>
+          <button id="chart-tab-section-btn" class="btn btn-sm btn-secondary" onclick="switchHSEChartTab('section')" style="font-weight: 700;">
+            <i class="fa-solid fa-layer-group"></i> Section Terbanyak
+          </button>
           <button type="button" class="btn btn-secondary btn-sm" onclick="closeHSEChartModal()"><i class="fa-solid fa-xmark"></i> Tutup</button>
         </div>
       </div>
@@ -1689,6 +1705,33 @@ function setupTabDanHeader() {
             </div>
           </div>
         </div>
+
+        <!-- BARIS 4: SECTION TERBANYAK -->
+        <div id="section-chart-section" style="display: none;">
+          <div style="text-align: center; margin-bottom: 14px; font-weight: 800; font-size: 1.1rem; color: #a855f7; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-layer-group"></i> SECTION TERBANYAK KUNJUNGAN (PERBANDINGAN BULAN INI VS BULAN KEMARIN)
+          </div>
+          <div class="hse-chart-pair-grid">
+            <div style="background: rgba(168, 85, 247, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.2);">
+              <h5 id="title-chart-section-curr" style="text-align: center; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-color);">
+                SECTION TERBANYAK (BULAN INI)
+              </h5>
+              <div style="position: relative; height: 280px;">
+                <canvas id="chartSectionCurrent"></canvas>
+              </div>
+            </div>
+
+            <div style="background: rgba(168, 85, 247, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.2);">
+              <h5 id="title-chart-section-prev" style="text-align: center; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-color);">
+                SECTION TERBANYAK (BULAN KEMARIN)
+              </h5>
+              <div style="position: relative; height: 280px;">
+                <canvas id="chartSectionPrev"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

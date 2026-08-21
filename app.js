@@ -3125,7 +3125,7 @@ function renderKaryawanTable() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan pencarian '${query}'</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan pencarian '${query}'</td></tr>`;
     return;
   }
 
@@ -3134,6 +3134,7 @@ function renderKaryawanTable() {
     const npk = k.nikPabrik || k.nik || '-';
     const nama = k.nama || '-';
     const dept = k.dept || k.departemen || 'PT ATI';
+    const sectionName = k.sectionName || '-';
     const tgl = k.tglLahir || k.tgl_lahir || '-';
     const usia = calculateAge(tgl);
     const gender = k.gender || '-';
@@ -3157,6 +3158,7 @@ function renderKaryawanTable() {
         <td><span class="badge badge-info" style="font-weight: 700;">${npk}</span></td>
         <td><strong>${nama}</strong></td>
         <td>${dept}</td>
+        <td>${sectionName}</td>
         <td>${tgl}</td>
         <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; font-weight: 700;">${usia}</span></td>
         <td>${gender}</td>
@@ -3523,6 +3525,34 @@ function renderHSERekamMedisTable(isButtonClick = false) {
         <div class="stat-mini-item">
           <span class="stat-mini-name" title="${p[0]}">${p[0]}</span>
           <span class="stat-mini-count">${p[1]}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  const statSectionList = document.getElementById('hse-stat-section-list');
+  if (statSectionList) {
+    const sectionCounts = {};
+    filtered.forEach(r => {
+      let section = 'Lainnya';
+      if (r.nikPabrik) {
+        const patient = appData.patients.find(p => p.nikPabrik === r.nikPabrik);
+        if (patient && patient.sectionName && patient.sectionName.trim() !== '') {
+          section = patient.sectionName.trim();
+        }
+      }
+      sectionCounts[section] = (sectionCounts[section] || 0) + 1;
+    });
+
+    const sortedSections = Object.entries(sectionCounts).sort((a, b) => b[1] - a[1]);
+    
+    if (sortedSections.length === 0) {
+      statSectionList.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic; padding: 4px 0;">Belum ada data</div>';
+    } else {
+      statSectionList.innerHTML = sortedSections.slice(0, 3).map(s => `
+        <div class="stat-mini-item">
+          <span class="stat-mini-name" title="${s[0]}">${s[0]}</span>
+          <span class="stat-mini-count">${s[1]}</span>
         </div>
       `).join('');
     }
@@ -5297,18 +5327,22 @@ function switchHSEChartTab(tab) {
   const secPenyakit = document.getElementById('section-chart-penyakit');
   const secDept = document.getElementById('section-chart-dept');
   const secPasien = document.getElementById('section-chart-pasien');
+  const secSection = document.getElementById('section-chart-section');
 
   const btnPenyakit = document.getElementById('chart-tab-penyakit-btn');
   const btnDept = document.getElementById('chart-tab-dept-btn');
   const btnPasien = document.getElementById('chart-tab-pasien-btn');
+  const btnSection = document.getElementById('chart-tab-section-btn');
 
   if (secPenyakit) secPenyakit.style.display = 'none';
   if (secDept) secDept.style.display = 'none';
   if (secPasien) secPasien.style.display = 'none';
+  if (secSection) secSection.style.display = 'none';
 
   if (btnPenyakit) { btnPenyakit.className = 'btn btn-sm btn-secondary'; btnPenyakit.style.background = ''; }
   if (btnDept) { btnDept.className = 'btn btn-sm btn-secondary'; btnDept.style.background = ''; }
   if (btnPasien) { btnPasien.className = 'btn btn-sm btn-secondary'; btnPasien.style.background = ''; }
+  if (btnSection) { btnSection.className = 'btn btn-sm btn-secondary'; btnSection.style.background = ''; }
 
   if (tab === 'dept') {
     if (secDept) secDept.style.display = 'block';
@@ -5316,6 +5350,9 @@ function switchHSEChartTab(tab) {
   } else if (tab === 'pasien') {
     if (secPasien) secPasien.style.display = 'block';
     if (btnPasien) { btnPasien.className = 'btn btn-sm btn-primary'; btnPasien.style.background = '#f59e0b'; btnPasien.style.border = 'none'; }
+  } else if (tab === 'section') {
+    if (secSection) secSection.style.display = 'block';
+    if (btnSection) { btnSection.className = 'btn btn-sm btn-primary'; btnSection.style.background = '#a855f7'; btnSection.style.border = 'none'; }
   } else {
     if (secPenyakit) secPenyakit.style.display = 'block';
     if (btnPenyakit) { btnPenyakit.className = 'btn btn-sm btn-primary'; btnPenyakit.style.background = '#00cbd5'; btnPenyakit.style.border = 'none'; }
@@ -5354,6 +5391,8 @@ function renderHSEComparisonCharts() {
   const titleDeptPrev = document.getElementById('title-chart-dept-prev');
   const titlePasienCurr = document.getElementById('title-chart-pasien-curr');
   const titlePasienPrev = document.getElementById('title-chart-pasien-prev');
+  const titleSectionCurr = document.getElementById('title-chart-section-curr');
+  const titleSectionPrev = document.getElementById('title-chart-section-prev');
 
   if (titlePenyakitCurr) titlePenyakitCurr.innerHTML = `10 PENYAKIT TERBANYAK<br><span style="color:#00cbd5; font-size:0.85rem;">${currMonthLabel}</span>`;
   if (titlePenyakitPrev) titlePenyakitPrev.innerHTML = `10 PENYAKIT TERBANYAK<br><span style="color:#00cbd5; font-size:0.85rem;">${prevMonthLabel}</span>`;
@@ -5361,6 +5400,8 @@ function renderHSEComparisonCharts() {
   if (titleDeptPrev) titleDeptPrev.innerHTML = `10 DEPARTMENT TERBANYAK<br><span style="color:#84cc16; font-size:0.85rem;">${prevMonthLabel}</span>`;
   if (titlePasienCurr) titlePasienCurr.innerHTML = `10 PASIEN TERBANYAK<br><span style="color:#f59e0b; font-size:0.85rem;">${currMonthLabel}</span>`;
   if (titlePasienPrev) titlePasienPrev.innerHTML = `10 PASIEN TERBANYAK<br><span style="color:#f59e0b; font-size:0.85rem;">${prevMonthLabel}</span>`;
+  if (titleSectionCurr) titleSectionCurr.innerHTML = `SECTION TERBANYAK<br><span style="color:#a855f7; font-size:0.85rem;">${currMonthLabel}</span>`;
+  if (titleSectionPrev) titleSectionPrev.innerHTML = `SECTION TERBANYAK<br><span style="color:#a855f7; font-size:0.85rem;">${prevMonthLabel}</span>`;
 
   // Filter records
   const currRecords = appData.records.filter(r => {
@@ -5413,12 +5454,30 @@ function renderHSEComparisonCharts() {
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
   };
 
+  // Calculate Top 10 Section
+  const getTopSections = (recs) => {
+    const counts = {};
+    recs.forEach(r => {
+      let section = 'Lainnya';
+      if (r.nikPabrik) {
+        const patient = appData.patients.find(p => p.nikPabrik === r.nikPabrik);
+        if (patient && patient.sectionName && patient.sectionName.trim() !== '') {
+          section = patient.sectionName.trim();
+        }
+      }
+      counts[section] = (counts[section] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  };
+
   const topPenyakitCurr = getTopDiseases(currRecords);
   const topPenyakitPrev = getTopDiseases(prevRecords);
   const topDeptCurr = getTopDepts(currRecords);
   const topDeptPrev = getTopDepts(prevRecords);
   const topPasienCurr = getTopPatients(currRecords);
   const topPasienPrev = getTopPatients(prevRecords);
+  const topSectionCurr = getTopSections(currRecords);
+  const topSectionPrev = getTopSections(prevRecords);
 
   // Render Charts
   renderBarChart('chartPenyakitCurrent', topPenyakitCurr.map(d => d[0]), topPenyakitCurr.map(d => d[1]), '#00cbd5');
@@ -5427,6 +5486,8 @@ function renderHSEComparisonCharts() {
   renderBarChart('chartDeptPrev', topDeptPrev.map(d => d[0]), topDeptPrev.map(d => d[1]), '#84cc16');
   renderBarChart('chartPasienCurrent', topPasienCurr.map(d => d[0]), topPasienCurr.map(d => d[1]), '#f59e0b');
   renderBarChart('chartPasienPrev', topPasienPrev.map(d => d[0]), topPasienPrev.map(d => d[1]), '#f59e0b');
+  renderBarChart('chartSectionCurrent', topSectionCurr.map(d => d[0]), topSectionCurr.map(d => d[1]), '#a855f7');
+  renderBarChart('chartSectionPrev', topSectionPrev.map(d => d[0]), topSectionPrev.map(d => d[1]), '#a855f7');
 }
 
 function renderBarChart(canvasId, labels, dataValues, barColor) {

@@ -332,7 +332,10 @@ async function performGSheetSync(db, gsheetUrl) {
           tglLahir: cols[6] || '',
           tgl_lahir: cols[6] || '',
           hp: cols[7] || '',
-          no_hp: cols[7] || ''
+          no_hp: cols[7] || '',
+          saldoObat: parseInt((cols[8] || '').replace(/\./g, '')) || 0,
+          sectionName: cols[9] || '',
+          birthPlace: cols[10] || ''
         });
       }
     }
@@ -359,7 +362,10 @@ async function performGSheetSync(db, gsheetUrl) {
         tglLahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
         tgl_lahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
         hp: String(gEmp.hp || gEmp.no_hp || '').trim(),
-        no_hp: String(gEmp.hp || gEmp.no_hp || '').trim()
+        no_hp: String(gEmp.hp || gEmp.no_hp || '').trim(),
+        saldoObat: parseInt(String(gEmp.saldoObat || gEmp.sisaLimit || '0').replace(/\./g, '')) || 0,
+        sectionName: String(gEmp.sectionName || '').trim(),
+        birthPlace: String(gEmp.birthPlace || '').trim()
       };
     }).filter(e => e.nikPabrik || e.nama);
   }
@@ -523,7 +529,7 @@ app.post('/api/gsheet/push-all-master', async (req, res) => {
     action: 'seedMaster',
     icd10: (db.icd10 || []).map(i => ({ code: i.code || '', description: i.description || '' })),
     medicines: (db.medicines || []).map(m => ({ nama: m.nama || '', stok: parseSafeInt(m.stok, 0), satuan: m.satuan || 'strip', kategori: m.kategori || 'Obat' })),
-    employees: (db.employees || []).map(e => ({ nikPabrik: e.nik || e.nikPabrik || '', nama: e.nama || '', dept: e.departemen || e.dept || '', gender: e.gender || '', tglLahir: e.tgl_lahir || e.tglLahir || '', hp: e.no_hp || e.hp || '' }))
+    employees: (db.employees || []).map(e => ({ nikPabrik: e.nik || e.nikPabrik || '', nama: e.nama || '', dept: e.departemen || e.dept || '', gender: e.gender || '', tglLahir: e.tgl_lahir || e.tglLahir || '', hp: e.no_hp || e.hp || '', saldoObat: e.saldoObat || '', sectionName: e.sectionName || '', birthPlace: e.birthPlace || '' }))
   };
 
   const postData = JSON.stringify(payload);
@@ -839,7 +845,10 @@ app.put('/api/patients/:id', (req, res) => {
       tglLahir: req.body.tglLahir || db.employees[idx].tglLahir,
       tgl_lahir: req.body.tglLahir || db.employees[idx].tglLahir,
       hp: req.body.hp !== undefined ? req.body.hp : (db.employees[idx].hp || ''),
-      no_hp: req.body.hp !== undefined ? req.body.hp : (db.employees[idx].hp || '')
+      no_hp: req.body.hp !== undefined ? req.body.hp : (db.employees[idx].hp || ''),
+      saldoObat: req.body.saldoObat !== undefined ? parseInt(String(req.body.saldoObat).replace(/\./g, '')) || 0 : (parseInt(String(db.employees[idx].saldoObat || db.employees[idx].sisaLimit || '0').replace(/\./g, '')) || 0),
+      sectionName: req.body.sectionName !== undefined ? req.body.sectionName : (db.employees[idx].sectionName || ''),
+      birthPlace: req.body.birthPlace !== undefined ? req.body.birthPlace : (db.employees[idx].birthPlace || '')
     };
     writeDB(db);
     return res.json({ success: true, employee: db.employees[idx] });

@@ -1034,7 +1034,7 @@ select.form-control {
 /* ===================== STAT CARDS & HSE OVERVIEW ===================== */
 .hse-stat-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -1135,6 +1135,12 @@ select.form-control {
   color: #fbbf24;
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.stat-pill-badge.badge-purple {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.25);
 }
 
 .stat-body {
