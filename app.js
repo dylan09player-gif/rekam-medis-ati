@@ -104,7 +104,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPoliForm();
   initDateInputs();
   initMobileBackTrap();
+  initSSE();
 });
+
+// SSE Initialization for Live Updates
+let sseTimeout = null;
+function initSSE() {
+  const eventSource = new EventSource('/api/events');
+  eventSource.onmessage = function(event) {
+    if (event.data === 'update') {
+      if (sseTimeout) clearTimeout(sseTimeout);
+      sseTimeout = setTimeout(() => {
+        console.log('Live update received, reloading data...');
+        loadAllAppData();
+      }, 500);
+    }
+  };
+  eventSource.onerror = function() {
+    console.error('SSE connection error, retrying...');
+  };
+}
 
 // Theme Management
 function initTheme() {

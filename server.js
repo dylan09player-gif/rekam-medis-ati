@@ -30,13 +30,40 @@ function readDB() {
   }
 }
 
+let sseClients = [];
+
+function notifyClients() {
+  sseClients.forEach(client => {
+    try {
+      client.res.write(`data: update\n\n`);
+    } catch (e) {
+      console.error('Error sending SSE:', e);
+    }
+  });
+}
+
 function writeDB(data) {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    notifyClients();
   } catch (err) {
     console.error('Error writing DB:', err);
   }
 }
+
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  
+  const client = { id: Date.now(), res };
+  sseClients.push(client);
+  
+  req.on('close', () => {
+    sseClients = sseClients.filter(c => c.id !== client.id);
+  });
+});
 
 // Telegram Helper Function
 function sendTelegramNotif(message) {
