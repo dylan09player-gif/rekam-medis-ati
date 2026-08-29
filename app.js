@@ -977,17 +977,23 @@ function addPoliMedicineRow(medName = '', qty = 1) {
 
     menu.innerHTML = filtered.map(m => {
       const hargaFormat = m.harga ? `Rp ${parseFloat(m.harga).toLocaleString('id-ID')}` : 'Rp 0';
+      const isHabis = (parseInt(m.stok) || 0) <= 0;
+      const stokLabel = isHabis 
+        ? `<span style="color: #ef4444; font-weight: 700;">❌ STOK HABIS (0)</span>` 
+        : `Stok: ${m.stok} ${m.satuan || ''}`;
+
       return `
-        <div class="searchable-option-item ${m.nama.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" 
+        <div class="searchable-option-item ${isHabis ? 'option-disabled' : ''} ${m.nama.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" 
              data-nama="${m.nama}" 
              data-stok="${m.stok}" 
              data-satuan="${m.satuan || '-'}" 
-             data-harga="${m.harga || 0}">
+             data-harga="${m.harga || 0}"
+             style="${isHabis ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.08); cursor: not-allowed;' : ''}">
           <div>
-            <strong>${m.nama}</strong>
-            <div class="option-sub">Stok: ${m.stok} ${m.satuan || ''} | Harga: ${hargaFormat}</div>
+            <strong style="${isHabis ? 'color: #ef4444; text-decoration: line-through;' : ''}">${m.nama}</strong>
+            <div class="option-sub">${stokLabel} | Harga: ${hargaFormat}</div>
           </div>
-          <span class="price-tag">${hargaFormat}</span>
+          <span class="price-tag">${isHabis ? '<span style="color:#ef4444; font-size:0.75rem; font-weight:800;">HABIS</span>' : hargaFormat}</span>
         </div>
       `;
     }).join('');
@@ -999,11 +1005,25 @@ function addPoliMedicineRow(medName = '', qty = 1) {
         const satuan = opt.getAttribute('data-satuan');
         const harga = parseFloat(opt.getAttribute('data-harga')) || 0;
 
+        if (stok <= 0) {
+          showToast(`❌ Obat "${nama}" STOK HABIS (0 ${satuan || ''})! Tidak dapat dipilih.`, 'error');
+          input.value = '';
+          tr.dataset.unitPrice = 0;
+          qtyInput.value = 1;
+          qtyInput.disabled = true;
+          updateStockBadgeEl(stockInfo, 0, satuan, tr);
+          calculateRowSubtotal(tr);
+          wrap.classList.remove('active');
+          return;
+        }
+
         input.value = nama;
         tr.dataset.unitPrice = harga;
+        qtyInput.disabled = false;
+        qtyInput.max = stok;
         wrap.classList.remove('active');
 
-        updateStockBadgeEl(stockInfo, stok, satuan);
+        updateStockBadgeEl(stockInfo, stok, satuan, tr);
         calculateRowSubtotal(tr);
       });
     });
@@ -1022,13 +1042,33 @@ function addPoliMedicineRow(medName = '', qty = 1) {
     wrap.classList.add('active');
     const matched = medList.find(m => m.nama.toLowerCase() === input.value.toLowerCase().trim());
     if (matched) {
-      tr.dataset.unitPrice = parseFloat(matched.harga) || 0;
-      updateStockBadgeEl(stockInfo, matched.stok, matched.satuan);
+      const st = parseInt(matched.stok) || 0;
+      if (st <= 0) {
+        qtyInput.disabled = true;
+        qtyInput.value = 0;
+        tr.dataset.unitPrice = 0;
+        updateStockBadgeEl(stockInfo, 0, matched.satuan, tr);
+      } else {
+        qtyInput.disabled = false;
+        qtyInput.max = st;
+        tr.dataset.unitPrice = parseFloat(matched.harga) || 0;
+        updateStockBadgeEl(stockInfo, matched.stok, matched.satuan, tr);
+      }
+    } else {
+      qtyInput.disabled = false;
+      qtyInput.removeAttribute('max');
     }
     calculateRowSubtotal(tr);
   });
 
-  qtyInput.addEventListener('input', () => calculateRowSubtotal(tr));
+  qtyInput.addEventListener('input', () => {
+    const maxStok = parseInt(qtyInput.max);
+    if (!isNaN(maxStok) && parseInt(qtyInput.value) > maxStok) {
+      showToast(`⚠️ Jumlah tidak boleh melebihi stok yang tersedia (${maxStok})!`, 'warning');
+      qtyInput.value = maxStok;
+    }
+    calculateRowSubtotal(tr);
+  });
 
   document.addEventListener('click', (e) => {
     if (!wrap.contains(e.target)) {
@@ -1037,25 +1077,42 @@ function addPoliMedicineRow(medName = '', qty = 1) {
   });
 
   if (initialMed) {
-    updateStockBadgeEl(stockInfo, initialMed.stok, initialMed.satuan);
+    updateStockBadgeEl(stockInfo, initialMed.stok, initialMed.satuan, tr);
   }
   calculateRowSubtotal(tr);
 }
 
-function updateStockBadgeEl(infoEl, stok, satuan) {
+function updateStockBadgeEl(infoEl, stok, satuan, tr = null) {
   if (!infoEl) return;
   stok = parseInt(stok) || 0;
   let colorClass = 'stock-badge-green';
   let label = `✓ Tersedia: ${stok} ${satuan || ''}`;
   if (stok <= 0) {
     colorClass = 'stock-badge-red';
-    label = `❌ Stok Habis: 0 ${satuan || ''}`;
+    label = `❌ Stok Habis: 0 ${satuan || ''} (Tidak Dapat Diinput)`;
+    if (tr) {
+      const qInp = tr.querySelector('.med-qty');
+      if (qInp) qInp.disabled = true;
+    }
   } else if (stok <= 5) {
     colorClass = 'stock-badge-red';
     label = `🔥 Sisa Sedikit: ${stok} ${satuan || ''}`;
+    if (tr) {
+      const qInp = tr.querySelector('.med-qty');
+      if (qInp) { qInp.disabled = false; qInp.max = stok; }
+    }
   } else if (stok <= 15) {
     colorClass = 'stock-badge-yellow';
     label = `⚠️ Tersedia: ${stok} ${satuan || ''}`;
+    if (tr) {
+      const qInp = tr.querySelector('.med-qty');
+      if (qInp) { qInp.disabled = false; qInp.max = stok; }
+    }
+  } else {
+    if (tr) {
+      const qInp = tr.querySelector('.med-qty');
+      if (qInp) { qInp.disabled = false; qInp.max = stok; }
+    }
   }
   infoEl.className = `stock-badge-info ${colorClass}`;
   infoEl.textContent = label;
@@ -1517,13 +1574,28 @@ async function handleSavePoli(e) {
   const resepList = [];
   let grandTotalObat = 0;
 
-  resepRows.forEach(tr => {
+  for (const tr of resepRows) {
     const medSel = tr.querySelector('.select-medicine')?.value.trim();
     const unitPrice = parseInt(tr.dataset.unitPrice) || 0;
     const qty = parseInt(tr.querySelector('.med-qty')?.value) || 1;
     const subtotal = unitPrice * qty;
 
     if (medSel) {
+      const matched = (appData.medicines || []).find(m => m.nama && m.nama.toLowerCase() === medSel.toLowerCase());
+      if (matched) {
+        const availStok = parseInt(matched.stok) || 0;
+        if (availStok <= 0) {
+          showToast(`❌ Obat "${matched.nama}" STOK HABIS (0 ${matched.satuan || ''})! Silakan hapus atau ganti obat sebelum menyimpan.`, 'error');
+          tr.querySelector('.select-medicine')?.focus();
+          return;
+        }
+        if (qty > availStok) {
+          showToast(`⚠️ Jumlah "${matched.nama}" (${qty}) melebihi sisa stok (${availStok} ${matched.satuan || ''})!`, 'error');
+          tr.querySelector('.med-qty')?.focus();
+          return;
+        }
+      }
+
       resepList.push({ 
         namaObat: medSel, 
         harga: unitPrice, 
@@ -1532,7 +1604,7 @@ async function handleSavePoli(e) {
       });
       grandTotalObat += subtotal;
     }
-  });
+  }
 
   const grandTotalBiaya = grandTotalTindakan + grandTotalObat;
 
@@ -4087,7 +4159,14 @@ function renderHSERekamMedisTable(isButtonClick = false) {
   const statPatientList = document.getElementById('hse-stat-patient-list');
 
   if (statTotal) statTotal.textContent = filtered.length;
-  if (statPantauan) statPantauan.textContent = filtered.filter(r => r.isPantauan === true).length;
+  if (statPantauan) {
+    const uniquePantauan = new Set();
+    filtered.filter(r => r.isPantauan === true).forEach(r => {
+      const key = (r.nikPabrik || r.namaPasien || '').trim().toLowerCase();
+      if (key) uniquePantauan.add(key);
+    });
+    statPantauan.textContent = uniquePantauan.size;
+  }
   if (statSurkes) statSurkes.textContent = filtered.filter(r => r.izinSakit === true).length;
 
   if (statDeptList) {
@@ -4224,42 +4303,100 @@ function renderHSEPasienPantauanTable() {
   const tbody = document.getElementById('table-hse-pantauan-body');
   if (!tbody) return;
 
-  const pantauanList = appData.records.filter(r => r.isPantauan === true);
+  const pantauanRecords = appData.records.filter(r => r.isPantauan === true);
 
-  if (pantauanList.length === 0) {
+  if (pantauanRecords.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Belum ada data pasien dalam pemantauan K3</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = pantauanList.map(r => {
-    const patient = appData.patients.find(p => (p.nikPabrik || p.nik) === r.nikPabrik) || {};
+  // 1. Group by UNIQUE Employee (nikPabrik or namaPasien)
+  const employeeMap = {};
+  pantauanRecords.forEach(r => {
+    const key = (r.nikPabrik || r.namaPasien || '').trim().toLowerCase();
+    if (!key) return;
+    if (!employeeMap[key]) {
+      employeeMap[key] = {
+        nikPabrik: r.nikPabrik || '-',
+        namaPasien: r.namaPasien,
+        dept: r.dept || '-',
+        records: []
+      };
+    }
+    employeeMap[key].records.push(r);
+  });
+
+  const uniqueEmployees = Object.values(employeeMap);
+
+  tbody.innerHTML = uniqueEmployees.map(emp => {
+    // Sort records descending by date
+    const sortedRecs = emp.records.slice().sort((a, b) => {
+      const dA = parseRecordDate(a) || 0;
+      const dB = parseRecordDate(b) || 0;
+      return dB - dA;
+    });
+
+    const latestRec = sortedRecs[0];
+    const visitCount = sortedRecs.length;
+
+    // Gather all distinct diagnoses across visits
+    const allDiags = [];
+    sortedRecs.forEach(rec => {
+      if (rec.asesmen && rec.asesmen !== '-') {
+        const parts = String(rec.asesmen).split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
+        parts.forEach(p => { if (!allDiags.includes(p)) allDiags.push(p); });
+      }
+    });
+
+    const patient = appData.patients.find(p => (p.nikPabrik || p.nik) === emp.nikPabrik) || {};
     const rawHp = patient.hp || patient.no_hp || '';
     const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
     
     const waBtn = rawHp 
-      ? `<button class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; flex: 1;" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
-      : `<button class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; opacity: 0.5; flex: 1;" onclick="showToast('No HP belum diisi di data pasien.', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`;
+      ? `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; padding: 6px 12px;" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> WA</button>`
+      : '';
       
-    const fileBtn = r.linkFoto 
-      ? `<button class="btn btn-sm" style="background: var(--info); color: #fff; border: none; font-weight: 700; flex: 1;" onclick="openPhotoViewer('${r.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
+    const fileBtn = latestRec.linkFoto 
+      ? `<button type="button" class="btn btn-sm" style="background: var(--info); color: #fff; border: none; font-weight: 700; padding: 6px 12px;" onclick="openPhotoViewer('${latestRec.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
       : '';
 
     return `
-    <tr>
-      <td data-label="Tanggal">${r.tanggal || '-'}</td>
-      <td data-label="NIK Pabrik"><span class="badge badge-danger">${r.nikPabrik || '-'}</span></td>
-      <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong></td>
-      <td data-label="Bagian">${r.dept || '-'}</td>
-      <td data-label="Alasan Pantauan">
+    <tr ondblclick="openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" style="cursor: pointer;" title="Klik 2x pada baris untuk melihat seluruh riwayat berobat pasien">
+      <td data-label="Tanggal" style="vertical-align: top;">
+        <div style="font-weight: 700; color: var(--text-color);">${latestRec.tanggal || '-'}</div>
+        ${visitCount > 1 ? `<span class="badge badge-info" style="font-size: 0.72rem; margin-top: 4px;"><i class="fa-solid fa-repeat"></i> ${visitCount}x Kunjungan</span>` : ''}
+      </td>
+      <td data-label="NIK Pabrik" style="vertical-align: top;">
+        <span class="badge badge-danger" style="font-size: 0.8rem; font-weight: 700;">${emp.nikPabrik}</span>
+      </td>
+      <td data-label="Nama Pasien" style="vertical-align: top;">
+        <div onclick="openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" style="cursor: pointer; text-decoration: underline; color: #38bdf8; font-weight: 800; font-size: 0.95rem;" title="Klik untuk membuka riwayat berobat">
+          ${emp.namaPasien}
+        </div>
+        <small style="color: var(--text-muted); display: block; margin-top: 2px;">💡 Klik / Tap untuk riwayat</small>
+      </td>
+      <td data-label="Bagian" style="vertical-align: top;">
+        <span style="font-weight: 600; color: var(--text-color);">${emp.dept}</span>
+      </td>
+      <td data-label="Alasan Pemantauan" style="vertical-align: top;">
         <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
-          <div><strong>S:</strong> ${r.keluhan || '-'}</div>
-          <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:4px;"><strong>A:</strong> ${renderDiagnosisBadges(r.asesmen)}</div>
+          <div><strong style="color: var(--text-color);">S:</strong> <span style="color: var(--text-muted);">${latestRec.keluhan || '-'}</span></div>
+          <div style="display:flex; flex-direction:column; gap:3px; margin-top: 2px;">
+            <strong style="color: var(--text-color);">A:</strong> 
+            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+              ${allDiags.length > 0 ? allDiags.map(d => `<span class="badge badge-info" style="font-size: 0.76rem;"><i class="fa-solid fa-stethoscope"></i> ${d}</span>`).join('') : '<span style="color: var(--text-muted);">-</span>'}
+            </div>
+          </div>
         </div>
       </td>
-      <td data-label="Status"><span class="badge badge-warning">Dalam Pemantauan</span></td>
-      <td data-label="Aksi">
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-sm btn-primary" style="flex: 1;" onclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat Rekam Medis">
+      <td data-label="Status" style="vertical-align: top;">
+        <span class="badge badge-warning" style="white-space: nowrap; font-weight: 700; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">
+          🔴 Dalam Pemantauan
+        </span>
+      </td>
+      <td data-label="Aksi" style="vertical-align: top;">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+          <button type="button" class="btn btn-sm btn-primary" style="padding: 6px 12px; font-weight: 700;" onclick="openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" title="Buka Riwayat Rekam Medis">
             <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
           </button>
           ${waBtn}

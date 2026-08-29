@@ -1168,11 +1168,15 @@ app.post('/api/records', (req, res) => {
     });
   }
 
-  // Mark as pantauan if flagged
+  // Mark as pantauan if flagged (Deduplicate per employee)
   if (newRecord.isPantauan) {
     if (!db.pantauan) db.pantauan = [];
-    db.pantauan.unshift({
-      id: 'PP-' + Date.now(),
+    const existIdx = db.pantauan.findIndex(p => 
+      (p.nikPabrik && p.nikPabrik === newRecord.nikPabrik) || 
+      (p.namaPasien && p.namaPasien.toLowerCase() === newRecord.namaPasien.toLowerCase())
+    );
+    const pantauanItem = {
+      id: existIdx !== -1 ? db.pantauan[existIdx].id : ('PP-' + Date.now()),
       nikPabrik: newRecord.nikPabrik,
       namaPasien: newRecord.namaPasien,
       dept: newRecord.dept || '-',
@@ -1180,7 +1184,12 @@ app.post('/api/records', (req, res) => {
       asesmen: newRecord.asesmen,
       status: 'AKTIF',
       tanggal: newRecord.tanggal || new Date().toLocaleDateString('id-ID')
-    });
+    };
+    if (existIdx !== -1) {
+      db.pantauan[existIdx] = pantauanItem;
+    } else {
+      db.pantauan.unshift(pantauanItem);
+    }
   }
 
   if (!db.records) db.records = [];
@@ -1188,28 +1197,67 @@ app.post('/api/records', (req, res) => {
   writeDB(db);
   autoPushMedicinesToGSheet(db);
 
-  // Telegram Notification
-  const planShort = Array.isArray(newRecord.resep) && newRecord.resep.length > 0
-    ? newRecord.resep.map(r => r.namaObat || r.obat).join(', ')
-    : (newRecord.plan || '-');
+  // Telegram Notification (Full SOAP & Clinical Data)
+  const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+  
+  // Status Kelaikan
+  let kelaikanList = [];
+  if (newRecord.izinSakit) kelaikanList.push('📄 ISTIRAHAT SAKIT (Surkes)');
+  if (newRecord.isPantauan) kelaikanList.push('🔴 PASIEN PANTAUAN K3');
+  if (kelaikanList.length === 0) kelaikanList.push('🟢 FIT TO WORK');
+  const statusKelaikanTeks = kelaikanList.join(' | ');
 
+  // Tindakan Medis
   const logTindakanTeks = Array.isArray(newRecord.tindakan) && newRecord.tindakan.length > 0
-    ? newRecord.tindakan.map(t => `${t.nama || t.jenis || 'Tindakan'} (${t.qty || 1}x)`).join(', ')
-    : '';
+    ? newRecord.tindakan.map(t => `• ${t.nama || 'Tindakan'} (${t.qty || 1}x) [Tarif: Rp ${(t.subtotal || 0).toLocaleString('id-ID')}]`).join('\n')
+    : '• -';
+
+  // Resep Obat
+  const obatDetailTeks = logObatTeks.length > 0
+    ? logObatTeks.map(o => `• ${o}`).join('\n')
+    : (Array.isArray(newRecord.resep) && newRecord.resep.length > 0
+        ? newRecord.resep.map(r => `• ${r.namaObat || r.obat} (${r.qty || 1})`).join('\n')
+        : '• -');
+
+  const totalBiayaTeks = Number(newRecord.totalBiaya || 0).toLocaleString('id-ID');
+  const biayaTindakanTeks = Number(newRecord.biayaTindakan || 0).toLocaleString('id-ID');
+  const biayaObatTeks = Number(newRecord.biayaObat || 0).toLocaleString('id-ID');
 
   const telegramText = 
-    `🏥 <b>KUNJUNGAN SELESAI</b>\n` +
-    `━━━━━━━━━━━━━━━━━\n` +
-    `🕐 Waktu    : ${new Date().toLocaleString('id-ID')}\n` +
-    `👤 Pasien   : <b>${newRecord.namaPasien || '-'}</b> (${newRecord.nikPabrik || '-'})\n` +
-    `🏢 Dept     : ${newRecord.dept || '-'}\n` +
-    `─────────────────\n` +
-    `📋 Keluhan  : ${newRecord.keluhan || '-'}\n` +
-    `🔬 Diagnosis: ${newRecord.asesmen || '-'}\n` +
-    (logTindakanTeks ? `💉 Tindakan : ${logTindakanTeks}\n` : '') +
-    `💊 Obat     : ${logObatTeks.length ? logObatTeks.join(', ') : planShort}\n` +
-    (newRecord.totalBiaya ? `💰 Total    : Rp ${Number(newRecord.totalBiaya).toLocaleString('id-ID')}\n` : '') +
-    `👨‍⚕️ Nakes    : ${newRecord.pemeriksa || '-'}`;
+`🏥 <b>LAPORAN HASIL PEMERIKSAAN PASIEN</b>
+━━━━━━━━━━━━━━━━━━━━
+🕐 <b>Waktu:</b> ${nowWIB} WIB
+👤 <b>Pasien:</b> <b>${newRecord.namaPasien || '-'}</b>
+🔢 <b>NPK / NIK:</b> <code>${newRecord.nikPabrik || '-'}</code>
+🏢 <b>Bagian / Dept:</b> ${newRecord.dept || 'PT ATI'}
+━━━━━━━━━━━━━━━━━━━━
+📋 <b>DATA REKAM MEDIS (SOAP):</b>
+• <b>[S] Keluhan Utama:</b>
+  ${newRecord.keluhan || '-'}
+
+• <b>[O] Pemeriksaan Fisik & Tanda Vital:</b>
+  ${newRecord.objektif || '-'}
+
+• <b>[A] Diagnosis (ICD-10):</b>
+  ${newRecord.asesmen || '-'}
+
+• <b>[P] Tindakan Medis:</b>
+${logTindakanTeks}
+
+• <b>[P] Terapi Obat & Sisa Stok:</b>
+${obatDetailTeks}
+━━━━━━━━━━━━━━━━━━━━
+⚖️ <b>STATUS KELAIKAN:</b>
+<b>${statusKelaikanTeks}</b>
+
+💰 <b>RINCIAN BIAYA BEROBAT:</b>
+• Biaya Tindakan : Rp ${biayaTindakanTeks}
+• Biaya Obat     : Rp ${biayaObatTeks}
+• <b>TOTAL TAGIHAN : Rp ${totalBiayaTeks}</b>
+
+👨‍⚕️ <b>Nakes Pemeriksa:</b> <b>${newRecord.pemeriksa || '-'}</b>
+━━━━━━━━━━━━━━━━━━━━
+🏥 <i>Sistem Rekam Medis & Manajemen Klinik PT ATI</i>`;
 
   sendTelegramNotif(telegramText);
 

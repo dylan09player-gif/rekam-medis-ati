@@ -2188,6 +2188,46 @@ select.form-control {
 
   /* --- Header action rows --- */
   .soap-panel-header { flex-wrap: wrap; gap: 8px; }
+
+  /* --- HSE Pantauan Mobile Card Flow --- */
+  #modal-hse-pantauan thead { display: none !important; }
+  #table-hse-pantauan-body tr {
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--surface-2) !important;
+    border: 1px solid var(--border-card) !important;
+    border-radius: var(--r-md) !important;
+    margin-bottom: 12px !important;
+    padding: 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    gap: 6px !important;
+  }
+  #table-hse-pantauan-body td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    padding: 4px 0 !important;
+    border: none !important;
+    border-bottom: 1px dashed rgba(255,255,255,0.06) !important;
+    font-size: 0.85rem !important;
+  }
+  [data-theme="light"] #table-hse-pantauan-body td {
+    border-bottom: 1px dashed rgba(0,0,0,0.08) !important;
+  }
+  #table-hse-pantauan-body td:last-child {
+    border-bottom: none !important;
+    padding-top: 8px !important;
+    justify-content: flex-end !important;
+  }
+  #table-hse-pantauan-body td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 0.76rem;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
 }
 
 /* Very small screens (≤380px — older iPhones, compact Androids) */
