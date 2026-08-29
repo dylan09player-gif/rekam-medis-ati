@@ -3802,12 +3802,18 @@ async function handleSaveKaryawan(e) {
 // 6. TAB ABSEN DOKTER LOGIC
 // -------------------------------------------------------------
 async function handleSaveAbsenDokter(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
+  const namaEl = document.getElementById('absen-nama-dokter');
+  const tglEl = document.getElementById('absen-tgl');
+  const mulaiEl = document.getElementById('absen-jam-mulai');
+  const selesaiEl = document.getElementById('absen-jam-selesai');
+  if (!namaEl || !tglEl || !mulaiEl || !selesaiEl) return;
+
   const absen = {
-    namaDokter: document.getElementById('absen-nama-dokter').value,
-    tanggal: document.getElementById('absen-tgl').value,
-    jamMulai: document.getElementById('absen-jam-mulai').value,
-    jamSelesai: document.getElementById('absen-jam-selesai').value,
+    namaDokter: namaEl.value,
+    tanggal: tglEl.value,
+    jamMulai: mulaiEl.value,
+    jamSelesai: selesaiEl.value,
     tarifShift: 400000
   };
 

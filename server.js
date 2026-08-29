@@ -65,11 +65,12 @@ function readDB() {
 let sseClients = [];
 
 function notifyClients() {
-  sseClients.forEach(client => {
+  sseClients = sseClients.filter(client => {
     try {
       client.res.write(`data: update\n\n`);
+      return true;
     } catch (e) {
-      console.error('Error sending SSE:', e);
+      return false;
     }
   });
 }
