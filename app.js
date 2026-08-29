@@ -1810,35 +1810,71 @@ function renderEditDataTable() {
     filtered = filtered.slice(0, 30);
   }
 
-  let html = filtered.map(r => `
-    <tr ondblclick="openModalRiwayatPasien('${r.nikPabrik || ''}')" style="cursor: pointer;" title="Klik 2x untuk melihat riwayat medis">
-      <td data-label="Tanggal">${r.tanggal || '-'}</td>
-      <td data-label="Nama Pasien"><strong>${r.namaPasien}</strong><br><small class="text-muted">${r.nikPabrik || '-'}</small></td>
-      <td data-label="Keluhan & Diagnosa">
+  let html = filtered.map(r => {
+    const tindakanHTML = (Array.isArray(r.tindakan) && r.tindakan.length > 0)
+      ? `<div style="margin-top: 3px;"><strong>💉 Tindakan:</strong> ${r.tindakan.map(t => `<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; font-size: 0.75rem; font-weight: 600; margin-right: 4px;"><i class="fa-solid fa-syringe"></i> ${t.nama} (${t.qty || 1}x) - Rp ${(t.subtotal || 0).toLocaleString('id-ID')}</span>`).join('')}</div>`
+      : '';
+
+    const resepHTML = (Array.isArray(r.resep) && r.resep.length > 0)
+      ? `<div style="margin-top: 3px;"><strong>💊 Resep Obat:</strong><br>${r.resep.map(m => `• ${m.namaObat || m.obat} No.${m.qty || 1} <span style="color:#38bdf8; font-weight:600;">[Rp ${(m.subtotal || 0).toLocaleString('id-ID')}]</span>`).join('<br>')}</div>`
+      : (r.plan ? `<div style="margin-top: 3px;"><strong>P:</strong><br>${formatPlanForDisplay(r.plan)}</div>` : '');
+
+    const biayaHTML = (r.totalBiaya && r.totalBiaya > 0)
+      ? `<div style="margin-top: 6px; padding: 4px 8px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #34d399; font-size: 0.82rem;">
+          <i class="fa-solid fa-receipt"></i> Total Tagihan: Rp ${Number(r.totalBiaya).toLocaleString('id-ID')}
+         </div>`
+      : '';
+
+    return `
+    <tr ondblclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer;" title="Klik 2x untuk melihat seluruh riwayat rekam medis pasien sejak pertama kali">
+      <td data-label="Tanggal" style="vertical-align: top;">
+        <div style="font-weight: 700; color: var(--text-color);">${r.tanggal || '-'}</div>
+        <div style="margin-top: 4px;">${getStatusKelaikanBadges(r)}</div>
+      </td>
+      <td data-label="Nama Pasien" style="vertical-align: top;">
+        <div onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline; font-weight: 800; font-size: 0.96rem;" title="Klik untuk membuka seluruh riwayat berobat pasien sejak pertama kali">
+          ${r.namaPasien}
+        </div>
+        <div style="margin-top: 2px;">
+          <span class="badge badge-info" style="font-size: 0.76rem; font-weight: 700;">${r.nikPabrik || '-'}</span>
+        </div>
+        <small style="color: var(--text-muted); display: block; margin-top: 3px;">Bagian: <strong>${r.dept || '-'}</strong></small>
+        <small style="color: #0284c7; display: block; margin-top: 2px; font-size: 0.72rem;">💡 Klik 2x untuk riwayat</small>
+      </td>
+      <td data-label="Keluhan & Diagnosa" style="vertical-align: top;">
         <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
-          <div><strong>S:</strong> ${r.keluhan || '-'}</div>
-          <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:4px;"><strong>A:</strong> ${renderDiagnosisBadges(r.asesmen)}</div>
-          <div><strong>P:</strong><br>${formatPlanForDisplay(r.plan)}</div>
+          <div><strong style="color: var(--text-color);">S (Keluhan):</strong> <span style="color: var(--text-muted);">${r.keluhan || '-'}</span></div>
+          ${r.objektif ? `<div style="margin-top: 2px;"><strong style="color: var(--text-color);">O (Fisik/Vital):</strong> <div style="display:inline-block;">${renderObjektifBadges(r.objektif)}</div></div>` : ''}
+          <div style="display:flex; flex-direction:column; gap:3px; margin-top: 2px;"><strong style="color: var(--text-color);">A (Diagnosis):</strong> ${renderDiagnosisBadges(r.asesmen)}</div>
+          ${tindakanHTML}
+          ${resepHTML}
+          ${biayaHTML}
         </div>
       </td>
-      <td data-label="Pemeriksa">${r.pemeriksa || '-'}</td>
-      <td data-label="Aksi">
+      <td data-label="Pemeriksa" style="vertical-align: top;">
+        <div style="font-weight: 700; color: var(--text-color);"><i class="fa-solid fa-user-doctor" style="color: #38bdf8; margin-right: 4px;"></i> ${r.pemeriksa || '-'}</div>
+      </td>
+      <td data-label="Aksi" style="vertical-align: top;">
         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-          <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openModalEditRecord('${r.id}')" title="Edit Data">
+          <button class="btn btn-sm btn-secondary" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); padding: 5px 10px; font-weight: 700;" onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Lihat Riwayat Berobat Lengkap">
+            <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+          </button>
+          <button class="btn btn-sm btn-primary" style="padding: 5px 10px; font-weight: 700;" onclick="event.stopPropagation(); openModalEditRecord('${r.id}')" title="Edit Data Rekam Medis">
             <i class="fa-solid fa-pen"></i> Edit
           </button>
           <button class="btn btn-sm btn-danger" style="background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 5px 8px; font-weight: 700;" onclick="event.stopPropagation(); openModalDeleteRecord('${r.id}')" title="Hapus Rekam Medis & Kembalikan Stok">
             <i class="fa-solid fa-trash-can"></i> Hapus
           </button>
           ${r.linkFoto ? `
-            <button class="btn btn-sm btn-secondary" style="background: #0284c7; color: #fff; border: none; padding: 5px 8px;" onclick="event.stopPropagation(); openPhotoViewer('${r.id}')" title="Lihat Foto">
+            <button class="btn btn-sm btn-secondary" style="background: #0284c7; color: #fff; border: none; padding: 5px 8px; font-weight: 700;" onclick="event.stopPropagation(); openPhotoViewer('${r.id}')" title="Lihat Foto / Dokumen">
               <i class="fa-solid fa-image"></i> Foto
             </button>` : ''}
           ${getPatientWABtnHTML(r.nikPabrik, 'WA')}
         </div>
       </td>
     </tr>
-  `).join('');
+    `;
+  }).join('');
 
   if (!isFiltered && totalCount > 30) {
     html += `
