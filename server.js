@@ -19,11 +19,43 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+const DEFAULT_USERS = [
+  { id: 'usr-1', username: 'dr.dylan', nama: 'dr. Dylan Fadhilah', role: 'Dokter', password: 'dylan', created_at: '2026-08-01T00:00:00.000Z' },
+  { id: 'usr-2', username: 'dr.medika', nama: 'dr. Medika', role: 'Dokter', password: 'medika', created_at: '2026-08-01T00:00:00.000Z' },
+  { id: 'usr-3', username: 'perawat', nama: 'Ns. Perawat Jaga', role: 'Perawat', password: 'perawat', created_at: '2026-08-01T00:00:00.000Z' }
+];
+
+const DEFAULT_TINDAKAN = [
+  { id: 'TND-1', nama: 'Rawat Luka / Ganti Perban', tarif: 35000, kategori: 'Tindakan Medis' },
+  { id: 'TND-2', nama: 'Injeksi / Suntik Obat', tarif: 25000, kategori: 'Tindakan Medis' },
+  { id: 'TND-3', nama: 'Jahit Luka / Hecting', tarif: 75000, kategori: 'Tindakan Bedah Minor' },
+  { id: 'TND-4', nama: 'Nebulisasi / Terapi Uap', tarif: 50000, kategori: 'Terapi Saluran Napas' },
+  { id: 'TND-5', nama: 'Cek Gula Darah Sewaktu (GDS)', tarif: 20000, kategori: 'Laboratorium Sederhana' },
+  { id: 'TND-6', nama: 'Cek Asam Urat', tarif: 25000, kategori: 'Laboratorium Sederhana' },
+  { id: 'TND-7', nama: 'Cek Kolesterol Total', tarif: 30000, kategori: 'Laboratorium Sederhana' },
+  { id: 'TND-8', nama: 'EKG / Rekam Jantung', tarif: 100000, kategori: 'Diagnostik' },
+  { id: 'TND-9', nama: 'Oksigenasi / Pasang O2', tarif: 30000, kategori: 'Tindakan Medis' },
+  { id: 'TND-10', nama: 'Ekstraksi Benda Asing / Korpus Alienum', tarif: 50000, kategori: 'Tindakan Medis' }
+];
+
 function readDB() {
   try {
     if (!fs.existsSync(DB_FILE)) return {};
     const content = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(content);
+    const data = JSON.parse(content);
+    let modified = false;
+    if (!Array.isArray(data.users) || data.users.length === 0) {
+      data.users = [...DEFAULT_USERS];
+      modified = true;
+    }
+    if (!Array.isArray(data.tindakan) || data.tindakan.length === 0) {
+      data.tindakan = [...DEFAULT_TINDAKAN];
+      modified = true;
+    }
+    if (modified) {
+      try { fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2)); } catch (e) {}
+    }
+    return data;
   } catch (err) {
     console.error('Error reading DB:', err);
     return {};
@@ -153,10 +185,90 @@ function sendWhaCenterNotif(number, message) {
 }
 
 // ============================================================
-// AUTHENTICATION ENDPOINTS
+// AUTHENTICATION & USER MANAGEMENT ENDPOINTS
 // ============================================================
 
-// Gate Login (Pass: 231067)
+// Universal User Login (Multi-Account)
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: 'Username dan Password wajib diisi' });
+  }
+
+  const db = readDB();
+  const users = db.users || [];
+  const cleanUser = String(username).trim().toLowerCase();
+  const cleanPass = String(password).trim();
+  const masterPass = db.settings?.gate_password || "231067";
+
+  // Check if master password used
+  if (cleanPass === masterPass) {
+    // Check if user exists, otherwise create or return generic officer
+    let matchedUser = users.find(u => 
+      (u.username && u.username.toLowerCase() === cleanUser) ||
+      (u.nama && u.nama.toLowerCase() === cleanUser)
+    );
+    if (!matchedUser) {
+      matchedUser = {
+        id: 'usr-master',
+        username: cleanUser,
+        nama: cleanUser.startsWith('dr.') ? cleanUser : `dr. ${cleanUser}`,
+        role: 'Dokter',
+        created_at: new Date().toISOString()
+      };
+    }
+    const { password: _, ...safeUser } = matchedUser;
+    return res.json({ success: true, status: 'SUCCESS', user: safeUser, message: 'Login berhasil (Master Key)' });
+  }
+
+  // Normal user credentials check
+  const matchedUser = users.find(u => 
+    ((u.username && u.username.toLowerCase() === cleanUser) ||
+     (u.nama && u.nama.toLowerCase() === cleanUser)) &&
+    String(u.password).trim() === cleanPass
+  );
+
+  if (matchedUser) {
+    const { password: _, ...safeUser } = matchedUser;
+    return res.json({ success: true, status: 'SUCCESS', user: safeUser, message: 'Login berhasil' });
+  }
+
+  return res.status(401).json({ success: false, error: 'Username atau Password salah!' });
+});
+
+// User Registration (Buat Akun Petugas Baru)
+app.post('/api/auth/register', (req, res) => {
+  const { nama, username, role, password } = req.body;
+  if (!nama || !username || !password) {
+    return res.status(400).json({ success: false, error: 'Nama, Username, dan Password wajib diisi!' });
+  }
+
+  const db = readDB();
+  if (!db.users) db.users = [];
+
+  const cleanUser = String(username).trim().toLowerCase();
+  const exists = db.users.some(u => u.username && u.username.toLowerCase() === cleanUser);
+  if (exists) {
+    return res.status(400).json({ success: false, error: 'Username sudah digunakan, silakan pilih username lain.' });
+  }
+
+  const newUser = {
+    id: 'usr-' + Date.now(),
+    nama: String(nama).trim(),
+    username: cleanUser,
+    role: role || 'Perawat',
+    password: String(password).trim(),
+    created_at: new Date().toISOString()
+  };
+
+  db.users.push(newUser);
+  writeDB(db);
+
+  const { password: _, ...safeUser } = newUser;
+  return res.status(201).json({ success: true, user: safeUser, message: 'Akun petugas berhasil dibuat!' });
+});
+
+// Legacy Gate Login (Pass: 231067)
 app.post('/api/auth/gate', (req, res) => {
   const { password } = req.body;
   const db = readDB();
@@ -166,6 +278,67 @@ app.post('/api/auth/gate', (req, res) => {
   } else {
     return res.status(401).json({ status: 'WRONG', success: false, error: 'Password Kode Akses Salah!' });
   }
+});
+
+// Get Users List (For Direktur & Dropdowns)
+app.get('/api/users', (req, res) => {
+  const db = readDB();
+  const users = (db.users || []).map(({ password, ...u }) => u);
+  res.json(users);
+});
+
+// Create User (Admin)
+app.post('/api/users', (req, res) => {
+  const { nama, username, role, password } = req.body;
+  if (!nama || !username) {
+    return res.status(400).json({ error: 'Nama dan Username wajib diisi' });
+  }
+  const db = readDB();
+  if (!db.users) db.users = [];
+  const cleanUser = String(username).trim().toLowerCase();
+  if (db.users.some(u => u.username && u.username.toLowerCase() === cleanUser)) {
+    return res.status(400).json({ error: 'Username sudah digunakan' });
+  }
+  const newUser = {
+    id: 'usr-' + Date.now(),
+    nama: String(nama).trim(),
+    username: cleanUser,
+    role: role || 'Perawat',
+    password: password ? String(password).trim() : '123456',
+    created_at: new Date().toISOString()
+  };
+  db.users.push(newUser);
+  writeDB(db);
+  const { password: _, ...safeUser } = newUser;
+  res.status(201).json({ success: true, user: safeUser });
+});
+
+// Update User
+app.put('/api/users/:id', (req, res) => {
+  const db = readDB();
+  if (!db.users) return res.status(404).json({ error: 'User tidak ditemukan' });
+  const idx = db.users.findIndex(u => u.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'User tidak ditemukan' });
+
+  const { nama, username, role, password } = req.body;
+  if (nama) db.users[idx].nama = String(nama).trim();
+  if (username) db.users[idx].username = String(username).trim().toLowerCase();
+  if (role) db.users[idx].role = role;
+  if (password && String(password).trim() !== '') {
+    db.users[idx].password = String(password).trim();
+  }
+  writeDB(db);
+  const { password: _, ...safeUser } = db.users[idx];
+  res.json({ success: true, user: safeUser });
+});
+
+// Delete User
+app.delete('/api/users/:id', (req, res) => {
+  const db = readDB();
+  if (!db.users) return res.status(404).json({ error: 'User tidak ditemukan' });
+  db.users = db.users.filter(u => u.id !== req.params.id);
+  writeDB(db);
+  res.json({ success: true });
 });
 
 // Gudang Obat (Pass: nafila123)
@@ -190,6 +363,57 @@ app.post('/api/auth/direktur', (req, res) => {
   } else {
     return res.status(401).json({ status: 'WRONG', success: false, error: 'Password Direktur Salah!' });
   }
+});
+
+// ============================================================
+// TINDAKAN MEDIS & TARIF ENDPOINTS
+// ============================================================
+
+app.get('/api/tindakan', (req, res) => {
+  const db = readDB();
+  res.json(db.tindakan || []);
+});
+
+app.post('/api/tindakan', (req, res) => {
+  const { nama, tarif, kategori } = req.body;
+  if (!nama) {
+    return res.status(400).json({ error: 'Nama tindakan wajib diisi' });
+  }
+  const db = readDB();
+  if (!db.tindakan) db.tindakan = [];
+  const newTindakan = {
+    id: 'TND-' + Date.now(),
+    nama: String(nama).trim(),
+    tarif: parseSafeInt(tarif, 0),
+    kategori: kategori ? String(kategori).trim() : 'Tindakan Medis',
+    created_at: new Date().toISOString()
+  };
+  db.tindakan.unshift(newTindakan);
+  writeDB(db);
+  res.status(201).json({ success: true, tindakan: newTindakan });
+});
+
+app.put('/api/tindakan/:id', (req, res) => {
+  const db = readDB();
+  if (!db.tindakan) return res.status(404).json({ error: 'Tindakan tidak ditemukan' });
+  const idx = db.tindakan.findIndex(t => t.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Tindakan tidak ditemukan' });
+
+  const { nama, tarif, kategori } = req.body;
+  if (nama) db.tindakan[idx].nama = String(nama).trim();
+  if (tarif !== undefined) db.tindakan[idx].tarif = parseSafeInt(tarif, 0);
+  if (kategori) db.tindakan[idx].kategori = String(kategori).trim();
+  
+  writeDB(db);
+  res.json({ success: true, tindakan: db.tindakan[idx] });
+});
+
+app.delete('/api/tindakan/:id', (req, res) => {
+  const db = readDB();
+  if (!db.tindakan) return res.status(404).json({ error: 'Tindakan tidak ditemukan' });
+  db.tindakan = db.tindakan.filter(t => t.id !== req.params.id);
+  writeDB(db);
+  res.json({ success: true });
 });
 
 // ============================================================
@@ -969,6 +1193,10 @@ app.post('/api/records', (req, res) => {
     ? newRecord.resep.map(r => r.namaObat || r.obat).join(', ')
     : (newRecord.plan || '-');
 
+  const logTindakanTeks = Array.isArray(newRecord.tindakan) && newRecord.tindakan.length > 0
+    ? newRecord.tindakan.map(t => `${t.nama || t.jenis || 'Tindakan'} (${t.qty || 1}x)`).join(', ')
+    : '';
+
   const telegramText = 
     `🏥 <b>KUNJUNGAN SELESAI</b>\n` +
     `━━━━━━━━━━━━━━━━━\n` +
@@ -978,7 +1206,9 @@ app.post('/api/records', (req, res) => {
     `─────────────────\n` +
     `📋 Keluhan  : ${newRecord.keluhan || '-'}\n` +
     `🔬 Diagnosis: ${newRecord.asesmen || '-'}\n` +
+    (logTindakanTeks ? `💉 Tindakan : ${logTindakanTeks}\n` : '') +
     `💊 Obat     : ${logObatTeks.length ? logObatTeks.join(', ') : planShort}\n` +
+    (newRecord.totalBiaya ? `💰 Total    : Rp ${Number(newRecord.totalBiaya).toLocaleString('id-ID')}\n` : '') +
     `👨‍⚕️ Nakes    : ${newRecord.pemeriksa || '-'}`;
 
   sendTelegramNotif(telegramText);

@@ -21,7 +21,7 @@
 </head>
 <body>
 
-  <!-- GATE LOGIN OVERLAY — Full-Screen Secure Access -->
+  <!-- GATE LOGIN OVERLAY — Full-Screen Secure Multi-Account Access -->
   <div id="gate-login-overlay" class="gate-overlay">
     <div class="gate-card">
       <div class="gate-header">
@@ -29,24 +29,83 @@
           <i class="fa-solid fa-shield-halved"></i>
         </div>
         <h2 class="gate-title">Mobile Klinik System</h2>
-        <p class="gate-sub">PT ATI &amp; ATI Medika — Akses Terbatas</p>
+        <p class="gate-sub">PT ATI &amp; ATI Medika — Login Akun Petugas</p>
+      </div>
+
+      <!-- Tab Switcher: Masuk vs Daftar Akun -->
+      <div class="gate-tabs-wrap">
+        <button type="button" class="gate-tab-btn active" id="tab-btn-gate-login" onclick="switchGateTab('login')">
+          <i class="fa-solid fa-right-to-bracket"></i> MASUK
+        </button>
+        <button type="button" class="gate-tab-btn" id="tab-btn-gate-register" onclick="switchGateTab('register')">
+          <i class="fa-solid fa-user-plus"></i> BUAT AKUN
+        </button>
       </div>
       
-      <form id="form-gate-login" onsubmit="handleGateLogin(event)">
+      <!-- 1. FORM LOGIN PETUGAS -->
+      <form id="form-gate-login" onsubmit="handleUserLogin(event)">
         <div class="gate-input-group">
-          <label class="gate-label" for="gate-password-input">Kode Akses Klinik</label>
+          <label class="gate-label" for="gate-username-input">Nama / Username Petugas</label>
           <div class="gate-input-wrap">
-            <i class="fa-solid fa-lock gate-input-icon"></i>
-            <input type="password" id="gate-password-input" class="gate-input" placeholder="Masukkan password..." required autofocus>
+            <i class="fa-solid fa-user-doctor gate-input-icon"></i>
+            <input type="text" id="gate-username-input" class="gate-input" placeholder="dr. Dylan / dr.medika / perawat..." required autofocus autocomplete="username">
           </div>
         </div>
-        <button type="submit" class="btn-gate-submit">
+        <div class="gate-input-group">
+          <label class="gate-label" for="gate-password-input">Kata Sandi / Password</label>
+          <div class="gate-input-wrap">
+            <i class="fa-solid fa-lock gate-input-icon"></i>
+            <input type="password" id="gate-password-input" class="gate-input" placeholder="Masukkan kata sandi..." required autocomplete="current-password">
+          </div>
+        </div>
+        <button type="submit" class="btn-gate-submit" id="btn-submit-gate-login">
           <i class="fa-solid fa-right-to-bracket"></i> MASUK KE SISTEM
         </button>
       </form>
 
+      <!-- 2. FORM REGISTRASI AKUN BARU -->
+      <form id="form-gate-register" onsubmit="handleUserRegister(event)" style="display: none;">
+        <div class="gate-input-group">
+          <label class="gate-label" for="gate-reg-nama">Nama Lengkap &amp; Gelar *</label>
+          <div class="gate-input-wrap">
+            <i class="fa-solid fa-user gate-input-icon"></i>
+            <input type="text" id="gate-reg-nama" class="gate-input" placeholder="Contoh: dr. Ahmad Fadhil / Ns. Siti" required>
+          </div>
+        </div>
+        <div class="gate-input-group">
+          <label class="gate-label" for="gate-reg-role">Profesi / Jabatan *</label>
+          <div class="gate-input-wrap">
+            <i class="fa-solid fa-id-badge gate-input-icon"></i>
+            <select id="gate-reg-role" class="gate-input gate-select" required>
+              <option value="Dokter">Dokter</option>
+              <option value="Perawat" selected>Perawat</option>
+              <option value="Bidan">Bidan</option>
+              <option value="Apoteker">Apoteker</option>
+              <option value="Petugas Medis">Petugas Medis</option>
+            </select>
+          </div>
+        </div>
+        <div class="gate-input-group">
+          <label class="gate-label" for="gate-reg-username">Username Login (Tanpa Spasi) *</label>
+          <div class="gate-input-wrap">
+            <i class="fa-solid fa-at gate-input-icon"></i>
+            <input type="text" id="gate-reg-username" class="gate-input" placeholder="Contoh: dr.ahmad / siti_medika" required autocomplete="username">
+          </div>
+        </div>
+        <div class="gate-input-group">
+          <label class="gate-label" for="gate-reg-password">Kata Sandi Baru *</label>
+          <div class="gate-input-wrap">
+            <i class="fa-solid fa-lock gate-input-icon"></i>
+            <input type="password" id="gate-reg-password" class="gate-input" placeholder="Minimal 4 karakter..." required autocomplete="new-password">
+          </div>
+        </div>
+        <button type="submit" class="btn-gate-submit" style="background: linear-gradient(135deg, #10b981, #059669);" id="btn-submit-gate-reg">
+          <i class="fa-solid fa-user-check"></i> DAFTARKAN AKUN &amp; MASUK
+        </button>
+      </form>
+
       <div class="gate-footer">
-        <i class="fa-solid fa-circle-info"></i> Hubungi administrator jika lupa kode akses
+        <i class="fa-solid fa-circle-info"></i> Masuk dengan akun petugas masing-masing untuk otomatisasi rekam medis
       </div>
     </div>
   </div>
@@ -93,10 +152,17 @@
     </nav>
 
     <div class="app-navbar-actions" style="display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: auto;">
+      <!-- Active User Badge -->
+      <div id="navbar-user-badge" class="navbar-user-chip" title="Petugas yang sedang aktif">
+        <i class="fa-solid fa-user-doctor" style="color: #38bdf8;"></i>
+        <span id="nav-user-name" style="font-weight: 700; font-size: 0.85rem;">Petugas</span>
+        <span id="nav-user-role" class="nav-user-role-badge">Dokter</span>
+      </div>
+
       <button class="theme-toggle-btn" id="btn-toggle-theme" title="Ubah Tema" style="width: 32px; height: 32px;">
         <i class="fa-solid fa-moon"></i>
       </button>
-      <button class="btn btn-sm btn-secondary" onclick="handleLogout()" title="Keluar" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+      <button class="btn btn-sm btn-secondary" onclick="handleLogout()" title="Keluar dari Akun" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
         <i class="fa-solid fa-right-from-bracket"></i>
       </button>
     </div>
@@ -239,12 +305,40 @@
                 </div>
               </div>
 
-              <!-- 4. RESEP OBAT (STOK TERLIHAT, SEARCHABLE & TOTAL BIAYA) (Plan - P) -->
+              <!-- 4. TINDAKAN MEDIS & TARIF (Plan - P1) -->
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                  <label class="form-label marunda-section-label" style="margin-bottom: 0;">
+                    <span class="soap-chip soap-chip-p">P</span> 4. TINDAKAN MEDIS &amp; TARIF
+                  </label>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="addPoliTindakanRow()" style="font-size: 0.76rem; padding: 4px 10px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+                    <i class="fa-solid fa-plus"></i> + Tambah Tindakan
+                  </button>
+                </div>
+                <table class="resep-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 56%;">Jenis Tindakan &amp; Tarif</th>
+                      <th style="width: 20%;">Qty / Kali</th>
+                      <th style="width: 20%; text-align: right;">Total Biaya</th>
+                      <th style="width: 4%;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="poli-tindakan-body">
+                    <!-- Dynamic Tindakan Rows -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- 5. RESEP OBAT (STOK TERLIHAT, SEARCHABLE & TOTAL BIAYA) (Plan - P2) -->
               <div class="form-group">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                   <label class="form-label marunda-section-label" style="margin-bottom: 0;">
-                    <span class="soap-chip soap-chip-p">P</span> 4. RESEP OBAT
+                    <span class="soap-chip soap-chip-p">P</span> 5. RESEP OBAT
                   </label>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="addPoliMedicineRow()" style="font-size: 0.76rem; padding: 4px 10px; background: rgba(52, 211, 153, 0.1); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3);">
+                    <i class="fa-solid fa-plus"></i> + Tambah Obat
+                  </button>
                 </div>
                 <table class="resep-table">
                   <thead>
@@ -269,33 +363,45 @@
                   <option value="15">
                   <option value="30">
                 </datalist>
-                <div class="resep-total-summary-card">
-                  <div class="resep-total-info">
-                    <i class="fa-solid fa-calculator" style="color: var(--accent);"></i>
-                    <span>Total Biaya Berobat / Obat:</span>
+
+                <!-- RINGKASAN BIAYA & SALDO TERINTEGRASI -->
+                <div class="resep-total-summary-card" style="background: rgba(15, 23, 42, 0.6); border: 1.5px solid var(--border-color); padding: 14px; border-radius: var(--r-md); margin-top: 12px;">
+                  <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; color: var(--text-secondary);">
+                      <span><i class="fa-solid fa-syringe" style="color: #38bdf8; margin-right: 6px;"></i> Biaya Tindakan Medis:</span>
+                      <strong id="poli-tindakan-grand-total" style="color: #38bdf8;">Rp 0</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; color: var(--text-secondary);">
+                      <span><i class="fa-solid fa-capsules" style="color: #f59e0b; margin-right: 6px;"></i> Biaya Resep Obat:</span>
+                      <strong id="poli-resep-grand-total" style="color: #f59e0b;">Rp 0</strong>
+                    </div>
+                    <div style="height: 1px; background: var(--border-color); width: 100%; margin: 2px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem;">
+                      <span style="font-weight: 700; color: var(--text-primary);"><i class="fa-solid fa-calculator" style="color: var(--accent); margin-right: 6px;"></i> Total Biaya Berobat:</span>
+                      <strong id="poli-combined-grand-total" style="color: var(--accent); font-size: 1.15rem; font-weight: 800;">Rp 0</strong>
+                    </div>
                   </div>
-                  <div class="resep-total-amount" id="poli-resep-grand-total">Rp 0</div>
                 </div>
 
-                <div class="resep-total-summary-card" style="margin-top: 10px; background: rgba(52, 211, 153, 0.1); border: 1.5px solid rgba(52, 211, 153, 0.3);">
+                <div class="resep-total-summary-card" style="margin-top: 10px; background: rgba(52, 211, 153, 0.08); border: 1.5px solid rgba(52, 211, 153, 0.3); border-radius: var(--r-md); padding: 14px;">
                   <div style="display: flex; flex-direction: column; width: 100%; gap: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); font-size: 0.9rem;">
-                      <span><i class="fa-solid fa-wallet"></i> Saldo Awal (Sebelum Berobat):</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); font-size: 0.88rem;">
+                      <span><i class="fa-solid fa-wallet" style="margin-right: 6px;"></i> Saldo Awal (Sebelum Berobat):</span>
                       <strong id="poli-saldo-awal" style="color: var(--text-primary);">Rp 0</strong>
                     </div>
                     <div style="height: 1px; background: rgba(52, 211, 153, 0.2); width: 100%;"></div>
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem;">
-                      <span style="color: #34d399; font-weight: 600;"><i class="fa-solid fa-money-bill-transfer"></i> Sisa Saldo Setelah Berobat:</span>
+                      <span style="color: #34d399; font-weight: 600;"><i class="fa-solid fa-money-bill-transfer" style="margin-right: 6px;"></i> Sisa Saldo Setelah Berobat:</span>
                       <strong id="poli-sisa-saldo" style="color: #34d399; font-weight: 700;">Rp 0</strong>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- 5. NAMA NAKES / PEMERIKSA (SEARCHABLE & FREKUENSI TERPOPULER) -->
+              <!-- 6. NAMA NAKES / PEMERIKSA (OTOMATIS SESUAI PETUGAS LOGIN) -->
               <div class="form-group">
                 <label class="form-label marunda-section-label">
-                  <i class="fa-solid fa-user-doctor"></i> 5. NAMA NAKES / PEMERIKSA
+                  <i class="fa-solid fa-user-doctor"></i> 6. NAMA NAKES / PEMERIKSA (OTOMATIS)
                 </label>
                 <div class="nakes-input-wrapper">
                   <input type="text" id="poli-pemeriksa" class="form-control" placeholder="Ketik atau pilih nama nakes/dokter..." list="list-nakes-tersering" autocomplete="off" required>
@@ -891,12 +997,27 @@
               </div>
             </div>
           </div>
+
+          <!-- CARD 7: OBAT TERPAKAI / KELUAR (K3/HSE) -->
+          <div class="stat-card clickable" onclick="openModalHSEObatKeluar()" title="Klik untuk melihat Rekapitulasi & Urutan Pemakaian Obat Terbanyak">
+            <div class="stat-card-header">
+              <span class="stat-label">Obat Terpakai</span>
+              <span class="stat-pill-badge badge-cyan" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8;"><i class="fa-solid fa-pills"></i> K3/HSE (Klik)</span>
+            </div>
+            <div class="stat-body">
+              <div id="hse-stat-obat-count" class="stat-value" style="color: #38bdf8;">0</div>
+              <div class="stat-sub" style="color: #38bdf8; font-weight: 600;">Total Obat Keluar (Klik)</div>
+            </div>
+          </div>
         </div>
 
         <div class="hse-subtab-actions" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap;">
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button class="btn btn-primary" id="subtab-btn-rm" onclick="switchHSESubTab('rm')">
               <i class="fa-solid fa-file-medical"></i> REKAM MEDIS PASIEN
+            </button>
+            <button class="btn btn-secondary" onclick="openModalHSEObatKeluar()" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700;">
+              <i class="fa-solid fa-capsules"></i> 💊 REKAP OBAT TERPAKAI
             </button>
           </div>
           <button class="btn btn-primary" onclick="printHSEOfficialReport()" style="background: #0284c7; border: none; font-weight: 700;">
@@ -970,8 +1091,10 @@
       <div id="manajemen-unlocked-view" style="display: none;">
         <div class="glass-card" style="margin-bottom: 20px;">
           <div class="manajemen-nav-row" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
               <button class="btn btn-primary" id="mj-nav-billing" onclick="switchManajemenTab('billing')">🧾 Billing PT &amp; Biaya</button>
+              <button class="btn btn-secondary" id="mj-nav-tindakan" onclick="switchManajemenTab('tindakan')">💉 Master Tindakan &amp; Tarif</button>
+              <button class="btn btn-secondary" id="mj-nav-users" onclick="switchManajemenTab('users')">👥 Akun Petugas</button>
               <button class="btn btn-warning" id="mj-nav-kontak" onclick="switchManajemenTab('kontak')">📲 Kontak WA</button>
             </div>
             <button class="btn btn-primary" onclick="printExecutiveReport()" style="background: #10b981; border: none; font-weight: 700;">
@@ -1000,14 +1123,116 @@
                     <th>NAMA PASIEN</th>
                     <th>BAGIAN</th>
                     <th>DIAGNOSA</th>
-                    <th>NAMA OBAT</th>
+                    <th>TINDAKAN / OBAT</th>
                     <th>QTY</th>
-                    <th>HARGA OBAT</th>
+                    <th>TARIF / HARGA</th>
                     <th>TOTAL BIAYA</th>
                   </tr>
                 </thead>
                 <tbody id="table-billing-body">
                   <tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--text-muted);"><i class="fa-solid fa-calendar-days" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>Silakan pilih rentang tanggal dan klik CARI untuk menampilkan laporan.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 2. MASTER TINDAKAN & TARIF -->
+          <div id="mj-tab-tindakan" style="display: none; margin-top: 16px;">
+            <div class="info-banner info-banner-blue" style="margin-bottom: 14px;">
+              💉 Kelola daftar jenis tindakan medis klinik &amp; standarisasi tarif biaya tindakan.
+            </div>
+
+            <!-- Form Tambah Tindakan Baru -->
+            <form onsubmit="handleTambahMasterTindakan(event)" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; margin-bottom: 20px;">
+              <div style="font-weight: 700; color: #38bdf8; margin-bottom: 12px;"><i class="fa-solid fa-plus-circle"></i> Tambah Tindakan Medis Baru</div>
+              <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 130px; gap: 10px; align-items: flex-end;" class="tindakan-form-grid">
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Nama / Jenis Tindakan *</label>
+                  <input type="text" id="new-tindakan-nama" class="form-control" placeholder="Contoh: Jahit Luka / Hecting" required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Kategori Tindakan</label>
+                  <input type="text" id="new-tindakan-kategori" class="form-control" placeholder="Contoh: Tindakan Medis / Lab" value="Tindakan Medis">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Tarif Tindakan (Rp) *</label>
+                  <input type="number" id="new-tindakan-tarif" class="form-control" placeholder="Contoh: 50000" min="0" step="1000" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 10px; background: #0284c7; border: none; font-weight: 700;">
+                  <i class="fa-solid fa-plus"></i> Simpan
+                </button>
+              </div>
+            </form>
+
+            <div class="table-responsive">
+              <table class="custom-table" id="tbl-master-tindakan">
+                <thead>
+                  <tr>
+                    <th style="width: 5%;">NO</th>
+                    <th style="width: 40%;">NAMA / JENIS TINDAKAN</th>
+                    <th style="width: 25%;">KATEGORI</th>
+                    <th style="width: 15%; text-align: right;">TARIF (RP)</th>
+                    <th style="width: 15%; text-align: center;">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody id="table-master-tindakan-body">
+                  <!-- Rendered dynamically via renderMasterTindakanTable() -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. KELOLA AKUN PETUGAS -->
+          <div id="mj-tab-users" style="display: none; margin-top: 16px;">
+            <div class="info-banner info-banner-yellow" style="margin-bottom: 14px;">
+              👥 Manajemen akun petugas nakes / dokter yang memiliki akses ke sistem rekam medis.
+            </div>
+
+            <!-- Form Tambah Petugas Baru -->
+            <form onsubmit="handleTambahUserAdmin(event)" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; margin-bottom: 20px;">
+              <div style="font-weight: 700; color: #f59e0b; margin-bottom: 12px;"><i class="fa-solid fa-user-plus"></i> Tambah Akun Petugas Baru</div>
+              <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr 130px; gap: 10px; align-items: flex-end;" class="user-form-grid">
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Nama Lengkap &amp; Gelar *</label>
+                  <input type="text" id="adm-user-nama" class="form-control" placeholder="dr. Ahmad / Ns. Dian" required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Profesi / Role *</label>
+                  <select id="adm-user-role" class="form-control" required>
+                    <option value="Dokter">Dokter</option>
+                    <option value="Perawat" selected>Perawat</option>
+                    <option value="Bidan">Bidan</option>
+                    <option value="Apoteker">Apoteker</option>
+                    <option value="Petugas Medis">Petugas Medis</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Username *</label>
+                  <input type="text" id="adm-user-username" class="form-control" placeholder="ahmad_medis" required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem;">Password *</label>
+                  <input type="password" id="adm-user-password" class="form-control" placeholder="Kata sandi..." required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 10px; background: #f59e0b; color: #000; border: none; font-weight: 700;">
+                  <i class="fa-solid fa-user-check"></i> Tambah
+                </button>
+              </div>
+            </form>
+
+            <div class="table-responsive">
+              <table class="custom-table" id="tbl-manage-users">
+                <thead>
+                  <tr>
+                    <th style="width: 5%;">NO</th>
+                    <th style="width: 35%;">NAMA PETUGAS</th>
+                    <th style="width: 25%;">USERNAME</th>
+                    <th style="width: 20%;">PROFESI / JABATAN</th>
+                    <th style="width: 15%; text-align: center;">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody id="table-users-body">
+                  <!-- Rendered dynamically via renderUsersTable() -->
                 </tbody>
               </table>
             </div>
@@ -1850,6 +2075,151 @@ function setupTabDanHeader() {
           <!-- Rendered dynamically -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL PEMANTAUAN OBAT TERPAKAI / KELUAR (HSE & K3) -->
+  <div id="modal-hse-obat-terpakai" class="modal-overlay" style="display: none; z-index: 10002;">
+    <div class="modal-card" style="max-width: 950px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h3 class="modal-title" style="margin: 0; display: flex; align-items: center; gap: 8px; color: #38bdf8;">
+            <i class="fa-solid fa-capsules"></i> Pemantauan &amp; Rekapitulasi Obat Keluar (K3/HSE)
+          </h3>
+          <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
+            Daftar seluruh pemakaian obat klinik diurutkan dari pemakaian <strong>terbanyak hingga tersedikit</strong>.
+          </div>
+        </div>
+        <button type="button" class="close-btn" onclick="closeModalHSEObatKeluar()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px; flex: 1; overflow-y: auto;">
+        
+        <!-- Filter Tanggal & Export -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: rgba(56, 189, 248, 0.05); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.2);">
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin: 0;">Dari:</label>
+              <input type="date" id="hse-obat-start" class="form-control form-control-sm" style="width: 150px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin: 0;">Sampai:</label>
+              <input type="date" id="hse-obat-end" class="form-control form-control-sm" style="width: 150px;">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="filterHSEObatKeluarTable()" style="background: #0284c7; border: none; font-weight: 700; padding: 6px 14px;">
+              <i class="fa-solid fa-magnifying-glass"></i> Filter Tanggal
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="resetHSEObatFilterBulanIni()" style="font-size: 0.8rem;">
+              <i class="fa-solid fa-rotate-left"></i> Bulan Ini
+            </button>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="exportHSEObatExcel()" style="background: #10b981; color: #fff; border: none; font-weight: 700;">
+            <i class="fa-solid fa-file-excel"></i> Simpan Excel
+          </button>
+        </div>
+
+        <!-- Summary Badges -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+          <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Total Macam Obat Digunakan</div>
+            <div id="hse-obat-total-jenis" style="font-size: 1.4rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">0 Jenis</div>
+          </div>
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Total Butir / Item Obat Terpakai</div>
+            <div id="hse-obat-total-qty" style="font-size: 1.4rem; font-weight: 800; color: #34d399; margin-top: 4px;">0 Butir</div>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Obat Terbanyak Digunakan</div>
+            <div id="hse-obat-top-name" style="font-size: 1.05rem; font-weight: 700; color: #f59e0b; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="custom-table" id="tbl-hse-obat-keluar">
+            <thead>
+              <tr>
+                <th style="width: 6%; text-align: center;">URUTAN</th>
+                <th style="width: 38%;">NAMA OBAT</th>
+                <th style="width: 16%;">SATUAN / KATEGORI</th>
+                <th style="width: 18%; text-align: center;">JUMLAH TERPAKAI</th>
+                <th style="width: 22%;">PENGGUNAAN</th>
+              </tr>
+            </thead>
+            <tbody id="table-hse-obat-body">
+              <!-- Rendered dynamically via renderHSEObatKeluarTable() -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT MASTER TINDAKAN -->
+  <div id="modal-edit-tindakan" class="modal-overlay" style="display: none; z-index: 10004;">
+    <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 20px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.1rem; color: #38bdf8;"><i class="fa-solid fa-pen-to-square"></i> Edit Tindakan Medis</h3>
+        <button type="button" class="close-btn" onclick="closeModalEditTindakan()">&times;</button>
+      </div>
+      <form onsubmit="handleSaveEditTindakan(event)">
+        <input type="hidden" id="edit-tindakan-id">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Nama / Jenis Tindakan *</label>
+          <input type="text" id="edit-tindakan-nama" class="form-control" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Kategori</label>
+          <input type="text" id="edit-tindakan-kategori" class="form-control">
+        </div>
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label">Tarif Tindakan (Rp) *</label>
+          <input type="number" id="edit-tindakan-tarif" class="form-control" min="0" step="1000" required>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalEditTindakan()">Batal</button>
+          <button type="submit" class="btn btn-primary" style="background: #0284c7; border: none; font-weight: 700;">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT USER PETUGAS -->
+  <div id="modal-edit-user" class="modal-overlay" style="display: none; z-index: 10004;">
+    <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 20px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.1rem; color: #f59e0b;"><i class="fa-solid fa-user-pen"></i> Edit Akun Petugas</h3>
+        <button type="button" class="close-btn" onclick="closeModalEditUser()">&times;</button>
+      </div>
+      <form onsubmit="handleSaveEditUser(event)">
+        <input type="hidden" id="edit-user-id">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Nama Lengkap &amp; Gelar *</label>
+          <input type="text" id="edit-user-nama" class="form-control" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Profesi / Jabatan *</label>
+          <select id="edit-user-role" class="form-control" required>
+            <option value="Dokter">Dokter</option>
+            <option value="Perawat">Perawat</option>
+            <option value="Bidan">Bidan</option>
+            <option value="Apoteker">Apoteker</option>
+            <option value="Petugas Medis">Petugas Medis</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Username *</label>
+          <input type="text" id="edit-user-username" class="form-control" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label">Ganti Password (Kosongkan jika tidak ingin diubah)</label>
+          <input type="password" id="edit-user-password" class="form-control" placeholder="Kata sandi baru...">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalEditUser()">Batal</button>
+          <button type="submit" class="btn btn-primary" style="background: #f59e0b; color: #000; border: none; font-weight: 700;">Simpan Perubahan</button>
+        </div>
+      </form>
     </div>
   </div>
 

@@ -5,6 +5,9 @@ let appData = {
   icd10: [],
   absenDokter: [],
   pantauan: [],
+  tindakan: [],
+  users: [],
+  currentUser: null,
   waContacts: [
     { id: '1', nama: 'Apt. Nafila Medika', hp: '6281234567890', jabatan: 'Apoteker Utama' }
   ],
@@ -147,50 +150,162 @@ function updateThemeIcon(theme) {
   }
 }
 
-// Gate Login Authentication (Pass: 231067)
-function checkGateLoginStatus() {
-  const auth = localStorage.getItem('marunda_gate_auth');
-  const overlay = document.getElementById('gate-login-overlay');
-  if (auth === 'true') {
-    overlay.style.display = 'none';
+// Gate Tab Switcher (Login vs Register)
+function switchGateTab(tab) {
+  const loginForm = document.getElementById('form-gate-login');
+  const regForm = document.getElementById('form-gate-register');
+  const btnLogin = document.getElementById('tab-btn-gate-login');
+  const btnReg = document.getElementById('tab-btn-gate-register');
+
+  if (tab === 'register') {
+    if (loginForm) loginForm.style.display = 'none';
+    if (regForm) regForm.style.display = 'block';
+    if (btnLogin) btnLogin.classList.remove('active');
+    if (btnReg) btnReg.classList.add('active');
+    document.getElementById('gate-reg-nama')?.focus();
   } else {
-    overlay.style.display = 'flex';
+    if (regForm) regForm.style.display = 'none';
+    if (loginForm) loginForm.style.display = 'block';
+    if (btnReg) btnReg.classList.remove('active');
+    if (btnLogin) btnLogin.classList.add('active');
+    document.getElementById('gate-username-input')?.focus();
   }
 }
 
-async function handleGateLogin(e) {
+// Gate Login Authentication (Multi-Account)
+function checkGateLoginStatus() {
+  const auth = localStorage.getItem('marunda_gate_auth');
+  const userJson = localStorage.getItem('currentUser');
+  const overlay = document.getElementById('gate-login-overlay');
+
+  if (auth === 'true' && userJson) {
+    try {
+      appData.currentUser = JSON.parse(userJson);
+      updateNavbarUserBadge();
+      autoFillPemeriksa();
+      if (overlay) overlay.style.display = 'none';
+      return;
+    } catch (e) {
+      console.error('Error parsing stored user:', e);
+    }
+  } else if (auth === 'true') {
+    appData.currentUser = { nama: 'dr. Dylan Fadhilah', role: 'Dokter', username: 'dr.dylan' };
+    updateNavbarUserBadge();
+    autoFillPemeriksa();
+    if (overlay) overlay.style.display = 'none';
+    return;
+  }
+  if (overlay) overlay.style.display = 'flex';
+}
+
+function updateNavbarUserBadge() {
+  const nameEl = document.getElementById('nav-user-name');
+  const roleEl = document.getElementById('nav-user-role');
+  if (appData.currentUser) {
+    if (nameEl) nameEl.textContent = appData.currentUser.nama || 'Petugas';
+    if (roleEl) roleEl.textContent = appData.currentUser.role || 'Dokter';
+  }
+}
+
+function autoFillPemeriksa() {
+  const pemInput = document.getElementById('poli-pemeriksa');
+  if (pemInput && appData.currentUser?.nama && (!pemInput.value || pemInput.value.trim() === '')) {
+    pemInput.value = appData.currentUser.nama;
+  }
+}
+
+async function handleUserLogin(e) {
   e.preventDefault();
-  const pass = document.getElementById('gate-password-input').value.trim();
+  const username = document.getElementById('gate-username-input')?.value.trim();
+  const pass = document.getElementById('gate-password-input')?.value.trim();
+
+  if (!username || !pass) {
+    showToast('Username dan kata sandi wajib diisi!', 'warning');
+    return;
+  }
+
   try {
-    const res = await fetch('/api/auth/gate', {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: pass })
+      body: JSON.stringify({ username, password: pass })
     });
     const data = await res.json();
     if (data.success === true || data.status === 'SUCCESS') {
+      const user = data.user || { nama: username, role: 'Petugas', username };
+      appData.currentUser = user;
       localStorage.setItem('marunda_gate_auth', 'true');
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      updateNavbarUserBadge();
+      autoFillPemeriksa();
       document.getElementById('gate-login-overlay').style.display = 'none';
-      showToast('Login Klinik Berhasil! Selamat Datang 👋', 'success');
+      showToast(`Selamat datang, ${user.nama} 👋`, 'success');
     } else {
-      document.getElementById('gate-password-input').value = '';
-      showToast('❌ Password Klinik salah! Coba lagi.', 'error');
+      showToast(`❌ ${data.error || 'Username atau password salah!'}`, 'error');
     }
   } catch (err) {
-    // Fallback: cek langsung di client jika server tidak bisa dihubungi
+    console.error('Login error:', err);
     if (pass === '231067') {
+      const user = { nama: username || 'dr. Dylan Fadhilah', role: 'Dokter', username: username || 'dr.dylan' };
+      appData.currentUser = user;
       localStorage.setItem('marunda_gate_auth', 'true');
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      updateNavbarUserBadge();
+      autoFillPemeriksa();
       document.getElementById('gate-login-overlay').style.display = 'none';
-      showToast('Login berhasil (mode lokal)', 'success');
+      showToast(`Login berhasil (Mode lokal)`, 'success');
     } else {
       showToast('Gagal menghubungi server. Periksa koneksi.', 'error');
     }
   }
 }
 
+async function handleUserRegister(e) {
+  e.preventDefault();
+  const nama = document.getElementById('gate-reg-nama')?.value.trim();
+  const role = document.getElementById('gate-reg-role')?.value;
+  const username = document.getElementById('gate-reg-username')?.value.trim();
+  const password = document.getElementById('gate-reg-password')?.value.trim();
+
+  if (!nama || !username || !password) {
+    showToast('Semua kolom bertanda * wajib diisi!', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama, role, username, password })
+    });
+    const data = await res.json();
+    if (data.success === true) {
+      const user = data.user || { nama, role, username };
+      appData.currentUser = user;
+      localStorage.setItem('marunda_gate_auth', 'true');
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      updateNavbarUserBadge();
+      autoFillPemeriksa();
+      document.getElementById('gate-login-overlay').style.display = 'none';
+      showToast(`Akun berhasil dibuat! Selamat datang, ${user.nama} 🎉`, 'success');
+    } else {
+      showToast(`❌ ${data.error || 'Gagal mendaftar akun'}`, 'error');
+    }
+  } catch (err) {
+    console.error('Register error:', err);
+    showToast('Gagal menghubungi server.', 'error');
+  }
+}
+
+// Fallback legacy handler
+async function handleGateLogin(e) {
+  return handleUserLogin(e);
+}
+
 function handleLogout() {
   if (confirm('Keluar dari sistem Klinik?')) {
     localStorage.removeItem('marunda_gate_auth');
+    localStorage.removeItem('currentUser');
     localStorage.removeItem('gudang_unlocked');
     localStorage.removeItem('direktur_unlocked');
     location.reload();
@@ -205,13 +320,15 @@ async function loadAllAppData() {
       try { return await res.json(); } catch { return []; }
     };
 
-    const [patRes, recRes, medRes, icdRes, absRes, panRes] = await Promise.all([
+    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes] = await Promise.all([
       fetch('/api/patients'),
       fetch('/api/records'),
       fetch('/api/medicines'),
       fetch('/api/icd10'),
       fetch('/api/absen-dokter'),
-      fetch('/api/pantauan')
+      fetch('/api/pantauan'),
+      fetch('/api/users'),
+      fetch('/api/tindakan')
     ]);
 
     appData.patients = await safeJson(patRes);
@@ -220,6 +337,8 @@ async function loadAllAppData() {
     appData.icd10 = await safeJson(icdRes);
     appData.absenDokter = await safeJson(absRes);
     appData.pantauan = await safeJson(panRes);
+    appData.users = await safeJson(usrRes);
+    appData.tindakan = await safeJson(tndRes);
 
     // Load Settings (GSheet & No WA Apoteker)
     try {
@@ -258,6 +377,8 @@ async function loadAllAppData() {
     renderHSERekamMedisTable();
     renderHSEPasienPantauanTable();
     renderHSESurkesTable();
+    renderMasterTindakanTable();
+    renderUsersTable();
     // renderBillingPTTable(); // Dihapus agar tidak langsung diload berat, menunggu user klik CARI
     renderAbsenDirekturTable();
     renderNakesSuggestions();
@@ -265,8 +386,9 @@ async function loadAllAppData() {
     renderWAContactsTable();
     renderWATargetSelectOptions();
     renderReqMedicineCatalog();
+    autoFillPemeriksa();
 
-    console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}`);
+    console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}, Tindakan: ${appData.tindakan.length}, Users: ${appData.users.length}`);
 
   } catch (err) {
     console.error('Error loading app data:', err);
@@ -514,14 +636,26 @@ function recordNakesUsage(name) {
 
 function initPoliForm() {
   const icdContainer = document.getElementById('container-icd10-list');
-  icdContainer.innerHTML = '';
-  addICD10Row();
+  if (icdContainer) {
+    icdContainer.innerHTML = '';
+    addICD10Row();
+  }
+
+  const tindakanBody = document.getElementById('poli-tindakan-body');
+  if (tindakanBody) {
+    tindakanBody.innerHTML = '';
+    addPoliTindakanRow();
+  }
 
   const resepBody = document.getElementById('poli-resep-body');
-  resepBody.innerHTML = '';
-  addPoliMedicineRow();
+  if (resepBody) {
+    resepBody.innerHTML = '';
+    addPoliMedicineRow();
+  }
   
   renderNakesSuggestions();
+  autoFillPemeriksa();
+  calculateCombinedGrandTotal();
 
   // Set default visit date to today
   const today = new Date();
@@ -543,6 +677,138 @@ function initPoliForm() {
       }
     });
   }
+}
+
+function addPoliTindakanRow(tindakanName = '', qty = 1) {
+  const body = document.getElementById('poli-tindakan-body');
+  if (!body) return;
+
+  const tr = document.createElement('tr');
+  const tindakanList = appData.tindakan || [];
+
+  let initialTindakan = null;
+  if (tindakanName) {
+    initialTindakan = tindakanList.find(t => t.nama.toLowerCase() === tindakanName.toLowerCase());
+  }
+
+  const defaultPrice = initialTindakan ? (parseFloat(initialTindakan.tarif) || 0) : 0;
+  tr.dataset.unitPrice = defaultPrice;
+
+  tr.innerHTML = `
+    <td style="vertical-align: top;">
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <button type="button" class="btn btn-sm btn-secondary" onclick="addPoliTindakanRow()" title="Tambah Tindakan Lain" style="flex-shrink: 0; width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1.5px solid rgba(56, 189, 248, 0.3); border-radius: var(--r-md); font-weight: 700;">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="custom-searchable-wrap tindakan-searchable-wrap" style="flex: 1;">
+          <div class="searchable-input-box">
+            <input type="text" class="form-control tindakan-search-input select-tindakan" placeholder="🔍 Pilih / cari tindakan medis..." value="${initialTindakan ? initialTindakan.nama : tindakanName}" autocomplete="off">
+            <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+          </div>
+          <div class="searchable-dropdown-menu"></div>
+        </div>
+      </div>
+      <small class="tindakan-badge-info" style="margin-left: 46px; font-size: 0.76rem; color: #38bdf8; font-weight: 600;"></small>
+    </td>
+    <td style="vertical-align: top;">
+      <input type="number" class="form-control tindakan-qty" value="${qty}" min="1" step="1" placeholder="Qty" style="text-align: center; font-weight: 700; height: 38px;">
+    </td>
+    <td style="vertical-align: top; text-align: right;">
+      <div class="tindakan-subtotal-badge" style="height: 38px; display: flex; align-items: center; justify-content: flex-end; font-weight: 700; color: #38bdf8;">Rp 0</div>
+    </td>
+    <td style="vertical-align: top; text-align: center;">
+      <button type="button" class="btn btn-sm btn-danger" onclick="const tbody = document.getElementById('poli-tindakan-body'); const tr = this.closest('tr'); if (tbody.querySelectorAll('tr').length > 1) { tr.remove(); } else { tr.querySelector('.select-tindakan').value = ''; tr.querySelector('.tindakan-qty').value = 1; tr.dataset.unitPrice = 0; const badge = tr.querySelector('.tindakan-subtotal-badge'); if(badge) badge.textContent = 'Rp 0'; tr.querySelector('.tindakan-badge-info').textContent = ''; } calculateCombinedGrandTotal();" title="Hapus Tindakan" style="width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-md);"><i class="fa-solid fa-trash-can"></i></button>
+    </td>
+  `;
+
+  body.appendChild(tr);
+
+  const wrap = tr.querySelector('.tindakan-searchable-wrap');
+  const input = tr.querySelector('.tindakan-search-input');
+  const menu = tr.querySelector('.searchable-dropdown-menu');
+  const qtyInput = tr.querySelector('.tindakan-qty');
+  const badgeInfo = tr.querySelector('.tindakan-badge-info');
+
+  function renderTindakanOptions(filterText = '') {
+    const cleanFilter = filterText.toLowerCase().trim();
+    const currentList = appData.tindakan || [];
+    const filtered = currentList.filter(t => 
+      !cleanFilter || 
+      t.nama.toLowerCase().includes(cleanFilter) ||
+      (t.kategori && t.kategori.toLowerCase().includes(cleanFilter))
+    );
+
+    if (filtered.length === 0) {
+      menu.innerHTML = `<div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Tindakan tidak ditemukan (Ketik bebas)</div>`;
+      return;
+    }
+
+    menu.innerHTML = filtered.map(item => `
+      <div class="searchable-option-item ${item.nama.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" data-value="${item.nama}" data-tarif="${item.tarif || 0}" data-kategori="${item.kategori || ''}">
+        <span style="display: flex; flex-direction: column; gap: 2px; flex: 1;">
+          <strong style="color: var(--text-color);">${item.nama}</strong>
+          <small style="color: var(--text-muted); font-size: 0.72rem;">${item.kategori || 'Tindakan'} • Rp ${(item.tarif || 0).toLocaleString('id-ID')}</small>
+        </span>
+        <span style="font-weight: 700; color: #38bdf8; font-size: 0.85rem;">Rp ${(item.tarif || 0).toLocaleString('id-ID')}</span>
+      </div>
+    `).join('');
+
+    menu.querySelectorAll('.searchable-option-item').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const val = opt.getAttribute('data-value');
+        const tarif = parseFloat(opt.getAttribute('data-tarif')) || 0;
+        const kat = opt.getAttribute('data-kategori');
+        input.value = val;
+        tr.dataset.unitPrice = tarif;
+        if (badgeInfo) badgeInfo.textContent = `Tarif: Rp ${tarif.toLocaleString('id-ID')}${kat ? ` (${kat})` : ''}`;
+        wrap.classList.remove('active');
+        calculateTindakanRowSubtotal(tr);
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => {
+    document.querySelectorAll('.custom-searchable-wrap.active').forEach(w => {
+      if (w !== wrap) w.classList.remove('active');
+    });
+    renderTindakanOptions(input.value);
+    wrap.classList.add('active');
+  });
+
+  input.addEventListener('input', () => {
+    renderTindakanOptions(input.value);
+    wrap.classList.add('active');
+    const matched = (appData.tindakan || []).find(t => t.nama.toLowerCase() === input.value.toLowerCase().trim());
+    if (matched) {
+      tr.dataset.unitPrice = parseFloat(matched.tarif) || 0;
+      if (badgeInfo) badgeInfo.textContent = `Tarif: Rp ${(matched.tarif || 0).toLocaleString('id-ID')}`;
+    }
+    calculateTindakanRowSubtotal(tr);
+  });
+
+  qtyInput.addEventListener('input', () => calculateTindakanRowSubtotal(tr));
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove('active');
+    }
+  });
+
+  if (initialTindakan) {
+    if (badgeInfo) badgeInfo.textContent = `Tarif: Rp ${(initialTindakan.tarif || 0).toLocaleString('id-ID')}`;
+  }
+  calculateTindakanRowSubtotal(tr);
+}
+
+function calculateTindakanRowSubtotal(tr) {
+  const unitPrice = parseFloat(tr.dataset.unitPrice) || 0;
+  const qty = parseInt(tr.querySelector('.tindakan-qty')?.value) || 1;
+  const subtotal = unitPrice * qty;
+  const badge = tr.querySelector('.tindakan-subtotal-badge');
+  if (badge) {
+    badge.textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
+  }
+  calculateCombinedGrandTotal();
 }
 
 function addICD10Row(defaultValue = '') {
@@ -803,7 +1069,7 @@ function calculateRowSubtotal(tr) {
   if (badge) {
     badge.textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
   }
-  calculateResepGrandTotal();
+  calculateCombinedGrandTotal();
 }
 
 function calculateResepGrandTotal() {
@@ -823,16 +1089,42 @@ function calculateResepGrandTotal() {
     grandTotalEl.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
   }
 
-  // Update Sisa Saldo Setelah Berobat
+  return grandTotal;
+}
+
+function calculateCombinedGrandTotal() {
+  // 1. Total Tindakan
+  let grandTotalTindakan = 0;
+  const tRows = document.querySelectorAll('#poli-tindakan-body tr');
+  tRows.forEach(tr => {
+    const unitPrice = parseFloat(tr.dataset.unitPrice) || 0;
+    const qty = parseInt(tr.querySelector('.tindakan-qty')?.value) || 1;
+    const tName = tr.querySelector('.select-tindakan')?.value.trim();
+    if (tName) {
+      grandTotalTindakan += (unitPrice * qty);
+    }
+  });
+  const tGrandEl = document.getElementById('poli-tindakan-grand-total');
+  if (tGrandEl) tGrandEl.textContent = `Rp ${grandTotalTindakan.toLocaleString('id-ID')}`;
+
+  // 2. Total Resep Obat
+  const grandTotalResep = calculateResepGrandTotal();
+
+  // 3. Combined Grand Total
+  const combinedTotal = grandTotalTindakan + grandTotalResep;
+  const cGrandEl = document.getElementById('poli-combined-grand-total');
+  if (cGrandEl) cGrandEl.textContent = `Rp ${combinedTotal.toLocaleString('id-ID')}`;
+
+  // 4. Update Sisa Saldo Setelah Berobat
   const sisaSaldoEl = document.getElementById('poli-sisa-saldo');
   if (sisaSaldoEl && appData.currentPoliPatient) {
     const saldoAwal = parseInt(appData.currentPoliPatient.saldoObat) || 0;
-    const sisa = saldoAwal - grandTotal;
+    const sisa = saldoAwal - combinedTotal;
     sisaSaldoEl.textContent = `Rp ${sisa.toLocaleString('id-ID')}`;
     sisaSaldoEl.style.color = sisa < 0 ? '#ef4444' : '#34d399';
   }
 
-  return grandTotal;
+  return { grandTotalTindakan, grandTotalResep, combinedTotal };
 }
 
 function searchPatientByNIK() {
@@ -1198,10 +1490,32 @@ async function handleSavePoli(e) {
   selectedICDArr.forEach(d => recordICD10Selection(d));
   const selectedICD = selectedICDArr.join('; ');
 
+  // Gather Tindakan Medis with Tariffs & Subtotals
+  const tindakanRows = document.querySelectorAll('#poli-tindakan-body tr');
+  const tindakanList = [];
+  let grandTotalTindakan = 0;
+
+  tindakanRows.forEach(tr => {
+    const tSel = tr.querySelector('.select-tindakan')?.value.trim();
+    const unitPrice = parseFloat(tr.dataset.unitPrice) || 0;
+    const qty = parseInt(tr.querySelector('.tindakan-qty')?.value) || 1;
+    const subtotal = unitPrice * qty;
+
+    if (tSel) {
+      tindakanList.push({
+        nama: tSel,
+        tarif: unitPrice,
+        qty,
+        subtotal
+      });
+      grandTotalTindakan += subtotal;
+    }
+  });
+
   // Gather Resep Obat with Live Locked Prices, Aturan Pakai & Subtotals
   const resepRows = document.querySelectorAll('#poli-resep-body tr');
   const resepList = [];
-  let grandTotalBiaya = 0;
+  let grandTotalObat = 0;
 
   resepRows.forEach(tr => {
     const medSel = tr.querySelector('.select-medicine')?.value.trim();
@@ -1216,13 +1530,23 @@ async function handleSavePoli(e) {
         qty, 
         subtotal 
       });
-      grandTotalBiaya += subtotal;
+      grandTotalObat += subtotal;
     }
   });
 
-  const planText = resepList.length > 0
-    ? resepList.map(r => `${r.namaObat} No.${r.qty} [Harga: Rp ${r.subtotal.toLocaleString('id-ID')}]`).join('; ') + (grandTotalBiaya > 0 ? ` [Total: Rp ${grandTotalBiaya.toLocaleString('id-ID')}]` : '')
-    : 'Edukasi Istirahat & Hidrasi Cukup';
+  const grandTotalBiaya = grandTotalTindakan + grandTotalObat;
+
+  const planParts = [];
+  if (tindakanList.length > 0) {
+    planParts.push('Tindakan: ' + tindakanList.map(t => `${t.nama} (${t.qty}x)`).join(', '));
+  }
+  if (resepList.length > 0) {
+    planParts.push('Resep: ' + resepList.map(r => `${r.namaObat} No.${r.qty}`).join(', '));
+  }
+  if (grandTotalBiaya > 0) {
+    planParts.push(`[Total: Rp ${grandTotalBiaya.toLocaleString('id-ID')}]`);
+  }
+  const planText = planParts.length > 0 ? planParts.join('; ') : 'Edukasi Istirahat & Hidrasi Cukup';
 
   // Handle File Upload to Google Drive
   let linkFoto = '';
@@ -1283,7 +1607,10 @@ async function handleSavePoli(e) {
     objektif: objektifFull,
     asesmen: selectedICD || 'Pemeriksaan Umum',
     plan: planText,
+    tindakan: tindakanList,
+    biayaTindakan: grandTotalTindakan,
     resep: resepList,
+    biayaObat: grandTotalObat,
     totalBiaya: grandTotalBiaya,
     pemeriksa,
     izinSakit: isIzinSakit,
@@ -1301,7 +1628,7 @@ async function handleSavePoli(e) {
     if (res.ok) {
       showToast('Rekam Medis Berhasil Disimpan & Stok Berkurang!', 'success');
       
-      // DEDUCT SALDO OBAT
+      // DEDUCT SALDO OBAT / BIAYA BEROBAT
       if (grandTotalBiaya > 0 && appData.currentPoliPatient) {
         const p = appData.currentPoliPatient;
         const oldSaldo = parseInt(p.saldoObat) || 0;
@@ -1343,7 +1670,7 @@ async function handleSavePoli(e) {
           saldoAwalEl.textContent = `Rp ${saldoObat.toLocaleString('id-ID')}`;
           saldoAwalEl.style.color = saldoObat < 0 ? '#ef4444' : 'var(--text-primary)';
         }
-        calculateResepGrandTotal();
+        calculateCombinedGrandTotal();
       }
     } else {
       showToast('Gagal menyimpan data', 'error');
@@ -3477,6 +3804,242 @@ function closeModalHSESurkes() {
   document.getElementById('modal-hse-surkes').style.display = 'none';
 }
 
+// -------------------------------------------------------------
+// HSE PEMANTAUAN OBAT KELUAR / TERPAKAI MODAL (SS 5)
+// -------------------------------------------------------------
+function openModalHSEObatKeluar() {
+  const modal = document.getElementById('modal-hse-obat-terpakai');
+  if (!modal) return;
+
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+
+  const startInput = document.getElementById('hse-obat-start');
+  const endInput = document.getElementById('hse-obat-end');
+
+  if (startInput && !startInput.value) startInput.value = `${yyyy}-${mm}-01`;
+  if (endInput && !endInput.value) endInput.value = `${yyyy}-${mm}-${dd}`;
+
+  modal.style.display = 'flex';
+  renderHSEObatKeluarTable();
+}
+
+function closeModalHSEObatKeluar() {
+  const modal = document.getElementById('modal-hse-obat-terpakai');
+  if (modal) modal.style.display = 'none';
+}
+
+function resetHSEObatFilterBulanIni() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+
+  const startInput = document.getElementById('hse-obat-start');
+  const endInput = document.getElementById('hse-obat-end');
+
+  if (startInput) startInput.value = `${yyyy}-${mm}-01`;
+  if (endInput) endInput.value = `${yyyy}-${mm}-${dd}`;
+
+  renderHSEObatKeluarTable();
+}
+
+function filterHSEObatKeluarTable() {
+  renderHSEObatKeluarTable();
+}
+
+function getHSEObatKeluarData() {
+  const startVal = document.getElementById('hse-obat-start')?.value;
+  const endVal = document.getElementById('hse-obat-end')?.value;
+
+  const start = startVal ? new Date(`${startVal}T00:00:00`) : null;
+  const end = endVal ? new Date(`${endVal}T23:59:59`) : null;
+
+  // Filter records within date range
+  const filteredRecords = appData.records.filter(r => {
+    const d = parseRecordDate(r);
+    if (!d || isNaN(d.getTime())) return false;
+    if (start && d < start) return false;
+    if (end && d > end) return false;
+    return true;
+  });
+
+  // Aggregate medicines
+  const medMap = {};
+  filteredRecords.forEach(r => {
+    if (Array.isArray(r.resep)) {
+      r.resep.forEach(m => {
+        const rawName = (m.namaObat || m.obat || '').trim();
+        if (!rawName) return;
+
+        const qty = parseInt(m.qty) || 0;
+        if (qty <= 0) return;
+
+        if (!medMap[rawName]) {
+          // Find details in master medicines
+          const matchedMed = (appData.medicines || []).find(x => x.nama.toLowerCase() === rawName.toLowerCase());
+          medMap[rawName] = {
+            nama: rawName,
+            satuan: matchedMed ? (matchedMed.satuan || 'Pcs') : 'Item',
+            kategori: matchedMed ? (matchedMed.kategori || 'Obat') : 'Obat',
+            totalQty: 0,
+            resepCount: 0
+          };
+        }
+        medMap[rawName].totalQty += qty;
+        medMap[rawName].resepCount += 1;
+      });
+    }
+  });
+
+  // Convert to array & sort strictly descending by totalQty
+  const sortedList = Object.values(medMap).sort((a, b) => b.totalQty - a.totalQty || b.resepCount - a.resepCount);
+  return { sortedList, filteredRecords, startVal, endVal };
+}
+
+function renderHSEObatKeluarTable() {
+  const tbody = document.getElementById('table-hse-obat-body');
+  if (!tbody) return;
+
+  const { sortedList } = getHSEObatKeluarData();
+
+  const totalJenisEl = document.getElementById('hse-obat-total-jenis');
+  const totalQtyEl = document.getElementById('hse-obat-total-qty');
+  const topNameEl = document.getElementById('hse-obat-top-name');
+
+  const totalJenis = sortedList.length;
+  const totalQtyAll = sortedList.reduce((sum, item) => sum + item.totalQty, 0);
+  const topName = sortedList.length > 0 ? `${sortedList[0].nama} (${sortedList[0].totalQty} ${sortedList[0].satuan})` : '-';
+
+  if (totalJenisEl) totalJenisEl.textContent = `${totalJenis} Macam`;
+  if (totalQtyEl) totalQtyEl.textContent = `${totalQtyAll.toLocaleString('id-ID')} Butir / Item`;
+  if (topNameEl) topNameEl.textContent = topName;
+
+  if (sortedList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 28px; color: var(--text-muted); font-style: italic;"><i class="fa-solid fa-capsules" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>Tidak ada pemakaian obat yang tercatat pada rentang tanggal ini.</td></tr>`;
+    return;
+  }
+
+  const maxQty = sortedList[0].totalQty || 1;
+
+  tbody.innerHTML = sortedList.map((item, idx) => {
+    let rankBadge = '';
+    if (idx === 0) rankBadge = '<span style="font-size: 1.1rem;">🥇 <strong>1</strong></span>';
+    else if (idx === 1) rankBadge = '<span style="font-size: 1.1rem;">🥈 <strong>2</strong></span>';
+    else if (idx === 2) rankBadge = '<span style="font-size: 1.1rem;">🥉 <strong>3</strong></span>';
+    else rankBadge = `<span style="font-weight: 700; color: var(--text-muted);">#${idx + 1}</span>`;
+
+    const pct = Math.round((item.totalQty / maxQty) * 100);
+
+    return `
+      <tr>
+        <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
+        <td style="vertical-align: middle;">
+          <strong style="font-size: 0.92rem; color: var(--text-color);">${item.nama}</strong>
+        </td>
+        <td style="vertical-align: middle;">
+          <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 600;">${item.satuan} (${item.kategori})</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+          <div style="font-size: 1.05rem; font-weight: 800; color: #34d399;">${item.totalQty.toLocaleString('id-ID')} <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">${item.satuan}</span></div>
+          <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, #10b981, #0284c7); height: 100%; width: ${pct}%;"></div>
+          </div>
+        </td>
+        <td style="vertical-align: middle;">
+          <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-receipt" style="color: #38bdf8; margin-right: 4px;"></i> ${item.resepCount} kali resep</span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function exportHSEObatExcel() {
+  const { sortedList, startVal, endVal } = getHSEObatKeluarData();
+  const dateStr = new Date().toISOString().split('T')[0];
+
+  let rows = '';
+  sortedList.forEach((item, idx) => {
+    rows += `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td><strong>${item.nama}</strong></td>
+        <td>${item.satuan}</td>
+        <td>${item.kategori}</td>
+        <td style="text-align: center; font-weight: bold;">${item.totalQty}</td>
+        <td style="text-align: center;">${item.resepCount}</td>
+      </tr>
+    `;
+  });
+
+  const totalQtyAll = sortedList.reduce((sum, item) => sum + item.totalQty, 0);
+
+  const excelTemplate = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8">
+      <!--[if gte mso 9]>
+      <xml>
+        <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+            <x:ExcelWorksheet>
+              <x:Name>Pemantauan Obat Keluar</x:Name>
+              <x:WorksheetOptions>
+                <x:DisplayGridlines/>
+              </x:WorksheetOptions>
+            </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+      </xml>
+      <![endif]-->
+      <style>
+        table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 11pt; }
+        th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #0369a1; padding: 8px; text-align: left; }
+        td { border: 1px solid #d1d5db; padding: 6px; }
+        .title { font-size: 14pt; font-weight: bold; color: #0369a1; margin-bottom: 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="title">REKAPITULASI PEMANTAUAN OBAT TERPAKAI / KELUAR - KLINIK PT ATI</div>
+      <p>Periode: <strong>${startVal || 'Awal'} s/d ${endVal || 'Sekarang'}</strong> | Total Obat Terpakai: <strong>${totalQtyAll} Butir</strong></p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 50px; text-align: center;">URUTAN</th>
+            <th>NAMA OBAT</th>
+            <th>SATUAN</th>
+            <th>KATEGORI</th>
+            <th style="text-align: center;">TOTAL TERPAKAI</th>
+            <th style="text-align: center;">JUMLAH RESEP</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+          <tr style="font-weight: bold; background-color: #f3f4f6;">
+            <td colspan="4" style="text-align: right;">TOTAL KESELURUHAN OBAT TERPAKAI:</td>
+            <td style="text-align: center;">${totalQtyAll}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Rekap_Obat_Terpakai_HSE_${dateStr}.xls`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showToast('Laporan Obat Terpakai berhasil diexport ke Excel! 📊', 'success');
+}
+
 function renderHSERekamMedisTable(isButtonClick = false) {
   const tbody = document.getElementById('table-hse-rm-body');
   if (!tbody) return;
@@ -3597,6 +4160,20 @@ function renderHSERekamMedisTable(isButtonClick = false) {
         </div>
       `).join('');
     }
+  }
+
+  // Card 7: Total Obat Terpakai
+  const statObat = document.getElementById('hse-stat-obat-count');
+  if (statObat) {
+    let totalObatQty = 0;
+    filtered.forEach(r => {
+      if (Array.isArray(r.resep)) {
+        r.resep.forEach(m => {
+          totalObatQty += (parseInt(m.qty) || 0);
+        });
+      }
+    });
+    statObat.textContent = `${totalObatQty} Butir`;
   }
 
   if (!isButtonClick) {
@@ -4578,7 +5155,7 @@ async function handleUnlockGSheetSync(e) {
 }
 
 function switchManajemenTab(tabName) {
-  const tabs = ['billing', 'kontak'];
+  const tabs = ['billing', 'tindakan', 'users', 'kontak'];
   tabs.forEach(t => {
     const el = document.getElementById(`mj-tab-${t}`);
     const btn = document.getElementById(`mj-nav-${t}`);
@@ -4594,6 +5171,241 @@ function switchManajemenTab(tabName) {
   });
 }
 
+// -------------------------------------------------------------
+// MASTER TINDAKAN MEDIS & TARIF CRUD
+// -------------------------------------------------------------
+function renderMasterTindakanTable() {
+  const tbody = document.getElementById('table-master-tindakan-body');
+  if (!tbody) return;
+
+  const tindakanList = appData.tindakan || [];
+  if (tindakanList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">Belum ada jenis tindakan medis terdaftar.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = tindakanList.map((t, idx) => `
+    <tr>
+      <td style="text-align: center;">${idx + 1}</td>
+      <td><strong>${t.nama}</strong></td>
+      <td><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 600;">${t.kategori || 'Tindakan'}</span></td>
+      <td style="text-align: right; font-weight: 700; color: #38bdf8;">Rp ${(t.tarif || 0).toLocaleString('id-ID')}</td>
+      <td style="text-align: center;">
+        <div style="display: flex; gap: 6px; justify-content: center;">
+          <button class="btn btn-sm btn-secondary" onclick="openModalEditTindakan('${t.id}')" title="Edit Tindakan"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="handleDeleteTindakan('${t.id}')" title="Hapus Tindakan"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function handleTambahMasterTindakan(e) {
+  e.preventDefault();
+  const nama = document.getElementById('new-tindakan-nama').value.trim();
+  const kategori = document.getElementById('new-tindakan-kategori').value.trim() || 'Tindakan Medis';
+  const tarif = parseInt(document.getElementById('new-tindakan-tarif').value) || 0;
+
+  if (!nama) {
+    showToast('Nama tindakan wajib diisi!', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/tindakan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama, kategori, tarif })
+    });
+    if (res.ok) {
+      showToast('Tindakan medis berhasil ditambahkan!', 'success');
+      document.getElementById('new-tindakan-nama').value = '';
+      document.getElementById('new-tindakan-tarif').value = '';
+      await loadAllAppData();
+    } else {
+      showToast('Gagal menambahkan tindakan', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan jaringan', 'error');
+  }
+}
+
+function openModalEditTindakan(id) {
+  const t = (appData.tindakan || []).find(item => item.id === id);
+  if (!t) return;
+  document.getElementById('edit-tindakan-id').value = t.id;
+  document.getElementById('edit-tindakan-nama').value = t.nama || '';
+  document.getElementById('edit-tindakan-kategori').value = t.kategori || 'Tindakan Medis';
+  document.getElementById('edit-tindakan-tarif').value = t.tarif || 0;
+  const modal = document.getElementById('modal-edit-tindakan');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalEditTindakan() {
+  const modal = document.getElementById('modal-edit-tindakan');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleSaveEditTindakan(e) {
+  e.preventDefault();
+  const id = document.getElementById('edit-tindakan-id').value;
+  const nama = document.getElementById('edit-tindakan-nama').value.trim();
+  const kategori = document.getElementById('edit-tindakan-kategori').value.trim();
+  const tarif = parseInt(document.getElementById('edit-tindakan-tarif').value) || 0;
+
+  try {
+    const res = await fetch(`/api/tindakan/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama, kategori, tarif })
+    });
+    if (res.ok) {
+      closeModalEditTindakan();
+      showToast('Perubahan tindakan berhasil disimpan!', 'success');
+      await loadAllAppData();
+    } else {
+      showToast('Gagal menyimpan perubahan', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan jaringan', 'error');
+  }
+}
+
+async function handleDeleteTindakan(id) {
+  if (!confirm('Hapus jenis tindakan medis ini?')) return;
+  try {
+    const res = await fetch(`/api/tindakan/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Tindakan medis berhasil dihapus', 'success');
+      await loadAllAppData();
+    } else {
+      showToast('Gagal menghapus tindakan', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan jaringan', 'error');
+  }
+}
+
+// -------------------------------------------------------------
+// USER MANAGEMENT CRUD (ADMIN DIREKTUR)
+// -------------------------------------------------------------
+function renderUsersTable() {
+  const tbody = document.getElementById('table-users-body');
+  if (!tbody) return;
+
+  const users = appData.users || [];
+  if (users.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">Belum ada akun petugas terdaftar.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map((u, idx) => `
+    <tr>
+      <td style="text-align: center;">${idx + 1}</td>
+      <td><strong>${u.nama || '-'}</strong></td>
+      <td><code>${u.username || '-'}</code></td>
+      <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; font-weight: 600;">${u.role || 'Petugas'}</span></td>
+      <td style="text-align: center;">
+        <div style="display: flex; gap: 6px; justify-content: center;">
+          <button class="btn btn-sm btn-secondary" onclick="openModalEditUser('${u.id}')" title="Edit Akun"><i class="fa-solid fa-user-pen"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="handleDeleteUser('${u.id}')" title="Hapus Akun"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function handleTambahUserAdmin(e) {
+  e.preventDefault();
+  const nama = document.getElementById('adm-user-nama').value.trim();
+  const role = document.getElementById('adm-user-role').value;
+  const username = document.getElementById('adm-user-username').value.trim();
+  const password = document.getElementById('adm-user-password').value.trim();
+
+  if (!nama || !username || !password) {
+    showToast('Semua field wajib diisi!', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama, role, username, password })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('Akun petugas berhasil dibuat!', 'success');
+      document.getElementById('adm-user-nama').value = '';
+      document.getElementById('adm-user-username').value = '';
+      document.getElementById('adm-user-password').value = '';
+      await loadAllAppData();
+    } else {
+      showToast(data.error || 'Gagal membuat akun petugas', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan jaringan', 'error');
+  }
+}
+
+function openModalEditUser(id) {
+  const u = (appData.users || []).find(item => item.id === id);
+  if (!u) return;
+  document.getElementById('edit-user-id').value = u.id;
+  document.getElementById('edit-user-nama').value = u.nama || '';
+  document.getElementById('edit-user-role').value = u.role || 'Perawat';
+  document.getElementById('edit-user-username').value = u.username || '';
+  document.getElementById('edit-user-password').value = '';
+  const modal = document.getElementById('modal-edit-user');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalEditUser() {
+  const modal = document.getElementById('modal-edit-user');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleSaveEditUser(e) {
+  e.preventDefault();
+  const id = document.getElementById('edit-user-id').value;
+  const nama = document.getElementById('edit-user-nama').value.trim();
+  const role = document.getElementById('edit-user-role').value;
+  const username = document.getElementById('edit-user-username').value.trim();
+  const password = document.getElementById('edit-user-password').value.trim();
+
+  try {
+    const res = await fetch(`/api/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama, role, username, password })
+    });
+    if (res.ok) {
+      closeModalEditUser();
+      showToast('Perubahan data petugas berhasil disimpan!', 'success');
+      await loadAllAppData();
+    } else {
+      showToast('Gagal menyimpan perubahan petugas', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan jaringan', 'error');
+  }
+}
+
+async function handleDeleteUser(id) {
+  if (!confirm('Hapus akun petugas ini?')) return;
+  try {
+    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Akun petugas berhasil dihapus', 'success');
+      await loadAllAppData();
+    } else {
+      showToast('Gagal menghapus user', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan jaringan', 'error');
+  }
+}
+
 function getFilteredBillingRecords() {
   const startVal = document.getElementById('billing-start')?.value;
   const endVal = document.getElementById('billing-end')?.value;
@@ -4604,29 +5416,7 @@ function getFilteredBillingRecords() {
   const end = new Date(`${endVal}T23:59:59`);
   
   return appData.records.filter(r => {
-    let d = null;
-    if (r.tanggal) {
-      if (typeof r.tanggal === 'string' && r.tanggal.includes('/')) {
-        const parts = r.tanggal.split('/');
-        if (parts.length === 3) {
-          d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        }
-      } else if (typeof r.tanggal === 'string' && r.tanggal.includes('-')) {
-        const parts = r.tanggal.split('-');
-        if (parts.length === 3) {
-          if (parts[0].length === 4) {
-            d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-          } else {
-            d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-          }
-        }
-      } else {
-        d = new Date(r.tanggal);
-      }
-    }
-    if ((!d || isNaN(d.getTime())) && r.created_at) {
-      d = new Date(r.created_at);
-    }
+    let d = parseRecordDate(r);
     if (!d || isNaN(d.getTime())) return false;
     return d >= start && d <= end;
   });
@@ -4645,20 +5435,42 @@ function renderBillingPTTable() {
 
   let html = '';
   filtered.forEach((r, i) => {
-    if (r.resep && r.resep.length > 0) {
-      r.resep.forEach((med, idx) => {
+    const items = [];
+    if (Array.isArray(r.tindakan) && r.tindakan.length > 0) {
+      r.tindakan.forEach(t => {
+        items.push({
+          type: 'Tindakan',
+          nama: `💉 ${t.nama || 'Tindakan'}`,
+          qty: t.qty || 1,
+          tarif: t.subtotal || ((t.tarif || 0) * (t.qty || 1))
+        });
+      });
+    }
+    if (Array.isArray(r.resep) && r.resep.length > 0) {
+      r.resep.forEach(m => {
+        items.push({
+          type: 'Obat',
+          nama: `💊 ${m.namaObat || m.obat || 'Obat'}`,
+          qty: m.qty || 1,
+          tarif: m.subtotal || ((m.harga || 0) * (m.qty || 1))
+        });
+      });
+    }
+
+    if (items.length > 0) {
+      items.forEach((item, idx) => {
         html += `
           <tr>
-            <td data-label="No">${i + 1}${r.resep.length > 1 ? `.${idx + 1}` : ''}</td>
-            <td data-label="Tanggal">${r.tanggal || '-'}</td>
-            <td data-label="NPK">${r.nikPabrik || '-'}</td>
-            <td data-label="Nama Pasien"><strong>${r.namaPasien || '-'}</strong></td>
-            <td data-label="Bagian">${r.dept || '-'}</td>
-            <td data-label="Diagnosa">${r.asesmen || '-'}</td>
-            <td data-label="Nama Obat">${med.namaObat || med.obat || '-'}</td>
-            <td data-label="Qty">${med.qty || '-'}</td>
-            <td data-label="Harga Obat">Rp ${(med.subtotal || 0).toLocaleString('id-ID')}</td>
-            <td data-label="Total Biaya" style="font-weight: 700; color: #38bdf8;">Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}</td>
+            <td data-label="No">${idx === 0 ? i + 1 : ''}</td>
+            <td data-label="Tanggal">${idx === 0 ? (r.tanggal || '-') : ''}</td>
+            <td data-label="NPK">${idx === 0 ? (r.nikPabrik || '-') : ''}</td>
+            <td data-label="Nama Pasien">${idx === 0 ? `<strong>${r.namaPasien || '-'}</strong>` : ''}</td>
+            <td data-label="Bagian">${idx === 0 ? (r.dept || '-') : ''}</td>
+            <td data-label="Diagnosa">${idx === 0 ? (r.asesmen || '-') : ''}</td>
+            <td data-label="Tindakan / Obat">${item.nama}</td>
+            <td data-label="Qty" style="text-align: center;">${item.qty}</td>
+            <td data-label="Tarif / Harga">Rp ${(item.tarif || 0).toLocaleString('id-ID')}</td>
+            <td data-label="Total Biaya" style="font-weight: 700; color: #38bdf8;">${idx === 0 ? `Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}` : ''}</td>
           </tr>
         `;
       });
@@ -4671,9 +5483,9 @@ function renderBillingPTTable() {
           <td data-label="Nama Pasien"><strong>${r.namaPasien || '-'}</strong></td>
           <td data-label="Bagian">${r.dept || '-'}</td>
           <td data-label="Diagnosa">${r.asesmen || '-'}</td>
-          <td data-label="Nama Obat">-</td>
-          <td data-label="Qty">-</td>
-          <td data-label="Harga Obat">Rp 0</td>
+          <td data-label="Tindakan / Obat">-</td>
+          <td data-label="Qty" style="text-align: center;">0</td>
+          <td data-label="Tarif / Harga">Rp 0</td>
           <td data-label="Total Biaya" style="font-weight: 700; color: #38bdf8;">Rp ${(r.totalBiaya || 0).toLocaleString('id-ID')}</td>
         </tr>
       `;
@@ -4689,19 +5501,39 @@ function exportBillingExcel() {
   
   let rows = '';
   filtered.forEach((r, i) => {
-    if (r.resep && r.resep.length > 0) {
-      r.resep.forEach((med, idx) => {
+    const items = [];
+    if (Array.isArray(r.tindakan) && r.tindakan.length > 0) {
+      r.tindakan.forEach(t => {
+        items.push({
+          nama: `[Tindakan] ${t.nama || 'Tindakan'}`,
+          qty: t.qty || 1,
+          tarif: t.subtotal || ((t.tarif || 0) * (t.qty || 1))
+        });
+      });
+    }
+    if (Array.isArray(r.resep) && r.resep.length > 0) {
+      r.resep.forEach(m => {
+        items.push({
+          nama: `[Obat] ${m.namaObat || m.obat || 'Obat'}`,
+          qty: m.qty || 1,
+          tarif: m.subtotal || ((m.harga || 0) * (m.qty || 1))
+        });
+      });
+    }
+
+    if (items.length > 0) {
+      items.forEach((item, idx) => {
         rows += `
           <tr>
             <td style="text-align: center;">${idx === 0 ? i + 1 : ''}</td>
-            <td>${r.tanggal || ''}</td>
-            <td>${r.nikPabrik || ''}</td>
-            <td><strong>${r.namaPasien || ''}</strong></td>
-            <td>${r.dept || ''}</td>
-            <td>${r.asesmen || ''}</td>
-            <td>${med.namaObat || med.obat || ''}</td>
-            <td style="text-align: center;">${med.qty || 0}</td>
-            <td style="text-align: right;">${med.subtotal || 0}</td>
+            <td>${idx === 0 ? (r.tanggal || '') : ''}</td>
+            <td>${idx === 0 ? (r.nikPabrik || '') : ''}</td>
+            <td><strong>${idx === 0 ? (r.namaPasien || '') : ''}</strong></td>
+            <td>${idx === 0 ? (r.dept || '') : ''}</td>
+            <td>${idx === 0 ? (r.asesmen || '') : ''}</td>
+            <td>${item.nama}</td>
+            <td style="text-align: center;">${item.qty}</td>
+            <td style="text-align: right;">${item.tarif}</td>
             <td style="text-align: right; font-weight: bold;">${idx === 0 ? (r.totalBiaya || 0) : ''}</td>
           </tr>
         `;
