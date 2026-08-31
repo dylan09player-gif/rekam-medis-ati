@@ -472,6 +472,8 @@ body {
   color: var(--text-muted);
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
 /* Nav Tabs */
 .app-navbar {
   overflow: visible !important;
