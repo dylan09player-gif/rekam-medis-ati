@@ -472,20 +472,18 @@ body {
   color: var(--text-muted);
   font-weight: 600;
   letter-spacing: 0.01em;
+/* Nav Tabs */
+.app-navbar {
+  overflow: visible !important;
 }
 
-/* Nav Tabs */
 .nav-links {
   display: flex;
   gap: 4px;
   align-items: center;
-  overflow-x: auto;
+  overflow: visible !important;
   padding: 4px 0;
   flex: 1;
-  scrollbar-width: none;
-}
-.nav-links::-webkit-scrollbar {
-  display: none;
 }
 
 .nav-btn {
@@ -537,15 +535,15 @@ body {
 .nav-dropdown-content {
   display: none;
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
-  min-width: 175px;
+  min-width: 185px;
   background: var(--surface-1);
   border: 1px solid var(--border-card);
   border-radius: var(--r-sm);
   box-shadow: var(--shadow-lg);
   padding: 6px;
-  z-index: 1000;
+  z-index: 99999;
   animation: navFadeIn 0.15s ease;
 }
 

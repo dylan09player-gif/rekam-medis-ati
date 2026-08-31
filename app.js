@@ -18,10 +18,29 @@ let appData = {
 function renderResepTimeline(r) {
   if (!r) return '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
 
-  const items = [];
-  let totalDisplay = '';
+  // 1. Process Tindakan Medis
+  const tindakanItems = [];
+  if (Array.isArray(r.tindakan) && r.tindakan.length > 0) {
+    r.tindakan.forEach(t => {
+      const nama = (t.nama || t.namaTindakan || '').trim();
+      const qty = parseInt(t.qty || t.jumlah) || 1;
+      let subtotal = t.subtotal;
+      if (subtotal === undefined || subtotal === null || subtotal === 0) {
+        const foundTnd = (appData.tindakan || []).find(it => it.nama && it.nama.toLowerCase() === nama.toLowerCase());
+        if (foundTnd && foundTnd.tarif) {
+          subtotal = (parseFloat(foundTnd.tarif) || 0) * qty;
+        } else if (t.tarif) {
+          subtotal = (parseFloat(t.tarif) || 0) * qty;
+        }
+      }
+      if (nama) {
+        tindakanItems.push({ nama, qty, subtotal: subtotal !== undefined && subtotal !== null ? subtotal : null });
+      }
+    });
+  }
 
-  // 1. If r.resep is structured array
+  // 2. Process Resep Obat
+  const medItems = [];
   if (Array.isArray(r.resep) && r.resep.length > 0) {
     r.resep.forEach(item => {
       const nama = (item.namaObat || item.obat || '').trim();
@@ -38,7 +57,7 @@ function renderResepTimeline(r) {
       }
 
       if (nama) {
-        items.push({
+        medItems.push({
           nama,
           qty,
           subtotal: subtotal !== undefined && subtotal !== null ? subtotal : null
@@ -47,14 +66,9 @@ function renderResepTimeline(r) {
     });
   }
 
-  // 2. If items is still empty, parse r.plan
-  if (items.length === 0 && r.plan) {
+  // Fallback: parse r.plan if medItems is empty
+  if (medItems.length === 0 && r.plan) {
     let rawPlan = String(r.plan);
-    let totalMatch = rawPlan.match(/\[Total:\s*Rp\s*([^\]]+)\]/i);
-    if (totalMatch) {
-      totalDisplay = `Rp ${totalMatch[1]}`;
-    }
-
     let cleanedPlan = rawPlan
       .replace(/^Resep:\s*/i, '')
       .replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '')
@@ -78,7 +92,7 @@ function renderResepTimeline(r) {
       }
 
       if (nama && nama !== '-' && nama !== 'Edukasi Istirahat') {
-        items.push({
+        medItems.push({
           nama,
           qty,
           subtotal: parsedPrice
@@ -87,68 +101,115 @@ function renderResepTimeline(r) {
     });
   }
 
-  if (items.length === 0) {
+  if (tindakanItems.length === 0 && medItems.length === 0) {
     if (r.plan && r.plan.trim() !== '-') {
       return `<div class="timeline-medicines-list"><div class="med-pill-item">💊 ${r.plan}</div></div>`;
     }
     return '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
   }
 
-  // Calculate or resolve total
-  if (!totalDisplay) {
-    if (r.biayaObat && r.biayaObat > 0) {
-      totalDisplay = `Rp ${Number(r.biayaObat).toLocaleString('id-ID')}`;
-    } else if (r.totalBiaya && r.totalBiaya > 0) {
-      totalDisplay = `Rp ${Number(r.totalBiaya).toLocaleString('id-ID')}`;
-    } else {
-      const sum = items.reduce((acc, it) => acc + (it.subtotal || 0), 0);
-      if (sum > 0) {
-        totalDisplay = `Rp ${sum.toLocaleString('id-ID')}`;
-      }
-    }
+  // Calculate totals
+  const totalBiayaTindakan = Number(r.biayaTindakan) || tindakanItems.reduce((acc, it) => acc + (it.subtotal || 0), 0);
+  const totalBiayaObat = Number(r.biayaObat) || medItems.reduce((acc, it) => acc + (it.subtotal || 0), 0);
+  const grandTotal = (r.totalBiaya !== undefined && r.totalBiaya !== null && r.totalBiaya > 0)
+    ? Number(r.totalBiaya)
+    : (totalBiayaTindakan + totalBiayaObat);
+
+  let html = '<div class="timeline-resep-box">';
+
+  // 1. Render Tindakan table
+  if (tindakanItems.length > 0) {
+    const tndRows = tindakanItems.map(it => {
+      const subtotalText = it.subtotal !== null && it.subtotal !== undefined
+        ? `[Rp ${Number(it.subtotal).toLocaleString('id-ID')}]`
+        : '';
+      return `
+        <tr>
+          <td class="resep-col-name">
+            <span class="resep-bullet" style="color: #a855f7;">•</span> ${it.nama}
+          </td>
+          <td class="resep-col-qty">
+            <span class="resep-badge-qty" style="background: rgba(168, 85, 247, 0.12); color: #a855f7; border-color: rgba(168, 85, 247, 0.3); font-weight: 700;">${it.qty}x</span>
+          </td>
+          <td class="resep-col-price">
+            ${subtotalText}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    html += `
+      <div class="timeline-resep-title" style="color: #a855f7; font-weight: 700; margin-bottom: 4px;">
+        <span>💉 Tindakan Medis:</span>
+      </div>
+      <table class="timeline-resep-table" style="margin-bottom: 6px;">
+        <tbody>
+          ${tndRows}
+        </tbody>
+      </table>
+    `;
   }
 
-  // Render 3-column structured table
-  const rowsHTML = items.map(it => {
-    const subtotalText = it.subtotal !== null && it.subtotal !== undefined
-      ? `[Rp ${Number(it.subtotal).toLocaleString('id-ID')}]`
-      : '';
+  // 2. Render Resep Obat table
+  if (medItems.length > 0) {
+    const medRows = medItems.map(it => {
+      const subtotalText = it.subtotal !== null && it.subtotal !== undefined
+        ? `[Rp ${Number(it.subtotal).toLocaleString('id-ID')}]`
+        : '';
+      return `
+        <tr>
+          <td class="resep-col-name">
+            <span class="resep-bullet">•</span> ${it.nama}
+          </td>
+          <td class="resep-col-qty">
+            <span class="resep-badge-qty">No.${it.qty}</span>
+          </td>
+          <td class="resep-col-price">
+            ${subtotalText}
+          </td>
+        </tr>
+      `;
+    }).join('');
 
-    return `
-      <tr>
-        <td class="resep-col-name">
-          <span class="resep-bullet">•</span> ${it.nama}
-        </td>
-        <td class="resep-col-qty">
-          <span class="resep-badge-qty">No.${it.qty}</span>
-        </td>
-        <td class="resep-col-price">
-          ${subtotalText}
-        </td>
-      </tr>
-    `;
-  }).join('');
-
-  return `
-    <div class="timeline-resep-box">
-      <div class="timeline-resep-title">
+    html += `
+      <div class="timeline-resep-title" style="margin-top: ${tindakanItems.length > 0 ? '6px' : '0'};">
         <span>💊 Resep Obat:</span>
       </div>
       <table class="timeline-resep-table">
         <tbody>
-          ${rowsHTML}
+          ${medRows}
         </tbody>
       </table>
-      ${totalDisplay ? `
-        <div class="timeline-resep-total">
+    `;
+  }
+
+  // 3. Render Footer Summary
+  if (grandTotal > 0) {
+    let label = 'Total Biaya Tagihan:';
+    let subBreakdown = '';
+    if (tindakanItems.length > 0 && medItems.length > 0) {
+      subBreakdown = `<div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-align: right; width: 100%; margin-top: 2px;">(Obat: Rp ${totalBiayaObat.toLocaleString('id-ID')} | Tindakan: Rp ${totalBiayaTindakan.toLocaleString('id-ID')})</div>`;
+    } else if (tindakanItems.length > 0) {
+      label = 'Total Biaya Tindakan:';
+    } else {
+      label = 'Total Biaya Obat:';
+    }
+
+    html += `
+      <div class="timeline-resep-total" style="flex-direction: column; align-items: stretch; gap: 2px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <span class="timeline-resep-total-label">
-            <i class="fa-solid fa-receipt"></i> Total Biaya Obat:
+            <i class="fa-solid fa-receipt"></i> ${label}
           </span>
-          <span class="timeline-resep-total-val">${totalDisplay}</span>
+          <span class="timeline-resep-total-val">Rp ${grandTotal.toLocaleString('id-ID')}</span>
         </div>
-      ` : ''}
-    </div>
-  `;
+        ${subBreakdown}
+      </div>
+    `;
+  }
+
+  html += '</div>';
+  return html;
 }
 
 function formatPlanForDisplay(planStr) {
@@ -607,33 +668,52 @@ function renderObjektifBadges(objStr) {
 }
 
 // Navigation Wiring
-function initNavigation() {
-  const allNavTriggers = document.querySelectorAll('.nav-btn[data-target], .nav-dropdown-item[data-target]');
+function toggleNavMoreDropdown(e) {
+  if (e) e.stopPropagation();
+  const moreDropdown = document.getElementById('nav-dropdown-more');
+  if (moreDropdown) {
+    moreDropdown.classList.toggle('active');
+  }
+}
+
+function handleNavDropdownClick(targetId, el) {
   const mainNavBtns = document.querySelectorAll('.nav-btn[data-target]');
-  const dropdownItems = document.querySelectorAll('.nav-dropdown-item[data-target]');
+  const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+  const moreToggleBtn = document.getElementById('nav-more-toggle');
+  const moreDropdown = document.getElementById('nav-dropdown-more');
+
+  mainNavBtns.forEach(b => b.classList.remove('active'));
+  dropdownItems.forEach(b => b.classList.remove('active'));
+
+  if (el) el.classList.add('active');
+  if (moreToggleBtn) moreToggleBtn.classList.add('active');
+  if (moreDropdown) moreDropdown.classList.remove('active');
+
+  document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active'));
+  const targetView = document.getElementById(targetId);
+  if (targetView) targetView.classList.add('active');
+
+  if (targetId === 'view-obat-req') {
+    renderReqMedicineCatalog();
+  }
+}
+
+function initNavigation() {
+  const mainNavBtns = document.querySelectorAll('.nav-btn[data-target]');
   const moreDropdown = document.getElementById('nav-dropdown-more');
   const moreToggleBtn = document.getElementById('nav-more-toggle');
 
-  allNavTriggers.forEach(btn => {
+  mainNavBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-target');
 
-      // Reset active states
       mainNavBtns.forEach(b => b.classList.remove('active'));
-      dropdownItems.forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.nav-dropdown-item').forEach(b => b.classList.remove('active'));
       if (moreToggleBtn) moreToggleBtn.classList.remove('active');
-
-      if (btn.classList.contains('nav-dropdown-item')) {
-        btn.classList.add('active');
-        if (moreToggleBtn) moreToggleBtn.classList.add('active');
-      } else {
-        btn.classList.add('active');
-      }
-
-      // Hide dropdown after clicking an item
       if (moreDropdown) moreDropdown.classList.remove('active');
 
-      // Switch views
+      btn.classList.add('active');
+
       document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active'));
       const targetView = document.getElementById(targetId);
       if (targetView) targetView.classList.add('active');
@@ -644,20 +724,12 @@ function initNavigation() {
     });
   });
 
-  // Toggle Dropdown Button
-  if (moreToggleBtn && moreDropdown) {
-    moreToggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      moreDropdown.classList.toggle('active');
-    });
-
-    // Close on click outside
-    document.addEventListener('click', (e) => {
-      if (!moreDropdown.contains(e.target)) {
-        moreDropdown.classList.remove('active');
-      }
-    });
-  }
+  // Close on click outside
+  document.addEventListener('click', (e) => {
+    if (moreDropdown && !moreDropdown.contains(e.target)) {
+      moreDropdown.classList.remove('active');
+    }
+  });
 }
 
 // Mobile Back Button Protection & Navigation Trap
@@ -2313,6 +2385,131 @@ function addEditResepRow(medName = '', qty = 1) {
   calculateEditRowSubtotal(div);
 }
 
+function addEditTindakanRow(tindakanName = '', qty = 1) {
+  const container = document.getElementById('edit-container-tindakan');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'edit-tindakan-row';
+  div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;';
+
+  const tindakanList = appData.tindakan || [];
+  let initialTnd = null;
+  if (tindakanName) {
+    initialTnd = tindakanList.find(t => t.nama && t.nama.toLowerCase() === tindakanName.toLowerCase());
+  }
+
+  const defaultTarif = initialTnd ? (parseFloat(initialTnd.tarif) || 0) : 0;
+  div.dataset.unitTarif = defaultTarif;
+
+  div.innerHTML = `
+    <button type="button" class="btn btn-sm btn-secondary" onclick="addEditTindakanRow()" title="Tambah Tindakan Baru" style="flex-shrink: 0; width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: rgba(168, 85, 247, 0.1); color: #c084fc; border: 1.5px solid rgba(168, 85, 247, 0.3); border-radius: var(--r-md); font-weight: 700;">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+    <div style="flex: 2; display: flex; flex-direction: column;">
+      <div class="custom-searchable-wrap tnd-searchable-wrap">
+        <div class="searchable-input-box">
+          <input type="text" class="form-control tnd-search-input select-edit-tindakan" placeholder="🔍 Cari tindakan medis..." value="${initialTnd ? initialTnd.nama : tindakanName}" autocomplete="off">
+          <i class="fa-solid fa-chevron-down searchable-dropdown-arrow"></i>
+        </div>
+        <div class="searchable-dropdown-menu"></div>
+      </div>
+    </div>
+    <input type="number" class="form-control edit-tnd-qty" value="${qty}" min="1" step="1" placeholder="Qty" style="width: 70px; text-align: center; font-weight: 700; height: 38px; flex-shrink: 0;">
+    <div class="tnd-subtotal-badge" style="height: 38px; display: flex; align-items: center; justify-content: flex-end; width: 90px; font-weight: 700; flex-shrink: 0; color: #a855f7;">Rp 0</div>
+    <button type="button" class="btn btn-sm btn-danger" onclick="const p = this.closest('#edit-container-tindakan'); const row = this.closest('.edit-tindakan-row'); row.remove(); calculateEditResepGrandTotal();" title="Hapus" style="flex-shrink: 0; width: 38px; height: 38px; padding: 0; border-radius: var(--r-md); display: inline-flex; align-items: center; justify-content: center;"><i class="fa-solid fa-trash-can"></i></button>
+  `;
+
+  container.appendChild(div);
+
+  const wrap = div.querySelector('.tnd-searchable-wrap');
+  const input = div.querySelector('.tnd-search-input');
+  const menu = div.querySelector('.searchable-dropdown-menu');
+  const qtyInput = div.querySelector('.edit-tnd-qty');
+
+  function renderTndOptions(filterText = '') {
+    const cleanFilter = filterText.toLowerCase().trim();
+    const currentList = appData.tindakan || [];
+    const filtered = currentList.filter(t => 
+      !cleanFilter || 
+      (t.nama && t.nama.toLowerCase().includes(cleanFilter)) ||
+      (t.kategori && t.kategori.toLowerCase().includes(cleanFilter))
+    );
+
+    if (filtered.length === 0) {
+      menu.innerHTML = `<div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Tindakan tidak ditemukan (Bisa ketik manual)</div>`;
+      return;
+    }
+
+    menu.innerHTML = filtered.map(t => {
+      const tarifFormat = t.tarif ? `Rp ${parseFloat(t.tarif).toLocaleString('id-ID')}` : 'Rp 0';
+      return `
+        <div class="searchable-option-item ${t.nama.toLowerCase() === input.value.toLowerCase().trim() ? 'selected' : ''}" 
+             data-nama="${t.nama}" 
+             data-tarif="${t.tarif || 0}">
+          <div>
+            <strong>${t.nama}</strong>
+            <div class="option-sub">${t.kategori || 'Tindakan Medis'}</div>
+          </div>
+          <span class="price-tag">${tarifFormat}</span>
+        </div>
+      `;
+    }).join('');
+
+    menu.querySelectorAll('.searchable-option-item').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const nama = opt.getAttribute('data-nama');
+        const tarif = parseFloat(opt.getAttribute('data-tarif')) || 0;
+
+        input.value = nama;
+        div.dataset.unitTarif = tarif;
+        wrap.classList.remove('active');
+
+        calculateEditTindakanRowSubtotal(div);
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => {
+    document.querySelectorAll('.custom-searchable-wrap.active').forEach(w => {
+      if (w !== wrap) w.classList.remove('active');
+    });
+    renderTndOptions(input.value);
+    wrap.classList.add('active');
+  });
+
+  input.addEventListener('input', () => {
+    renderTndOptions(input.value);
+    wrap.classList.add('active');
+    const matched = (appData.tindakan || []).find(t => t.nama.toLowerCase() === input.value.toLowerCase().trim());
+    if (matched) {
+      div.dataset.unitTarif = parseFloat(matched.tarif) || 0;
+    }
+    calculateEditTindakanRowSubtotal(div);
+  });
+
+  qtyInput.addEventListener('input', () => calculateEditTindakanRowSubtotal(div));
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove('active');
+    }
+  });
+
+  calculateEditTindakanRowSubtotal(div);
+}
+
+function calculateEditTindakanRowSubtotal(rowEl) {
+  const tarif = parseFloat(rowEl.dataset.unitTarif) || 0;
+  const qtyEl = rowEl.querySelector('.edit-tnd-qty');
+  const qty = parseInt(qtyEl?.value) || 0;
+  const subtotal = tarif * qty;
+  const badge = rowEl.querySelector('.tnd-subtotal-badge');
+  if (badge) {
+    badge.textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
+  }
+  calculateEditResepGrandTotal();
+}
+
 function calculateEditRowSubtotal(rowEl) {
   const price = parseFloat(rowEl.dataset.unitPrice) || 0;
   const qtyEl = rowEl.querySelector('.edit-med-qty');
@@ -2326,25 +2523,39 @@ function calculateEditRowSubtotal(rowEl) {
 }
 
 function calculateEditResepGrandTotal() {
-  const rows = document.querySelectorAll('.edit-resep-row');
-  let grandTotal = 0;
-
-  rows.forEach(row => {
+  const resepRows = document.querySelectorAll('.edit-resep-row');
+  let grandTotalObat = 0;
+  resepRows.forEach(row => {
     const price = parseFloat(row.dataset.unitPrice) || 0;
     const qtyEl = row.querySelector('.edit-med-qty');
     const qty = qtyEl ? (parseInt(qtyEl.value) || 0) : 0;
-    grandTotal += (price * qty);
+    grandTotalObat += (price * qty);
   });
+
+  const tndRows = document.querySelectorAll('.edit-tindakan-row');
+  let grandTotalTindakan = 0;
+  tndRows.forEach(row => {
+    const tarif = parseFloat(row.dataset.unitTarif) || 0;
+    const qtyEl = row.querySelector('.edit-tnd-qty');
+    const qty = qtyEl ? (parseInt(qtyEl.value) || 0) : 0;
+    grandTotalTindakan += (tarif * qty);
+  });
+
+  const grandTotalAll = grandTotalObat + grandTotalTindakan;
 
   const grandTotalEl = document.getElementById('edit-resep-grand-total');
   if (grandTotalEl) {
-    grandTotalEl.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+    if (grandTotalObat > 0 && grandTotalTindakan > 0) {
+      grandTotalEl.innerHTML = `<strong>Rp ${grandTotalAll.toLocaleString('id-ID')}</strong> <span style="font-size: 0.78rem; font-weight: 500; opacity: 0.85;">(Obat: Rp ${grandTotalObat.toLocaleString('id-ID')} + Tindakan: Rp ${grandTotalTindakan.toLocaleString('id-ID')})</span>`;
+    } else {
+      grandTotalEl.textContent = `Rp ${grandTotalAll.toLocaleString('id-ID')}`;
+    }
   }
 
-  updateSisaSaldoEdit();
+  updateSisaSaldoEdit(grandTotalAll);
 }
 
-function updateSisaSaldoEdit() {
+function updateSisaSaldoEdit(overrideTotal) {
   const currentRecord = appData.records.find(r => r.id === document.getElementById('edit-record-id').value);
   if (!currentRecord) return;
   
@@ -2357,9 +2568,13 @@ function updateSisaSaldoEdit() {
   // Saldo sebelum transaksi ini dilakukan (dikembalikan dulu)
   const saldoSebelumTransaksi = currentSaldo + oldBiaya;
   
-  // Subtract the new calculated total
-  const grandTotalStr = document.getElementById('edit-resep-grand-total').textContent.replace(/[^0-9]/g, '');
-  const newBiaya = parseInt(grandTotalStr) || 0;
+  let newBiaya = 0;
+  if (typeof overrideTotal === 'number') {
+    newBiaya = overrideTotal;
+  } else {
+    const grandTotalStr = document.getElementById('edit-resep-grand-total').textContent.replace(/[^0-9]/g, '');
+    newBiaya = parseInt(grandTotalStr) || 0;
+  }
 
   const sisaSaldo = saldoSebelumTransaksi - newBiaya;
 
@@ -2426,6 +2641,15 @@ function openModalEditRecord(recordOrId) {
     addEditICD10Row();
   }
 
+  // Populate Tindakan Multi
+  const containerTindakan = document.getElementById('edit-container-tindakan');
+  if (containerTindakan) {
+    containerTindakan.innerHTML = '';
+    if (Array.isArray(record.tindakan) && record.tindakan.length > 0) {
+      record.tindakan.forEach(t => addEditTindakanRow(t.nama || t.namaTindakan, t.qty || 1));
+    }
+  }
+
   // Populate Resep Obat Multi
   const containerResep = document.getElementById('edit-container-resep');
   containerResep.innerHTML = '';
@@ -2463,6 +2687,26 @@ async function handleSaveEditRecord(e) {
   // Gather ICD-10 Diagnoses
   const icdSelects = document.querySelectorAll('.select-edit-icd10');
   const selectedICD = Array.from(icdSelects).map(s => s.value).filter(v => v !== '').join('; ');
+
+  // Gather Tindakan Medis
+  const tndRows = document.querySelectorAll('#edit-container-tindakan .edit-tindakan-row');
+  const tindakanList = [];
+  let grandTotalTindakan = 0;
+  tndRows.forEach(row => {
+    const tndName = (row.querySelector('.select-edit-tindakan')?.value || '').trim();
+    const qty = parseInt(row.querySelector('.edit-tnd-qty')?.value) || 1;
+    const unitTarif = parseFloat(row.dataset.unitTarif) || 0;
+    const subtotal = unitTarif * qty;
+    if (tndName) {
+      grandTotalTindakan += subtotal;
+      tindakanList.push({
+        nama: tndName,
+        qty,
+        tarif: unitTarif,
+        subtotal
+      });
+    }
+  });
 
   // Gather Resep Obat
   const resepRows = document.querySelectorAll('#edit-container-resep .edit-resep-row');
@@ -2506,8 +2750,7 @@ async function handleSaveEditRecord(e) {
     customCreatedAt = customDateObj.toISOString();
   }
 
-  const oldBiayaTindakan = currentRecord ? (parseInt(currentRecord.biayaTindakan) || 0) : 0;
-  const newBiaya = grandTotalObat + oldBiayaTindakan;
+  const totalBiayaAll = grandTotalObat + grandTotalTindakan;
 
   const updatedData = {
     tanggal: tanggalFormatted,
@@ -2515,11 +2758,12 @@ async function handleSaveEditRecord(e) {
     keluhan: document.getElementById('edit-keluhan').value,
     objektif: document.getElementById('edit-objektif').value,
     asesmen: selectedICD || 'Pemeriksaan Umum',
-    plan: planText || 'Edukasi Istirahat',
+    plan: planText || (tindakanList.length > 0 ? tindakanList.map(t => t.nama).join('; ') : 'Edukasi Istirahat'),
+    tindakan: tindakanList,
     resep: resepList,
     biayaObat: grandTotalObat,
-    biayaTindakan: oldBiayaTindakan,
-    totalBiaya: newBiaya,
+    biayaTindakan: grandTotalTindakan,
+    totalBiaya: totalBiayaAll,
     pemeriksa: document.getElementById('edit-pemeriksa').value,
     isPantauan: document.getElementById('edit-is-pantauan').checked,
     izinSakit: document.getElementById('edit-izin-sakit').checked

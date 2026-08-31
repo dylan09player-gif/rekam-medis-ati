@@ -137,23 +137,23 @@
 
       <!-- DROPDOWN MENU LAINNYA -->
       <div class="nav-dropdown" id="nav-dropdown-more">
-        <button type="button" class="nav-btn nav-dropdown-btn" id="nav-more-toggle" title="Menu Lainnya">
+        <button type="button" class="nav-btn nav-dropdown-btn" id="nav-more-toggle" onclick="toggleNavMoreDropdown(event)" title="Menu Lainnya">
           <i class="fa-solid fa-ellipsis"></i> LAINNYA <i class="fa-solid fa-chevron-down" style="font-size: 0.65rem; margin-left: 3px;"></i>
         </button>
         <div class="nav-dropdown-content" id="nav-more-content">
-          <button class="nav-dropdown-item" data-target="view-hse">
+          <button type="button" class="nav-dropdown-item" data-target="view-hse" onclick="handleNavDropdownClick('view-hse', this)">
             <i class="fa-solid fa-chart-pie" style="color: #c084fc;"></i> HSE
           </button>
-          <button class="nav-dropdown-item" data-target="view-obat-req">
+          <button type="button" class="nav-dropdown-item" data-target="view-obat-req" onclick="handleNavDropdownClick('view-obat-req', this)">
             <i class="fa-solid fa-capsules" style="color: #34d399;"></i> OBAT REQ
           </button>
-          <button class="nav-dropdown-item" data-target="view-shift">
+          <button type="button" class="nav-dropdown-item" data-target="view-shift" onclick="handleNavDropdownClick('view-shift', this)">
             <i class="fa-solid fa-paper-plane" style="color: #38bdf8;"></i> SHIFT
           </button>
-          <button class="nav-dropdown-item" data-target="view-manajemen">
+          <button type="button" class="nav-dropdown-item" data-target="view-manajemen" onclick="handleNavDropdownClick('view-manajemen', this)">
             <i class="fa-solid fa-sack-dollar" style="color: #fbbf24;"></i> MANAJEMEN
           </button>
-          <button class="nav-dropdown-item" data-target="view-gsheet">
+          <button type="button" class="nav-dropdown-item" data-target="view-gsheet" onclick="handleNavDropdownClick('view-gsheet', this)">
             <i class="fa-brands fa-google-drive" style="color: #60a5fa;"></i> G-SHEET SYNC
           </button>
         </div>
@@ -1504,19 +1504,44 @@ function setupTabDanHeader() {
 
         <!-- DIAGNOSIS (MULTI) -->
         <div class="form-group">
-          <label class="form-label" style="font-weight: 700; text-transform: uppercase;">DIAGNOSIS (MULTI)</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="font-weight: 700; text-transform: uppercase; margin-bottom: 0;">DIAGNOSIS (MULTI)</label>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addEditICD10Row()" style="font-size: 0.76rem; padding: 3px 8px; font-weight: 700;">
+              <i class="fa-solid fa-plus"></i> + Tambah Diagnosis
+            </button>
+          </div>
           <div id="edit-container-icd10" style="margin-bottom: 8px;"></div>
         </div>
 
+        <!-- TINDAKAN MEDIS & TARIF (KOREKSI OTOMATIS) -->
+        <div class="form-group" style="margin-top: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="font-weight: 700; text-transform: uppercase; color: #a855f7; margin-bottom: 0;">
+              💉 TINDAKAN MEDIS &amp; TARIF (OPSIONAL)
+            </label>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addEditTindakanRow()" style="font-size: 0.76rem; padding: 3px 8px; background: rgba(168, 85, 247, 0.1); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); font-weight: 700;">
+              <i class="fa-solid fa-plus"></i> + Tambah Tindakan
+            </button>
+          </div>
+          <div id="edit-container-tindakan" style="margin-bottom: 8px;"></div>
+        </div>
+
         <!-- OBAT (KOREKSI OTOMATIS) -->
-        <div class="form-group">
-          <label class="form-label" style="font-weight: 700; text-transform: uppercase; color: #38bdf8;">OBAT (KOREKSI OTOMATIS)</label>
+        <div class="form-group" style="margin-top: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 0;">
+              💊 OBAT (KOREKSI OTOMATIS)
+            </label>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addEditResepRow()" style="font-size: 0.76rem; padding: 3px 8px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700;">
+              <i class="fa-solid fa-plus"></i> + Tambah Obat
+            </button>
+          </div>
           <div id="edit-container-resep" style="margin-bottom: 8px;"></div>
           
           <div class="resep-total-summary-card" style="margin-top: 10px;">
             <div class="resep-total-info">
               <i class="fa-solid fa-calculator" style="color: var(--accent);"></i>
-              <span>Total Biaya Berobat / Obat:</span>
+              <span>Total Biaya Berobat (Obat + Tindakan):</span>
             </div>
             <div class="resep-total-amount" id="edit-resep-grand-total">Rp 0</div>
           </div>
