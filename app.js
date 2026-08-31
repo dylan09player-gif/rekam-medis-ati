@@ -2005,13 +2005,11 @@ function renderEditDataTable() {
       ? `<div style="margin-top: 3px;"><strong>💉 Tindakan:</strong> ${r.tindakan.map(t => `<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; font-size: 0.75rem; font-weight: 600; margin-right: 4px;"><i class="fa-solid fa-syringe"></i> ${t.nama} (${t.qty || 1}x) - Rp ${(t.subtotal || 0).toLocaleString('id-ID')}</span>`).join('')}</div>`
       : '';
 
-    const resepHTML = (Array.isArray(r.resep) && r.resep.length > 0)
-      ? `<div style="margin-top: 3px;"><strong>💊 Resep Obat:</strong><br>${r.resep.map(m => `• ${m.namaObat || m.obat} No.${m.qty || 1} <span style="color:#38bdf8; font-weight:600;">[Rp ${(m.subtotal || 0).toLocaleString('id-ID')}]</span>`).join('<br>')}</div>`
-      : (r.plan ? `<div style="margin-top: 3px;"><strong>P:</strong><br>${formatPlanForDisplay(r.plan)}</div>` : '');
+    const resepHTML = renderResepTimeline(r);
 
-    const biayaHTML = (r.totalBiaya && r.totalBiaya > 0)
-      ? `<div style="margin-top: 6px; padding: 4px 8px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #34d399; font-size: 0.82rem;">
-          <i class="fa-solid fa-receipt"></i> Total Tagihan: Rp ${Number(r.totalBiaya).toLocaleString('id-ID')}
+    const biayaHTML = (r.biayaTindakan && r.biayaTindakan > 0)
+      ? `<div style="margin-top: 6px; padding: 4px 8px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #10b981; font-size: 0.82rem;">
+          <i class="fa-solid fa-receipt"></i> Total Tagihan: Rp ${Number(r.totalBiaya || 0).toLocaleString('id-ID')}
          </div>`
       : '';
 
@@ -2037,7 +2035,7 @@ function renderEditDataTable() {
           ${r.objektif ? `<div style="margin-top: 2px;"><strong style="color: var(--text-color);">O (Fisik/Vital):</strong> <div style="display:inline-block;">${renderObjektifBadges(r.objektif)}</div></div>` : ''}
           <div style="display:flex; flex-direction:column; gap:3px; margin-top: 2px;"><strong style="color: var(--text-color);">A (Diagnosis):</strong> ${renderDiagnosisBadges(r.asesmen)}</div>
           ${tindakanHTML}
-          ${resepHTML}
+          <div style="margin-top: 4px;">${resepHTML}</div>
           ${biayaHTML}
         </div>
       </td>

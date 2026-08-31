@@ -71,6 +71,7 @@
   --text-primary:   var(--text-main);
   --text-secondary: var(--text-muted);
   --text-tertiary:  var(--text-faint);
+  --text-color:     var(--text-main);
   --panel-bg:       var(--surface-1);
   --glass-border:   var(--border-card);
   --border-color:   var(--border-card);
@@ -79,6 +80,7 @@
 
 /* --- LIGHT THEME (HIGH CONTRAST & CLEAN MEDICAL) --- */
 [data-theme="light"] {
+  --text-color:     #0f172a;
   --bg:             #f1f5f9;
   --bg-subtle:      #e2e8f0;
   --surface-1:      #ffffff;
