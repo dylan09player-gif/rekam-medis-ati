@@ -936,6 +936,135 @@ select.form-control {
   border-color: #bae6fd;
 }
 
+/* TIMELINE RESEP 3-KOLOM (LIGHT & DARK ADAPTIVE) */
+.timeline-resep-box {
+  margin-top: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-card);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  width: 100%;
+}
+
+[data-theme="light"] .timeline-resep-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.timeline-resep-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+[data-theme="dark"] .timeline-resep-title {
+  color: var(--primary-light);
+}
+
+.timeline-resep-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.timeline-resep-table tr {
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.timeline-resep-table tr:last-child {
+  border-bottom: none;
+}
+
+.resep-col-name {
+  padding: 6px 6px 6px 0;
+  color: var(--text-main);
+  font-weight: 600;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.resep-bullet {
+  color: var(--primary);
+  margin-right: 4px;
+  font-weight: bold;
+}
+
+[data-theme="dark"] .resep-bullet {
+  color: var(--primary-light);
+}
+
+.resep-col-qty {
+  padding: 6px 8px;
+  text-align: center;
+  width: 75px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.resep-badge-qty {
+  background: var(--surface-3);
+  color: var(--text-main);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid var(--border-card);
+  display: inline-block;
+}
+
+[data-theme="light"] .resep-badge-qty {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.resep-col-price {
+  padding: 6px 0 6px 8px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--primary);
+  width: 115px;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+
+[data-theme="dark"] .resep-col-price {
+  color: var(--primary-light);
+}
+
+.timeline-resep-total {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-card);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.83rem;
+}
+
+.timeline-resep-total-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.timeline-resep-total-val {
+  color: var(--primary);
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+[data-theme="dark"] .timeline-resep-total-val {
+  color: var(--primary-light);
+}
+
 .timeline-footer {
   display: flex;
   justify-content: space-between;

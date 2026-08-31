@@ -1032,14 +1032,42 @@ app.post('/api/medicines/transfer', (req, res) => {
     return res.status(400).json({ error: 'Tidak ada obat valid yang diperbarui' });
   }
 
+  // Save Surat Jalan to database
+  const noSurat = `SJ-${Date.now()}`;
+  const nowIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const newSuratJalan = {
+    id: 'SJ-' + Date.now(),
+    noSurat: noSurat,
+    tanggal: nowIndo,
+    created_at: new Date().toISOString(),
+    sender: sender || 'Apotek Nafila',
+    receiver: receiver || 'Perawat PT ATI',
+    items: items.map(item => {
+      const matched = db.medicines.find(m => m.id === item.id);
+      return {
+        id: item.id,
+        name: item.name || (matched ? matched.nama : 'Obat'),
+        qty: parseSafeInt(item.qty, 0),
+        initial: item.initial !== undefined ? parseSafeInt(item.initial, 0) : (matched ? matched.stok - parseSafeInt(item.qty, 0) : 0),
+        final: item.final !== undefined ? parseSafeInt(item.final, 0) : (matched ? matched.stok : 0),
+        satuan: item.satuan || (matched ? matched.satuan : 'strip')
+      };
+    })
+  };
+
+  if (!db.surat_jalan) db.surat_jalan = [];
+  db.surat_jalan.unshift(newSuratJalan);
+
   writeDB(db);
   autoPushMedicinesToGSheet(db);
+  notifyClients();
 
   // Kirim Audit Log ke Telegram Bot
   const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
   const telegramText = 
 `🚚 *[SURAT JALAN - PENGIRIMAN OBAT]* 🚚
 ━━━━━━━━━━━━━━━━━━━━
+📄 *No. Surat Jalan:* \`${noSurat}\`
 👤 *Pengirim (Apotek):* ${sender || '-'}
 👤 *Penerima (PT ATI):* ${receiver || '-'}
 ━━━━━━━━━━━━━━━━━━━━
@@ -1051,7 +1079,22 @@ ${auditLogs.join('\n')}
 
   sendTelegramNotif(telegramText);
 
-  res.json({ success: true, updated: updatedMedicines });
+  res.json({ success: true, updated: updatedMedicines, suratJalan: newSuratJalan });
+});
+
+// Endpoint Riwayat Surat Jalan
+app.get('/api/surat-jalan', (req, res) => {
+  const db = readDB();
+  const list = db.surat_jalan || [];
+  res.json(list);
+});
+
+app.delete('/api/surat-jalan/:id', (req, res) => {
+  const db = readDB();
+  if (!db.surat_jalan) return res.json({ success: true });
+  db.surat_jalan = db.surat_jalan.filter(s => s.id !== req.params.id);
+  writeDB(db);
+  res.json({ success: true });
 });
 
 // ============================================================
@@ -1302,32 +1345,56 @@ app.put('/api/records/:id', (req, res) => {
   const oldRecord = db.records[idx];
   const updatedData = req.body;
 
-  // Restore old medicine stock
-  if (Array.isArray(oldRecord.resep) && db.medicines) {
+  // 1. Restore old medicine stock
+  if (Array.isArray(oldRecord.resep) && oldRecord.resep.length > 0 && db.medicines) {
     oldRecord.resep.forEach(item => {
-      const namaObat = item.namaObat || item.obat || '';
+      const namaObat = (item.namaObat || item.obat || '').trim();
       const qty = parseInt(item.qty || item.jumlah) || 1;
       if (namaObat) {
-        const med = db.medicines.find(m => m.nama && m.nama.toLowerCase() === namaObat.toLowerCase());
-        if (med) med.stok = (med.stok || 0) + qty;
+        const cleanName = namaObat.toLowerCase();
+        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
+        if (med) {
+          med.stok = (parseInt(med.stok) || 0) + qty;
+        }
+      }
+    });
+  } else if (oldRecord.plan && db.medicines) {
+    // Fallback if old record had legacy plan text
+    let cleaned = String(oldRecord.plan).replace(/Resep:\s*/i, '').replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '').trim();
+    const planItems = cleaned.split(/[;,]/).map(p => p.trim()).filter(Boolean);
+    planItems.forEach(p => {
+      const match = p.match(/^(.+?)(?:\s+\d+x\d+)?\s+No\.(\d+)/i) || p.match(/^(.+?)(?:\s+(\d+))?$/);
+      const name = match ? match[1].replace(/\[.*?\]/g, '').trim() : p.replace(/\[.*?\]/g, '').trim();
+      const qty = match && match[2] ? parseInt(match[2]) : 1;
+      if (name) {
+        const cleanName = name.toLowerCase();
+        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
+        if (med) {
+          med.stok = (parseInt(med.stok) || 0) + qty;
+        }
       }
     });
   }
 
-  // Deduct new medicine stock
-  if (Array.isArray(updatedData.resep) && db.medicines) {
+  // 2. Deduct new medicine stock
+  if (Array.isArray(updatedData.resep) && updatedData.resep.length > 0 && db.medicines) {
     updatedData.resep.forEach(item => {
-      const namaObat = item.namaObat || item.obat || '';
+      const namaObat = (item.namaObat || item.obat || '').trim();
       const qty = parseInt(item.qty || item.jumlah) || 1;
       if (namaObat) {
-        const med = db.medicines.find(m => m.nama && m.nama.toLowerCase() === namaObat.toLowerCase());
-        if (med) med.stok = Math.max(0, (med.stok || 0) - qty);
+        const cleanName = namaObat.toLowerCase();
+        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
+        if (med) {
+          med.stok = Math.max(0, (parseInt(med.stok) || 0) - qty);
+        }
       }
     });
   }
 
   db.records[idx] = { ...oldRecord, ...updatedData };
   writeDB(db);
+  autoPushMedicinesToGSheet(db);
+  notifyClients();
   res.json(db.records[idx]);
 });
 
@@ -1348,10 +1415,11 @@ app.delete('/api/records/:id', (req, res) => {
   const restoredMeds = [];
   if (Array.isArray(oldRecord.resep) && oldRecord.resep.length > 0 && db.medicines) {
     oldRecord.resep.forEach(item => {
-      const namaObat = item.namaObat || item.obat || '';
+      const namaObat = (item.namaObat || item.obat || '').trim();
       const qty = parseInt(item.qty || item.jumlah) || 1;
       if (namaObat) {
-        const med = db.medicines.find(m => m.nama && m.nama.trim().toLowerCase() === namaObat.trim().toLowerCase());
+        const cleanName = namaObat.toLowerCase();
+        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
         if (med) {
           med.stok = (parseInt(med.stok) || 0) + qty;
           restoredMeds.push(`${med.nama} (+${qty} ${med.satuan || 'item'})`);
@@ -1359,13 +1427,15 @@ app.delete('/api/records/:id', (req, res) => {
       }
     });
   } else if (oldRecord.plan && db.medicines) {
-    const planItems = String(oldRecord.plan).split(';').map(p => p.trim()).filter(Boolean);
+    let cleaned = String(oldRecord.plan).replace(/Resep:\s*/i, '').replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '').trim();
+    const planItems = cleaned.split(/[;,]/).map(p => p.trim()).filter(Boolean);
     planItems.forEach(p => {
       const match = p.match(/^(.+?)(?:\s+\d+x\d+)?\s+No\.(\d+)/i) || p.match(/^(.+?)(?:\s+(\d+))?$/);
       const name = match ? match[1].replace(/\[.*?\]/g, '').trim() : p.replace(/\[.*?\]/g, '').trim();
       const qty = match && match[2] ? parseInt(match[2]) : 1;
       if (name) {
-        const med = db.medicines.find(m => m.nama && m.nama.trim().toLowerCase().includes(name.toLowerCase()));
+        const cleanName = name.toLowerCase();
+        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
         if (med) {
           med.stok = (parseInt(med.stok) || 0) + qty;
           restoredMeds.push(`${med.nama} (+${qty} ${med.satuan || 'item'})`);
@@ -1384,6 +1454,8 @@ app.delete('/api/records/:id', (req, res) => {
 
   // 4. Save to database
   writeDB(db);
+  autoPushMedicinesToGSheet(db);
+  notifyClients();
 
   // 5. Send Telegram Audit Notification
   const resepText = restoredMeds.length > 0

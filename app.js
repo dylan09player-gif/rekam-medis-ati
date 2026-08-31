@@ -6,6 +6,7 @@ let appData = {
   absenDokter: [],
   pantauan: [],
   tindakan: [],
+  suratJalan: [],
   users: [],
   currentUser: null,
   waContacts: [
@@ -14,16 +15,154 @@ let appData = {
   currentPoliPatient: null
 };
 
+function renderResepTimeline(r) {
+  if (!r) return '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+
+  const items = [];
+  let totalDisplay = '';
+
+  // 1. If r.resep is structured array
+  if (Array.isArray(r.resep) && r.resep.length > 0) {
+    r.resep.forEach(item => {
+      const nama = (item.namaObat || item.obat || '').trim();
+      const qty = parseInt(item.qty || item.jumlah) || 1;
+      let subtotal = item.subtotal;
+      
+      if (subtotal === undefined || subtotal === null || subtotal === 0) {
+        const med = (appData.medicines || []).find(m => m.nama && m.nama.trim().toLowerCase() === nama.toLowerCase());
+        if (med && med.harga) {
+          subtotal = (parseFloat(med.harga) || 0) * qty;
+        } else if (item.harga) {
+          subtotal = (parseFloat(item.harga) || 0) * qty;
+        }
+      }
+
+      if (nama) {
+        items.push({
+          nama,
+          qty,
+          subtotal: subtotal !== undefined && subtotal !== null ? subtotal : null
+        });
+      }
+    });
+  }
+
+  // 2. If items is still empty, parse r.plan
+  if (items.length === 0 && r.plan) {
+    let rawPlan = String(r.plan);
+    let totalMatch = rawPlan.match(/\[Total:\s*Rp\s*([^\]]+)\]/i);
+    if (totalMatch) {
+      totalDisplay = `Rp ${totalMatch[1]}`;
+    }
+
+    let cleanedPlan = rawPlan
+      .replace(/^Resep:\s*/i, '')
+      .replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '')
+      .trim();
+
+    const parts = cleanedPlan.includes(';') ? cleanedPlan.split(';') : cleanedPlan.split(',');
+    parts.map(p => p.trim()).filter(Boolean).forEach(p => {
+      let priceMatch = p.match(/\[Rp\s*([^\]]+)\]/i);
+      let parsedPrice = priceMatch ? parseInt(priceMatch[1].replace(/\./g, '')) : null;
+      let cleanText = p.replace(/\[.*?\]/g, '').trim();
+
+      const match = cleanText.match(/^(.+?)(?:\s+\d+x\d+)?\s+No\.?\s*(\d+)/i) || cleanText.match(/^(.+?)(?:\s+(\d+))?$/);
+      let nama = match ? match[1].replace(/^Resep:\s*/i, '').trim() : cleanText;
+      let qty = match && match[2] ? parseInt(match[2]) : 1;
+
+      if (!parsedPrice && nama) {
+        const med = (appData.medicines || []).find(m => m.nama && (m.nama.trim().toLowerCase() === nama.toLowerCase() || m.nama.trim().toLowerCase().includes(nama.toLowerCase())));
+        if (med && med.harga) {
+          parsedPrice = (parseFloat(med.harga) || 0) * qty;
+        }
+      }
+
+      if (nama && nama !== '-' && nama !== 'Edukasi Istirahat') {
+        items.push({
+          nama,
+          qty,
+          subtotal: parsedPrice
+        });
+      }
+    });
+  }
+
+  if (items.length === 0) {
+    if (r.plan && r.plan.trim() !== '-') {
+      return `<div class="timeline-medicines-list"><div class="med-pill-item">💊 ${r.plan}</div></div>`;
+    }
+    return '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+  }
+
+  // Calculate or resolve total
+  if (!totalDisplay) {
+    if (r.biayaObat && r.biayaObat > 0) {
+      totalDisplay = `Rp ${Number(r.biayaObat).toLocaleString('id-ID')}`;
+    } else if (r.totalBiaya && r.totalBiaya > 0) {
+      totalDisplay = `Rp ${Number(r.totalBiaya).toLocaleString('id-ID')}`;
+    } else {
+      const sum = items.reduce((acc, it) => acc + (it.subtotal || 0), 0);
+      if (sum > 0) {
+        totalDisplay = `Rp ${sum.toLocaleString('id-ID')}`;
+      }
+    }
+  }
+
+  // Render 3-column structured table
+  const rowsHTML = items.map(it => {
+    const subtotalText = it.subtotal !== null && it.subtotal !== undefined
+      ? `[Rp ${Number(it.subtotal).toLocaleString('id-ID')}]`
+      : '';
+
+    return `
+      <tr>
+        <td class="resep-col-name">
+          <span class="resep-bullet">•</span> ${it.nama}
+        </td>
+        <td class="resep-col-qty">
+          <span class="resep-badge-qty">No.${it.qty}</span>
+        </td>
+        <td class="resep-col-price">
+          ${subtotalText}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="timeline-resep-box">
+      <div class="timeline-resep-title">
+        <span>💊 Resep Obat:</span>
+      </div>
+      <table class="timeline-resep-table">
+        <tbody>
+          ${rowsHTML}
+        </tbody>
+      </table>
+      ${totalDisplay ? `
+        <div class="timeline-resep-total">
+          <span class="timeline-resep-total-label">
+            <i class="fa-solid fa-receipt"></i> Total Biaya Obat:
+          </span>
+          <span class="timeline-resep-total-val">${totalDisplay}</span>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
 function formatPlanForDisplay(planStr) {
   if (!planStr) return '-';
   let cleaned = String(planStr)
+    .replace(/^Resep:\s*/i, '')
     .replace(/\[Harga:\s*Rp\s*[^\]]+\]/gi, '')
     .replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '')
     .trim();
   
-  const items = cleaned.split(';').map(p => p.trim()).filter(p => p);
-  if (items.length === 0) return '-';
-  return items.map(p => '• ' + p).join('<br>');
+  const items = cleaned.includes(';') ? cleaned.split(';') : cleaned.split(',');
+  const validItems = items.map(p => p.trim()).filter(Boolean);
+  if (validItems.length === 0) return '-';
+  return validItems.map(p => '• ' + p).join('<br>');
 }
 
 function getStatusKelaikanBadges(r) {
@@ -320,7 +459,7 @@ async function loadAllAppData() {
       try { return await res.json(); } catch { return []; }
     };
 
-    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes] = await Promise.all([
+    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes, sjRes] = await Promise.all([
       fetch('/api/patients'),
       fetch('/api/records'),
       fetch('/api/medicines'),
@@ -328,7 +467,8 @@ async function loadAllAppData() {
       fetch('/api/absen-dokter'),
       fetch('/api/pantauan'),
       fetch('/api/users'),
-      fetch('/api/tindakan')
+      fetch('/api/tindakan'),
+      fetch('/api/surat-jalan')
     ]);
 
     appData.patients = await safeJson(patRes);
@@ -339,6 +479,7 @@ async function loadAllAppData() {
     appData.pantauan = await safeJson(panRes);
     appData.users = await safeJson(usrRes);
     appData.tindakan = await safeJson(tndRes);
+    appData.suratJalan = await safeJson(sjRes);
 
     // Load Settings (GSheet & No WA Apoteker)
     try {
@@ -379,6 +520,7 @@ async function loadAllAppData() {
     renderHSESurkesTable();
     renderMasterTindakanTable();
     renderUsersTable();
+    renderRiwayatSuratJalanTable();
     // renderBillingPTTable(); // Dihapus agar tidak langsung diload berat, menunggu user klik CARI
     renderAbsenDirekturTable();
     renderNakesSuggestions();
@@ -388,7 +530,7 @@ async function loadAllAppData() {
     renderReqMedicineCatalog();
     autoFillPemeriksa();
 
-    console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}, Tindakan: ${appData.tindakan.length}, Users: ${appData.users.length}`);
+    console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}, Tindakan: ${appData.tindakan.length}, Users: ${appData.users.length}, SJ: ${appData.suratJalan.length}`);
 
   } catch (err) {
     console.error('Error loading app data:', err);
@@ -1259,29 +1401,7 @@ function renderPatientHistoryTimeline(patient) {
     }
 
     // Format Resep Obat (P)
-    let planHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
-    if (r.plan) {
-      // Extract Total from string if present, e.g. [Total: Rp 28.860]
-      let totalMatch = String(r.plan).match(/\[Total:\s*Rp\s*([^\]]+)\]/i);
-      let totalDisplay = totalMatch ? `Rp ${totalMatch[1]}` : (r.totalBiaya && r.totalBiaya > 0 ? `Rp ${r.totalBiaya.toLocaleString('id-ID')}` : '');
-
-      // Clean plan items so none of them have [Total: ...] attached
-      let cleanedPlan = String(r.plan).replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '').trim();
-      const planItems = cleanedPlan.split(';').map(p => p.trim()).filter(p => p);
-
-      if (planItems.length > 0) {
-        planHTML = `<div class="timeline-medicines-list">` +
-          planItems.map(p => `<div class="med-pill-item">💊 ${p}</div>`).join('') +
-          (totalDisplay ? `
-            <div class="timeline-total-cost-row">
-              <span style="color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
-                <i class="fa-solid fa-receipt" style="color: var(--primary);"></i> Total Biaya Obat:
-              </span>
-              <span style="color: #38bdf8; font-weight: 800; font-size: 0.84rem;">${totalDisplay}</span>
-            </div>` : '') +
-          `</div>`;
-      }
-    }
+    let planHTML = renderResepTimeline(r);
 
     return `
       <div class="timeline-item">
@@ -1315,7 +1435,7 @@ function renderPatientHistoryTimeline(patient) {
 
         <div class="timeline-section-row">
           <span class="timeline-label-chip chip-p">P</span>
-          ${planHTML}
+          <div style="flex:1;">${planHTML}</div>
         </div>
 
         <div class="timeline-footer">
@@ -1369,24 +1489,7 @@ function openModalRiwayatPasien(identifier) {
       diagHTML = renderDiagnosisBadges(r.asesmen);
     }
 
-    let planHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
-    if (r.plan) {
-      let totalMatch = String(r.plan).match(/\[Total:\s*Rp\s*([^\]]+)\]/i);
-      let totalDisplay = totalMatch ? `Rp ${totalMatch[1]}` : (r.totalBiaya && r.totalBiaya > 0 ? `Rp ${r.totalBiaya.toLocaleString('id-ID')}` : '');
-      let cleanedPlan = String(r.plan).replace(/\[Total:\s*Rp\s*[^\]]+\]/gi, '').trim();
-      const planItems = cleanedPlan.split(';').map(p => p.trim()).filter(p => p);
-      if (planItems.length > 0) {
-        planHTML = `<div class="timeline-medicines-list">` +
-          planItems.map(p => `<div class="med-pill-item">💊 ${p}</div>`).join('') +
-          (totalDisplay ? `
-            <div class="timeline-total-cost-row">
-              <span style="color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
-                <i class="fa-solid fa-receipt" style="color: var(--primary);"></i> Total Biaya Obat:
-              </span>
-              <span style="color: #38bdf8; font-weight: 800; font-size: 0.84rem;">${totalDisplay}</span>
-            </div>` : '') + `</div>`;
-      }
-    }
+    let planHTML = renderResepTimeline(r);
 
     return `
       <div class="timeline-item">
@@ -2279,11 +2382,22 @@ async function handleSaveEditRecord(e) {
   // Gather Resep Obat
   const resepRows = document.querySelectorAll('#edit-container-resep .edit-resep-row');
   const resepList = [];
+  let grandTotalObat = 0;
   resepRows.forEach(row => {
-    const medSel = row.querySelector('.select-edit-medicine').value;
-    const qty = parseInt(row.querySelector('.edit-med-qty').value) || 1;
+    const medSel = (row.querySelector('.select-edit-medicine')?.value || '').trim();
+    const qty = parseInt(row.querySelector('.edit-med-qty')?.value) || 1;
+    const unitPrice = parseFloat(row.dataset.unitPrice) || 0;
+    const subtotal = unitPrice * qty;
     if (medSel) {
-      resepList.push({ namaObat: medSel, dosage: '3x1', qty, aturan: 'sesudah makan' });
+      grandTotalObat += subtotal;
+      resepList.push({
+        namaObat: medSel,
+        dosage: '3x1',
+        qty,
+        aturan: 'sesudah makan',
+        harga: unitPrice,
+        subtotal
+      });
     }
   });
 
@@ -2293,18 +2407,22 @@ async function handleSaveEditRecord(e) {
   const selectedDateVal = document.getElementById('edit-tanggal').value;
   let tanggalFormatted = '';
   let customCreatedAt = '';
+  const currentRecord = appData.records.find(r => r.id === id);
+
   if (selectedDateVal) {
     const [yr, mo, dy] = selectedDateVal.split('-');
     tanggalFormatted = `${parseInt(dy)}/${parseInt(mo)}/${yr}`;
     
-    const record = appData.records.find(r => r.id === id);
     let originalTime = new Date();
-    if (record && record.created_at) {
-      originalTime = new Date(record.created_at);
+    if (currentRecord && currentRecord.created_at) {
+      originalTime = new Date(currentRecord.created_at);
     }
     const customDateObj = new Date(yr, mo - 1, dy, originalTime.getHours(), originalTime.getMinutes(), originalTime.getSeconds(), originalTime.getMilliseconds());
     customCreatedAt = customDateObj.toISOString();
   }
+
+  const oldBiayaTindakan = currentRecord ? (parseInt(currentRecord.biayaTindakan) || 0) : 0;
+  const newBiaya = grandTotalObat + oldBiayaTindakan;
 
   const updatedData = {
     tanggal: tanggalFormatted,
@@ -2314,6 +2432,9 @@ async function handleSaveEditRecord(e) {
     asesmen: selectedICD || 'Pemeriksaan Umum',
     plan: planText || 'Edukasi Istirahat',
     resep: resepList,
+    biayaObat: grandTotalObat,
+    biayaTindakan: oldBiayaTindakan,
+    totalBiaya: newBiaya,
     pemeriksa: document.getElementById('edit-pemeriksa').value,
     isPantauan: document.getElementById('edit-is-pantauan').checked,
     izinSakit: document.getElementById('edit-izin-sakit').checked
@@ -2350,11 +2471,6 @@ async function handleSaveEditRecord(e) {
       showToast('Gagal mengunggah foto', 'error');
     }
   }
-
-  // Update totalBiaya
-  const grandTotalStr = document.getElementById('edit-resep-grand-total')?.textContent.replace(/[^0-9]/g, '') || '0';
-  const newBiaya = parseInt(grandTotalStr) || 0;
-  updatedData.totalBiaya = newBiaya;
 
   try {
     const currentRecord = appData.records.find(r => r.id === id);
@@ -2606,20 +2722,24 @@ function switchGudangSubTab(type) {
   const vList = document.getElementById('gudang-view-list');
   const vOpname = document.getElementById('gudang-view-opname');
   const vPengiriman = document.getElementById('gudang-view-pengiriman');
+  const vRiwayatSJ = document.getElementById('gudang-view-riwayat-sj');
 
   const bList = document.getElementById('gudang-subtab-list');
   const bOpname = document.getElementById('gudang-subtab-opname');
   const bPengiriman = document.getElementById('gudang-subtab-pengiriman');
+  const bRiwayatSJ = document.getElementById('gudang-subtab-riwayat-sj');
 
   // Hide all views
   if (vList) vList.style.display = 'none';
   if (vOpname) vOpname.style.display = 'none';
   if (vPengiriman) vPengiriman.style.display = 'none';
+  if (vRiwayatSJ) vRiwayatSJ.style.display = 'none';
 
   // Reset active classes
   if (bList) { bList.className = 'btn btn-secondary'; bList.style.background = ''; }
   if (bOpname) { bOpname.className = 'btn btn-secondary'; bOpname.style.background = ''; bOpname.style.color = ''; }
   if (bPengiriman) { bPengiriman.className = 'btn btn-secondary'; bPengiriman.style.background = ''; bPengiriman.style.color = ''; }
+  if (bRiwayatSJ) { bRiwayatSJ.className = 'btn btn-secondary'; bRiwayatSJ.style.background = ''; bRiwayatSJ.style.color = ''; }
 
   if (type === 'opname') {
     if (vOpname) vOpname.style.display = 'block';
@@ -2629,6 +2749,10 @@ function switchGudangSubTab(type) {
     if (vPengiriman) vPengiriman.style.display = 'block';
     if (bPengiriman) { bPengiriman.className = 'btn btn-primary'; bPengiriman.style.background = '#ec4899'; bPengiriman.style.color = '#fff'; bPengiriman.style.border = 'none'; }
     initShipmentView();
+  } else if (type === 'riwayat-sj') {
+    if (vRiwayatSJ) vRiwayatSJ.style.display = 'block';
+    if (bRiwayatSJ) { bRiwayatSJ.className = 'btn btn-primary'; bRiwayatSJ.style.background = '#8b5cf6'; bRiwayatSJ.style.color = '#fff'; bRiwayatSJ.style.border = 'none'; }
+    loadRiwayatSuratJalan();
   } else {
     if (vList) vList.style.display = 'block';
     if (bList) bList.className = 'btn btn-primary';
@@ -2858,7 +2982,14 @@ async function processShipmentAndPrint() {
       body: JSON.stringify({
         sender: sender,
         receiver: receiver,
-        items: shipmentDraft.map(item => ({ id: item.id, qty: item.qty }))
+        items: shipmentDraft.map(item => ({
+          id: item.id,
+          name: item.name,
+          qty: item.qty,
+          initial: item.initial,
+          final: item.final,
+          satuan: item.satuan
+        }))
       })
     });
 
@@ -2867,7 +2998,7 @@ async function processShipmentAndPrint() {
       showToast('✅ Pengiriman Obat berhasil dikonfirmasi!', 'success');
 
       // Print Delivery Order / Surat Jalan
-      printSuratJalanPDF(sender, receiver, shipmentDraft);
+      printSuratJalanPDF(sender, receiver, shipmentDraft, data.suratJalan?.noSurat, data.suratJalan?.tanggal);
 
       // Reload and re-render
       await loadAllAppData();
@@ -2883,17 +3014,17 @@ async function processShipmentAndPrint() {
   }
 }
 
-function printSuratJalanPDF(sender, receiver, items) {
-  const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const noSurat = `SJ-${Date.now()}`;
+function printSuratJalanPDF(sender, receiver, items, customNoSurat, customTgl) {
+  const tglIndo = customTgl || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const noSurat = customNoSurat || `SJ-${Date.now()}`;
 
-  const rowsHTML = items.map((item, idx) => `
+  const rowsHTML = (items || []).map((item, idx) => `
     <tr>
       <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold;">${idx + 1}</td>
-      <td style="border: 1px solid #000; padding: 6px; text-transform: uppercase; font-weight: 600;">${item.name}</td>
-      <td style="text-align: center; border: 1px solid #000; padding: 6px;">${item.initial} ${item.satuan}</td>
-      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold; font-size: 11pt;">${item.qty} ${item.satuan}</td>
-      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold; color: green; font-size: 11pt;">${item.final} ${item.satuan}</td>
+      <td style="border: 1px solid #000; padding: 6px; text-transform: uppercase; font-weight: 600;">${item.name || item.nama || 'Obat'}</td>
+      <td style="text-align: center; border: 1px solid #000; padding: 6px;">${item.initial !== undefined ? item.initial : '-'} ${item.satuan || ''}</td>
+      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold; font-size: 11pt;">${item.qty || 0} ${item.satuan || ''}</td>
+      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold; color: green; font-size: 11pt;">${item.final !== undefined ? item.final : '-'} ${item.satuan || ''}</td>
     </tr>
   `).join('');
 
@@ -3035,6 +3166,93 @@ function printSuratJalanPDF(sender, receiver, items) {
     </html>
   `);
   win.document.close();
+}
+
+async function loadRiwayatSuratJalan() {
+  try {
+    const res = await fetch('/api/surat-jalan');
+    if (res.ok) {
+      appData.suratJalan = await res.json();
+    }
+  } catch (e) {
+    console.error('Failed to load riwayat surat jalan:', e);
+  }
+  renderRiwayatSuratJalanTable();
+}
+
+function renderRiwayatSuratJalanTable(list = null) {
+  const tbody = document.getElementById('table-riwayat-sj-body');
+  if (!tbody) return;
+
+  const dataList = list || appData.suratJalan || [];
+  if (dataList.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
+          <i class="fa-solid fa-folder-open" style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;"></i>
+          <p style="font-weight: 700; margin-bottom: 2px;">Belum Ada Riwayat Surat Jalan</p>
+          <small style="color: var(--text-faint);">Surat jalan yang dikonfirmasi saat pengiriman obat akan otomatis tercatat di sini.</small>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = dataList.map((sj, idx) => {
+    const itemsSummary = (sj.items || []).map(item => 
+      `<span style="display: inline-block; background: rgba(139, 92, 246, 0.12); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 0.76rem; font-weight: 600; margin: 2px;">${item.name || item.nama} <b>(+${item.qty} ${item.satuan || ''})</b></span>`
+    ).join(' ');
+
+    const timeStr = sj.created_at ? new Date(sj.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+    const dateFormatted = `${sj.tanggal || '-'} ${timeStr ? `<small style="color: var(--text-muted);">(${timeStr} WIB)</small>` : ''}`;
+
+    return `
+      <tr>
+        <td style="text-align: center; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>
+        <td style="font-weight: 700; color: #c084fc; font-family: monospace; font-size: 0.9rem;">
+          <i class="fa-solid fa-receipt"></i> ${sj.noSurat || sj.id || '-'}
+        </td>
+        <td style="font-size: 0.85rem; font-weight: 600;">${dateFormatted}</td>
+        <td style="font-weight: 600; color: var(--text-main);"><i class="fa-solid fa-user-tag" style="color:#ec4899;"></i> ${sj.sender || '-'}</td>
+        <td style="font-weight: 600; color: var(--text-main);"><i class="fa-solid fa-user-nurse" style="color:#38bdf8;"></i> ${sj.receiver || '-'}</td>
+        <td style="max-width: 320px; line-height: 1.4;">${itemsSummary || '-'}</td>
+        <td style="text-align: center;">
+          <button class="btn btn-primary btn-sm" onclick="reprintSuratJalanById('${sj.id}')" title="Cetak Ulang Surat Jalan" style="background: #8b5cf6; border: none; font-weight: 700; padding: 5px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-print"></i> Cetak Ulang
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterRiwayatSuratJalanTable() {
+  const query = (document.getElementById('search-riwayat-sj')?.value || '').toLowerCase().trim();
+  if (!query) {
+    renderRiwayatSuratJalanTable();
+    return;
+  }
+
+  const filtered = (appData.suratJalan || []).filter(sj => {
+    const noSJ = String(sj.noSurat || sj.id || '').toLowerCase();
+    const sender = String(sj.sender || '').toLowerCase();
+    const receiver = String(sj.receiver || '').toLowerCase();
+    const tanggal = String(sj.tanggal || '').toLowerCase();
+    const itemMatch = (sj.items || []).some(it => String(it.name || it.nama || '').toLowerCase().includes(query));
+
+    return noSJ.includes(query) || sender.includes(query) || receiver.includes(query) || tanggal.includes(query) || itemMatch;
+  });
+
+  renderRiwayatSuratJalanTable(filtered);
+}
+
+function reprintSuratJalanById(id) {
+  const sj = (appData.suratJalan || []).find(s => s.id === id || s.noSurat === id);
+  if (!sj) {
+    showToast('Data surat jalan tidak ditemukan', 'error');
+    return;
+  }
+  printSuratJalanPDF(sj.sender, sj.receiver, sj.items, sj.noSurat, sj.tanggal);
 }
 
 function renderStokOpnameTable() {

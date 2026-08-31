@@ -562,6 +562,9 @@
             <button class="btn btn-secondary" id="gudang-subtab-pengiriman" onclick="switchGudangSubTab('pengiriman')" style="background: #ec4899; color: #fff; border: none; font-weight: 700;">
               <i class="fa-solid fa-truck-ramp-box"></i> Pengiriman Obat &amp; Surat Jalan
             </button>
+            <button class="btn btn-secondary" id="gudang-subtab-riwayat-sj" onclick="switchGudangSubTab('riwayat-sj')" style="background: #8b5cf6; color: #fff; border: none; font-weight: 700;">
+              <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Surat Jalan
+            </button>
           </div>
 
           <!-- VIEW 1: DATA OBAT LENGKAP -->
@@ -701,6 +704,41 @@
                   <i class="fa-solid fa-truck-fast"></i> 🚚 KONFIRMASI &amp; CETAK SURAT JALAN PDF
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- VIEW 4: RIWAYAT SURAT JALAN -->
+          <div id="gudang-view-riwayat-sj" style="display: none;">
+            <div class="info-banner" style="margin-bottom: 16px; background: rgba(139, 92, 246, 0.1); border: 1.5px solid rgba(139, 92, 246, 0.35); color: #c084fc; padding: 12px; border-radius: 6px; font-size: 0.9rem; font-weight: 600;">
+              ℹ️ Riwayat seluruh surat jalan pengiriman obat yang pernah dibuat. Klik <strong>"🖨️ Cetak Ulang"</strong> untuk mencetak kembali dokumen Surat Jalan kapan saja.
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+              <div style="flex: 1; min-width: 250px; max-width: 450px;">
+                <input type="text" id="search-riwayat-sj" class="form-control" placeholder="🔍 Cari No. SJ / Pengirim / Penerima / Nama Obat..." oninput="filterRiwayatSuratJalanTable()" style="font-weight: 600;">
+              </div>
+              <button class="btn btn-secondary" onclick="loadRiwayatSuratJalan()" style="font-weight: 700;">
+                <i class="fa-solid fa-rotate"></i> Refresh Riwayat
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="custom-table" id="tbl-riwayat-sj">
+                <thead>
+                  <tr>
+                    <th style="width: 50px; text-align: center;">NO</th>
+                    <th>NO. SURAT JALAN</th>
+                    <th>TANGGAL &amp; WAKTU</th>
+                    <th>PENGIRIM (APOTEK)</th>
+                    <th>PENERIMA (PT ATI)</th>
+                    <th>RINCIAN OBAT TERKIRIM</th>
+                    <th style="text-align: center; width: 140px;">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody id="table-riwayat-sj-body">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
             </div>
           </div>
 
