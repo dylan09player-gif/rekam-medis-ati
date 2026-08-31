@@ -131,24 +131,33 @@
       <button class="nav-btn" data-target="view-karyawan">
         <i class="fa-solid fa-id-card"></i> KARYAWAN
       </button>
-      <button class="nav-btn" data-target="view-hse">
-        <i class="fa-solid fa-chart-pie"></i> HSE
-      </button>
-      <button class="nav-btn" data-target="view-obat-req">
-        <i class="fa-solid fa-capsules"></i> OBAT REQ
-      </button>
       <button class="nav-btn" data-target="view-gudang">
         <i class="fa-solid fa-boxes-stacked"></i> GUDANG
       </button>
-      <button class="nav-btn" data-target="view-shift">
-        <i class="fa-solid fa-paper-plane"></i> SHIFT
-      </button>
-      <button class="nav-btn" data-target="view-manajemen">
-        <i class="fa-solid fa-sack-dollar"></i> MANAJEMEN
-      </button>
-      <button class="nav-btn" data-target="view-gsheet">
-        <i class="fa-brands fa-google-drive"></i> G-SHEET SYNC
-      </button>
+
+      <!-- DROPDOWN MENU LAINNYA -->
+      <div class="nav-dropdown" id="nav-dropdown-more">
+        <button type="button" class="nav-btn nav-dropdown-btn" id="nav-more-toggle" title="Menu Lainnya">
+          <i class="fa-solid fa-ellipsis"></i> LAINNYA <i class="fa-solid fa-chevron-down" style="font-size: 0.65rem; margin-left: 3px;"></i>
+        </button>
+        <div class="nav-dropdown-content" id="nav-more-content">
+          <button class="nav-dropdown-item" data-target="view-hse">
+            <i class="fa-solid fa-chart-pie" style="color: #c084fc;"></i> HSE
+          </button>
+          <button class="nav-dropdown-item" data-target="view-obat-req">
+            <i class="fa-solid fa-capsules" style="color: #34d399;"></i> OBAT REQ
+          </button>
+          <button class="nav-dropdown-item" data-target="view-shift">
+            <i class="fa-solid fa-paper-plane" style="color: #38bdf8;"></i> SHIFT
+          </button>
+          <button class="nav-dropdown-item" data-target="view-manajemen">
+            <i class="fa-solid fa-sack-dollar" style="color: #fbbf24;"></i> MANAJEMEN
+          </button>
+          <button class="nav-dropdown-item" data-target="view-gsheet">
+            <i class="fa-brands fa-google-drive" style="color: #60a5fa;"></i> G-SHEET SYNC
+          </button>
+        </div>
+      </div>
     </nav>
 
     <div class="app-navbar-actions" style="display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: auto;">
@@ -306,16 +315,16 @@
               </div>
 
               <!-- 4. TINDAKAN MEDIS & TARIF (Plan - P1) -->
-              <div class="form-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+              <div class="form-group" id="group-poli-tindakan">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                   <label class="form-label marunda-section-label" style="margin-bottom: 0;">
-                    <span class="soap-chip soap-chip-p">P</span> 4. TINDAKAN MEDIS &amp; TARIF
+                    <span class="soap-chip soap-chip-p">P</span> 4. TINDAKAN MEDIS &amp; TARIF <small style="font-weight: normal; color: var(--text-muted); font-size: 0.76rem;">(Opsional - Muncul jika ada tindakan)</small>
                   </label>
-                  <button type="button" class="btn btn-sm btn-secondary" onclick="addPoliTindakanRow()" style="font-size: 0.76rem; padding: 4px 10px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="addPoliTindakanRow()" style="font-size: 0.76rem; padding: 4px 10px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700;">
                     <i class="fa-solid fa-plus"></i> + Tambah Tindakan
                   </button>
                 </div>
-                <table class="resep-table">
+                <table class="resep-table" id="tbl-poli-tindakan" style="display: none;">
                   <thead>
                     <tr>
                       <th style="width: 56%;">Jenis Tindakan &amp; Tarif</th>

@@ -65,9 +65,10 @@ function readDB() {
 let sseClients = [];
 
 function notifyClients() {
+  const payload = `data: update\n\n`;
   sseClients = sseClients.filter(client => {
     try {
-      client.res.write(`data: update\n\n`);
+      client.res.write(payload);
       return true;
     } catch (e) {
       return false;
@@ -86,14 +87,26 @@ function writeDB(data) {
 
 app.get('/api/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
+
+  res.write(`data: connected\n\n`);
   
-  const client = { id: Date.now(), res };
+  const client = { id: Date.now() + Math.random(), res };
   sseClients.push(client);
+
+  const pingInterval = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch (e) {
+      clearInterval(pingInterval);
+    }
+  }, 15000);
   
   req.on('close', () => {
+    clearInterval(pingInterval);
     sseClients = sseClients.filter(c => c.id !== client.id);
   });
 });

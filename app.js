@@ -251,21 +251,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // SSE Initialization for Live Updates
 let sseTimeout = null;
+let sseInstance = null;
+let sseReconnectTimer = null;
+
 function initSSE() {
-  const eventSource = new EventSource('/api/events');
-  eventSource.onmessage = function(event) {
-    if (event.data === 'update') {
-      if (sseTimeout) clearTimeout(sseTimeout);
-      sseTimeout = setTimeout(() => {
-        console.log('Live update received, reloading data...');
-        loadAllAppData();
-      }, 500);
-    }
-  };
-  eventSource.onerror = function() {
-    console.error('SSE connection error, retrying...');
-  };
+  if (sseInstance) {
+    try { sseInstance.close(); } catch (e) {}
+  }
+
+  try {
+    sseInstance = new EventSource('/api/events');
+
+    sseInstance.onopen = function () {
+      console.log('⚡ Real-time SSE sync connected');
+    };
+
+    sseInstance.onmessage = function (event) {
+      if (event.data === 'update') {
+        if (sseTimeout) clearTimeout(sseTimeout);
+        sseTimeout = setTimeout(() => {
+          console.log('⚡ Real-time data update received, syncing dashboard...');
+          loadAllAppData();
+        }, 300);
+      }
+    };
+
+    sseInstance.onerror = function () {
+      try { sseInstance.close(); } catch (e) {}
+      if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
+      sseReconnectTimer = setTimeout(initSSE, 5000);
+    };
+  } catch (err) {
+    console.error('SSE initialization error:', err);
+  }
 }
+
+// Background Auto-Sync Fallback & Tab Visibility Sync
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    loadAllAppData();
+  }
+}, 12000);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    loadAllAppData();
+  }
+});
 
 // Theme Management
 function initTheme() {
@@ -530,6 +562,20 @@ async function loadAllAppData() {
     renderReqMedicineCatalog();
     autoFillPemeriksa();
 
+    // Auto-refresh active patient timeline in Poli if currently opened
+    if (appData.currentPoliPatient) {
+      const p = appData.currentPoliPatient;
+      const refPatient = (appData.patients || []).find(pt => 
+        (pt.id && pt.id === p.id) ||
+        (pt.nikPabrik && pt.nikPabrik === p.nikPabrik) ||
+        (pt.nik && pt.nik === p.nik)
+      );
+      if (refPatient) {
+        appData.currentPoliPatient = refPatient;
+      }
+      renderPatientHistoryTimeline(appData.currentPoliPatient);
+    }
+
     console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}, Tindakan: ${appData.tindakan.length}, Users: ${appData.users.length}, SJ: ${appData.suratJalan.length}`);
 
   } catch (err) {
@@ -562,14 +608,32 @@ function renderObjektifBadges(objStr) {
 
 // Navigation Wiring
 function initNavigation() {
-  const navBtns = document.querySelectorAll('.nav-btn[data-target]');
-  navBtns.forEach(btn => {
+  const allNavTriggers = document.querySelectorAll('.nav-btn[data-target], .nav-dropdown-item[data-target]');
+  const mainNavBtns = document.querySelectorAll('.nav-btn[data-target]');
+  const dropdownItems = document.querySelectorAll('.nav-dropdown-item[data-target]');
+  const moreDropdown = document.getElementById('nav-dropdown-more');
+  const moreToggleBtn = document.getElementById('nav-more-toggle');
+
+  allNavTriggers.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-target');
-      
-      navBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
 
+      // Reset active states
+      mainNavBtns.forEach(b => b.classList.remove('active'));
+      dropdownItems.forEach(b => b.classList.remove('active'));
+      if (moreToggleBtn) moreToggleBtn.classList.remove('active');
+
+      if (btn.classList.contains('nav-dropdown-item')) {
+        btn.classList.add('active');
+        if (moreToggleBtn) moreToggleBtn.classList.add('active');
+      } else {
+        btn.classList.add('active');
+      }
+
+      // Hide dropdown after clicking an item
+      if (moreDropdown) moreDropdown.classList.remove('active');
+
+      // Switch views
       document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active'));
       const targetView = document.getElementById(targetId);
       if (targetView) targetView.classList.add('active');
@@ -579,6 +643,21 @@ function initNavigation() {
       }
     });
   });
+
+  // Toggle Dropdown Button
+  if (moreToggleBtn && moreDropdown) {
+    moreToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moreDropdown.classList.toggle('active');
+    });
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+      if (!moreDropdown.contains(e.target)) {
+        moreDropdown.classList.remove('active');
+      }
+    });
+  }
 }
 
 // Mobile Back Button Protection & Navigation Trap
@@ -784,9 +863,12 @@ function initPoliForm() {
   }
 
   const tindakanBody = document.getElementById('poli-tindakan-body');
+  const tblTindakan = document.getElementById('tbl-poli-tindakan');
   if (tindakanBody) {
     tindakanBody.innerHTML = '';
-    addPoliTindakanRow();
+  }
+  if (tblTindakan) {
+    tblTindakan.style.display = 'none';
   }
 
   const resepBody = document.getElementById('poli-resep-body');
@@ -825,6 +907,11 @@ function addPoliTindakanRow(tindakanName = '', qty = 1) {
   const body = document.getElementById('poli-tindakan-body');
   if (!body) return;
 
+  const tblTindakan = document.getElementById('tbl-poli-tindakan');
+  if (tblTindakan) {
+    tblTindakan.style.display = 'table';
+  }
+
   const tr = document.createElement('tr');
   const tindakanList = appData.tindakan || [];
 
@@ -859,7 +946,7 @@ function addPoliTindakanRow(tindakanName = '', qty = 1) {
       <div class="tindakan-subtotal-badge" style="height: 38px; display: flex; align-items: center; justify-content: flex-end; font-weight: 700; color: #38bdf8;">Rp 0</div>
     </td>
     <td style="vertical-align: top; text-align: center;">
-      <button type="button" class="btn btn-sm btn-danger" onclick="const tbody = document.getElementById('poli-tindakan-body'); const tr = this.closest('tr'); if (tbody.querySelectorAll('tr').length > 1) { tr.remove(); } else { tr.querySelector('.select-tindakan').value = ''; tr.querySelector('.tindakan-qty').value = 1; tr.dataset.unitPrice = 0; const badge = tr.querySelector('.tindakan-subtotal-badge'); if(badge) badge.textContent = 'Rp 0'; tr.querySelector('.tindakan-badge-info').textContent = ''; } calculateCombinedGrandTotal();" title="Hapus Tindakan" style="width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-md);"><i class="fa-solid fa-trash-can"></i></button>
+      <button type="button" class="btn btn-sm btn-danger" onclick="const tbody = document.getElementById('poli-tindakan-body'); const tr = this.closest('tr'); tr.remove(); if (tbody.children.length === 0) { const tbl = document.getElementById('tbl-poli-tindakan'); if(tbl) tbl.style.display = 'none'; } calculateCombinedGrandTotal();" title="Hapus Tindakan" style="width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-md);"><i class="fa-solid fa-trash-can"></i></button>
     </td>
   `;
 
