@@ -52,6 +52,37 @@ function readDB() {
       data.tindakan = [...DEFAULT_TINDAKAN];
       modified = true;
     }
+    
+    // Auto-enrich / seed master WHO ICD-10 dataset
+    const masterIcdFile = path.join(__dirname, 'icd10_master.json');
+    if (fs.existsSync(masterIcdFile)) {
+      try {
+        const masterList = JSON.parse(fs.readFileSync(masterIcdFile, 'utf8'));
+        if (Array.isArray(masterList) && masterList.length > 0) {
+          if (!Array.isArray(data.icd10) || data.icd10.length < masterList.length) {
+            const currentCodes = new Set((data.icd10 || []).map(i => (i.code || i.kode || '').trim().toUpperCase()));
+            let addedCount = 0;
+            data.icd10 = data.icd10 || [];
+            masterList.forEach(m => {
+              const code = (m.code || '').trim().toUpperCase();
+              if (code && !currentCodes.has(code)) {
+                data.icd10.push({
+                  id: `ICD-${data.icd10.length}`,
+                  code: m.code,
+                  description: m.description
+                });
+                currentCodes.add(code);
+                addedCount++;
+              }
+            });
+            if (addedCount > 0 || data.icd10.length === masterList.length) {
+              modified = true;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
     if (modified) {
       try { fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2)); } catch (e) {}
     }

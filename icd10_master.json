@@ -1,0 +1,3412 @@
+[
+  {
+    "id": "ICD-0",
+    "code": "A00.9",
+    "description": "Kolera (Cholera, unspecified)"
+  },
+  {
+    "id": "ICD-1",
+    "code": "A01.0",
+    "description": "Demam Tifoid / Tipes (Typhoid fever)"
+  },
+  {
+    "id": "ICD-2",
+    "code": "A01.4",
+    "description": "Demam Paratifoid (Paratyphoid fever)"
+  },
+  {
+    "id": "ICD-3",
+    "code": "A02.0",
+    "description": "Enteritis Salmonella (Salmonella enteritis)"
+  },
+  {
+    "id": "ICD-4",
+    "code": "A03.9",
+    "description": "Disentri Basiler / Sigelosis (Shigellosis / Bacillary dysentery)"
+  },
+  {
+    "id": "ICD-5",
+    "code": "A06.0",
+    "description": "Disentri Ameba Akut (Acute amoebic dysentery)"
+  },
+  {
+    "id": "ICD-6",
+    "code": "A06.9",
+    "description": "Amebiasis / Infeksi Entamoeba (Amoebiasis, unspecified)"
+  },
+  {
+    "id": "ICD-7",
+    "code": "A07.0",
+    "description": "Giardia"
+  },
+  {
+    "id": "ICD-8",
+    "code": "A07.1",
+    "description": "Giardiasis / Lambliasis"
+  },
+  {
+    "id": "ICD-9",
+    "code": "A08.0",
+    "description": "Gastroenteritis Rotavirus (Rotaviral enteritis)"
+  },
+  {
+    "id": "ICD-10",
+    "code": "A08.4",
+    "description": "Gastroenteritis Infeksi Virus (Viral intestinal infection)"
+  },
+  {
+    "id": "ICD-11",
+    "code": "A09.0",
+    "description": "Gastroenteritis dan Kolitis Infeksius / GEA (Infectious gastroenteritis and colitis)"
+  },
+  {
+    "id": "ICD-12",
+    "code": "A09.9",
+    "description": "Diare dan Gastroenteritis / Non-spesifik (Gastroenteritis and colitis of unspecified origin)"
+  },
+  {
+    "id": "ICD-13",
+    "code": "A15.0",
+    "description": "Tuberkulosis Paru BTA Positif (Tuberculosis of lung, confirmed by sputum microscopy)"
+  },
+  {
+    "id": "ICD-14",
+    "code": "A15.3",
+    "description": "TB Kelenjar Getah Bening"
+  },
+  {
+    "id": "ICD-15",
+    "code": "A16.2",
+    "description": "Tuberkulosis Paru Tanpa Konfirmasi Bakteriologis (Tuberculosis of lung, without mention of bacteriological confirmation)"
+  },
+  {
+    "id": "ICD-16",
+    "code": "A17.0",
+    "description": "TB Meningitis"
+  },
+  {
+    "id": "ICD-17",
+    "code": "A18.0",
+    "description": "TB Tulang"
+  },
+  {
+    "id": "ICD-18",
+    "code": "A18.2",
+    "description": "Tuberkulosis Kelenjar Getah Bening / Limfadenitis TB (Tuberculous peripheral lymphadenopathy)"
+  },
+  {
+    "id": "ICD-19",
+    "code": "A30.9",
+    "description": "Kusta / Lepra / Morbus Hansen (Leprosy [Hansen disease])"
+  },
+  {
+    "id": "ICD-20",
+    "code": "A33",
+    "description": "Tetanus Neonatus"
+  },
+  {
+    "id": "ICD-21",
+    "code": "A34",
+    "description": "Tetanus Obstetrik"
+  },
+  {
+    "id": "ICD-22",
+    "code": "A35",
+    "description": "Tetanus Lainnya (Other tetanus)"
+  },
+  {
+    "id": "ICD-23",
+    "code": "A36.9",
+    "description": "Difteri (Diphtheria, unspecified)"
+  },
+  {
+    "id": "ICD-24",
+    "code": "A37.9",
+    "description": "Pertusis / Batuk Rejan (Whooping cough)"
+  },
+  {
+    "id": "ICD-25",
+    "code": "A38",
+    "description": "Demam Skarlatina (Scarlet fever)"
+  },
+  {
+    "id": "ICD-26",
+    "code": "A46",
+    "description": "Erisipelas (Erysipelas)"
+  },
+  {
+    "id": "ICD-27",
+    "code": "A49.0",
+    "description": "Infeksi Stafilokokus (Staphylococcal infection)"
+  },
+  {
+    "id": "ICD-28",
+    "code": "A49.1",
+    "description": "Infeksi Streptokokus (Streptococcal infection)"
+  },
+  {
+    "id": "ICD-29",
+    "code": "A49.9",
+    "description": "Infeksi Bakteri Tidak Spesifik (Bacterial infection, unspecified)"
+  },
+  {
+    "id": "ICD-30",
+    "code": "A51.0",
+    "description": "Sifilis Primer Genital (Primary genital syphilis)"
+  },
+  {
+    "id": "ICD-31",
+    "code": "A53.9",
+    "description": "Sifilis (Syphilis, unspecified)"
+  },
+  {
+    "id": "ICD-32",
+    "code": "A54.0",
+    "description": "Gonore / Infeksi Gonokokus Saluran Kemih Bawah (Gonococcal infection of lower GU tract)"
+  },
+  {
+    "id": "ICD-33",
+    "code": "A54.9",
+    "description": "Gonore / GO (Gonococcal infection, unspecified)"
+  },
+  {
+    "id": "ICD-34",
+    "code": "A56.0",
+    "description": "Infeksi Klamidia Saluran Kemih Bawah (Chlamydial infection of lower GU tract)"
+  },
+  {
+    "id": "ICD-35",
+    "code": "A59.0",
+    "description": "Trikomoniasis Urogenital (Urogenital trichomoniasis)"
+  },
+  {
+    "id": "ICD-36",
+    "code": "A60.0",
+    "description": "Herpes Simpleks Genital (Herpesviral infection of genitalia)"
+  },
+  {
+    "id": "ICD-37",
+    "code": "A90",
+    "description": "Demam Dengue / DD (Dengue fever [classical dengue])"
+  },
+  {
+    "id": "ICD-38",
+    "code": "A91",
+    "description": "Demam Berdarah Dengue / DBD (Dengue haemorrhagic fever / DHF)"
+  },
+  {
+    "id": "ICD-39",
+    "code": "A91.0",
+    "description": "Demam Berdarah"
+  },
+  {
+    "id": "ICD-40",
+    "code": "A92.0",
+    "description": "Penyakit Virus Chikungunya (Chikungunya virus disease)"
+  },
+  {
+    "id": "ICD-41",
+    "code": "B00.1",
+    "description": "Dermatitis Vesikular Herpes Simpleks (Herpesviral vesicular dermatitis)"
+  },
+  {
+    "id": "ICD-42",
+    "code": "B00.9",
+    "description": "Infeksi Virus Herpes Simpleks / HSV (Herpesviral infection, unspecified)"
+  },
+  {
+    "id": "ICD-43",
+    "code": "B01",
+    "description": "Varisela (cacar air)"
+  },
+  {
+    "id": "ICD-44",
+    "code": "B01.0",
+    "description": "Varisela dengan meningitis"
+  },
+  {
+    "id": "ICD-45",
+    "code": "B01.1",
+    "description": "Varisela dengan ensefalitis/mielitis"
+  },
+  {
+    "id": "ICD-46",
+    "code": "B01.2",
+    "description": "Varisela dengan pneumonia"
+  },
+  {
+    "id": "ICD-47",
+    "code": "B01.8",
+    "description": "Varisela dengan komplikasi lain"
+  },
+  {
+    "id": "ICD-48",
+    "code": "B01.9",
+    "description": "Varisela / Cacar Air (Varicella [chickenpox] without complication)"
+  },
+  {
+    "id": "ICD-49",
+    "code": "B02",
+    "description": "Herpes zoster (cacar ular)"
+  },
+  {
+    "id": "ICD-50",
+    "code": "B02.0",
+    "description": "Herpes zoster dengan ensefalitis"
+  },
+  {
+    "id": "ICD-51",
+    "code": "B02.1",
+    "description": "Herpes zoster dengan meningitis"
+  },
+  {
+    "id": "ICD-52",
+    "code": "B02.2",
+    "description": "Herpes zoster dengan komplikasi saraf lain"
+  },
+  {
+    "id": "ICD-53",
+    "code": "B02.3",
+    "description": "Herpes zoster oftalmikus/okular"
+  },
+  {
+    "id": "ICD-54",
+    "code": "B02.7",
+    "description": "Herpes zoster diseminata"
+  },
+  {
+    "id": "ICD-55",
+    "code": "B02.8",
+    "description": "Herpes zoster dengan komplikasi lain"
+  },
+  {
+    "id": "ICD-56",
+    "code": "B02.9",
+    "description": "Herpes Zoster / Dampa (Zoster without complication)"
+  },
+  {
+    "id": "ICD-57",
+    "code": "B05.9",
+    "description": "Morbili / Campak (Measles without complication)"
+  },
+  {
+    "id": "ICD-58",
+    "code": "B06.9",
+    "description": "Rubela / Campak Jerman (Rubella without complication)"
+  },
+  {
+    "id": "ICD-59",
+    "code": "B07.9",
+    "description": "Kutil Virus / Veruka Vulgaris (Viral warts / Verruca vulgaris)"
+  },
+  {
+    "id": "ICD-60",
+    "code": "B08.1",
+    "description": "Moluskum Kontagiosum (Molluscum contagiosum)"
+  },
+  {
+    "id": "ICD-61",
+    "code": "B08.4",
+    "description": "Penyakit Tangan Kaki Mulut / Flu Singapura (Hand, foot and mouth disease / HFMD)"
+  },
+  {
+    "id": "ICD-62",
+    "code": "B15.9",
+    "description": "Hepatitis A Akut (Hepatitis A without hepatic coma)"
+  },
+  {
+    "id": "ICD-63",
+    "code": "B16.9",
+    "description": "Hepatitis B Akut (Acute hepatitis B without delta-agent)"
+  },
+  {
+    "id": "ICD-64",
+    "code": "B18.1",
+    "description": "Hepatitis B Kronis (Chronic viral hepatitis B without delta-agent)"
+  },
+  {
+    "id": "ICD-65",
+    "code": "B18.2",
+    "description": "Hepatitis C Kronis (Chronic viral hepatitis C)"
+  },
+  {
+    "id": "ICD-66",
+    "code": "B19.9",
+    "description": "Hepatitis Virus Tidak Spesifik (Unspecified viral hepatitis)"
+  },
+  {
+    "id": "ICD-67",
+    "code": "B20",
+    "description": "Penyakit HIV / AIDS (Human immunodeficiency virus [HIV] disease)"
+  },
+  {
+    "id": "ICD-68",
+    "code": "B26.9",
+    "description": "Parotitis Epidemika / Gondongan (Mumps without complication)"
+  },
+  {
+    "id": "ICD-69",
+    "code": "B30.0",
+    "description": "Keratokonjungtivitis Viral (Keratoconjunctivitis due to adenovirus)"
+  },
+  {
+    "id": "ICD-70",
+    "code": "B30.9",
+    "description": "Konjungtivitis Viral (Viral conjunctivitis, unspecified)"
+  },
+  {
+    "id": "ICD-71",
+    "code": "B34.2",
+    "description": "Infeksi Coronavirus / Non-COVID (Coronavirus infection, unspecified)"
+  },
+  {
+    "id": "ICD-72",
+    "code": "B34.9",
+    "description": "Infeksi Virus Tidak Spesifik / Viral Infection (Viral infection, unspecified)"
+  },
+  {
+    "id": "ICD-73",
+    "code": "B35.0",
+    "description": "Tinea Barbae dan Tinea Capitis (Jamur Janggut & Kulit Kepala)"
+  },
+  {
+    "id": "ICD-74",
+    "code": "B35.1",
+    "description": "Tinea Unguium / Jamur Kuku (Onychomycosis)"
+  },
+  {
+    "id": "ICD-75",
+    "code": "B35.2",
+    "description": "Tinea Manuum / Jamur Tangan"
+  },
+  {
+    "id": "ICD-76",
+    "code": "B35.3",
+    "description": "Tinea Pedis / Kutu Air / Jamur Kaki (Athlete foot)"
+  },
+  {
+    "id": "ICD-77",
+    "code": "B35.4",
+    "description": "Tinea Corporis / Kadas / Kurap Tubuh"
+  },
+  {
+    "id": "ICD-78",
+    "code": "B35.6",
+    "description": "Tinea Cruris / Jamur Selangkangan"
+  },
+  {
+    "id": "ICD-79",
+    "code": "B35.9",
+    "description": "Dermatofitosis / Tinea (Dermatophytosis, unspecified)"
+  },
+  {
+    "id": "ICD-80",
+    "code": "B36.0",
+    "description": "Pitiriasis Versikolor / Panau / Panu (Pityriasis versicolor)"
+  },
+  {
+    "id": "ICD-81",
+    "code": "B37.0",
+    "description": "Stomatitis Kandida / Oral Thrush (Candidal stomatitis)"
+  },
+  {
+    "id": "ICD-82",
+    "code": "B37.2",
+    "description": "Kandidiasis Kulit dan Kuku (Candidiasis of skin and nail)"
+  },
+  {
+    "id": "ICD-83",
+    "code": "B37.3",
+    "description": "Kandidiasis Vulva dan Vagina (Candidiasis of vulva and vagina)"
+  },
+  {
+    "id": "ICD-84",
+    "code": "B37.9",
+    "description": "Kandidiasis"
+  },
+  {
+    "id": "ICD-85",
+    "code": "B49",
+    "description": "Infeksi Jamur"
+  },
+  {
+    "id": "ICD-86",
+    "code": "B50.9",
+    "description": "Malaria Plasmodium Falciparum"
+  },
+  {
+    "id": "ICD-87",
+    "code": "B51.9",
+    "description": "Malaria Plasmodium Vivax"
+  },
+  {
+    "id": "ICD-88",
+    "code": "B54",
+    "description": "Malaria Tidak Spesifik (Unspecified malaria)"
+  },
+  {
+    "id": "ICD-89",
+    "code": "B55.9",
+    "description": "Leishmaniasis"
+  },
+  {
+    "id": "ICD-90",
+    "code": "B77.9",
+    "description": "Askariasis / Cacing Gelang (Ascariasis, unspecified)"
+  },
+  {
+    "id": "ICD-91",
+    "code": "B79",
+    "description": "Trikuriasis / Cacing Cambuk (Trichuriasis)"
+  },
+  {
+    "id": "ICD-92",
+    "code": "B80",
+    "description": "Enterobiasis / Cacing Kremi (Enterobiasis / Pinworm)"
+  },
+  {
+    "id": "ICD-93",
+    "code": "B82.9",
+    "description": "Helmintiasis / Cacingan (Intestinal parasitism, unspecified)"
+  },
+  {
+    "id": "ICD-94",
+    "code": "B85.0",
+    "description": "Pedikulosis Capitis / Kutu Kepala (Pediculosis due to Pediculus humanus capitis)"
+  },
+  {
+    "id": "ICD-95",
+    "code": "B85.2",
+    "description": "Pedikulosis / Kutu (Pediculosis, unspecified)"
+  },
+  {
+    "id": "ICD-96",
+    "code": "B86",
+    "description": "Skabies / Kudis (Scabies)"
+  },
+  {
+    "id": "ICD-97",
+    "code": "B87.9",
+    "description": "Miasis"
+  },
+  {
+    "id": "ICD-98",
+    "code": "B88.0",
+    "description": "Akariasis"
+  },
+  {
+    "id": "ICD-99",
+    "code": "C16.9",
+    "description": "Kanker Lambung"
+  },
+  {
+    "id": "ICD-100",
+    "code": "C18.9",
+    "description": "Kanker Usus Besar"
+  },
+  {
+    "id": "ICD-101",
+    "code": "C22.0",
+    "description": "Kanker Hati"
+  },
+  {
+    "id": "ICD-102",
+    "code": "C25.9",
+    "description": "Kanker Pankreas"
+  },
+  {
+    "id": "ICD-103",
+    "code": "C34.9",
+    "description": "Kanker Paru"
+  },
+  {
+    "id": "ICD-104",
+    "code": "C50.9",
+    "description": "Kanker Payudara"
+  },
+  {
+    "id": "ICD-105",
+    "code": "C53.9",
+    "description": "Kanker Serviks"
+  },
+  {
+    "id": "ICD-106",
+    "code": "C61",
+    "description": "Kanker Prostat"
+  },
+  {
+    "id": "ICD-107",
+    "code": "C67.9",
+    "description": "Kanker Kandung Kemih"
+  },
+  {
+    "id": "ICD-108",
+    "code": "C73",
+    "description": "Kanker Tiroid"
+  },
+  {
+    "id": "ICD-109",
+    "code": "D17.9",
+    "description": "Lipoma Jinak (Benign lipomatous neoplasm, unspecified)"
+  },
+  {
+    "id": "ICD-110",
+    "code": "D21.9",
+    "description": "Neoplasma Jinak Jaringan Ikat (Benign neoplasm of connective and other soft tissue)"
+  },
+  {
+    "id": "ICD-111",
+    "code": "D22.9",
+    "description": "Nevus Melanositik / Tahi Lalat (Melanocytic naevi, unspecified)"
+  },
+  {
+    "id": "ICD-112",
+    "code": "D23.9",
+    "description": "Neoplasma Jinak Kulit Lainnya (Other benign neoplasms of skin)"
+  },
+  {
+    "id": "ICD-113",
+    "code": "D24",
+    "description": "Neoplasma Jinak Payudara / FAM (Benign neoplasm of breast / Fibroadenoma mammae)"
+  },
+  {
+    "id": "ICD-114",
+    "code": "D25.9",
+    "description": "Mioma Uteri (Leiomyoma of uterus, unspecified)"
+  },
+  {
+    "id": "ICD-115",
+    "code": "D27",
+    "description": "Neoplasma Jinak Ovarium / Kista Ovarium (Benign neoplasm of ovary)"
+  },
+  {
+    "id": "ICD-116",
+    "code": "D34",
+    "description": "Neoplasma Jinak Kelenjar Tiroid / Struma (Benign neoplasm of thyroid gland)"
+  },
+  {
+    "id": "ICD-117",
+    "code": "D35.2",
+    "description": "Adenoma Adrenal"
+  },
+  {
+    "id": "ICD-118",
+    "code": "D48.5",
+    "description": "Neoplasma Kulit Perilaku Tidak Pasti (Neoplasm of uncertain behaviour of skin)"
+  },
+  {
+    "id": "ICD-119",
+    "code": "D50.9",
+    "description": "Anemia Defisiensi Besi (Iron deficiency anaemia, unspecified)"
+  },
+  {
+    "id": "ICD-120",
+    "code": "D53.9",
+    "description": "Anemia Nutrisional Lainnya (Nutritional anaemia, unspecified)"
+  },
+  {
+    "id": "ICD-121",
+    "code": "D62",
+    "description": "Anemia Perdarahan Akut"
+  },
+  {
+    "id": "ICD-122",
+    "code": "D64.9",
+    "description": "Anemia / Kurang Darah (Anaemia, unspecified)"
+  },
+  {
+    "id": "ICD-123",
+    "code": "D69.6",
+    "description": "Trombositopenia (Thrombocytopenia, unspecified)"
+  },
+  {
+    "id": "ICD-124",
+    "code": "D70",
+    "description": "Agranulositosis / Leukopenia (Agranulocytosis)"
+  },
+  {
+    "id": "ICD-125",
+    "code": "E03.9",
+    "description": "Hipotiroidisme (Hypothyroidism, unspecified)"
+  },
+  {
+    "id": "ICD-126",
+    "code": "E04.9",
+    "description": "Struma / Gondok Non-toksik (Nontoxic goitre, unspecified)"
+  },
+  {
+    "id": "ICD-127",
+    "code": "E05.9",
+    "description": "Tirotoksikosis / Hipertiroidisme (Thyrotoxicosis, unspecified)"
+  },
+  {
+    "id": "ICD-128",
+    "code": "E10.9",
+    "description": "Diabetes Melitus Tipe 1 Tanpa Komplikasi (Type 1 diabetes mellitus without complications)"
+  },
+  {
+    "id": "ICD-129",
+    "code": "E11.4",
+    "description": "Diabetes+Saraf"
+  },
+  {
+    "id": "ICD-130",
+    "code": "E11.5",
+    "description": "Diabetes+Sirkulasi"
+  },
+  {
+    "id": "ICD-131",
+    "code": "E11.6",
+    "description": "Diabetes Melitus Tipe 2 dengan Komplikasi Tertentu (Type 2 diabetes mellitus with specified complications)"
+  },
+  {
+    "id": "ICD-132",
+    "code": "E11.9",
+    "description": "Diabetes Melitus Tipe 2 Tanpa Komplikasi (Type 2 diabetes mellitus without complications)"
+  },
+  {
+    "id": "ICD-133",
+    "code": "E14.9",
+    "description": "Diabetes Melitus / Kencing Manis (Unspecified diabetes mellitus without complications)"
+  },
+  {
+    "id": "ICD-134",
+    "code": "E16.2",
+    "description": "Hipoglikemia Tidak Spesifik (Hypoglycaemia, unspecified)"
+  },
+  {
+    "id": "ICD-135",
+    "code": "E46",
+    "description": "Malnutrisi Energi Protein (Unspecified protein-energy malnutrition)"
+  },
+  {
+    "id": "ICD-136",
+    "code": "E50.9",
+    "description": "Defisiensi Vitamin A"
+  },
+  {
+    "id": "ICD-137",
+    "code": "E55.9",
+    "description": "Defisiensi Vitamin D"
+  },
+  {
+    "id": "ICD-138",
+    "code": "E61.1",
+    "description": "Defisiensi Zat Besi"
+  },
+  {
+    "id": "ICD-139",
+    "code": "E66.9",
+    "description": "Obesitas / Kegemukan (Obesity, unspecified)"
+  },
+  {
+    "id": "ICD-140",
+    "code": "E78.0",
+    "description": "Hiperkolesterolemia Murni (Pure hypercholesterolaemia)"
+  },
+  {
+    "id": "ICD-141",
+    "code": "E78.1",
+    "description": "Hipertrigliseridemia Murni (Pure hyperglyceridaemia)"
+  },
+  {
+    "id": "ICD-142",
+    "code": "E78.2",
+    "description": "Hiperlipidemia Campuran (Mixed hyperlipidaemia)"
+  },
+  {
+    "id": "ICD-143",
+    "code": "E78.5",
+    "description": "Dislipidemia / Kolesterol Tinggi (Hyperlipidaemia, unspecified)"
+  },
+  {
+    "id": "ICD-144",
+    "code": "E79.0",
+    "description": "Hiperurisemia Tanpa Tanda Artritis (Hyperuricaemia without signs of inflammatory arthritis)"
+  },
+  {
+    "id": "ICD-145",
+    "code": "E86",
+    "description": "Dehidrasi / Kekurangan Cairan (Volume depletion / Dehydration)"
+  },
+  {
+    "id": "ICD-146",
+    "code": "E87.5",
+    "description": "Hiperkalemia"
+  },
+  {
+    "id": "ICD-147",
+    "code": "E87.6",
+    "description": "Hipokalemia"
+  },
+  {
+    "id": "ICD-148",
+    "code": "F10.1",
+    "description": "Alkohol Berbahaya"
+  },
+  {
+    "id": "ICD-149",
+    "code": "F19.2",
+    "description": "Ketergantungan Zat"
+  },
+  {
+    "id": "ICD-150",
+    "code": "F32.9",
+    "description": "Episode Depresif (Depressive episode, unspecified)"
+  },
+  {
+    "id": "ICD-151",
+    "code": "F41.0",
+    "description": "Gangguan Panik (Panic disorder [episodic paroxysmal anxiety])"
+  },
+  {
+    "id": "ICD-152",
+    "code": "F41.1",
+    "description": "Gangguan Cemas Menyeluruh / Ansietas (Generalized anxiety disorder / GAD)"
+  },
+  {
+    "id": "ICD-153",
+    "code": "F41.9",
+    "description": "Gangguan Ansietas / Cemas (Anxiety disorder, unspecified)"
+  },
+  {
+    "id": "ICD-154",
+    "code": "F43.0",
+    "description": "Reaksi Stres Akut (Acute stress reaction)"
+  },
+  {
+    "id": "ICD-155",
+    "code": "F45.9",
+    "description": "Gangguan Somatoform (Somatoform disorder, unspecified)"
+  },
+  {
+    "id": "ICD-156",
+    "code": "F48.0",
+    "description": "Neurastenia / Kelelahan Mental (Neurasthenia / Chronic fatigue)"
+  },
+  {
+    "id": "ICD-157",
+    "code": "F51.0",
+    "description": "Insomnia Non-organik / Susah Tidur (Nonorganic insomnia)"
+  },
+  {
+    "id": "ICD-158",
+    "code": "G40.9",
+    "description": "Epilepsi / Ayan (Epilepsy, unspecified)"
+  },
+  {
+    "id": "ICD-159",
+    "code": "G43.9",
+    "description": "Migrain Tanpa Komplikasi (Migraine, unspecified)"
+  },
+  {
+    "id": "ICD-160",
+    "code": "G44.0",
+    "description": "Sakit Kepala Kluster (Cluster headache syndrome)"
+  },
+  {
+    "id": "ICD-161",
+    "code": "G44.2",
+    "description": "Sakit Kepala Tegang / TTH (Tension-type headache)"
+  },
+  {
+    "id": "ICD-162",
+    "code": "G44.8",
+    "description": "Sindrom Sakit Kepala Spesifik Lainnya (Other specified headache syndromes)"
+  },
+  {
+    "id": "ICD-163",
+    "code": "G45.9",
+    "description": "Serangan Iskemik Transien / TIA (Transient cerebral ischaemic attack, unspecified)"
+  },
+  {
+    "id": "ICD-164",
+    "code": "G47.0",
+    "description": "Gangguan Memulai dan Mempertahankan Tidur / Insomnia Organik (Disorders of initiating and maintaining sleep)"
+  },
+  {
+    "id": "ICD-165",
+    "code": "G47.3",
+    "description": "Sleep Apnea"
+  },
+  {
+    "id": "ICD-166",
+    "code": "G50.0",
+    "description": "Neuralgia Trigeminal (Trigeminal neuralgia)"
+  },
+  {
+    "id": "ICD-167",
+    "code": "G51.0",
+    "description": "Bell Palsy / Kelumpuhan Saraf Wajah (Bell palsy)"
+  },
+  {
+    "id": "ICD-168",
+    "code": "G54.2",
+    "description": "Neuralgia Servikal"
+  },
+  {
+    "id": "ICD-169",
+    "code": "G56.0",
+    "description": "Sindrom Terowongan Karpal / CTS (Carpal tunnel syndrome)"
+  },
+  {
+    "id": "ICD-170",
+    "code": "G56.2",
+    "description": "Lesi Saraf Ulnaris / Cubital Tunnel (Lesion of ulnar nerve)"
+  },
+  {
+    "id": "ICD-171",
+    "code": "G57.0",
+    "description": "Lesi Saraf Skiatika / Skiatika (Lesion of sciatic nerve)"
+  },
+  {
+    "id": "ICD-172",
+    "code": "G62.9",
+    "description": "Polineuropati / Kebas & Kesemutan (Polyneuropathy, unspecified)"
+  },
+  {
+    "id": "ICD-173",
+    "code": "G63",
+    "description": "Neuropati Diabetik"
+  },
+  {
+    "id": "ICD-174",
+    "code": "G90.9",
+    "description": "Gangguan Sistem Saraf Otonom (Disorder of autonomic nervous system, unspecified)"
+  },
+  {
+    "id": "ICD-175",
+    "code": "H00.0",
+    "description": "Hordeolum / Bintitan / Timbilen (Hordeolum and other deep inflammation of eyelid)"
+  },
+  {
+    "id": "ICD-176",
+    "code": "H00.1",
+    "description": "Kalazion (Chalazion)"
+  },
+  {
+    "id": "ICD-177",
+    "code": "H01.0",
+    "description": "Blefaritis / Radang Kelopak Mata (Blepharitis)"
+  },
+  {
+    "id": "ICD-178",
+    "code": "H02.0",
+    "description": "Entropion dan Trikiasis Kelopak Mata (Entropion and trichiasis of eyelid)"
+  },
+  {
+    "id": "ICD-179",
+    "code": "H04.1",
+    "description": "Sindrom Mata Kering / Dry Eye (Dry eye syndrome / Other disorders of lacrimal gland)"
+  },
+  {
+    "id": "ICD-180",
+    "code": "H10.0",
+    "description": "Konjungtivitis Mukopurulen Akut (Mucopurulent conjunctivitis)"
+  },
+  {
+    "id": "ICD-181",
+    "code": "H10.1",
+    "description": "Konjungtivitis Atopik Akut / Alergi (Acute atopic conjunctivitis)"
+  },
+  {
+    "id": "ICD-182",
+    "code": "H10.9",
+    "description": "Konjungtivitis / Mata Merah (Conjunctivitis, unspecified)"
+  },
+  {
+    "id": "ICD-183",
+    "code": "H11.0",
+    "description": "Pterigium / Selaput Mata (Pterygium)"
+  },
+  {
+    "id": "ICD-184",
+    "code": "H11.1",
+    "description": "Pinguekula (Pinguecula / Conjunctival degenerations and deposits)"
+  },
+  {
+    "id": "ICD-185",
+    "code": "H11.3",
+    "description": "Perdarahan Subkonjungtiva (Conjunctival haemorrhage / Subconjunctival bleeding)"
+  },
+  {
+    "id": "ICD-186",
+    "code": "H16.0",
+    "description": "Ulkus Kornea (Corneal ulcer)"
+  },
+  {
+    "id": "ICD-187",
+    "code": "H16.9",
+    "description": "Keratitis / Radang Kornea (Keratitis, unspecified)"
+  },
+  {
+    "id": "ICD-188",
+    "code": "H25.9",
+    "description": "Katarak Senilis (Senile cataract, unspecified)"
+  },
+  {
+    "id": "ICD-189",
+    "code": "H26.9",
+    "description": "Katarak (Cataract, unspecified)"
+  },
+  {
+    "id": "ICD-190",
+    "code": "H35.0",
+    "description": "Retinopati"
+  },
+  {
+    "id": "ICD-191",
+    "code": "H40.9",
+    "description": "Glaukoma (Glaucoma, unspecified)"
+  },
+  {
+    "id": "ICD-192",
+    "code": "H52.0",
+    "description": "Hipermetropia / Rabun Dekat (Hypermetropia)"
+  },
+  {
+    "id": "ICD-193",
+    "code": "H52.1",
+    "description": "Miopia / Rabun Jauh / Mata Minus (Myopia)"
+  },
+  {
+    "id": "ICD-194",
+    "code": "H52.2",
+    "description": "Astigmatisme / Mata Silinder (Astigmatism)"
+  },
+  {
+    "id": "ICD-195",
+    "code": "H52.4",
+    "description": "Presbiopia / Mata Tua (Presbyopia)"
+  },
+  {
+    "id": "ICD-196",
+    "code": "H53.1",
+    "description": "Astenopia / Mata Lelah (Asthenopia / Subjective visual disturbances)"
+  },
+  {
+    "id": "ICD-197",
+    "code": "H57.1",
+    "description": "Nyeri Bola Mata (Ocular pain)"
+  },
+  {
+    "id": "ICD-198",
+    "code": "H60.0",
+    "description": "Abses Telinga Luar / Furunkel Liang Telinga (Abscess of external ear)"
+  },
+  {
+    "id": "ICD-199",
+    "code": "H60.3",
+    "description": "Otitis Eksterna Difusa / Swimmer Ear (Diffuse otitis externa)"
+  },
+  {
+    "id": "ICD-200",
+    "code": "H60.9",
+    "description": "Otitis Eksterna / Radang Liang Telinga (Otitis externa, unspecified)"
+  },
+  {
+    "id": "ICD-201",
+    "code": "H61.0",
+    "description": "Perikondritis Telinga Luar (Perichondritis of external ear)"
+  },
+  {
+    "id": "ICD-202",
+    "code": "H61.2",
+    "description": "Serumen Prop / Kotoran Telinga Menyumbat (Impacted cerumen)"
+  },
+  {
+    "id": "ICD-203",
+    "code": "H65.0",
+    "description": "Otitis Media Serosa Akut (Acute serous otitis media)"
+  },
+  {
+    "id": "ICD-204",
+    "code": "H65.9",
+    "description": "Otitis Media Non-supuratif (Nonsuppurative otitis media, unspecified)"
+  },
+  {
+    "id": "ICD-205",
+    "code": "H66.0",
+    "description": "Otitis Media Supuratif Akut / OMA (Acute suppurative otitis media)"
+  },
+  {
+    "id": "ICD-206",
+    "code": "H66.9",
+    "description": "Otitis Media / Congek (Otitis media, unspecified)"
+  },
+  {
+    "id": "ICD-207",
+    "code": "H72.9",
+    "description": "Perforasi Membran Timpani / Gendang Telinga Pecah (Perforation of tympanic membrane, unspecified)"
+  },
+  {
+    "id": "ICD-208",
+    "code": "H81.0",
+    "description": "Penyakit Meniere (Meniere disease)"
+  },
+  {
+    "id": "ICD-209",
+    "code": "H81.1",
+    "description": "Vertigo Posisi Paroksismal Jinak / BPPV (Benign paroxysmal positional vertigo)"
+  },
+  {
+    "id": "ICD-210",
+    "code": "H81.3",
+    "description": "Vertigo Perifer Lainnya (Other peripheral vertigo)"
+  },
+  {
+    "id": "ICD-211",
+    "code": "H81.9",
+    "description": "Gangguan Fungsi Vestibular / Vertigo (Disorder of vestibular function, unspecified)"
+  },
+  {
+    "id": "ICD-212",
+    "code": "H90.2",
+    "description": "Tuli Konduktif (Conductive hearing loss, unspecified)"
+  },
+  {
+    "id": "ICD-213",
+    "code": "H90.3",
+    "description": "Tuli Sensorineural / Tuli Saraf (Sensorineural hearing loss)"
+  },
+  {
+    "id": "ICD-214",
+    "code": "H91.9",
+    "description": "Gangguan Pendengaran / Tuli (Hearing loss, unspecified)"
+  },
+  {
+    "id": "ICD-215",
+    "code": "H92.0",
+    "description": "Otalgia / Nyeri Telinga (Otalgia / Ear pain)"
+  },
+  {
+    "id": "ICD-216",
+    "code": "H93.1",
+    "description": "Tinitus / Telinga Berdenging (Tinnitus)"
+  },
+  {
+    "id": "ICD-217",
+    "code": "H93.2",
+    "description": "Gangguan Persepsi Suara / NIHL (Noise-induced hearing loss)"
+  },
+  {
+    "id": "ICD-218",
+    "code": "I10",
+    "description": "Hipertensi Esensial / Primer (Essential [primary] hypertension)"
+  },
+  {
+    "id": "ICD-219",
+    "code": "I11.9",
+    "description": "Penyakit Jantung Hipertensi (Hypertensive heart disease without heart failure)"
+  },
+  {
+    "id": "ICD-220",
+    "code": "I15.9",
+    "description": "Hipertensi Sekunder (Secondary hypertension, unspecified)"
+  },
+  {
+    "id": "ICD-221",
+    "code": "I20.9",
+    "description": "Angina Pektoris / Nyeri Dada Jantung (Angina pectoris, unspecified)"
+  },
+  {
+    "id": "ICD-222",
+    "code": "I21.9",
+    "description": "Infark Miokard Akut / Serangan Jantung (Acute myocardial infarction, unspecified)"
+  },
+  {
+    "id": "ICD-223",
+    "code": "I25.1",
+    "description": "Penyakit Jantung Koroner / PJK (Atherosclerotic heart disease)"
+  },
+  {
+    "id": "ICD-224",
+    "code": "I25.9",
+    "description": "Penyakit Jantung Iskemik Kronis (Chronic ischaemic heart disease, unspecified)"
+  },
+  {
+    "id": "ICD-225",
+    "code": "I26.9",
+    "description": "Embolisme Paru"
+  },
+  {
+    "id": "ICD-226",
+    "code": "I42.9",
+    "description": "Kardiomiopati"
+  },
+  {
+    "id": "ICD-227",
+    "code": "I48.9",
+    "description": "Fibrilasi dan Flutter Atrium (Atrial fibrillation and atrial flutter, unspecified)"
+  },
+  {
+    "id": "ICD-228",
+    "code": "I49.9",
+    "description": "Aritmia Jantung / Irama Jantung Tidak Teratur (Cardiac arrhythmia, unspecified)"
+  },
+  {
+    "id": "ICD-229",
+    "code": "I50.9",
+    "description": "Gagal Jantung Kongestif / CHF (Heart failure, unspecified)"
+  },
+  {
+    "id": "ICD-230",
+    "code": "I51.7",
+    "description": "Pembesaran Jantung"
+  },
+  {
+    "id": "ICD-231",
+    "code": "I63.9",
+    "description": "Stroke Iskemik"
+  },
+  {
+    "id": "ICD-232",
+    "code": "I64",
+    "description": "Stroke Tidak Ditentukan Iskemik atau Hemoragik (Stroke, not specified as haemorrhage or infarction)"
+  },
+  {
+    "id": "ICD-233",
+    "code": "I69.4",
+    "description": "Sekuele / Gejala Sisa Pasca Stroke (Sequelae of stroke)"
+  },
+  {
+    "id": "ICD-234",
+    "code": "I70.0",
+    "description": "Aterosklerosis"
+  },
+  {
+    "id": "ICD-235",
+    "code": "I73.9",
+    "description": "Penyakit Vaskular Perifer (Peripheral vascular disease, unspecified)"
+  },
+  {
+    "id": "ICD-236",
+    "code": "I83.9",
+    "description": "Varises Tungkai Bawah (Varicose veins of lower extremities without ulcer or inflammation)"
+  },
+  {
+    "id": "ICD-237",
+    "code": "I84.1",
+    "description": "Hemoroid Interna dengan Komplikasi (Internal haemorrhoids with other complications)"
+  },
+  {
+    "id": "ICD-238",
+    "code": "I84.2",
+    "description": "Hemoroid Interna Tanpa Komplikasi (Internal haemorrhoids without complication)"
+  },
+  {
+    "id": "ICD-239",
+    "code": "I84.5",
+    "description": "Hemoroid Eksterna Tanpa Komplikasi (External haemorrhoids without complication)"
+  },
+  {
+    "id": "ICD-240",
+    "code": "I84.9",
+    "description": "Hemoroid / Wasir / Ambeien (Haemorrhoids without complication, unspecified)"
+  },
+  {
+    "id": "ICD-241",
+    "code": "I87.9",
+    "description": "Insufisiensi Vena"
+  },
+  {
+    "id": "ICD-242",
+    "code": "I95.1",
+    "description": "Hipotensi Ortostatik (Orthostatic hypotension)"
+  },
+  {
+    "id": "ICD-243",
+    "code": "I95.9",
+    "description": "Hipotensi / Tekanan Darah Rendah (Hypotension, unspecified)"
+  },
+  {
+    "id": "ICD-244",
+    "code": "J00",
+    "description": "Nasofaringitis Akut / Common Cold / Batuk Pilek (Acute nasopharyngitis [common cold])"
+  },
+  {
+    "id": "ICD-245",
+    "code": "J01.0",
+    "description": "Sinusitis Maksilaris Akut (Acute maxillary sinusitis)"
+  },
+  {
+    "id": "ICD-246",
+    "code": "J01.9",
+    "description": "Sinusitis Akut (Acute sinusitis, unspecified)"
+  },
+  {
+    "id": "ICD-247",
+    "code": "J02.0",
+    "description": "Faringitis Streptokokus (Streptococcal pharyngitis)"
+  },
+  {
+    "id": "ICD-248",
+    "code": "J02.9",
+    "description": "Faringitis Akut / Radang Tenggorokan (Acute pharyngitis, unspecified)"
+  },
+  {
+    "id": "ICD-249",
+    "code": "J03.0",
+    "description": "Tonsilitis Streptokokus (Streptococcal tonsillitis)"
+  },
+  {
+    "id": "ICD-250",
+    "code": "J03.9",
+    "description": "Tonsilitis Akut / Radang Amandel (Acute tonsillitis, unspecified)"
+  },
+  {
+    "id": "ICD-251",
+    "code": "J04.0",
+    "description": "Laringitis Akut (Acute laryngitis)"
+  },
+  {
+    "id": "ICD-252",
+    "code": "J04.1",
+    "description": "Trakeitis Akut (Acute tracheitis)"
+  },
+  {
+    "id": "ICD-253",
+    "code": "J06.9",
+    "description": "Infeksi Saluran Pernapasan Atas Akut / ISPA (Acute upper respiratory infection, unspecified)"
+  },
+  {
+    "id": "ICD-254",
+    "code": "J11",
+    "description": "Influenza"
+  },
+  {
+    "id": "ICD-255",
+    "code": "J11.1",
+    "description": "Influenza dengan Manifestasi Pernapasan (Influenza with other respiratory manifestations)"
+  },
+  {
+    "id": "ICD-256",
+    "code": "J11.8",
+    "description": "Influenza dengan Manifestasi Lain (Influenza with other manifestations)"
+  },
+  {
+    "id": "ICD-257",
+    "code": "J12.9",
+    "description": "Pneumonia Viral (Viral pneumonia, unspecified)"
+  },
+  {
+    "id": "ICD-258",
+    "code": "J15.9",
+    "description": "Pneumonia Bakterial (Bacterial pneumonia, unspecified)"
+  },
+  {
+    "id": "ICD-259",
+    "code": "J18.0",
+    "description": "Bronkopneumonia (Bronchopneumonia, unspecified)"
+  },
+  {
+    "id": "ICD-260",
+    "code": "J18.9",
+    "description": "Pneumonia / Radang Paru (Pneumonia, unspecified)"
+  },
+  {
+    "id": "ICD-261",
+    "code": "J20.9",
+    "description": "Bronkitis Akut (Acute bronchitis, unspecified)"
+  },
+  {
+    "id": "ICD-262",
+    "code": "J22",
+    "description": "Infeksi Saluran Pernapasan Bawah Akut (Unspecified acute lower respiratory infection)"
+  },
+  {
+    "id": "ICD-263",
+    "code": "J30.0",
+    "description": "Rinitis Vasomotor (Vasomotor rhinitis)"
+  },
+  {
+    "id": "ICD-264",
+    "code": "J30.1",
+    "description": "Rinitis Alergi Akibat Serbuk Bunga / Pollen (Allergic rhinitis due to pollen)"
+  },
+  {
+    "id": "ICD-265",
+    "code": "J30.4",
+    "description": "Rinitis Alergi / Bersin-bersin Pagi (Allergic rhinitis, unspecified)"
+  },
+  {
+    "id": "ICD-266",
+    "code": "J31.0",
+    "description": "Rinitis Kronis (Chronic rhinitis)"
+  },
+  {
+    "id": "ICD-267",
+    "code": "J32.9",
+    "description": "Sinusitis Kronis (Chronic sinusitis, unspecified)"
+  },
+  {
+    "id": "ICD-268",
+    "code": "J34.0",
+    "description": "Policip Hidung"
+  },
+  {
+    "id": "ICD-269",
+    "code": "J34.2",
+    "description": "Deviasi Septum Hidung (Deviated nasal septum)"
+  },
+  {
+    "id": "ICD-270",
+    "code": "J35.0",
+    "description": "Tonsilitis Kronis (Chronic tonsillitis)"
+  },
+  {
+    "id": "ICD-271",
+    "code": "J37.0",
+    "description": "Laringitis Kronik"
+  },
+  {
+    "id": "ICD-272",
+    "code": "J39.2",
+    "description": "Faringitis Kronik"
+  },
+  {
+    "id": "ICD-273",
+    "code": "J40",
+    "description": "Bronkitis Tidak Spesifik Akut atau Kronis (Bronchitis, not specified as acute or chronic)"
+  },
+  {
+    "id": "ICD-274",
+    "code": "J42",
+    "description": "Bronkitis Kronis Tidak Spesifik (Unspecified chronic bronchitis)"
+  },
+  {
+    "id": "ICD-275",
+    "code": "J44.0",
+    "description": "PPOK Akut"
+  },
+  {
+    "id": "ICD-276",
+    "code": "J44.1",
+    "description": "PPOK Eksaserbasi"
+  },
+  {
+    "id": "ICD-277",
+    "code": "J44.9",
+    "description": "Penyakit Paru Obstruktif Kronis / PPOK (Chronic obstructive pulmonary disease, unspecified)"
+  },
+  {
+    "id": "ICD-278",
+    "code": "J45.0",
+    "description": "Asma Alergik / Asma Bronkial Ekstrinsik (Predominantly allergic asthma)"
+  },
+  {
+    "id": "ICD-279",
+    "code": "J45.9",
+    "description": "Asma Bronkial / Mengi (Asthma, unspecified)"
+  },
+  {
+    "id": "ICD-280",
+    "code": "J46",
+    "description": "Status Asmatikus / Serangan Asma Berat (Status asthmaticus)"
+  },
+  {
+    "id": "ICD-281",
+    "code": "J47",
+    "description": "Bronkiektasis"
+  },
+  {
+    "id": "ICD-282",
+    "code": "J81",
+    "description": "Edema Paru"
+  },
+  {
+    "id": "ICD-283",
+    "code": "J86.9",
+    "description": "Empiema"
+  },
+  {
+    "id": "ICD-284",
+    "code": "J90",
+    "description": "Efusi Pleura (Pleural effusion, not elsewhere classified)"
+  },
+  {
+    "id": "ICD-285",
+    "code": "J93.9",
+    "description": "Pneumotoraks"
+  },
+  {
+    "id": "ICD-286",
+    "code": "J96.0",
+    "description": "Gagal Napas"
+  },
+  {
+    "id": "ICD-287",
+    "code": "K00.6",
+    "description": "Gigi Impaksi"
+  },
+  {
+    "id": "ICD-288",
+    "code": "K02.9",
+    "description": "Karies Gigi / Gigi Berlubang (Dental caries, unspecified)"
+  },
+  {
+    "id": "ICD-289",
+    "code": "K04.0",
+    "description": "Pulpitis / Radang Pulpa Gigi (Pulpitis)"
+  },
+  {
+    "id": "ICD-290",
+    "code": "K04.7",
+    "description": "Abses Periapikal Tanpa Sinus / Abses Gigi (Periapical abscess without sinus)"
+  },
+  {
+    "id": "ICD-291",
+    "code": "K05.0",
+    "description": "Gingivitis Akut / Radang Gusi (Acute gingivitis)"
+  },
+  {
+    "id": "ICD-292",
+    "code": "K05.1",
+    "description": "Gingivitis Kronik"
+  },
+  {
+    "id": "ICD-293",
+    "code": "K05.3",
+    "description": "Periodontitis Kronis (Chronic periodontitis)"
+  },
+  {
+    "id": "ICD-294",
+    "code": "K08.8",
+    "description": "Sakit Gigi / Odontalgia (Other specified disorders of teeth and supporting structures)"
+  },
+  {
+    "id": "ICD-295",
+    "code": "K11.2",
+    "description": "Batu Liur/Sialolithiasis"
+  },
+  {
+    "id": "ICD-296",
+    "code": "K11.3",
+    "description": "Abses Kelenjar Ludah"
+  },
+  {
+    "id": "ICD-297",
+    "code": "K12.0",
+    "description": "Stomatitis Aftosa Rekuren / Sariawan (Recurrent aphthous stomatitis)"
+  },
+  {
+    "id": "ICD-298",
+    "code": "K12.1",
+    "description": "Stomatitis Bentuk Lain (Other forms of stomatitis)"
+  },
+  {
+    "id": "ICD-299",
+    "code": "K13.0",
+    "description": "Lesi Bibir"
+  },
+  {
+    "id": "ICD-300",
+    "code": "K20",
+    "description": "Esofagitis (Oesophagitis)"
+  },
+  {
+    "id": "ICD-301",
+    "code": "K21.0",
+    "description": "Penyakit Refluks Gastroesofageal dengan Esofagitis / GERD (GORD with oesophagitis)"
+  },
+  {
+    "id": "ICD-302",
+    "code": "K21.9",
+    "description": "Penyakit Refluks Gastroesofageal / GERD (Gastro-oesophageal reflux disease without oesophagitis)"
+  },
+  {
+    "id": "ICD-303",
+    "code": "K25.9",
+    "description": "Ulkus Gaster / Tukak Lambung (Gastric ulcer, unspecified)"
+  },
+  {
+    "id": "ICD-304",
+    "code": "K26.9",
+    "description": "Ulkus Duodenum / Tukak Usus Dua Belas Jari (Duodenal ulcer, unspecified)"
+  },
+  {
+    "id": "ICD-305",
+    "code": "K27.9",
+    "description": "Ulkus Peptikum (Peptic ulcer, site unspecified)"
+  },
+  {
+    "id": "ICD-306",
+    "code": "K29.0",
+    "description": "Gastritis Hemoragik Akut (Acute haemorrhagic gastritis)"
+  },
+  {
+    "id": "ICD-307",
+    "code": "K29.1",
+    "description": "Gastritis Akut Lainnya (Other acute gastritis)"
+  },
+  {
+    "id": "ICD-308",
+    "code": "K29.5",
+    "description": "Gastritis Kronis (Chronic gastritis, unspecified)"
+  },
+  {
+    "id": "ICD-309",
+    "code": "K29.7",
+    "description": "Gastritis / Radang Lambung / Sakit Maag (Gastritis, unspecified)"
+  },
+  {
+    "id": "ICD-310",
+    "code": "K29.8",
+    "description": "Duodenitis (Duodenitis)"
+  },
+  {
+    "id": "ICD-311",
+    "code": "K30",
+    "description": "Dispepsia / Gangguan Pencernaan / Perut Begah (Dyspepsia)"
+  },
+  {
+    "id": "ICD-312",
+    "code": "K35.8",
+    "description": "Apendisitis Akut Lainnya (Other and unspecified acute appendicitis)"
+  },
+  {
+    "id": "ICD-313",
+    "code": "K40.9",
+    "description": "Hernia Inguinalis Tanpa Obstruksi atau Gangren (Unilateral or unspecified inguinal hernia)"
+  },
+  {
+    "id": "ICD-314",
+    "code": "K42.9",
+    "description": "Hernia Umbilikalis / Bodong (Umbilical hernia without obstruction or gangrene)"
+  },
+  {
+    "id": "ICD-315",
+    "code": "K43.9",
+    "description": "Hernia Ventralis"
+  },
+  {
+    "id": "ICD-316",
+    "code": "K46.9",
+    "description": "Hernia Abdomen"
+  },
+  {
+    "id": "ICD-317",
+    "code": "K50.9",
+    "description": "Crohn Disease"
+  },
+  {
+    "id": "ICD-318",
+    "code": "K51.9",
+    "description": "Kolitis Ulseratif"
+  },
+  {
+    "id": "ICD-319",
+    "code": "K52.9",
+    "description": "Gastroenteritis Non-infektif (Noninfective gastroenteritis and colitis, unspecified)"
+  },
+  {
+    "id": "ICD-320",
+    "code": "K56.7",
+    "description": "Ileus/Usus Tersumbat"
+  },
+  {
+    "id": "ICD-321",
+    "code": "K57.30",
+    "description": "Divertikulitis"
+  },
+  {
+    "id": "ICD-322",
+    "code": "K58.9",
+    "description": "Sindrom Usus Iritabel / IBS (Irritable bowel syndrome without diarrhoea)"
+  },
+  {
+    "id": "ICD-323",
+    "code": "K59.0",
+    "description": "Konstipasi / Sembelit / Susah BAB (Constipation)"
+  },
+  {
+    "id": "ICD-324",
+    "code": "K59.1",
+    "description": "Diare Fungsional"
+  },
+  {
+    "id": "ICD-325",
+    "code": "K60.0",
+    "description": "Fisura Ani Akut / Luka Anus (Acute anal fissure)"
+  },
+  {
+    "id": "ICD-326",
+    "code": "K61.0",
+    "description": "Abses Anal / Bisul Dekat Anus (Anal abscess)"
+  },
+  {
+    "id": "ICD-327",
+    "code": "K64.9",
+    "description": "Wasir/Ambeien"
+  },
+  {
+    "id": "ICD-328",
+    "code": "K70.0",
+    "description": "Perlemakan Hati Alkoholik (Alcoholic fatty liver)"
+  },
+  {
+    "id": "ICD-329",
+    "code": "K70.3",
+    "description": "Sirosis Alkohol"
+  },
+  {
+    "id": "ICD-330",
+    "code": "K74.6",
+    "description": "Sirosis Hati"
+  },
+  {
+    "id": "ICD-331",
+    "code": "K76.0",
+    "description": "Perlemakan Hati / Fatty Liver (Fatty [change of] liver, not elsewhere classified)"
+  },
+  {
+    "id": "ICD-332",
+    "code": "K80.1",
+    "description": "Batu Empedu"
+  },
+  {
+    "id": "ICD-333",
+    "code": "K80.2",
+    "description": "Kolelitiasis / Batu Empedu Tanpa Kolesistitis (Calculus of gallbladder without cholecystitis)"
+  },
+  {
+    "id": "ICD-334",
+    "code": "K81.0",
+    "description": "Kolesistitis Akut / Radang Kantung Empedu (Acute cholecystitis)"
+  },
+  {
+    "id": "ICD-335",
+    "code": "K85.9",
+    "description": "Pankreatitis Akut"
+  },
+  {
+    "id": "ICD-336",
+    "code": "K86.1",
+    "description": "Pankreatitis Kronik"
+  },
+  {
+    "id": "ICD-337",
+    "code": "K92.1",
+    "description": "Melena/BAB Hitam"
+  },
+  {
+    "id": "ICD-338",
+    "code": "L00",
+    "description": "Sindrom kulit stafilokokus ​"
+  },
+  {
+    "id": "ICD-339",
+    "code": "L01",
+    "description": "Impetigo kulit"
+  },
+  {
+    "id": "ICD-340",
+    "code": "L01.0",
+    "description": "Impetigo Krustosa / Bulosa (Impetigo [any organism] [any site])"
+  },
+  {
+    "id": "ICD-341",
+    "code": "L02",
+    "description": "Abses kulit/bisul"
+  },
+  {
+    "id": "ICD-342",
+    "code": "L02.0",
+    "description": "Abses Kulit, Furunkel dan Karbunkel Wajah (Cutaneous abscess, furuncle and carbuncle of face)"
+  },
+  {
+    "id": "ICD-343",
+    "code": "L02.1",
+    "description": "Abses Kulit, Furunkel dan Karbunkel Leher (Cutaneous abscess, furuncle and carbuncle of neck)"
+  },
+  {
+    "id": "ICD-344",
+    "code": "L02.2",
+    "description": "Abses Kulit, Furunkel dan Karbunkel Badan (Cutaneous abscess, furuncle and carbuncle of trunk)"
+  },
+  {
+    "id": "ICD-345",
+    "code": "L02.3",
+    "description": "Abses Kulit, Furunkel dan Karbunkel Pantat (Cutaneous abscess, furuncle and carbuncle of buttock)"
+  },
+  {
+    "id": "ICD-346",
+    "code": "L02.4",
+    "description": "Abses Kulit, Furunkel dan Karbunkel Anggota Gerak (Cutaneous abscess, furuncle and carbuncle of limb)"
+  },
+  {
+    "id": "ICD-347",
+    "code": "L02.5",
+    "description": "Abses tangan"
+  },
+  {
+    "id": "ICD-348",
+    "code": "L02.6",
+    "description": "Abses kaki"
+  },
+  {
+    "id": "ICD-349",
+    "code": "L02.8",
+    "description": "Abses lokasi lain"
+  },
+  {
+    "id": "ICD-350",
+    "code": "L02.9",
+    "description": "Furunkel / Karbunkel / Bisul Kulit (Cutaneous abscess, furuncle and carbuncle, unspecified)"
+  },
+  {
+    "id": "ICD-351",
+    "code": "L03",
+    "description": "Selulitis kulit akut"
+  },
+  {
+    "id": "ICD-352",
+    "code": "L03.1",
+    "description": "Selulitis Anggota Gerak (Cellulitis of limb)"
+  },
+  {
+    "id": "ICD-353",
+    "code": "L03.9",
+    "description": "Selulitis (Cellulitis, unspecified)"
+  },
+  {
+    "id": "ICD-354",
+    "code": "L04",
+    "description": "Limfadenitis akut"
+  },
+  {
+    "id": "ICD-355",
+    "code": "L04.9",
+    "description": "Limfadenitis Akut (Acute lymphadenitis, unspecified)"
+  },
+  {
+    "id": "ICD-356",
+    "code": "L05",
+    "description": "Kista pilonidal"
+  },
+  {
+    "id": "ICD-357",
+    "code": "L08.0",
+    "description": "Pioderma / Infeksi Bakteri Bernanah pada Kulit (Pyoderma)"
+  },
+  {
+    "id": "ICD-358",
+    "code": "L08.1",
+    "description": "Eritrasma kulit"
+  },
+  {
+    "id": "ICD-359",
+    "code": "L08.8",
+    "description": "Infeksi kulit lain"
+  },
+  {
+    "id": "ICD-360",
+    "code": "L08.9",
+    "description": "Infeksi Lokal Kulit dan Jaringan Subkutan (Local infection of skin and subcutaneous tissue, unspecified)"
+  },
+  {
+    "id": "ICD-361",
+    "code": "L20.9",
+    "description": "Dermatitis Atopik / Eksim Kering (Atopic dermatitis, unspecified)"
+  },
+  {
+    "id": "ICD-362",
+    "code": "L21.9",
+    "description": "Dermatitis Seboroik / Kulit Berkerak & Bersisik (Seborrhoeic dermatitis, unspecified)"
+  },
+  {
+    "id": "ICD-363",
+    "code": "L23.9",
+    "description": "Dermatitis Kontak Alergi / DKA (Allergic contact dermatitis, unspecified cause)"
+  },
+  {
+    "id": "ICD-364",
+    "code": "L24.9",
+    "description": "Dermatitis Kontak Iritan / DKI / Alergi Sabun & Kimia (Irritant contact dermatitis, unspecified cause)"
+  },
+  {
+    "id": "ICD-365",
+    "code": "L25.9",
+    "description": "Dermatitis Kontak Tidak Spesifik (Unspecified contact dermatitis, unspecified cause)"
+  },
+  {
+    "id": "ICD-366",
+    "code": "L28.0",
+    "description": "Liken Simpleks Kronis / Neurodermatitis (Lichen simplex chronicus)"
+  },
+  {
+    "id": "ICD-367",
+    "code": "L29.9",
+    "description": "Pruritus / Gatal-gatal Kulit (Pruritus, unspecified)"
+  },
+  {
+    "id": "ICD-368",
+    "code": "L30.9",
+    "description": "Dermatitis / Eksim (Dermatitis, unspecified)"
+  },
+  {
+    "id": "ICD-369",
+    "code": "L40.9",
+    "description": "Psoriasis (Psoriasis, unspecified)"
+  },
+  {
+    "id": "ICD-370",
+    "code": "L42",
+    "description": "Pitiriasis Rosea (Pityriasis rosea)"
+  },
+  {
+    "id": "ICD-371",
+    "code": "L43.9",
+    "description": "Lichen Planus"
+  },
+  {
+    "id": "ICD-372",
+    "code": "L50.0",
+    "description": "Urtikaria Alergik / Biduran / Kaligata (Allergic urticaria)"
+  },
+  {
+    "id": "ICD-373",
+    "code": "L50.9",
+    "description": "Urtikaria / Biduran (Urticaria, unspecified)"
+  },
+  {
+    "id": "ICD-374",
+    "code": "L57.0",
+    "description": "Keratosis Aktinik"
+  },
+  {
+    "id": "ICD-375",
+    "code": "L60.0",
+    "description": "Cantengan"
+  },
+  {
+    "id": "ICD-376",
+    "code": "L70.0",
+    "description": "Akne Vulgaris / Jerawat (Acne vulgaris)"
+  },
+  {
+    "id": "ICD-377",
+    "code": "L72.0",
+    "description": "Kista Epidermal / Kista Ateroma (Epidermal cyst)"
+  },
+  {
+    "id": "ICD-378",
+    "code": "L73.2",
+    "description": "Hidradenitis Supurativa (Hidradenitis suppurativa)"
+  },
+  {
+    "id": "ICD-379",
+    "code": "L74.3",
+    "description": "Miliaria / Biang Keringat (Miliaria, unspecified)"
+  },
+  {
+    "id": "ICD-380",
+    "code": "L82",
+    "description": "Keratosis Seboroik (Seborrhoeic keratosis)"
+  },
+  {
+    "id": "ICD-381",
+    "code": "L84",
+    "description": "Klavus dan Kalus / Mata Ikan & Kapalan (Corns and callosities)"
+  },
+  {
+    "id": "ICD-382",
+    "code": "L89",
+    "description": "Ulkus Dekubitus / Luka Baring (Decubitus ulcer and pressure area)"
+  },
+  {
+    "id": "ICD-383",
+    "code": "L90.0",
+    "description": "Lichen Sklerosis"
+  },
+  {
+    "id": "ICD-384",
+    "code": "L98.4",
+    "description": "Ulkus Kronis Kulit / Borok (Chronic ulcer of skin, not elsewhere classified)"
+  },
+  {
+    "id": "ICD-385",
+    "code": "M00.9",
+    "description": "Artritis Septik"
+  },
+  {
+    "id": "ICD-386",
+    "code": "M06.9",
+    "description": "Artritis Reumatoid (Rheumatoid arthritis, unspecified)"
+  },
+  {
+    "id": "ICD-387",
+    "code": "M10.0",
+    "description": "Gout Idiopatik / Asam Urat Akut (Idiopathic gout)"
+  },
+  {
+    "id": "ICD-388",
+    "code": "M10.9",
+    "description": "Gout / Artritis Pirai (Gout, unspecified)"
+  },
+  {
+    "id": "ICD-389",
+    "code": "M13.9",
+    "description": "Artritis / Radang Sendi (Arthritis, unspecified)"
+  },
+  {
+    "id": "ICD-390",
+    "code": "M15.9",
+    "description": "Poliosteoartritis (Polyarthrosis, unspecified)"
+  },
+  {
+    "id": "ICD-391",
+    "code": "M16.9",
+    "description": "Osteoartritis Sendi Panggul (Coxarthrosis, unspecified)"
+  },
+  {
+    "id": "ICD-392",
+    "code": "M17.9",
+    "description": "Osteoartritis Sendi Lutut / OA Genu (Gonarthrosis, unspecified)"
+  },
+  {
+    "id": "ICD-393",
+    "code": "M19.9",
+    "description": "Osteoartritis / Pengapuran Sendi (Arthrosis, unspecified)"
+  },
+  {
+    "id": "ICD-394",
+    "code": "M25.5",
+    "description": "Nyeri Sendi / Artralgia (Pain in joint)"
+  },
+  {
+    "id": "ICD-395",
+    "code": "M35.9",
+    "description": "Penyakit Jaringan Ikat"
+  },
+  {
+    "id": "ICD-396",
+    "code": "M45",
+    "description": "Sponsylitis Ankilosa"
+  },
+  {
+    "id": "ICD-397",
+    "code": "M47.9",
+    "description": "Spondilosis Tulang Belakang (Spondylosis, unspecified)"
+  },
+  {
+    "id": "ICD-398",
+    "code": "M48.0",
+    "description": "Stenosis Spinal"
+  },
+  {
+    "id": "ICD-399",
+    "code": "M51.1",
+    "description": "Hernia Nukleus Pulposus"
+  },
+  {
+    "id": "ICD-400",
+    "code": "M51.2",
+    "description": "Herniasi Diskus Intervertebralis / Saraf Terjepit / HNP (Other specified intervertebral disc displacement)"
+  },
+  {
+    "id": "ICD-401",
+    "code": "M54.2",
+    "description": "Nyeri Leher / Servikalgia / Kaku Leher (Cervicalgia)"
+  },
+  {
+    "id": "ICD-402",
+    "code": "M54.3",
+    "description": "Skiatika / Ischialgia (Sciatica)"
+  },
+  {
+    "id": "ICD-403",
+    "code": "M54.4",
+    "description": "Lumbago dengan Skiatika (Lumbago with sciatica)"
+  },
+  {
+    "id": "ICD-404",
+    "code": "M54.5",
+    "description": "Nyeri Punggung Bawah / Sakit Pinggang / LBP (Low back pain)"
+  },
+  {
+    "id": "ICD-405",
+    "code": "M54.9",
+    "description": "Dorsalgia / Nyeri Punggung (Dorsalgia, unspecified)"
+  },
+  {
+    "id": "ICD-406",
+    "code": "M62.4",
+    "description": "Kontraktur Otot"
+  },
+  {
+    "id": "ICD-407",
+    "code": "M62.8",
+    "description": "Spasme Otot / Kram Otot (Other specified disorders of muscle / Muscle spasm)"
+  },
+  {
+    "id": "ICD-408",
+    "code": "M65.3",
+    "description": "Trigger Finger / Jari Mengunci (Trigger finger)"
+  },
+  {
+    "id": "ICD-409",
+    "code": "M65.4",
+    "description": "Tenosinovitis De Quervain (Radial styloid tenosynovitis [de Quervain])"
+  },
+  {
+    "id": "ICD-410",
+    "code": "M65.9",
+    "description": "Tenosinovitis"
+  },
+  {
+    "id": "ICD-411",
+    "code": "M67.4",
+    "description": "Ganglion / Kista Sendi (Ganglion)"
+  },
+  {
+    "id": "ICD-412",
+    "code": "M70.6",
+    "description": "Bursitis Trokanterika (Trochanteric bursitis)"
+  },
+  {
+    "id": "ICD-413",
+    "code": "M71.9",
+    "description": "Bursitis (Bursopathy, unspecified)"
+  },
+  {
+    "id": "ICD-414",
+    "code": "M72.2",
+    "description": "Fasciitis Plantaris / Nyeri Tumit (Plantar fascial fibromatosis / Plantar fasciitis)"
+  },
+  {
+    "id": "ICD-415",
+    "code": "M75.0",
+    "description": "Kapsulitis Perekat Bahu / Frozen Shoulder (Adhesive capsulitis of shoulder)"
+  },
+  {
+    "id": "ICD-416",
+    "code": "M75.1",
+    "description": "Sindrom Rotator Cuff (Rotator cuff syndrome)"
+  },
+  {
+    "id": "ICD-417",
+    "code": "M75.9",
+    "description": "Lesi Bahu / Nyeri Sendi Bahu (Shoulder lesion, unspecified)"
+  },
+  {
+    "id": "ICD-418",
+    "code": "M77.0",
+    "description": "Epikondilitis Medialis / Golfer Elbow (Medial epicondylitis)"
+  },
+  {
+    "id": "ICD-419",
+    "code": "M77.1",
+    "description": "Epikondilitis Lateralis / Tennis Elbow (Lateral epicondylitis)"
+  },
+  {
+    "id": "ICD-420",
+    "code": "M79.1",
+    "description": "Mialgia / Nyeri Otot / Pegal Linu (Myalgia)"
+  },
+  {
+    "id": "ICD-421",
+    "code": "M79.2",
+    "description": "Neuralgia dan Neuritis Tidak Spesifik (Neuralgia and neuritis, unspecified)"
+  },
+  {
+    "id": "ICD-422",
+    "code": "M79.3",
+    "description": "Pannikulitis"
+  },
+  {
+    "id": "ICD-423",
+    "code": "M79.7",
+    "description": "Fibromialgia (Fibromyalgia)"
+  },
+  {
+    "id": "ICD-424",
+    "code": "M80.9",
+    "description": "Osteoporosis+Fraktur"
+  },
+  {
+    "id": "ICD-425",
+    "code": "M81.9",
+    "description": "Osteoporosis"
+  },
+  {
+    "id": "ICD-426",
+    "code": "N04.9",
+    "description": "Sindrom Nefrotik"
+  },
+  {
+    "id": "ICD-427",
+    "code": "N10",
+    "description": "Pielonefritis Akut / Infeksi Ginjal (Acute tubulo-interstitial nephritis / Pyelonephritis)"
+  },
+  {
+    "id": "ICD-428",
+    "code": "N17.9",
+    "description": "Gagal Ginjal Akut"
+  },
+  {
+    "id": "ICD-429",
+    "code": "N18.9",
+    "description": "Penyakit Ginjal Kronis / CKD (Chronic kidney disease, unspecified)"
+  },
+  {
+    "id": "ICD-430",
+    "code": "N20.0",
+    "description": "Batu Ginjal / Nefrolitiasis (Calculus of kidney)"
+  },
+  {
+    "id": "ICD-431",
+    "code": "N20.1",
+    "description": "Batu Ureter / Ureterolitiasis (Calculus of ureter)"
+  },
+  {
+    "id": "ICD-432",
+    "code": "N21.0",
+    "description": "Batu Kandung Kemih / Vesikolitiasis / Kencing Batu (Calculus in bladder)"
+  },
+  {
+    "id": "ICD-433",
+    "code": "N23",
+    "description": "Kolik Ginjal"
+  },
+  {
+    "id": "ICD-434",
+    "code": "N30.0",
+    "description": "Sistitis Akut / Anyang-anyangan (Acute cystitis)"
+  },
+  {
+    "id": "ICD-435",
+    "code": "N30.1",
+    "description": "Sistitis Interstisial"
+  },
+  {
+    "id": "ICD-436",
+    "code": "N30.9",
+    "description": "Sistitis / Radang Kandung Kemih (Cystitis, unspecified)"
+  },
+  {
+    "id": "ICD-437",
+    "code": "N34.1",
+    "description": "Uretritis Non-spesifik (Nonspecific urethritis)"
+  },
+  {
+    "id": "ICD-438",
+    "code": "N34.9",
+    "description": "Uretritis / Radang Saluran Kemih (Urethritis and urethral syndrome)"
+  },
+  {
+    "id": "ICD-439",
+    "code": "N39.0",
+    "description": "Infeksi Saluran Kemih / ISK (Urinary tract infection, site not specified)"
+  },
+  {
+    "id": "ICD-440",
+    "code": "N40",
+    "description": "Hiperplasia Prostat Jinak / BPH (Hyperplasia of prostate)"
+  },
+  {
+    "id": "ICD-441",
+    "code": "N41.0",
+    "description": "Prostatitis Akut"
+  },
+  {
+    "id": "ICD-442",
+    "code": "N41.9",
+    "description": "Penyakit Radang Prostat / Prostatitis (Inflammatory disease of prostate, unspecified)"
+  },
+  {
+    "id": "ICD-443",
+    "code": "N43.3",
+    "description": "Hidrokel (Hydrocele, unspecified)"
+  },
+  {
+    "id": "ICD-444",
+    "code": "N44",
+    "description": "Torsio Testis"
+  },
+  {
+    "id": "ICD-445",
+    "code": "N45.9",
+    "description": "Orkitis dan Epididimitis (Orchitis, epididymitis and epididymo-orchitis)"
+  },
+  {
+    "id": "ICD-446",
+    "code": "N47",
+    "description": "Fimosis dan Parafimosis (Redundant prepuce, phimosis and paraphimosis)"
+  },
+  {
+    "id": "ICD-447",
+    "code": "N48.1",
+    "description": "Balanopostitis / Balanitis (Balanoposthitis)"
+  },
+  {
+    "id": "ICD-448",
+    "code": "N61",
+    "description": "Mastitis / Radang Payudara (Inflammatory disorders of breast)"
+  },
+  {
+    "id": "ICD-449",
+    "code": "N76.0",
+    "description": "Vaginitis Akut (Acute vaginitis)"
+  },
+  {
+    "id": "ICD-450",
+    "code": "N76.9",
+    "description": "Radang Vagina dan Vulva / Keputihan (Flour albus / Vaginitis)"
+  },
+  {
+    "id": "ICD-451",
+    "code": "N80.9",
+    "description": "Endometriosis"
+  },
+  {
+    "id": "ICD-452",
+    "code": "N81.4",
+    "description": "Prolaps Uteri"
+  },
+  {
+    "id": "ICD-453",
+    "code": "N83.2",
+    "description": "Kista Ovarium"
+  },
+  {
+    "id": "ICD-454",
+    "code": "N89.8",
+    "description": "Leukore/Keputihan"
+  },
+  {
+    "id": "ICD-455",
+    "code": "N91.2",
+    "description": "Amenorea / Tidak Haid (Amenorrhoea, unspecified)"
+  },
+  {
+    "id": "ICD-456",
+    "code": "N92.0",
+    "description": "Menoragia / Haid Berlebih (Excessive and frequent menstruation with regular cycle)"
+  },
+  {
+    "id": "ICD-457",
+    "code": "N93.9",
+    "description": "Perdarahan Vagina"
+  },
+  {
+    "id": "ICD-458",
+    "code": "N94.6",
+    "description": "Dismenorea / Nyeri Haid (Dysmenorrhoea, unspecified)"
+  },
+  {
+    "id": "ICD-459",
+    "code": "N95.1",
+    "description": "Menopause"
+  },
+  {
+    "id": "ICD-460",
+    "code": "O00.9",
+    "description": "Kehamilan Ektopik"
+  },
+  {
+    "id": "ICD-461",
+    "code": "O03.9",
+    "description": "Keguguran"
+  },
+  {
+    "id": "ICD-462",
+    "code": "O10.0",
+    "description": "Hipertensi Hamil"
+  },
+  {
+    "id": "ICD-463",
+    "code": "O14.1",
+    "description": "Pre-eklampsia"
+  },
+  {
+    "id": "ICD-464",
+    "code": "O20.0",
+    "description": "Ancaman Keguguran"
+  },
+  {
+    "id": "ICD-465",
+    "code": "O21.0",
+    "description": "Mual Hamil"
+  },
+  {
+    "id": "ICD-466",
+    "code": "O26.9",
+    "description": "Komplikasi Kehamilan"
+  },
+  {
+    "id": "ICD-467",
+    "code": "O42.0",
+    "description": "Ketuban Pecah Dini"
+  },
+  {
+    "id": "ICD-468",
+    "code": "O60.1",
+    "description": "Persalinan Preterm"
+  },
+  {
+    "id": "ICD-469",
+    "code": "O69.9",
+    "description": "Komplikasi Tali Pusat"
+  },
+  {
+    "id": "ICD-470",
+    "code": "O80",
+    "description": "Persalinan Normal"
+  },
+  {
+    "id": "ICD-471",
+    "code": "O85",
+    "description": "Sepsis Nifas"
+  },
+  {
+    "id": "ICD-472",
+    "code": "O86.0",
+    "description": "Infeksi Luka Jahitan"
+  },
+  {
+    "id": "ICD-473",
+    "code": "P07.1",
+    "description": "BBLR"
+  },
+  {
+    "id": "ICD-474",
+    "code": "P22.0",
+    "description": "Sesak Napas Bayi"
+  },
+  {
+    "id": "ICD-475",
+    "code": "P59.9",
+    "description": "Kuning Bayi"
+  },
+  {
+    "id": "ICD-476",
+    "code": "Q21.1",
+    "description": "VSD/Jantung Bocor"
+  },
+  {
+    "id": "ICD-477",
+    "code": "Q35.9",
+    "description": "Celah Langit-langit"
+  },
+  {
+    "id": "ICD-478",
+    "code": "Q36.9",
+    "description": "Bibir Sumbing"
+  },
+  {
+    "id": "ICD-479",
+    "code": "Q65.0",
+    "description": "Dislokasi Panggul Bawaan"
+  },
+  {
+    "id": "ICD-480",
+    "code": "Q66.0",
+    "description": "Kaki Pengkor Bawaan"
+  },
+  {
+    "id": "ICD-481",
+    "code": "R00.0",
+    "description": "Takikardia / Denyut Jantung Cepat (Tachycardia, unspecified)"
+  },
+  {
+    "id": "ICD-482",
+    "code": "R00.2",
+    "description": "Palpitasi / Jantung Berdebar (Palpitations)"
+  },
+  {
+    "id": "ICD-483",
+    "code": "R04.0",
+    "description": "Epistaksis / Mimisan (Epistaxis / Nosebleed)"
+  },
+  {
+    "id": "ICD-484",
+    "code": "R05",
+    "description": "Batuk (Cough)"
+  },
+  {
+    "id": "ICD-485",
+    "code": "R06.0",
+    "description": "Dispnea / Sesak Napas (Dyspnoea / Shortness of breath)"
+  },
+  {
+    "id": "ICD-486",
+    "code": "R06.2",
+    "description": "Ngik-ngik/Wheezing"
+  },
+  {
+    "id": "ICD-487",
+    "code": "R07.0",
+    "description": "Nyeri Tenggorokan (Pain in throat)"
+  },
+  {
+    "id": "ICD-488",
+    "code": "R07.2",
+    "description": "Nyeri Prekordial (Precordial pain)"
+  },
+  {
+    "id": "ICD-489",
+    "code": "R07.4",
+    "description": "Nyeri Dada Tidak Spesifik (Chest pain, unspecified)"
+  },
+  {
+    "id": "ICD-490",
+    "code": "R09.0",
+    "description": "Asfiksia"
+  },
+  {
+    "id": "ICD-491",
+    "code": "R10.0",
+    "description": "Abdomen Akut (Acute abdomen)"
+  },
+  {
+    "id": "ICD-492",
+    "code": "R10.1",
+    "description": "Nyeri Perut Bagian Atas / Nyeri Ulu Hati / Epigastrium (Pain localized to upper abdomen)"
+  },
+  {
+    "id": "ICD-493",
+    "code": "R10.2",
+    "description": "Nyeri Panggul dan Perineum (Pelvic and perineal pain)"
+  },
+  {
+    "id": "ICD-494",
+    "code": "R10.3",
+    "description": "Nyeri Perut Bagian Bawah (Pain localized to other parts of lower abdomen)"
+  },
+  {
+    "id": "ICD-495",
+    "code": "R10.4",
+    "description": "Nyeri Perut Lainnya / Kolik Abdomen (Other and unspecified abdominal pain)"
+  },
+  {
+    "id": "ICD-496",
+    "code": "R11",
+    "description": "Mual dan Muntah / Nausea & Vomiting (Nausea and vomiting)"
+  },
+  {
+    "id": "ICD-497",
+    "code": "R14",
+    "description": "Meteorismus / Perut Kembung / Flatus (Flatulence and related conditions)"
+  },
+  {
+    "id": "ICD-498",
+    "code": "R19.7",
+    "description": "Diare"
+  },
+  {
+    "id": "ICD-499",
+    "code": "R20.2",
+    "description": "Kesemutan"
+  },
+  {
+    "id": "ICD-500",
+    "code": "R21",
+    "description": "Ruam dan Erupsi Kulit Lainnya (Rash and other nonspecific skin eruption)"
+  },
+  {
+    "id": "ICD-501",
+    "code": "R25.2",
+    "description": "Kram Otot"
+  },
+  {
+    "id": "ICD-502",
+    "code": "R33",
+    "description": "Retensi Urin"
+  },
+  {
+    "id": "ICD-503",
+    "code": "R35",
+    "description": "Sering Buang Air Kecil"
+  },
+  {
+    "id": "ICD-504",
+    "code": "R41.3",
+    "description": "Gangguan Memori"
+  },
+  {
+    "id": "ICD-505",
+    "code": "R42",
+    "description": "Pusing / Vertigo / Rasa Melayang (Dizziness and giddiness)"
+  },
+  {
+    "id": "ICD-506",
+    "code": "R45.1",
+    "description": "Gelisah"
+  },
+  {
+    "id": "ICD-507",
+    "code": "R50.9",
+    "description": "Demam Tanpa Sebab Jelas / Febris / FUO (Fever, unspecified)"
+  },
+  {
+    "id": "ICD-508",
+    "code": "R51",
+    "description": "Sakit Kepala / Cephalea / Pusing Kepala (Headache / Cephalea)"
+  },
+  {
+    "id": "ICD-509",
+    "code": "R52.9",
+    "description": "Nyeri Tidak Spesifik (Pain, unspecified)"
+  },
+  {
+    "id": "ICD-510",
+    "code": "R53",
+    "description": "Malaise dan Kelelahan / Lemas / Badan Capek (Malaise and fatigue)"
+  },
+  {
+    "id": "ICD-511",
+    "code": "R53.83",
+    "description": "Other fatigue"
+  },
+  {
+    "id": "ICD-512",
+    "code": "R55",
+    "description": "Sinkop dan Kolaps / Pingsan (Syncope and collapse)"
+  },
+  {
+    "id": "ICD-513",
+    "code": "R56.0",
+    "description": "Kejang Demam (Febrile convulsions)"
+  },
+  {
+    "id": "ICD-514",
+    "code": "R56.8",
+    "description": "Kejang Lainnya (Other and unspecified convulsions)"
+  },
+  {
+    "id": "ICD-515",
+    "code": "R60.0",
+    "description": "Edema Terlokalisasi / Bengkak Kaki/Tangan (Localized oedema)"
+  },
+  {
+    "id": "ICD-516",
+    "code": "R63.0",
+    "description": "Anoreksia / Hilang Nafsu Makan (Anorexia)"
+  },
+  {
+    "id": "ICD-517",
+    "code": "R68.0",
+    "description": "Hipotermia"
+  },
+  {
+    "id": "ICD-518",
+    "code": "R73.0",
+    "description": "Gula Darah Tinggi"
+  },
+  {
+    "id": "ICD-519",
+    "code": "R73.09",
+    "description": "Hiperglikemia"
+  },
+  {
+    "id": "ICD-520",
+    "code": "R74.0",
+    "description": "Enzim Hati Tinggi"
+  },
+  {
+    "id": "ICD-521",
+    "code": "S00.0",
+    "description": "Luka Lecet Kepala"
+  },
+  {
+    "id": "ICD-522",
+    "code": "S00.9",
+    "description": "Cedera Dangkal Kepala / Memar Kepala (Superficial injury of head, unspecified)"
+  },
+  {
+    "id": "ICD-523",
+    "code": "S01.0",
+    "description": "Luka Robek / Vulnus Laceratum Kulit Kepala (Open wound of scalp)"
+  },
+  {
+    "id": "ICD-524",
+    "code": "S01.2",
+    "description": "Luka Hidung"
+  },
+  {
+    "id": "ICD-525",
+    "code": "S01.5",
+    "description": "Luka Mulut"
+  },
+  {
+    "id": "ICD-526",
+    "code": "S01.8",
+    "description": "Luka Robek Bagian Lain Kepala dan Wajah (Open wound of other parts of head)"
+  },
+  {
+    "id": "ICD-527",
+    "code": "S01.9",
+    "description": "Vulnus Laseratum"
+  },
+  {
+    "id": "ICD-528",
+    "code": "S05.0",
+    "description": "Trauma / Erosi Kornea dan Konjungtiva (Injury of conjunctiva and corneal abrasion)"
+  },
+  {
+    "id": "ICD-529",
+    "code": "S06.0",
+    "description": "Gegar Otak / Cedera Kepala Ringan / CKR (Concussion)"
+  },
+  {
+    "id": "ICD-530",
+    "code": "S09.9",
+    "description": "Cedera Kepala Tidak Spesifik (Unspecified injury of head)"
+  },
+  {
+    "id": "ICD-531",
+    "code": "S10.9",
+    "description": "Cedera Dangkal Leher (Superficial injury of neck, unspecified)"
+  },
+  {
+    "id": "ICD-532",
+    "code": "S11.9",
+    "description": "VL Leher"
+  },
+  {
+    "id": "ICD-533",
+    "code": "S20.2",
+    "description": "Kontusio Toraks / Memar Dada (Contusion of thorax)"
+  },
+  {
+    "id": "ICD-534",
+    "code": "S21.9",
+    "description": "VL Dada"
+  },
+  {
+    "id": "ICD-535",
+    "code": "S30.0",
+    "description": "Kontusio Punggung Bawah dan Panggul (Contusion of lower back and pelvis)"
+  },
+  {
+    "id": "ICD-536",
+    "code": "S31.9",
+    "description": "VL Perut"
+  },
+  {
+    "id": "ICD-537",
+    "code": "S32.0",
+    "description": "Patah Tulang Belakang"
+  },
+  {
+    "id": "ICD-538",
+    "code": "S40.0",
+    "description": "Kontusio Bahu dan Lengan Atas (Contusion of shoulder and upper arm)"
+  },
+  {
+    "id": "ICD-539",
+    "code": "S41.1",
+    "description": "VL Lengan Atas"
+  },
+  {
+    "id": "ICD-540",
+    "code": "S42.9",
+    "description": "Patah Bahu/Selangka"
+  },
+  {
+    "id": "ICD-541",
+    "code": "S43.0",
+    "description": "Dislokasi Sendi Bahu (Dislocation of shoulder joint)"
+  },
+  {
+    "id": "ICD-542",
+    "code": "S50.0",
+    "description": "Kontusio Siku (Contusion of elbow)"
+  },
+  {
+    "id": "ICD-543",
+    "code": "S51.8",
+    "description": "Luka Robek / Vulnus Laceratum Lengan Bawah (Open wound of other parts of forearm)"
+  },
+  {
+    "id": "ICD-544",
+    "code": "S51.9",
+    "description": "VL Lengan Bawah"
+  },
+  {
+    "id": "ICD-545",
+    "code": "S52.9",
+    "description": "Patah Tulang Lengan"
+  },
+  {
+    "id": "ICD-546",
+    "code": "S60.0",
+    "description": "Kontusio Jari Tangan (Contusion of finger[s] without damage to nail)"
+  },
+  {
+    "id": "ICD-547",
+    "code": "S60.2",
+    "description": "Kontusio Bagian Lain Pergelangan Tangan dan Tangan (Contusion of other parts of wrist and hand)"
+  },
+  {
+    "id": "ICD-548",
+    "code": "S61.0",
+    "description": "Luka Robek Jari Tangan Tanpa Kerusakan Kuku (Open wound of finger[s] without damage to nail)"
+  },
+  {
+    "id": "ICD-549",
+    "code": "S61.1",
+    "description": "Luka Robek Jari Tangan dengan Kerusakan Kuku (Open wound of finger[s] with damage to nail)"
+  },
+  {
+    "id": "ICD-550",
+    "code": "S61.9",
+    "description": "Luka Robek Pergelangan Tangan dan Tangan (Open wound of wrist and hand, part unspecified)"
+  },
+  {
+    "id": "ICD-551",
+    "code": "S62.3",
+    "description": "Patah Tangan"
+  },
+  {
+    "id": "ICD-552",
+    "code": "S62.6",
+    "description": "Fraktur Jari Tangan / Tulang Falang (Fracture of other finger)"
+  },
+  {
+    "id": "ICD-553",
+    "code": "S63.5",
+    "description": "Keseleo dan Regangan Pergelangan Tangan (Sprain and strain of wrist)"
+  },
+  {
+    "id": "ICD-554",
+    "code": "S63.6",
+    "description": "Keseleo dan Regangan Jari Tangan (Sprain and strain of finger[s])"
+  },
+  {
+    "id": "ICD-555",
+    "code": "S70.0",
+    "description": "Kontusio Panggul / Paha (Contusion of hip)"
+  },
+  {
+    "id": "ICD-556",
+    "code": "S71.1",
+    "description": "VL Paha"
+  },
+  {
+    "id": "ICD-557",
+    "code": "S72.9",
+    "description": "Patah Tulang Paha"
+  },
+  {
+    "id": "ICD-558",
+    "code": "S80.0",
+    "description": "Kontusio Lutut (Contusion of knee)"
+  },
+  {
+    "id": "ICD-559",
+    "code": "S81.8",
+    "description": "Luka Robek Tungkai Bawah / Betis (Open wound of other parts of lower leg)"
+  },
+  {
+    "id": "ICD-560",
+    "code": "S81.9",
+    "description": "VL Tungkai Bawah"
+  },
+  {
+    "id": "ICD-561",
+    "code": "S82.9",
+    "description": "Patah Tulang Betis"
+  },
+  {
+    "id": "ICD-562",
+    "code": "S83.6",
+    "description": "Keseleo dan Regangan Sendi Lutut (Sprain and strain of other and unspecified parts of knee)"
+  },
+  {
+    "id": "ICD-563",
+    "code": "S90.0",
+    "description": "Kontusio Pergelangan Kaki (Contusion of ankle)"
+  },
+  {
+    "id": "ICD-564",
+    "code": "S90.3",
+    "description": "Kontusio Bagian Lain Kaki / Telapak Kaki (Contusion of other and unspecified parts of foot)"
+  },
+  {
+    "id": "ICD-565",
+    "code": "S91.3",
+    "description": "Luka Robek Kaki / Telapak Kaki (Open wound of other parts of foot)"
+  },
+  {
+    "id": "ICD-566",
+    "code": "S93.4",
+    "description": "Keseleo dan Regangan Pergelangan Kaki / Ankle Sprain (Sprain and strain of ankle)"
+  },
+  {
+    "id": "ICD-567",
+    "code": "T00.9",
+    "description": "Luka Lecet Ganda / Vulnus Excoriatum Multi-regio (Multiple superficial injuries, unspecified)"
+  },
+  {
+    "id": "ICD-568",
+    "code": "T09.1",
+    "description": "Luka Terbuka Punggung"
+  },
+  {
+    "id": "ICD-569",
+    "code": "T14.0",
+    "description": "Luka Lecet / Ekskoriasi / Vulnus Excoriatum (Superficial injury of unspecified body region)"
+  },
+  {
+    "id": "ICD-570",
+    "code": "T14.1",
+    "description": "Luka Terbuka / Luka Sayat / Vulnus Scissum / Vulnus Laceratum (Open wound of unspecified body region)"
+  },
+  {
+    "id": "ICD-571",
+    "code": "T14.3",
+    "description": "Dislokasi, Keseleo dan Regangan Tidak Spesifik (Dislocation, sprain and strain of unspecified body region)"
+  },
+  {
+    "id": "ICD-572",
+    "code": "T14.9",
+    "description": "Cedera tidak spesifik"
+  },
+  {
+    "id": "ICD-573",
+    "code": "T15.0",
+    "description": "Benda Asing pada Kornea Mata (Foreign body in cornea)"
+  },
+  {
+    "id": "ICD-574",
+    "code": "T15.1",
+    "description": "Benda Asing pada Kantung Konjungtiva Mata (Foreign body in conjunctival sac)"
+  },
+  {
+    "id": "ICD-575",
+    "code": "T16",
+    "description": "Benda Asing di Liang Telinga (Foreign body in ear)"
+  },
+  {
+    "id": "ICD-576",
+    "code": "T17.1",
+    "description": "Benda Asing di Lubang Hidung (Foreign body in nostril)"
+  },
+  {
+    "id": "ICD-577",
+    "code": "T17.2",
+    "description": "Benda Asing di Faring / Duri Ikan Tertelan (Foreign body in pharynx)"
+  },
+  {
+    "id": "ICD-578",
+    "code": "T20",
+    "description": "Luka bakar dan korosi pada kepala, wajah, dan leher"
+  },
+  {
+    "id": "ICD-579",
+    "code": "T20.0",
+    "description": "Luka Bakar Kepala dan Leher Derajat Tidak Ditentukan (Burn of head and neck, unspecified degree)"
+  },
+  {
+    "id": "ICD-580",
+    "code": "T21",
+    "description": "Luka bakar dan korosi pada batang tubuh (thoraks, abdomen, punggung)"
+  },
+  {
+    "id": "ICD-581",
+    "code": "T21.0",
+    "description": "Luka Bakar Badan (Burn of trunk, unspecified degree)"
+  },
+  {
+    "id": "ICD-582",
+    "code": "T22",
+    "description": "Luka bakar dan korosi pada bahu dan lengan, kecuali pergelangan dan tangan"
+  },
+  {
+    "id": "ICD-583",
+    "code": "T22.0",
+    "description": "Luka Bakar Bahu dan Lengan Atas (Burn of shoulder and upper arm, unspecified degree)"
+  },
+  {
+    "id": "ICD-584",
+    "code": "T23",
+    "description": "Luka bakar dan korosi pada pergelangan tangan dan tangan"
+  },
+  {
+    "id": "ICD-585",
+    "code": "T23.0",
+    "description": "Luka Bakar Pergelangan Tangan dan Tangan (Burn of wrist and hand, unspecified degree)"
+  },
+  {
+    "id": "ICD-586",
+    "code": "T24",
+    "description": "Luka bakar dan korosi pada pinggul dan tungkai bawah, kecuali pergelangan kaki dan kaki"
+  },
+  {
+    "id": "ICD-587",
+    "code": "T24.0",
+    "description": "Luka Bakar Panggul dan Tungkai Bawah (Burn of hip and lower limb, unspecified degree)"
+  },
+  {
+    "id": "ICD-588",
+    "code": "T25",
+    "description": "Luka bakar dan korosi pada pergelangan kaki dan kaki"
+  },
+  {
+    "id": "ICD-589",
+    "code": "T30.0",
+    "description": "Luka Bakar Termal / Panas (Burn of unspecified body region, unspecified degree)"
+  },
+  {
+    "id": "ICD-590",
+    "code": "T30.1",
+    "description": "Luka bakar derajat I (superfisial), lokasi tidak spesifik"
+  },
+  {
+    "id": "ICD-591",
+    "code": "T30.2",
+    "description": "Luka bakar derajat II (parsial ketebalan), lokasi tidak spesifik"
+  },
+  {
+    "id": "ICD-592",
+    "code": "T30.3",
+    "description": "Luka bakar derajat III (penuh ketebalan, sampai otot/tulang), lokasi tidak spesifik"
+  },
+  {
+    "id": "ICD-593",
+    "code": "T30.4",
+    "description": "Luka Bakar Kimiawi / Korosi (Corrosion of unspecified body region, unspecified degree)"
+  },
+  {
+    "id": "ICD-594",
+    "code": "T31.0",
+    "description": "Luka bakar yang melibatkan <10% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-595",
+    "code": "T31.1",
+    "description": "Luka bakar yang melibatkan 10–19% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-596",
+    "code": "T31.2",
+    "description": "Luka bakar yang melibatkan 20–29% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-597",
+    "code": "T31.3",
+    "description": "Luka bakar yang melibatkan 30–39% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-598",
+    "code": "T31.4",
+    "description": "Luka bakar yang melibatkan 40–49% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-599",
+    "code": "T31.5",
+    "description": "Luka bakar yang melibatkan 50–59% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-600",
+    "code": "T31.6",
+    "description": "Luka bakar yang melibatkan 60–69% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-601",
+    "code": "T31.7",
+    "description": "Luka bakar yang melibatkan 70–79% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-602",
+    "code": "T31.8",
+    "description": "Luka bakar yang melibatkan 80–89% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-603",
+    "code": "T31.9",
+    "description": "Luka bakar yang melibatkan ≥90% luas permukaan tubuh"
+  },
+  {
+    "id": "ICD-604",
+    "code": "T62.0",
+    "description": "Keracunan Makanan / Jamur (Ingested mushrooms)"
+  },
+  {
+    "id": "ICD-605",
+    "code": "T62.2",
+    "description": "Keracunan Tumbuhan / Makanan Lainnya (Other ingested [parts of] plant[s])"
+  },
+  {
+    "id": "ICD-606",
+    "code": "T63.0",
+    "description": "Bisa Gigitan Ular (Snake venom)"
+  },
+  {
+    "id": "ICD-607",
+    "code": "T63.2",
+    "description": "Bisa Gigitan / Sengatan Kalajengking (Scorpion venom)"
+  },
+  {
+    "id": "ICD-608",
+    "code": "T63.4",
+    "description": "Sengatan Serangga / Tawon / Lebah (Venom of other arthropods / Insect sting)"
+  },
+  {
+    "id": "ICD-609",
+    "code": "T65.9",
+    "description": "Intoksikasi / Keracunan Zat Kimia Tidak Spesifik (Toxic effect of unspecified substance)"
+  },
+  {
+    "id": "ICD-610",
+    "code": "T78.0",
+    "description": "Syok Anafilaktik Akibat Alergi Makanan (Anaphylactic shock due to adverse food reaction)"
+  },
+  {
+    "id": "ICD-611",
+    "code": "T78.1",
+    "description": "Reaksi Alergi Makanan"
+  },
+  {
+    "id": "ICD-612",
+    "code": "T78.2",
+    "description": "Syok Anafilaktik Tidak Spesifik (Anaphylactic shock, unspecified)"
+  },
+  {
+    "id": "ICD-613",
+    "code": "T78.4",
+    "description": "Reaksi Alergi Tidak Spesifik (Allergy, unspecified)"
+  },
+  {
+    "id": "ICD-614",
+    "code": "T81.4",
+    "description": "Infeksi Pasca Tindakan / Infeksi Luka Operasi (Infection following a procedure, not elsewhere classified)"
+  },
+  {
+    "id": "ICD-615",
+    "code": "U07.1",
+    "description": "COVID-19"
+  },
+  {
+    "id": "ICD-616",
+    "code": "V01",
+    "description": "Pejalan kaki cedera tabrakan sepeda (lalin)"
+  },
+  {
+    "id": "ICD-617",
+    "code": "V02",
+    "description": "Pejalan kaki cedera tabrakan motor (lalin)"
+  },
+  {
+    "id": "ICD-618",
+    "code": "V03",
+    "description": "Pejalan kaki cedera tabrakan mobil/pick up/van (lalin)"
+  },
+  {
+    "id": "ICD-619",
+    "code": "V05",
+    "description": "Pejalan kaki cedera tabrakan bus/truk (lalin)"
+  },
+  {
+    "id": "ICD-620",
+    "code": "V09",
+    "description": "Pejalan kaki cedera kecelakaan lalu lintas lain/tidak spesifik"
+  },
+  {
+    "id": "ICD-621",
+    "code": "V20",
+    "description": "Pengendara motor cedera tabrakan pejalan kaki/hewan (lalin)"
+  },
+  {
+    "id": "ICD-622",
+    "code": "V21",
+    "description": "Pengendara motor cedera tabrakan sepeda (lalin)"
+  },
+  {
+    "id": "ICD-623",
+    "code": "V22",
+    "description": "Pengendara motor cedera tabrakan motor (lalin)"
+  },
+  {
+    "id": "ICD-624",
+    "code": "V23",
+    "description": "Pengendara motor cedera tabrakan mobil/pick up/van (lalin)"
+  },
+  {
+    "id": "ICD-625",
+    "code": "V24",
+    "description": "Pengendara motor cedera tabrakan bus/truk (lalin)"
+  },
+  {
+    "id": "ICD-626",
+    "code": "V28",
+    "description": "Pengendara motor cedera tabrakan objek tetap/benda lain (lalin)"
+  },
+  {
+    "id": "ICD-627",
+    "code": "V29",
+    "description": "Pengendara motor cedera kecelakaan lalu lintas lain/tidak spesifik"
+  },
+  {
+    "id": "ICD-628",
+    "code": "V40",
+    "description": "Penumpang/pengemudi mobil cedera tabrakan pejalan kaki/hewan (lalin)"
+  },
+  {
+    "id": "ICD-629",
+    "code": "V41",
+    "description": "Penumpang/pengemudi mobil cedera tabrakan sepeda (lalin)"
+  },
+  {
+    "id": "ICD-630",
+    "code": "V42",
+    "description": "Penumpang/pengemudi mobil cedera tabrakan motor (lalin)"
+  },
+  {
+    "id": "ICD-631",
+    "code": "V43",
+    "description": "Penumpang/pengemudi mobil cedera tabrakan mobil/pick up/van (lalin)"
+  },
+  {
+    "id": "ICD-632",
+    "code": "V44",
+    "description": "Penumpang/pengemudi mobil cedera tabrakan bus/truk (lalin)"
+  },
+  {
+    "id": "ICD-633",
+    "code": "V47",
+    "description": "Penumpang/pengemudi mobil cedera tabrakan objek tetap (lalin)"
+  },
+  {
+    "id": "ICD-634",
+    "code": "V48",
+    "description": "Penumpang/pengemudi mobil cedera kecelakaan non‑tabrakan (lalin)"
+  },
+  {
+    "id": "ICD-635",
+    "code": "V49",
+    "description": "Penumpang/pengemudi mobil cedera kecelakaan lalu lintas lain/tidak spesifik"
+  },
+  {
+    "id": "ICD-636",
+    "code": "V70",
+    "description": "Penumpang/pengemudi bus cedera tabrakan pejalan kaki/hewan (lalin)"
+  },
+  {
+    "id": "ICD-637",
+    "code": "V71",
+    "description": "Penumpang/pengemudi bus cedera tabrakan sepeda (lalin)"
+  },
+  {
+    "id": "ICD-638",
+    "code": "V72",
+    "description": "Penumpang/pengemudi bus cedera tabrakan motor (lalin)"
+  },
+  {
+    "id": "ICD-639",
+    "code": "V73",
+    "description": "Penumpang/pengemudi bus cedera tabrakan mobil/pick up/van (lalin)"
+  },
+  {
+    "id": "ICD-640",
+    "code": "V74",
+    "description": "Penumpang/pengemudi bus cedera tabrakan truk lain (lalin)"
+  },
+  {
+    "id": "ICD-641",
+    "code": "V77",
+    "description": "Penumpang/pengemudi bus cedera tabrakan beberapa kendaraan (lalin)"
+  },
+  {
+    "id": "ICD-642",
+    "code": "V78",
+    "description": "Penumpang/pengemudi bus cedera tabrakan objek tetap (lalin)"
+  },
+  {
+    "id": "ICD-643",
+    "code": "V79",
+    "description": "Penumpang/pengemudi bus cedera kecelakaan lalu lintas lain/tidak spesifik"
+  },
+  {
+    "id": "ICD-644",
+    "code": "W19",
+    "description": "Jatuh"
+  },
+  {
+    "id": "ICD-645",
+    "code": "W50",
+    "description": "Terpukul/Tertendang"
+  },
+  {
+    "id": "ICD-646",
+    "code": "X49",
+    "description": "Keracunan"
+  },
+  {
+    "id": "ICD-647",
+    "code": "Z00.0",
+    "description": "Pemeriksaan Kesehatan Umum / Medical Check Up (General medical examination)"
+  },
+  {
+    "id": "ICD-648",
+    "code": "Z01.0",
+    "description": "Pemeriksaan Mata dan Penglihatan (Examination of eyes and vision)"
+  },
+  {
+    "id": "ICD-649",
+    "code": "Z01.1",
+    "description": "Pemeriksaan Telinga dan Pendengaran (Examination of ears and hearing)"
+  },
+  {
+    "id": "ICD-650",
+    "code": "Z01.2",
+    "description": "Pemeriksaan Gigi (Dental examination)"
+  },
+  {
+    "id": "ICD-651",
+    "code": "Z02.1",
+    "description": "Pemeriksaan Pra-Kerja / Pre-Employment Check (Pre-employment examination)"
+  },
+  {
+    "id": "ICD-652",
+    "code": "Z02.7",
+    "description": "Pemberian Surat Keterangan Medis / Surat Sakit (Issue of medical certificate)"
+  },
+  {
+    "id": "ICD-653",
+    "code": "Z04.2",
+    "description": "Pemeriksaan Pasca Kecelakaan Kerja (Examination and observation following work accident)"
+  },
+  {
+    "id": "ICD-654",
+    "code": "Z13.1",
+    "description": "Skrining Hipertensi"
+  },
+  {
+    "id": "ICD-655",
+    "code": "Z20.820",
+    "description": "Kontak/paparan varisela"
+  },
+  {
+    "id": "ICD-656",
+    "code": "Z22.3",
+    "description": "Kontak TB"
+  },
+  {
+    "id": "ICD-657",
+    "code": "Z23",
+    "description": "Kebutuhan Imunisasi / Vaksinasi (Need for immunization)"
+  },
+  {
+    "id": "ICD-658",
+    "code": "Z25.1",
+    "description": "Imunisasi Hepatitis B"
+  },
+  {
+    "id": "ICD-659",
+    "code": "Z27.0",
+    "description": "Imunisasi Ganda"
+  },
+  {
+    "id": "ICD-660",
+    "code": "Z29.0",
+    "description": "Karantina"
+  },
+  {
+    "id": "ICD-661",
+    "code": "Z30.0",
+    "description": "Konseling KB"
+  },
+  {
+    "id": "ICD-662",
+    "code": "Z30.1",
+    "description": "Pasang IUD"
+  },
+  {
+    "id": "ICD-663",
+    "code": "Z30.3",
+    "description": "Pasang Implan"
+  },
+  {
+    "id": "ICD-664",
+    "code": "Z34.0",
+    "description": "ANC/Hamil Normal"
+  },
+  {
+    "id": "ICD-665",
+    "code": "Z34.1",
+    "description": "ANC Trimester II"
+  },
+  {
+    "id": "ICD-666",
+    "code": "Z34.2",
+    "description": "ANC Trimester III"
+  },
+  {
+    "id": "ICD-667",
+    "code": "Z35.0",
+    "description": "Pengawasan Hamil Risiko"
+  },
+  {
+    "id": "ICD-668",
+    "code": "Z39.1",
+    "description": "Konseling Menyusui"
+  },
+  {
+    "id": "ICD-669",
+    "code": "Z39.2",
+    "description": "Kontrasepsi"
+  },
+  {
+    "id": "ICD-670",
+    "code": "Z48.0",
+    "description": "Perawatan Luka / Angkat Jahitan / Ganti Perban (Attention to surgical dressings and sutures)"
+  },
+  {
+    "id": "ICD-671",
+    "code": "Z48.1",
+    "description": "Rawat Luka Ops"
+  },
+  {
+    "id": "ICD-672",
+    "code": "Z48.8",
+    "description": "Perawatan Pasca Tindakan"
+  },
+  {
+    "id": "ICD-673",
+    "code": "Z48.9",
+    "description": "Pasca Operasi"
+  },
+  {
+    "id": "ICD-674",
+    "code": "Z51.1",
+    "description": "Kemoterapi"
+  },
+  {
+    "id": "ICD-675",
+    "code": "Z51.5",
+    "description": "Perawatan Paliatif"
+  },
+  {
+    "id": "ICD-676",
+    "code": "Z57.9",
+    "description": "Paparan Bahaya Kerja Tidak Spesifik (Occupational exposure to unspecified risk-factor)"
+  },
+  {
+    "id": "ICD-677",
+    "code": "Z71.1",
+    "description": "Konseling Gizi"
+  },
+  {
+    "id": "ICD-678",
+    "code": "Z71.3",
+    "description": "Konseling Diet"
+  },
+  {
+    "id": "ICD-679",
+    "code": "Z71.9",
+    "description": "Konseling Kesehatan (Counselling, unspecified)"
+  },
+  {
+    "id": "ICD-680",
+    "code": "Z76.0",
+    "description": "Ambil Resep"
+  },
+  {
+    "id": "ICD-681",
+    "code": "Z96.6",
+    "description": "Implan Ortopedi"
+  }
+]
