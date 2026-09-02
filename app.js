@@ -3346,151 +3346,346 @@ async function processShipmentAndPrint() {
 function printSuratJalanPDF(sender, receiver, items, customNoSurat, customTgl) {
   const tglIndo = customTgl || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const noSurat = customNoSurat || `SJ-${Date.now()}`;
+  const totalQty = (items || []).reduce((acc, it) => acc + (parseInt(it.qty || it.jumlah) || 0), 0);
+  const totalKinds = (items || []).length;
 
-  const rowsHTML = (items || []).map((item, idx) => `
-    <tr>
-      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold;">${idx + 1}</td>
-      <td style="border: 1px solid #000; padding: 6px; text-transform: uppercase; font-weight: 600;">${item.name || item.nama || 'Obat'}</td>
-      <td style="text-align: center; border: 1px solid #000; padding: 6px;">${item.initial !== undefined ? item.initial : '-'} ${item.satuan || ''}</td>
-      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold; font-size: 11pt;">${item.qty || 0} ${item.satuan || ''}</td>
-      <td style="text-align: center; border: 1px solid #000; padding: 6px; font-weight: bold; color: green; font-size: 11pt;">${item.final !== undefined ? item.final : '-'} ${item.satuan || ''}</td>
-    </tr>
-  `).join('');
+  const rowsHTML = (items || []).map((item, idx) => {
+    const namaObat = item.name || item.nama || 'Obat';
+    const satuan = item.satuan || 'tab';
+    const stokAwal = item.initial !== undefined ? item.initial : (item.stokAwal !== undefined ? item.stokAwal : '-');
+    const jumlahKirim = item.qty || item.jumlah || 0;
+    const stokAkhir = item.final !== undefined ? item.final : (item.stokAkhir !== undefined ? item.stokAkhir : '-');
+
+    return `
+      <tr>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 600; font-size: 8pt; width: 5%;">${idx + 1}</td>
+        <td style="border: 1px solid #334155; padding: 4px 8px; text-transform: uppercase; font-weight: 600; font-size: 8pt; color: #0f172a;">${namaObat}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt; color: #475569; width: 10%;">${satuan}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt; color: #64748b; width: 14%;">${stokAwal} ${satuan}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 700; font-size: 8.5pt; color: #0f172a; background: #f0fdf4; width: 15%;">+${jumlahKirim} ${satuan}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 700; font-size: 8.5pt; color: #166534; background: #f0fdf4; width: 15%;">${stokAkhir} ${satuan}</td>
+      </tr>
+    `;
+  }).join('');
 
   const win = window.open('', '_blank');
   win.document.write(`
     <!DOCTYPE html>
-    <html>
+    <html lang="id">
     <head>
-      <title>Surat Jalan Pengiriman Obat - Klinik PT ATI</title>
+      <meta charset="UTF-8">
+      <title>Surat Jalan Pengiriman Obat - ${noSurat}</title>
       <style>
         @page {
-          size: A5 landscape;
-          margin: 1cm;
+          size: A4 portrait;
+          margin: 10mm 14mm 10mm 14mm;
+        }
+        * {
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         body {
           font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-          color: #000;
-          background: #fff;
+          color: #0f172a;
+          background: #ffffff;
           margin: 0;
           padding: 0;
-          font-size: 9.5pt;
+          font-size: 8.5pt;
+          line-height: 1.35;
         }
-        .header {
+        .kop-container {
           display: flex;
+          align-items: center;
           justify-content: space-between;
-          border-bottom: 2px solid #000;
-          padding-bottom: 8px;
-          margin-bottom: 12px;
+          padding-bottom: 6px;
+          gap: 12px;
         }
-        .header-left h2 {
+        .kop-logo-box {
+          flex-shrink: 0;
+          width: 75px;
+          text-align: center;
+        }
+        .kop-logo-img {
+          max-width: 72px;
+          max-height: 65px;
+          object-fit: contain;
+        }
+        .kop-text-box {
+          flex: 1;
+          text-align: center;
+          padding: 0 4px;
+        }
+        .kop-company-name {
+          font-size: 13pt;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          color: #0f172a;
           margin: 0;
-          font-size: 12pt;
-          font-weight: bold;
+          text-transform: uppercase;
         }
-        .header-left p {
-          margin: 2px 0;
-          font-size: 8pt;
+        .kop-subtitle {
+          font-size: 8.5pt;
+          font-weight: 700;
+          color: #1e3a8a;
+          margin: 1px 0;
+          text-transform: uppercase;
         }
-        .header-right {
-          text-align: right;
+        .kop-address {
+          font-size: 7.5pt;
+          color: #475569;
+          margin: 1px 0;
+          line-height: 1.25;
         }
-        .header-right h3 {
-          margin: 0;
+        .kop-contact {
+          font-size: 7.5pt;
+          color: #64748b;
+          margin: 1px 0;
+        }
+        .kop-divider {
+          border-top: 2.5px solid #0f172a;
+          border-bottom: 1px solid #0f172a;
+          height: 3px;
+          margin: 4px 0 10px 0;
+        }
+        .doc-title-box {
+          text-align: center;
+          margin-bottom: 10px;
+        }
+        .doc-title {
           font-size: 11pt;
+          font-weight: 800;
+          letter-spacing: 0.03em;
+          color: #0f172a;
+          margin: 0;
           text-decoration: underline;
         }
-        .header-right p {
-          margin: 2px 0;
+        .doc-no {
           font-size: 8.5pt;
+          font-weight: 700;
+          color: #334155;
+          margin: 2px 0 0 0;
         }
-        .meta-grid {
+        .meta-card {
+          width: 100%;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+          background: #f8fafc;
+          padding: 6px 10px;
+          margin-bottom: 10px;
           display: grid;
           grid-template-columns: 1fr 1fr;
-          margin-bottom: 12px;
-          font-size: 9.5pt;
-          line-height: 1.4;
+          gap: 4px 16px;
+          font-size: 8pt;
+        }
+        .meta-item {
+          display: flex;
+          gap: 6px;
+        }
+        .meta-label {
+          width: 110px;
+          color: #475569;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+        .meta-val {
+          color: #0f172a;
+          font-weight: 700;
         }
         table.sj-table {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 16px;
+          margin-bottom: 8px;
         }
         table.sj-table th {
-          border: 1px solid #000;
-          border-top: 2px solid #000;
-          border-bottom: 2px solid #000;
-          padding: 6px;
-          background: #f3f4f6;
-          font-weight: bold;
+          border: 1px solid #334155;
+          padding: 5px 6px;
+          background: #e2e8f0;
+          color: #0f172a;
+          font-size: 8pt;
+          font-weight: 700;
+          text-align: center;
           text-transform: uppercase;
         }
+        table.sj-table tbody tr:nth-child(even) {
+          background: #f8fafc;
+        }
+        .summary-row td {
+          border: 1px solid #334155;
+          background: #f1f5f9;
+          padding: 5px 8px;
+          font-size: 8pt;
+          font-weight: 700;
+        }
+        .note-box {
+          border: 1px dashed #94a3b8;
+          border-radius: 4px;
+          background: #fafafa;
+          padding: 6px 10px;
+          margin-top: 6px;
+          margin-bottom: 14px;
+          font-size: 7.5pt;
+          color: #334155;
+          line-height: 1.35;
+        }
+        .note-title {
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 2px;
+        }
+        .ttd-wrapper {
+          width: 100%;
+          margin-top: 10px;
+          page-break-inside: avoid;
+        }
         .ttd-grid {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 20px;
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
           text-align: center;
-          font-size: 9.5pt;
+          font-size: 8pt;
+          gap: 12px;
         }
         .ttd-box {
-          width: 40%;
+          padding: 4px;
+        }
+        .ttd-role {
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 2px;
+        }
+        .ttd-org {
+          font-size: 7.5pt;
+          color: #475569;
+        }
+        .ttd-space {
+          height: 48px;
+        }
+        .ttd-name {
+          font-weight: 700;
+          color: #0f172a;
+          border-top: 1px solid #0f172a;
+          display: inline-block;
+          min-width: 130px;
+          padding-top: 2px;
+        }
+        .print-footer {
+          margin-top: 12px;
+          text-align: right;
+          font-size: 7pt;
+          color: #94a3b8;
+          font-style: italic;
         }
       </style>
     </head>
     <body>
-      <div class="header">
-        <div class="header-left">
-          <h2>APOTEK NAFILA MEDIKA</h2>
-          <p>Klinik Medis &amp; Distributor Obat In-House PT ATI</p>
+      <!-- KOP SURAT RESMI -->
+      <div class="kop-container">
+        <div class="kop-logo-box">
+          <img src="Salinan%20Logo%20nafila.webp" alt="Logo Nafila Medika" class="kop-logo-img" onerror="this.onerror=null; this.src='Salinan Logo nafila.webp';">
         </div>
-        <div class="header-right">
-          <h3>SURAT JALAN PENGIRIMAN OBAT</h3>
-          <p>No: ${noSurat}</p>
+        <div class="kop-text-box">
+          <h1 class="kop-company-name">APOTEK NAFILA MEDIKA</h1>
+          <div class="kop-subtitle">DISTRIBUTOR &amp; LAYANAN FARMASI IN-HOUSE KLINIK PT ATI</div>
+          <div class="kop-address">Kawasan Industri Marunda Center, Jl. Tarumajaya No. 12, Bekasi &bull; Telp / WA: 0812-8800-9921</div>
+          <div class="kop-contact">SIPA: 446/092/SIPA/DPMPTSP &bull; Email: farmasi.nafilamedika@gmail.com</div>
+        </div>
+        <div class="kop-logo-box" style="text-align: right;">
+          <img src="ATI%20Logo.png" alt="Logo PT ATI" class="kop-logo-img" onerror="this.style.display='none';">
+        </div>
+      </div>
+      <div class="kop-divider"></div>
+
+      <!-- JUDUL SURAT -->
+      <div class="doc-title-box">
+        <h2 class="doc-title">SURAT JALAN PENGIRIMAN OBAT</h2>
+        <div class="doc-no">Nomor: ${noSurat}</div>
+      </div>
+
+      <!-- METADATA PENGIRIMAN -->
+      <div class="meta-card">
+        <div class="meta-item">
+          <span class="meta-label">Pengirim / Asal:</span>
+          <span class="meta-val">${sender} (Apotek Nafila Medika)</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Tanggal Pengiriman:</span>
+          <span class="meta-val">${tglIndo}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Penerima / Tujuan:</span>
+          <span class="meta-val">In-House Klinik PT ATI (${receiver})</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Sifat Dokumen:</span>
+          <span class="meta-val" style="color: #166534;">Surat Jalan Sah / Serah Terima</span>
         </div>
       </div>
 
-      <div class="meta-grid">
-        <div>
-          <strong>Pengirim:</strong> ${sender} (Apotek Nafila)<br>
-          <strong>Tujuan:</strong> In-House Klinik PT ATI
-        </div>
-        <div style="text-align: right;">
-          <strong>Tanggal:</strong> ${tglIndo}<br>
-          <strong>Status:</strong> Dikirim &amp; Diserahterimakan
-        </div>
-      </div>
-
+      <!-- TABEL DAFTAR OBAT -->
       <table class="sj-table">
         <thead>
           <tr>
-            <th style="width: 8%;">NO</th>
-            <th style="text-align: left;">NAMA ITEM OBAT</th>
-            <th style="width: 22%;">STOK AWAL (PT ATI)</th>
-            <th style="width: 22%;">JUMLAH KIRIM (SURAT JALAN)</th>
-            <th style="width: 22%;">TOTAL AKHIR (PT ATI)</th>
+            <th style="width: 5%;">NO</th>
+            <th style="text-align: left; width: 41%;">NAMA ITEM OBAT / ALAT KESEHATAN</th>
+            <th style="width: 10%;">SATUAN</th>
+            <th style="width: 14%;">STOK AWAL</th>
+            <th style="width: 15%;">JUMLAH KIRIM</th>
+            <th style="width: 15%;">STOK AKHIR</th>
           </tr>
         </thead>
         <tbody>
           ${rowsHTML}
+          <tr class="summary-row">
+            <td colspan="4" style="text-align: right; text-transform: uppercase;">Total Mutasi Item Pengiriman:</td>
+            <td style="text-align: center; background: #dcfce7; color: #166534; font-size: 8.5pt;">+${totalQty} Unit</td>
+            <td style="text-align: center; color: #475569; font-size: 7.5pt;">(${totalKinds} Item Obat)</td>
+          </tr>
         </tbody>
       </table>
 
-      <div style="margin-top: 10px; font-style: italic; font-size: 8.5pt;">
-        *Catatan: Stok di PT ATI telah otomatis disesuaikan secara online dalam database sistem.
+      <!-- CATATAN SERAH TERIMA -->
+      <div class="note-box">
+        <div class="note-title"><i class="fa-solid fa-circle-info"></i> Ketentuan &amp; Catatan Serah Terima:</div>
+        1. Seluruh item obat/alkes di atas telah diverifikasi fisik, segel, dan jumlahnya dalam kondisi baik.<br>
+        2. Mutasi stok obat pada sistem online Rekam Medis &amp; Gudang In-House PT ATI telah disinkronkan secara otomatis.<br>
+        3. Lembar 1: Arsip Penerima (Klinik PT ATI) &bull; Lembar 2: Arsip Pengirim (Apotek Nafila Medika).
       </div>
 
-      <div class="ttd-grid">
-        <div class="ttd-box">
-          Penerima,<br><strong>Perawat Jaga PT ATI</strong><br><br><br><br>
-          ( ${receiver} )
-        </div>
-        <div class="ttd-box">
-          Pengirim,<br><strong>Petugas Apotek Nafila</strong><br><br><br><br>
-          ( ${sender} )
+      <!-- TANDA TANGAN 3 PIHAK -->
+      <div class="ttd-wrapper">
+        <div class="ttd-grid">
+          <div class="ttd-box">
+            <div class="ttd-role">Diserahkan Oleh (Pengirim),</div>
+            <div class="ttd-org">Petugas Apotek Nafila</div>
+            <div class="ttd-space"></div>
+            <div class="ttd-name">${sender}</div>
+          </div>
+          <div class="ttd-box">
+            <div class="ttd-role">Diterima Oleh (Penerima),</div>
+            <div class="ttd-org">Perawat Jaga Klinik PT ATI</div>
+            <div class="ttd-space"></div>
+            <div class="ttd-name">${receiver}</div>
+          </div>
+          <div class="ttd-box">
+            <div class="ttd-role">Mengetahui,</div>
+            <div class="ttd-org">Penanggung Jawab Medis</div>
+            <div class="ttd-space"></div>
+            <div class="ttd-name">dr. Dylan Fadhilah</div>
+          </div>
         </div>
       </div>
 
-      <script>window.onload = function() { window.print(); };</script>
+      <div class="print-footer">
+        Dicetak secara otomatis melalui Sistem Informasi Rekam Medis &amp; Farmasi In-House PT ATI pada ${new Date().toLocaleString('id-ID')}
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 250);
+        };
+      </script>
     </body>
     </html>
   `);
