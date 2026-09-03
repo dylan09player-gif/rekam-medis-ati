@@ -116,6 +116,37 @@ function writeDB(data) {
   }
 }
 
+function logStockMutation(db, mutation) {
+  if (!Array.isArray(db.stock_mutations)) db.stock_mutations = [];
+  const now = new Date();
+  const nowIndo = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'numeric', year: 'numeric' });
+  const entry = {
+    id: mutation.id || `MUT-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    tanggal: mutation.tanggal || nowIndo,
+    created_at: mutation.created_at || now.toISOString(),
+    type: mutation.type || 'OUT', // 'IN' | 'OUT' | 'ADJUST'
+    namaObat: String(mutation.namaObat || mutation.nama || 'Obat').trim(),
+    satuan: mutation.satuan || 'tab',
+    qty: Math.abs(parseInt(mutation.qty) || 0),
+    delta: parseInt(mutation.delta) || 0, // positive or negative
+    stokSebelum: parseInt(mutation.stokSebelum) || 0,
+    stokSesudah: parseInt(mutation.stokSesudah) || 0,
+    refType: mutation.refType || 'RESEP_POLI', // 'SURAT_JALAN' | 'RESEP_POLI' | 'REVISI_RECORD' | 'BATAL_BEROBAT' | 'STOK_OPNAME'
+    refId: mutation.refId || '',
+    refDoc: mutation.refDoc || '',
+    pasien: mutation.pasien || '',
+    nik: mutation.nik || '',
+    petugas: mutation.petugas || 'Petugas Medis',
+    keterangan: mutation.keterangan || ''
+  };
+  db.stock_mutations.unshift(entry);
+  if (db.stock_mutations.length > 5000) {
+    db.stock_mutations = db.stock_mutations.slice(0, 5000);
+  }
+  return entry;
+}
+
+
 app.get('/api/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -998,6 +1029,23 @@ app.put('/api/medicines/:id', (req, res) => {
     const namaPetugas = petugas || 'Petugas Gudang / Apoteker';
     const alasanEdit = alasan || 'Pembaruan data obat';
 
+    const diff = newStok - (parseInt(oldMed.stok) || 0);
+    if (diff !== 0) {
+      logStockMutation(db, {
+        type: 'ADJUST',
+        namaObat: newNama,
+        satuan: newSatuan,
+        qty: Math.abs(diff),
+        delta: diff,
+        stokSebelum: parseInt(oldMed.stok) || 0,
+        stokSesudah: newStok,
+        refType: 'STOK_OPNAME',
+        refDoc: 'Penyesuaian Manual / Opname',
+        petugas: namaPetugas,
+        keterangan: alasanEdit
+      });
+    }
+
     db.medicines[idx] = {
       ...oldMed,
       nama: newNama,
@@ -1054,18 +1102,38 @@ app.post('/api/medicines/transfer', (req, res) => {
 
   const updatedMedicines = [];
   const auditLogs = [];
+  const noSurat = `SJ-${Date.now()}`;
+  const nowIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
   for (const item of items) {
     const idx = db.medicines.findIndex(m => m.id === item.id);
     if (idx !== -1) {
       const oldMed = { ...db.medicines[idx] };
       const qtySent = parseSafeInt(item.qty, 0);
-      const newStok = (parseSafeInt(oldMed.stok, 0)) + qtySent;
+      const prevStok = parseSafeInt(oldMed.stok, 0);
+      const newStok = prevStok + qtySent;
 
       db.medicines[idx] = {
         ...oldMed,
         stok: newStok
       };
+
+      logStockMutation(db, {
+        tanggal: nowIndo,
+        created_at: new Date().toISOString(),
+        type: 'IN',
+        namaObat: oldMed.nama,
+        satuan: oldMed.satuan || 'tab',
+        qty: qtySent,
+        delta: +qtySent,
+        stokSebelum: prevStok,
+        stokSesudah: newStok,
+        refType: 'SURAT_JALAN',
+        refId: noSurat,
+        refDoc: noSurat,
+        petugas: `${sender || 'Apotek Nafila'} ➔ ${receiver || 'Perawat PT ATI'}`,
+        keterangan: `Surat Jalan Pengiriman Obat No: ${noSurat} (${sender || 'Apotek Nafila'})`
+      });
 
       updatedMedicines.push(db.medicines[idx]);
       auditLogs.push(`• ${oldMed.nama}: *${oldMed.stok || 0}* ➔ *${newStok}* (+${qtySent} ${oldMed.satuan || 'strip'})`);
@@ -1077,8 +1145,6 @@ app.post('/api/medicines/transfer', (req, res) => {
   }
 
   // Save Surat Jalan to database
-  const noSurat = `SJ-${Date.now()}`;
-  const nowIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const newSuratJalan = {
     id: 'SJ-' + Date.now(),
     noSurat: noSurat,
@@ -1139,6 +1205,37 @@ app.delete('/api/surat-jalan/:id', (req, res) => {
   db.surat_jalan = db.surat_jalan.filter(s => s.id !== req.params.id);
   writeDB(db);
   res.json({ success: true });
+});
+
+// Endpoint Riwayat & Audit Mutasi Stok Obat (In - Out - Audit Trail)
+app.get('/api/stock-mutations', (req, res) => {
+  const db = readDB();
+  let mutations = db.stock_mutations || [];
+  const { startDate, endDate, medicine, type } = req.query;
+
+  if (startDate) {
+    const sDate = new Date(`${startDate}T00:00:00`);
+    mutations = mutations.filter(m => {
+      const d = new Date(m.created_at || m.tanggal);
+      return isNaN(d.getTime()) || d >= sDate;
+    });
+  }
+  if (endDate) {
+    const eDate = new Date(`${endDate}T23:59:59`);
+    mutations = mutations.filter(m => {
+      const d = new Date(m.created_at || m.tanggal);
+      return isNaN(d.getTime()) || d <= eDate;
+    });
+  }
+  if (medicine) {
+    const mClean = String(medicine).toLowerCase().trim();
+    mutations = mutations.filter(m => m.namaObat && m.namaObat.toLowerCase().includes(mClean));
+  }
+  if (type) {
+    mutations = mutations.filter(m => m.type === type);
+  }
+
+  res.json(mutations);
 });
 
 // ============================================================
@@ -1249,7 +1346,27 @@ app.post('/api/records', (req, res) => {
       if (namaObat) {
         const med = db.medicines.find(m => m.nama && m.nama.toLowerCase() === namaObat.toLowerCase());
         if (med) {
-          med.stok = Math.max(0, (med.stok || 0) - qty);
+          const prevStok = parseSafeInt(med.stok, 0);
+          const nextStok = Math.max(0, prevStok - qty);
+          med.stok = nextStok;
+          logStockMutation(db, {
+            tanggal: newRecord.tanggal,
+            created_at: newRecord.created_at,
+            type: 'OUT',
+            namaObat: med.nama,
+            satuan: med.satuan || 'tab',
+            qty: qty,
+            delta: -qty,
+            stokSebelum: prevStok,
+            stokSesudah: nextStok,
+            refType: 'RESEP_POLI',
+            refId: newRecord.id,
+            refDoc: 'Kunjungan Pasien',
+            pasien: newRecord.namaPasien || '',
+            nik: newRecord.nikPabrik || '',
+            petugas: newRecord.pemeriksa || 'Petugas Medis',
+            keterangan: `Resep Kunjungan: ${newRecord.namaPasien || ''} (${newRecord.asesmen || 'Pemeriksaan'})`
+          });
           logObatTeks.push(`${med.nama} (${qty}) - Sisa: ${med.stok}`);
         }
       }
@@ -1388,6 +1505,8 @@ app.put('/api/records/:id', (req, res) => {
 
   const oldRecord = db.records[idx];
   const updatedData = req.body;
+  const alasanKoreksi = updatedData.alasanKoreksi || 'Revisi / Koreksi Data Rekam Medis';
+  const petugasKoreksi = updatedData.pemeriksa || oldRecord.pemeriksa || 'Petugas Medis';
 
   // 1. Restore old medicine stock
   if (Array.isArray(oldRecord.resep) && oldRecord.resep.length > 0 && db.medicines) {
@@ -1398,7 +1517,26 @@ app.put('/api/records/:id', (req, res) => {
         const cleanName = namaObat.toLowerCase();
         const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
         if (med) {
-          med.stok = (parseInt(med.stok) || 0) + qty;
+          const prevStok = parseInt(med.stok) || 0;
+          const nextStok = prevStok + qty;
+          med.stok = nextStok;
+          logStockMutation(db, {
+            tanggal: updatedData.tanggal || oldRecord.tanggal,
+            type: 'ADJUST',
+            namaObat: med.nama,
+            satuan: med.satuan || 'tab',
+            qty: qty,
+            delta: +qty,
+            stokSebelum: prevStok,
+            stokSesudah: nextStok,
+            refType: 'REVISI_RECORD',
+            refId: oldRecord.id,
+            refDoc: 'Revisi (Kembalikan Resep Lama)',
+            pasien: oldRecord.namaPasien || '',
+            nik: oldRecord.nikPabrik || '',
+            petugas: petugasKoreksi,
+            keterangan: `Revisi Resep Lama: ${oldRecord.namaPasien || ''} (+${qty} ${med.satuan || 'tab'}) - ${alasanKoreksi}`
+          });
         }
       }
     });
@@ -1414,7 +1552,26 @@ app.put('/api/records/:id', (req, res) => {
         const cleanName = name.toLowerCase();
         const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
         if (med) {
-          med.stok = (parseInt(med.stok) || 0) + qty;
+          const prevStok = parseInt(med.stok) || 0;
+          const nextStok = prevStok + qty;
+          med.stok = nextStok;
+          logStockMutation(db, {
+            tanggal: updatedData.tanggal || oldRecord.tanggal,
+            type: 'ADJUST',
+            namaObat: med.nama,
+            satuan: med.satuan || 'tab',
+            qty: qty,
+            delta: +qty,
+            stokSebelum: prevStok,
+            stokSesudah: nextStok,
+            refType: 'REVISI_RECORD',
+            refId: oldRecord.id,
+            refDoc: 'Revisi (Kembalikan Resep Lama)',
+            pasien: oldRecord.namaPasien || '',
+            nik: oldRecord.nikPabrik || '',
+            petugas: petugasKoreksi,
+            keterangan: `Revisi Resep Lama: ${oldRecord.namaPasien || ''} (+${qty})`
+          });
         }
       }
     });
@@ -1429,7 +1586,26 @@ app.put('/api/records/:id', (req, res) => {
         const cleanName = namaObat.toLowerCase();
         const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
         if (med) {
-          med.stok = Math.max(0, (parseInt(med.stok) || 0) - qty);
+          const prevStok = parseInt(med.stok) || 0;
+          const nextStok = Math.max(0, prevStok - qty);
+          med.stok = nextStok;
+          logStockMutation(db, {
+            tanggal: updatedData.tanggal || oldRecord.tanggal,
+            type: 'OUT',
+            namaObat: med.nama,
+            satuan: med.satuan || 'tab',
+            qty: qty,
+            delta: -qty,
+            stokSebelum: prevStok,
+            stokSesudah: nextStok,
+            refType: 'REVISI_RECORD',
+            refId: oldRecord.id,
+            refDoc: 'Revisi (Resep Baru)',
+            pasien: updatedData.namaPasien || oldRecord.namaPasien || '',
+            nik: updatedData.nikPabrik || oldRecord.nikPabrik || '',
+            petugas: petugasKoreksi,
+            keterangan: `Revisi Resep Baru: ${updatedData.namaPasien || oldRecord.namaPasien || ''} (-${qty} ${med.satuan || 'tab'})`
+          });
         }
       }
     });
@@ -1465,7 +1641,26 @@ app.delete('/api/records/:id', (req, res) => {
         const cleanName = namaObat.toLowerCase();
         const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
         if (med) {
-          med.stok = (parseInt(med.stok) || 0) + qty;
+          const prevStok = parseInt(med.stok) || 0;
+          const nextStok = prevStok + qty;
+          med.stok = nextStok;
+          logStockMutation(db, {
+            tanggal: oldRecord.tanggal,
+            type: 'ADJUST',
+            namaObat: med.nama,
+            satuan: med.satuan || 'tab',
+            qty: qty,
+            delta: +qty,
+            stokSebelum: prevStok,
+            stokSesudah: nextStok,
+            refType: 'BATAL_BEROBAT',
+            refId: oldRecord.id,
+            refDoc: 'Batal Berobat (Hapus Rekam Medis)',
+            pasien: oldRecord.namaPasien || '',
+            nik: oldRecord.nikPabrik || '',
+            petugas: deletedBy,
+            keterangan: `Pembatalan Berobat (${reason}): Kembalikan stok pasien ${oldRecord.namaPasien || ''} (+${qty} ${med.satuan || 'tab'})`
+          });
           restoredMeds.push(`${med.nama} (+${qty} ${med.satuan || 'item'})`);
         }
       }
@@ -1481,7 +1676,26 @@ app.delete('/api/records/:id', (req, res) => {
         const cleanName = name.toLowerCase();
         const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
         if (med) {
-          med.stok = (parseInt(med.stok) || 0) + qty;
+          const prevStok = parseInt(med.stok) || 0;
+          const nextStok = prevStok + qty;
+          med.stok = nextStok;
+          logStockMutation(db, {
+            tanggal: oldRecord.tanggal,
+            type: 'ADJUST',
+            namaObat: med.nama,
+            satuan: med.satuan || 'tab',
+            qty: qty,
+            delta: +qty,
+            stokSebelum: prevStok,
+            stokSesudah: nextStok,
+            refType: 'BATAL_BEROBAT',
+            refId: oldRecord.id,
+            refDoc: 'Batal Berobat (Hapus Rekam Medis)',
+            pasien: oldRecord.namaPasien || '',
+            nik: oldRecord.nikPabrik || '',
+            petugas: deletedBy,
+            keterangan: `Pembatalan Berobat (${reason}): Kembalikan stok pasien ${oldRecord.namaPasien || ''} (+${qty})`
+          });
           restoredMeds.push(`${med.nama} (+${qty} ${med.satuan || 'item'})`);
         }
       }

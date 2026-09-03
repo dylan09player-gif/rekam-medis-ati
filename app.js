@@ -7,6 +7,7 @@ let appData = {
   pantauan: [],
   tindakan: [],
   suratJalan: [],
+  stockMutations: [],
   users: [],
   currentUser: null,
   waContacts: [
@@ -552,7 +553,7 @@ async function loadAllAppData() {
       try { return await res.json(); } catch { return []; }
     };
 
-    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes, sjRes] = await Promise.all([
+    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes, sjRes, mutRes] = await Promise.all([
       fetch('/api/patients'),
       fetch('/api/records'),
       fetch('/api/medicines'),
@@ -561,7 +562,8 @@ async function loadAllAppData() {
       fetch('/api/pantauan'),
       fetch('/api/users'),
       fetch('/api/tindakan'),
-      fetch('/api/surat-jalan')
+      fetch('/api/surat-jalan'),
+      fetch('/api/stock-mutations')
     ]);
 
     appData.patients = await safeJson(patRes);
@@ -573,6 +575,7 @@ async function loadAllAppData() {
     appData.users = await safeJson(usrRes);
     appData.tindakan = await safeJson(tndRes);
     appData.suratJalan = await safeJson(sjRes);
+    appData.stockMutations = await safeJson(mutRes);
 
     // Load Settings (GSheet & No WA Apoteker)
     try {
@@ -4663,6 +4666,11 @@ function closeModalHSESurkes() {
 // -------------------------------------------------------------
 // HSE PEMANTAUAN OBAT KELUAR / TERPAKAI MODAL (SS 5)
 // -------------------------------------------------------------
+// -------------------------------------------------------------
+// HSE & FARMASI: MUTASI STOK OBAT & AUDIT TRAIL (IN - OUT - AUDIT)
+// -------------------------------------------------------------
+let currentHSEObatTab = 'summary';
+
 function openModalHSEObatKeluar() {
   const modal = document.getElementById('modal-hse-obat-terpakai');
   if (!modal) return;
@@ -4678,8 +4686,9 @@ function openModalHSEObatKeluar() {
   if (startInput && !startInput.value) startInput.value = `${yyyy}-${mm}-01`;
   if (endInput && !endInput.value) endInput.value = `${yyyy}-${mm}-${dd}`;
 
+  populateHSEObatFilterDropdown();
   modal.style.display = 'flex';
-  renderHSEObatKeluarTable();
+  filterHSEObatKeluarTable();
 }
 
 function closeModalHSEObatKeluar() {
@@ -4687,150 +4696,488 @@ function closeModalHSEObatKeluar() {
   if (modal) modal.style.display = 'none';
 }
 
-function resetHSEObatFilterBulanIni() {
+function switchHSEObatTab(tab) {
+  currentHSEObatTab = tab;
+  const btnSummary = document.getElementById('btn-tab-hse-summary');
+  const btnLog = document.getElementById('btn-tab-hse-log');
+  const viewSummary = document.getElementById('view-hse-obat-summary');
+  const viewLog = document.getElementById('view-hse-obat-log');
+
+  if (tab === 'summary') {
+    if (btnSummary) {
+      btnSummary.style.background = '#0284c7';
+      btnSummary.style.color = '#fff';
+      btnSummary.style.border = 'none';
+      btnSummary.style.fontWeight = '700';
+    }
+    if (btnLog) {
+      btnLog.style.background = 'rgba(255,255,255,0.06)';
+      btnLog.style.color = 'var(--text-muted)';
+      btnLog.style.border = '1px solid var(--border-color)';
+      btnLog.style.fontWeight = '600';
+    }
+    if (viewSummary) viewSummary.style.display = 'block';
+    if (viewLog) viewLog.style.display = 'none';
+    renderHSEStockSummaryTable();
+  } else {
+    if (btnLog) {
+      btnLog.style.background = '#0284c7';
+      btnLog.style.color = '#fff';
+      btnLog.style.border = 'none';
+      btnLog.style.fontWeight = '700';
+    }
+    if (btnSummary) {
+      btnSummary.style.background = 'rgba(255,255,255,0.06)';
+      btnSummary.style.color = 'var(--text-muted)';
+      btnSummary.style.border = '1px solid var(--border-color)';
+      btnSummary.style.fontWeight = '600';
+    }
+    if (viewSummary) viewSummary.style.display = 'none';
+    if (viewLog) viewLog.style.display = 'block';
+    renderHSEStockLogTable();
+  }
+}
+
+function setHSEObatFilterRange(range) {
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   const dd = String(now.getDate()).padStart(2, '0');
-
   const startInput = document.getElementById('hse-obat-start');
   const endInput = document.getElementById('hse-obat-end');
 
-  if (startInput) startInput.value = `${yyyy}-${mm}-01`;
-  if (endInput) endInput.value = `${yyyy}-${mm}-${dd}`;
+  if (range === 'today') {
+    if (startInput) startInput.value = `${yyyy}-${mm}-${dd}`;
+    if (endInput) endInput.value = `${yyyy}-${mm}-${dd}`;
+  } else if (range === 'month') {
+    if (startInput) startInput.value = `${yyyy}-${mm}-01`;
+    if (endInput) endInput.value = `${yyyy}-${mm}-${dd}`;
+  } else if (range === 'last_month') {
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    const pY = prevMonth.getFullYear();
+    const pM = String(prevMonth.getMonth() + 1).padStart(2, '0');
+    const pD = String(lastDayPrevMonth.getDate()).padStart(2, '0');
+    if (startInput) startInput.value = `${pY}-${pM}-01`;
+    if (endInput) endInput.value = `${pY}-${pM}-${pD}`;
+  }
+  filterHSEObatKeluarTable();
+}
 
-  renderHSEObatKeluarTable();
+function populateHSEObatFilterDropdown() {
+  const select = document.getElementById('hse-obat-filter-med');
+  if (!select) return;
+
+  const currentVal = select.value;
+  const meds = (appData.medicines || []).slice().sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+  
+  let html = `<option value="">-- Semua Obat (${meds.length}) --</option>`;
+  meds.forEach(m => {
+    html += `<option value="${escapeHtml(m.nama)}">${escapeHtml(m.nama)}</option>`;
+  });
+  select.innerHTML = html;
+  if (currentVal) select.value = currentVal;
 }
 
 function filterHSEObatKeluarTable() {
-  renderHSEObatKeluarTable();
+  if (currentHSEObatTab === 'summary') {
+    renderHSEStockSummaryTable();
+  } else {
+    renderHSEStockLogTable();
+  }
 }
 
-function getHSEObatKeluarData() {
+function getHSEStockMutationData() {
   const startVal = document.getElementById('hse-obat-start')?.value;
   const endVal = document.getElementById('hse-obat-end')?.value;
+  const selectedMed = (document.getElementById('hse-obat-filter-med')?.value || '').trim();
 
   const start = startVal ? new Date(`${startVal}T00:00:00`) : null;
   const end = endVal ? new Date(`${endVal}T23:59:59`) : null;
 
-  // Filter records within date range
-  const filteredRecords = appData.records.filter(r => {
-    const d = parseRecordDate(r);
-    if (!d || isNaN(d.getTime())) return false;
+  // 1. Gather all logged mutations from appData.stockMutations
+  const allMutations = Array.isArray(appData.stockMutations) ? [...appData.stockMutations] : [];
+  const existingIds = new Set(allMutations.map(m => m.id || `${m.refType}-${m.refId}-${m.namaObat}`));
+
+  // 2. Synthesize from Surat Jalan (Inbound)
+  if (Array.isArray(appData.suratJalan)) {
+    appData.suratJalan.forEach(sj => {
+      const sjDate = sj.tanggal || (sj.created_at ? new Date(sj.created_at).toLocaleDateString('id-ID') : '');
+      const sjCreated = sj.created_at || new Date().toISOString();
+      if (Array.isArray(sj.items)) {
+        sj.items.forEach(it => {
+          const mName = (it.name || it.nama || '').trim();
+          if (!mName) return;
+          const synId = `SJ-${sj.id || sj.noSurat}-${mName}`;
+          if (!existingIds.has(synId)) {
+            existingIds.add(synId);
+            const qty = parseInt(it.qty || it.jumlah) || 0;
+            allMutations.push({
+              id: synId,
+              tanggal: sjDate,
+              created_at: sjCreated,
+              type: 'IN',
+              namaObat: mName,
+              satuan: it.satuan || 'tab',
+              qty: qty,
+              delta: +qty,
+              stokSebelum: it.initial !== undefined ? it.initial : 0,
+              stokSesudah: it.final !== undefined ? it.final : qty,
+              refType: 'SURAT_JALAN',
+              refId: sj.id || '',
+              refDoc: sj.noSurat || 'Surat Jalan',
+              petugas: `${sj.sender || 'Apotek Nafila'} ➔ ${sj.receiver || 'Perawat PT ATI'}`,
+              keterangan: `Surat Jalan Pengiriman Obat No: ${sj.noSurat || '-'} (${sj.sender || 'Apotek Nafila'})`
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // 3. Synthesize from Records (Outbound)
+  if (Array.isArray(appData.records)) {
+    appData.records.forEach(r => {
+      const recDate = r.tanggal || (r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID') : '');
+      const recCreated = r.created_at || new Date().toISOString();
+      if (Array.isArray(r.resep)) {
+        r.resep.forEach((m, mIdx) => {
+          const rawName = (m.namaObat || m.obat || '').trim();
+          if (!rawName) return;
+          const qty = parseInt(m.qty) || 1;
+          const synId = `REC-${r.id || recCreated}-${rawName}-${mIdx}`;
+          if (!existingIds.has(synId)) {
+            existingIds.add(synId);
+            allMutations.push({
+              id: synId,
+              tanggal: recDate,
+              created_at: recCreated,
+              type: 'OUT',
+              namaObat: rawName,
+              satuan: m.satuan || 'tab',
+              qty: qty,
+              delta: -qty,
+              stokSebelum: '-',
+              stokSesudah: '-',
+              refType: 'RESEP_POLI',
+              refId: r.id || '',
+              refDoc: 'Kunjungan Poli',
+              pasien: r.namaPasien || '-',
+              nik: r.nikPabrik || '-',
+              petugas: r.pemeriksa || 'Petugas Medis',
+              keterangan: `Resep Kunjungan: ${r.namaPasien || '-'} (${r.asesmen || r.keluhan || 'Pemeriksaan'})`
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // Date Parser Helper
+  function parseMutDate(m) {
+    if (m.created_at) {
+      const d = new Date(m.created_at);
+      if (!isNaN(d.getTime())) return d;
+    }
+    if (m.tanggal) {
+      const parts = String(m.tanggal).split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) return new Date(parts[0], parts[1] - 1, parts[2]);
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+    }
+    return new Date();
+  }
+
+  // Filter by date
+  const filteredMutations = allMutations.filter(m => {
+    const d = parseMutDate(m);
     if (start && d < start) return false;
     if (end && d > end) return false;
     return true;
   });
 
-  // Aggregate medicines
+  // Sort log descending
+  const sortedLogList = filteredMutations.slice().sort((a, b) => {
+    const da = parseMutDate(a).getTime();
+    const db = parseMutDate(b).getTime();
+    return db - da;
+  });
+
+  // Filter log by selected medicine
+  const displayedLogList = selectedMed
+    ? sortedLogList.filter(m => m.namaObat.toLowerCase().trim() === selectedMed.toLowerCase().trim())
+    : sortedLogList;
+
+  // Aggregate summary per medicine
   const medMap = {};
-  filteredRecords.forEach(r => {
-    if (Array.isArray(r.resep)) {
-      r.resep.forEach(m => {
-        const rawName = (m.namaObat || m.obat || '').trim();
-        if (!rawName) return;
+  (appData.medicines || []).forEach(med => {
+    const key = med.nama.trim().toLowerCase();
+    medMap[key] = {
+      nama: med.nama,
+      satuan: med.satuan || 'tab',
+      kategori: med.kategori || 'Obat',
+      currentStok: parseInt(med.stok) || 0,
+      totalMasuk: 0,
+      totalKeluar: 0,
+      totalKoreksi: 0,
+      stokAwal: 0,
+      sisaAkhir: parseInt(med.stok) || 0,
+      txCount: 0
+    };
+  });
 
-        const qty = parseInt(m.qty) || 0;
-        if (qty <= 0) return;
-
-        if (!medMap[rawName]) {
-          // Find details in master medicines
-          const matchedMed = (appData.medicines || []).find(x => x.nama.toLowerCase() === rawName.toLowerCase());
-          medMap[rawName] = {
-            nama: rawName,
-            satuan: matchedMed ? (matchedMed.satuan || 'Pcs') : 'Item',
-            kategori: matchedMed ? (matchedMed.kategori || 'Obat') : 'Obat',
-            totalQty: 0,
-            resepCount: 0
-          };
-        }
-        medMap[rawName].totalQty += qty;
-        medMap[rawName].resepCount += 1;
-      });
+  filteredMutations.forEach(m => {
+    const rawName = (m.namaObat || '').trim();
+    if (!rawName) return;
+    const key = rawName.toLowerCase();
+    if (!medMap[key]) {
+      medMap[key] = {
+        nama: rawName,
+        satuan: m.satuan || 'tab',
+        kategori: 'Obat',
+        currentStok: 0,
+        totalMasuk: 0,
+        totalKeluar: 0,
+        totalKoreksi: 0,
+        stokAwal: 0,
+        sisaAkhir: 0,
+        txCount: 0
+      };
+    }
+    medMap[key].txCount++;
+    if (m.type === 'IN') {
+      medMap[key].totalMasuk += Math.abs(m.qty || 0);
+    } else if (m.type === 'OUT') {
+      medMap[key].totalKeluar += Math.abs(m.qty || 0);
+    } else if (m.type === 'ADJUST') {
+      medMap[key].totalKoreksi += (m.delta || 0);
     }
   });
 
-  // Convert to array & sort strictly descending by totalQty
-  const sortedList = Object.values(medMap).sort((a, b) => b.totalQty - a.totalQty || b.resepCount - a.resepCount);
-  return { sortedList, filteredRecords, startVal, endVal };
+  let totalInAll = 0;
+  let totalOutAll = 0;
+  let totalAdjustAll = 0;
+
+  const summaryList = Object.values(medMap).map(item => {
+    const calculatedAwal = item.sisaAkhir - item.totalMasuk + item.totalKeluar - item.totalKoreksi;
+    item.stokAwal = Math.max(0, calculatedAwal);
+    totalInAll += item.totalMasuk;
+    totalOutAll += item.totalKeluar;
+    totalAdjustAll += item.totalKoreksi;
+    return item;
+  });
+
+  const displayedSummaryList = selectedMed
+    ? summaryList.filter(m => m.nama.toLowerCase().trim() === selectedMed.toLowerCase().trim())
+    : summaryList.filter(m => m.totalMasuk > 0 || m.totalKeluar > 0 || m.totalKoreksi !== 0 || m.currentStok > 0);
+
+  displayedSummaryList.sort((a, b) => (b.totalKeluar + b.totalMasuk + Math.abs(b.totalKoreksi)) - (a.totalKeluar + a.totalMasuk + Math.abs(a.totalKoreksi)) || a.nama.localeCompare(b.nama));
+
+  const topMed = summaryList.slice().sort((a, b) => b.totalKeluar - a.totalKeluar)[0];
+  const topMedName = topMed && topMed.totalKeluar > 0 ? `${topMed.nama} (${topMed.totalKeluar} ${topMed.satuan})` : '-';
+
+  return {
+    summaryList: displayedSummaryList,
+    logList: displayedLogList,
+    totalInAll,
+    totalOutAll,
+    totalAdjustAll,
+    totalActiveKinds: displayedSummaryList.length,
+    topMedName,
+    startVal,
+    endVal,
+    selectedMed
+  };
 }
 
-function renderHSEObatKeluarTable() {
-  const tbody = document.getElementById('table-hse-obat-body');
+function renderHSEStockSummaryTable() {
+  const tbody = document.getElementById('table-hse-obat-summary-body');
   if (!tbody) return;
 
-  const { sortedList } = getHSEObatKeluarData();
+  const data = getHSEStockMutationData();
 
+  // Update Summary Badges
+  const totalInEl = document.getElementById('hse-obat-total-in');
+  const totalOutEl = document.getElementById('hse-obat-total-out');
+  const totalAdjustEl = document.getElementById('hse-obat-total-adjust');
   const totalJenisEl = document.getElementById('hse-obat-total-jenis');
-  const totalQtyEl = document.getElementById('hse-obat-total-qty');
   const topNameEl = document.getElementById('hse-obat-top-name');
 
-  const totalJenis = sortedList.length;
-  const totalQtyAll = sortedList.reduce((sum, item) => sum + item.totalQty, 0);
-  const topName = sortedList.length > 0 ? `${sortedList[0].nama} (${sortedList[0].totalQty} ${sortedList[0].satuan})` : '-';
+  if (totalInEl) totalInEl.textContent = `+${data.totalInAll.toLocaleString('id-ID')} Butir`;
+  if (totalOutEl) totalOutEl.textContent = `-${data.totalOutAll.toLocaleString('id-ID')} Butir`;
+  if (totalAdjustEl) totalAdjustEl.textContent = `${data.totalAdjustAll >= 0 ? '+' : ''}${data.totalAdjustAll.toLocaleString('id-ID')} Butir`;
+  if (totalJenisEl) totalJenisEl.textContent = `${data.totalActiveKinds} Macam`;
+  if (topNameEl) topNameEl.textContent = `Top: ${data.topMedName}`;
 
-  if (totalJenisEl) totalJenisEl.textContent = `${totalJenis} Macam`;
-  if (totalQtyEl) totalQtyEl.textContent = `${totalQtyAll.toLocaleString('id-ID')} Butir / Item`;
-  if (topNameEl) topNameEl.textContent = topName;
-
-  if (sortedList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 28px; color: var(--text-muted); font-style: italic;"><i class="fa-solid fa-capsules" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>Tidak ada pemakaian obat yang tercatat pada rentang tanggal ini.</td></tr>`;
+  if (data.summaryList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 28px; color: var(--text-muted); font-style: italic;"><i class="fa-solid fa-capsules" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>Tidak ada mutasi obat pada rentang tanggal ini.</td></tr>`;
     return;
   }
 
-  const maxQty = sortedList[0].totalQty || 1;
-
-  tbody.innerHTML = sortedList.map((item, idx) => {
-    let rankBadge = '';
-    if (idx === 0) rankBadge = '<span style="font-size: 1.1rem;">🥇 <strong>1</strong></span>';
-    else if (idx === 1) rankBadge = '<span style="font-size: 1.1rem;">🥈 <strong>2</strong></span>';
-    else if (idx === 2) rankBadge = '<span style="font-size: 1.1rem;">🥉 <strong>3</strong></span>';
-    else rankBadge = `<span style="font-weight: 700; color: var(--text-muted);">#${idx + 1}</span>`;
-
-    const pct = Math.round((item.totalQty / maxQty) * 100);
+  tbody.innerHTML = data.summaryList.map((item, idx) => {
+    const safeName = escapeHtml(item.nama);
+    const koreksiClass = item.totalKoreksi > 0 ? 'color: #34d399;' : (item.totalKoreksi < 0 ? 'color: #f87171;' : 'color: var(--text-muted);');
+    const koreksiSign = item.totalKoreksi > 0 ? '+' : '';
 
     return `
       <tr>
-        <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
+        <td style="text-align: center; vertical-align: middle; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>
         <td style="vertical-align: middle;">
-          <strong style="font-size: 0.92rem; color: var(--text-color);">${item.nama}</strong>
-        </td>
-        <td style="vertical-align: middle;">
-          <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 600;">${item.satuan} (${item.kategori})</span>
+          <strong style="font-size: 0.9rem; color: var(--text-color);">${safeName}</strong>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(item.kategori)}</div>
         </td>
         <td style="text-align: center; vertical-align: middle;">
-          <div style="font-size: 1.05rem; font-weight: 800; color: #34d399;">${item.totalQty.toLocaleString('id-ID')} <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">${item.satuan}</span></div>
-          <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
-            <div style="background: linear-gradient(90deg, #10b981, #0284c7); height: 100%; width: ${pct}%;"></div>
-          </div>
+          <span class="badge" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; font-weight: 600;">${escapeHtml(item.satuan)}</span>
         </td>
-        <td style="vertical-align: middle;">
-          <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-receipt" style="color: #38bdf8; margin-right: 4px;"></i> ${item.resepCount} kali resep</span>
+        <td style="text-align: center; vertical-align: middle; font-weight: 600; color: var(--text-muted);">
+          ${item.stokAwal.toLocaleString('id-ID')}
+        </td>
+        <td style="text-align: center; vertical-align: middle; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.04);">
+          ${item.totalMasuk > 0 ? `+${item.totalMasuk.toLocaleString('id-ID')}` : '0'}
+        </td>
+        <td style="text-align: center; vertical-align: middle; font-weight: 700; color: #f87171; background: rgba(239, 68, 68, 0.04);">
+          ${item.totalKeluar > 0 ? `-${item.totalKeluar.toLocaleString('id-ID')}` : '0'}
+        </td>
+        <td style="text-align: center; vertical-align: middle; font-weight: 700; ${koreksiClass}">
+          ${item.totalKoreksi !== 0 ? `${koreksiSign}${item.totalKoreksi.toLocaleString('id-ID')}` : '0'}
+        </td>
+        <td style="text-align: center; vertical-align: middle; font-weight: 800; color: #38bdf8; font-size: 0.95rem; background: rgba(56, 189, 248, 0.06);">
+          ${item.sisaAkhir.toLocaleString('id-ID')}
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+          <button class="btn btn-sm" onclick="viewMedicineStockCard('${safeName}')" title="Lihat Kartu Stok & Log Transaksi" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </button>
         </td>
       </tr>
     `;
   }).join('');
 }
 
+function renderHSEStockLogTable() {
+  const tbody = document.getElementById('table-hse-obat-log-body');
+  if (!tbody) return;
+
+  const data = getHSEStockMutationData();
+  const filterBadge = document.getElementById('hse-log-active-filter-badge');
+
+  if (filterBadge) {
+    if (data.selectedMed) {
+      filterBadge.style.display = 'inline-block';
+      filterBadge.innerHTML = `Filter Obat: <strong>${escapeHtml(data.selectedMed)}</strong> <a href="javascript:void(0)" onclick="resetMedicineFilterLog()" style="color: #f87171; margin-left: 6px; text-decoration: none;">&times; Reset</a>`;
+    } else {
+      filterBadge.style.display = 'none';
+    }
+  }
+
+  if (data.logList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 28px; color: var(--text-muted); font-style: italic;"><i class="fa-solid fa-clock-rotate-left" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>Tidak ada riwayat transaksi log untuk kriteria filter ini.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.logList.map(item => {
+    let typeBadge = '';
+    let qtyText = '';
+    
+    if (item.type === 'IN') {
+      typeBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700;"><i class="fa-solid fa-arrow-down-long"></i> MASUK</span>';
+      qtyText = `<strong style="color: #34d399; font-size: 0.9rem;">+${(item.qty || 0).toLocaleString('id-ID')} ${escapeHtml(item.satuan || '')}</strong>`;
+    } else if (item.type === 'OUT') {
+      typeBadge = '<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; font-weight: 700;"><i class="fa-solid fa-arrow-up-long"></i> KELUAR</span>';
+      qtyText = `<strong style="color: #f87171; font-size: 0.9rem;">-${(item.qty || 0).toLocaleString('id-ID')} ${escapeHtml(item.satuan || '')}</strong>`;
+    } else {
+      typeBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-weight: 700;"><i class="fa-solid fa-pen-ruler"></i> KOREKSI</span>';
+      const sign = (item.delta || 0) >= 0 ? '+' : '';
+      const clr = (item.delta || 0) >= 0 ? '#34d399' : '#f87171';
+      qtyText = `<strong style="color: ${clr}; font-size: 0.9rem;">${sign}${(item.delta || 0).toLocaleString('id-ID')} ${escapeHtml(item.satuan || '')}</strong>`;
+    }
+
+    const tglTeks = item.created_at ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : (item.tanggal || '-');
+    const sisaTeks = item.stokSesudah !== undefined && item.stokSesudah !== '-' ? `${item.stokSesudah} ${item.satuan || ''}` : '-';
+
+    return `
+      <tr>
+        <td style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); vertical-align: middle;">
+          ${tglTeks}
+        </td>
+        <td style="vertical-align: middle;">
+          <strong style="color: var(--text-color); font-size: 0.88rem;">${escapeHtml(item.namaObat)}</strong>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+          ${typeBadge}
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+          ${qtyText}
+        </td>
+        <td style="text-align: center; vertical-align: middle; font-weight: 700; color: #38bdf8; font-size: 0.85rem;">
+          ${sisaTeks}
+        </td>
+        <td style="font-size: 0.82rem; color: var(--text-color); vertical-align: middle;">
+          <div>${escapeHtml(item.keterangan || '-')}</div>
+          ${item.pasien ? `<div style="font-size: 0.72rem; color: var(--text-muted);"><i class="fa-solid fa-user"></i> Pasien: <strong>${escapeHtml(item.pasien)}</strong> (${escapeHtml(item.nik || '-')})</div>` : ''}
+          ${item.refDoc ? `<div style="font-size: 0.72rem; color: #38bdf8;"><i class="fa-solid fa-file-lines"></i> ${escapeHtml(item.refDoc)}</div>` : ''}
+        </td>
+        <td style="vertical-align: middle;">
+          <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-weight: 600; font-size: 0.75rem;">
+            <i class="fa-solid fa-user-doctor"></i> ${escapeHtml(item.petugas || 'Petugas Medis')}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function viewMedicineStockCard(medicineName) {
+  const select = document.getElementById('hse-obat-filter-med');
+  if (select) select.value = medicineName;
+  switchHSEObatTab('log');
+}
+
+function resetMedicineFilterLog() {
+  const select = document.getElementById('hse-obat-filter-med');
+  if (select) select.value = '';
+  filterHSEObatKeluarTable();
+}
+
 function exportHSEObatExcel() {
-  const { sortedList, startVal, endVal } = getHSEObatKeluarData();
+  const data = getHSEStockMutationData();
   const dateStr = new Date().toISOString().split('T')[0];
 
-  let rows = '';
-  sortedList.forEach((item, idx) => {
-    rows += `
+  let summaryRows = '';
+  data.summaryList.forEach((item, idx) => {
+    summaryRows += `
       <tr>
         <td style="text-align: center;">${idx + 1}</td>
         <td><strong>${item.nama}</strong></td>
         <td>${item.satuan}</td>
         <td>${item.kategori}</td>
-        <td style="text-align: center; font-weight: bold;">${item.totalQty}</td>
-        <td style="text-align: center;">${item.resepCount}</td>
+        <td style="text-align: center;">${item.stokAwal}</td>
+        <td style="text-align: center; color: green; font-weight: bold;">+${item.totalMasuk}</td>
+        <td style="text-align: center; color: red; font-weight: bold;">-${item.totalKeluar}</td>
+        <td style="text-align: center; font-weight: bold;">${item.totalKoreksi}</td>
+        <td style="text-align: center; font-weight: bold; background-color: #e0f2fe;">${item.sisaAkhir}</td>
       </tr>
     `;
   });
 
-  const totalQtyAll = sortedList.reduce((sum, item) => sum + item.totalQty, 0);
+  let logRows = '';
+  data.logList.forEach((item, idx) => {
+    const tgl = item.created_at ? new Date(item.created_at).toLocaleString('id-ID') : (item.tanggal || '-');
+    logRows += `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td>${tgl}</td>
+        <td><strong>${item.namaObat}</strong></td>
+        <td style="text-align: center; font-weight: bold;">${item.type}</td>
+        <td style="text-align: center; font-weight: bold;">${item.type === 'OUT' ? '-' : '+'}${item.qty} ${item.satuan || ''}</td>
+        <td style="text-align: center;">${item.stokSesudah || '-'}</td>
+        <td>${item.keterangan || '-'}</td>
+        <td>${item.pasien || '-'}</td>
+        <td>${item.petugas || '-'}</td>
+      </tr>
+    `;
+  });
 
   const excelTemplate = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -4841,43 +5188,62 @@ function exportHSEObatExcel() {
         <x:ExcelWorkbook>
           <x:ExcelWorksheets>
             <x:ExcelWorksheet>
-              <x:Name>Pemantauan Obat Keluar</x:Name>
-              <x:WorksheetOptions>
-                <x:DisplayGridlines/>
-              </x:WorksheetOptions>
+              <x:Name>Rekap Mutasi Stok</x:Name>
+              <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
             </x:ExcelWorksheet>
           </x:ExcelWorksheets>
         </x:ExcelWorkbook>
       </xml>
       <![endif]-->
       <style>
-        table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 11pt; }
-        th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #0369a1; padding: 8px; text-align: left; }
-        td { border: 1px solid #d1d5db; padding: 6px; }
-        .title { font-size: 14pt; font-weight: bold; color: #0369a1; margin-bottom: 10px; }
+        table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 10pt; margin-bottom: 20px; }
+        th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #0369a1; padding: 6px; text-align: left; }
+        td { border: 1px solid #d1d5db; padding: 5px; }
+        .title { font-size: 14pt; font-weight: bold; color: #0369a1; margin-bottom: 6px; }
+        .section-header { font-size: 12pt; font-weight: bold; color: #0f172a; margin-top: 15px; margin-bottom: 6px; }
       </style>
     </head>
     <body>
-      <div class="title">REKAPITULASI PEMANTAUAN OBAT TERPAKAI / KELUAR - KLINIK PT ATI</div>
-      <p>Periode: <strong>${startVal || 'Awal'} s/d ${endVal || 'Sekarang'}</strong> | Total Obat Terpakai: <strong>${totalQtyAll} Butir</strong></p>
+      <div class="title">LAPORAN MUTASI & REKAPITULASI STOK OBAT - KLINIK PT ATI & APOTEK NAFILA</div>
+      <p>Periode: <strong>${data.startVal || 'Awal'} s/d ${data.endVal || 'Sekarang'}</strong> | Total Masuk: <strong>+${data.totalInAll}</strong> | Total Keluar: <strong>-${data.totalOutAll}</strong> | Koreksi: <strong>${data.totalAdjustAll}</strong></p>
+
+      <div class="section-header">BAGIAN 1: RINGKASAN MUTASI PER OBAT</div>
       <table>
         <thead>
           <tr>
-            <th style="width: 50px; text-align: center;">URUTAN</th>
+            <th style="width: 40px; text-align: center;">NO</th>
             <th>NAMA OBAT</th>
             <th>SATUAN</th>
             <th>KATEGORI</th>
-            <th style="text-align: center;">TOTAL TERPAKAI</th>
-            <th style="text-align: center;">JUMLAH RESEP</th>
+            <th style="text-align: center;">STOK AWAL</th>
+            <th style="text-align: center;">MASUK (+)</th>
+            <th style="text-align: center;">KELUAR (-)</th>
+            <th style="text-align: center;">KOREKSI (±)</th>
+            <th style="text-align: center;">SISA AKHIR</th>
           </tr>
         </thead>
         <tbody>
-          ${rows}
-          <tr style="font-weight: bold; background-color: #f3f4f6;">
-            <td colspan="4" style="text-align: right;">TOTAL KESELURUHAN OBAT TERPAKAI:</td>
-            <td style="text-align: center;">${totalQtyAll}</td>
-            <td></td>
+          ${summaryRows}
+        </tbody>
+      </table>
+
+      <div class="section-header">BAGIAN 2: LOG KRONOLOGIS TRANSAKSI & PETUGAS JAGA</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 40px; text-align: center;">NO</th>
+            <th>TANGGAL & WAKTU</th>
+            <th>NAMA OBAT</th>
+            <th style="text-align: center;">JENIS</th>
+            <th style="text-align: center;">JUMLAH</th>
+            <th style="text-align: center;">SISA STOK</th>
+            <th>KETERANGAN / DOKUMEN</th>
+            <th>PASIEN</th>
+            <th>PETUGAS / NAKES</th>
           </tr>
+        </thead>
+        <tbody>
+          ${logRows}
         </tbody>
       </table>
     </body>
@@ -4888,12 +5254,174 @@ function exportHSEObatExcel() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `Rekap_Obat_Terpakai_HSE_${dateStr}.xls`);
+  link.setAttribute('download', `Laporan_Mutasi_Obat_${dateStr}.xls`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-  showToast('Laporan Obat Terpakai berhasil diexport ke Excel! 📊', 'success');
+  showToast('Laporan Mutasi Stok Obat berhasil diexport ke Excel! 📊', 'success');
+}
+
+function printHSEStockReport() {
+  const data = getHSEStockMutationData();
+  const dateStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const summaryRowsHTML = data.summaryList.map((item, idx) => `
+    <tr>
+      <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 600; font-size: 8pt;">${idx + 1}</td>
+      <td style="border: 1px solid #334155; padding: 4px 6px; font-weight: 700; font-size: 8pt; text-transform: uppercase;">${escapeHtml(item.nama)}</td>
+      <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt;">${escapeHtml(item.satuan)}</td>
+      <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt;">${item.stokAwal}</td>
+      <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 700; color: #166534; font-size: 8pt;">+${item.totalMasuk}</td>
+      <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 700; color: #991b1b; font-size: 8pt;">-${item.totalKeluar}</td>
+      <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 600; font-size: 8pt;">${item.totalKoreksi}</td>
+      <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 800; font-size: 8.5pt; color: #0369a1; background: #f0fdf4;">${item.sisaAkhir}</td>
+    </tr>
+  `).join('');
+
+  const logRowsHTML = data.logList.slice(0, 30).map((item, idx) => {
+    const tgl = item.created_at ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : (item.tanggal || '-');
+    const typeLabel = item.type === 'IN' ? 'MASUK' : (item.type === 'OUT' ? 'KELUAR' : 'KOREKSI');
+    const typeColor = item.type === 'IN' ? '#166534' : (item.type === 'OUT' ? '#991b1b' : '#b45309');
+    return `
+      <tr>
+        <td style="text-align: center; border: 1px solid #334155; padding: 3px 5px; font-size: 7.5pt;">${idx + 1}</td>
+        <td style="border: 1px solid #334155; padding: 3px 5px; font-size: 7.5pt;">${tgl}</td>
+        <td style="border: 1px solid #334155; padding: 3px 5px; font-weight: 600; font-size: 7.5pt;">${escapeHtml(item.namaObat)}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 3px 5px; font-weight: 700; color: ${typeColor}; font-size: 7.5pt;">${typeLabel}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 3px 5px; font-weight: 700; font-size: 7.5pt;">${item.type === 'OUT' ? '-' : '+'}${item.qty}</td>
+        <td style="border: 1px solid #334155; padding: 3px 5px; font-size: 7.5pt;">${escapeHtml(item.keterangan || '-')}</td>
+        <td style="border: 1px solid #334155; padding: 3px 5px; font-size: 7.5pt; font-weight: 600;">${escapeHtml(item.petugas || '-')}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <meta charset="UTF-8">
+      <title>Laporan Mutasi Stok Obat - Klinik PT ATI</title>
+      <style>
+        @page { size: A4 portrait; margin: 10mm 12mm; }
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 8.5pt; line-height: 1.35; }
+        .kop-container { display: flex; align-items: center; justify-content: space-between; padding-bottom: 6px; gap: 12px; }
+        .kop-logo-box { flex-shrink: 0; width: 70px; text-align: center; }
+        .kop-logo-img { max-width: 68px; max-height: 60px; object-fit: contain; }
+        .kop-text-box { flex: 1; text-align: center; padding: 0 4px; }
+        .kop-company-name { font-size: 13pt; font-weight: 800; margin: 0; text-transform: uppercase; color: #0f172a; }
+        .kop-subtitle { font-size: 8.5pt; font-weight: 700; color: #1e3a8a; margin: 1px 0; text-transform: uppercase; }
+        .kop-address { font-size: 7.5pt; color: #475569; margin: 1px 0; }
+        .kop-divider { border-top: 2.5px solid #0f172a; border-bottom: 1px solid #0f172a; height: 3px; margin: 4px 0 10px 0; }
+        .doc-title-box { text-align: center; margin-bottom: 10px; }
+        .doc-title { font-size: 11pt; font-weight: 800; margin: 0; text-decoration: underline; }
+        .meta-card { width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; padding: 6px 10px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; font-size: 8pt; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        th { border: 1px solid #334155; padding: 5px 6px; background: #e2e8f0; color: #0f172a; font-size: 8pt; font-weight: 700; text-align: center; text-transform: uppercase; }
+        .section-title { font-size: 9pt; font-weight: 800; color: #0f172a; margin: 10px 0 4px 0; text-transform: uppercase; }
+        .ttd-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; font-size: 8pt; margin-top: 15px; page-break-inside: avoid; }
+        .ttd-box { padding: 4px; }
+        .ttd-role { font-weight: 700; }
+        .ttd-space { height: 45px; }
+        .ttd-name { font-weight: 700; border-top: 1px solid #0f172a; display: inline-block; min-width: 120px; padding-top: 2px; }
+      </style>
+    </head>
+    <body>
+      <div class="kop-container">
+        <div class="kop-logo-box">
+          <img src="Salinan%20Logo%20nafila.webp" class="kop-logo-img" onerror="this.onerror=null; this.src='Salinan Logo nafila.webp';">
+        </div>
+        <div class="kop-text-box">
+          <h1 class="kop-company-name">APOTEK NAFILA MEDIKA</h1>
+          <div class="kop-subtitle">LAYANAN FARMASI &amp; KLINIK IN-HOUSE PT ANUGERAH TOTAL INTEGRASI</div>
+          <div class="kop-address">Kawasan Industri Marunda Center, Jl. Tarumajaya No. 12, Bekasi &bull; SIPA: 446/092/SIPA/DPMPTSP</div>
+        </div>
+        <div class="kop-logo-box" style="text-align: right;">
+          <img src="ATI%20Logo.png" class="kop-logo-img" onerror="this.style.display='none';">
+        </div>
+      </div>
+      <div class="kop-divider"></div>
+
+      <div class="doc-title-box">
+        <h2 class="doc-title">LAPORAN MUTASI &amp; REKAPITULASI STOK OBAT</h2>
+        <div style="font-size: 8.5pt; color: #475569; margin-top: 2px;">Periode Evaluasi: ${data.startVal || 'Awal'} s/d ${data.endVal || 'Sekarang'}</div>
+      </div>
+
+      <div class="meta-card">
+        <div><strong>Total Obat Masuk:</strong> +${data.totalInAll.toLocaleString('id-ID')} unit</div>
+        <div><strong>Total Obat Terpakai (Poli):</strong> -${data.totalOutAll.toLocaleString('id-ID')} unit</div>
+        <div><strong>Total Penyesuaian/Koreksi:</strong> ${data.totalAdjustAll.toLocaleString('id-ID')} unit</div>
+        <div><strong>Jumlah Macam Obat Terdata:</strong> ${data.totalActiveKinds} macam item</div>
+      </div>
+
+      <div class="section-title">1. Ringkasan Saldo Mutasi Per Obat</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 5%;">NO</th>
+            <th style="text-align: left; width: 35%;">NAMA OBAT</th>
+            <th style="width: 10%;">SATUAN</th>
+            <th style="width: 12%;">STOK AWAL</th>
+            <th style="width: 12%;">MASUK (+)</th>
+            <th style="width: 12%;">KELUAR (-)</th>
+            <th style="width: 12%;">KOREKSI</th>
+            <th style="width: 12%;">SISA AKHIR</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${summaryRowsHTML}
+        </tbody>
+      </table>
+
+      ${logRowsHTML ? `
+        <div class="section-title">2. Log Riwayat Transaksi Keluar-Masuk Terkini</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 4%;">NO</th>
+              <th style="width: 14%;">WAKTU</th>
+              <th style="width: 20%;">NAMA OBAT</th>
+              <th style="width: 10%;">JENIS</th>
+              <th style="width: 10%;">JUMLAH</th>
+              <th style="width: 25%;">KETERANGAN / DOKUMEN</th>
+              <th style="width: 17%;">PETUGAS / NAKES</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logRowsHTML}
+          </tbody>
+        </table>
+      ` : ''}
+
+      <div class="ttd-grid">
+        <div class="ttd-box">
+          <div class="ttd-role">Petugas Gudang Farmasi,</div>
+          <div class="ttd-space"></div>
+          <div class="ttd-name">Apotek Nafila Medika</div>
+        </div>
+        <div class="ttd-box">
+          <div class="ttd-role">Perawat Jaga Klinik,</div>
+          <div class="ttd-space"></div>
+          <div class="ttd-name">Perawat Jaga PT ATI</div>
+        </div>
+        <div class="ttd-box">
+          <div class="ttd-role">Mengetahui (Pimpinan),</div>
+          <div class="ttd-space"></div>
+          <div class="ttd-name">dr. Dylan Fadhilah</div>
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() { window.print(); }, 250);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  win.document.close();
 }
 
 function renderHSERekamMedisTable(isButtonClick = false) {
