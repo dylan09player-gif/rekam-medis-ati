@@ -742,6 +742,10 @@ function initNavigation() {
     if (moreDropdown && !moreDropdown.contains(e.target)) {
       moreDropdown.classList.remove('active');
     }
+    const hseWrap = document.getElementById('hse-med-filter-wrap');
+    if (hseWrap && !hseWrap.contains(e.target)) {
+      hideHSEMedFilterMenu();
+    }
   });
 }
 
@@ -3918,11 +3922,59 @@ function printStokOpnameDoc() {
   printWindow.document.close();
 }
 
-function renderGudangTable() {
+let currentGudangSearchQuery = '';
+
+function handleGudangSearch(query) {
+  currentGudangSearchQuery = (query || '').trim().toLowerCase();
+  const clearBtn = document.getElementById('btn-clear-gudang-search');
+  if (clearBtn) clearBtn.style.display = currentGudangSearchQuery ? 'block' : 'none';
+  renderGudangTable();
+}
+
+function clearGudangSearch() {
+  const inp = document.getElementById('gudang-search-input');
+  if (inp) inp.value = '';
+  currentGudangSearchQuery = '';
+  const clearBtn = document.getElementById('btn-clear-gudang-search');
+  if (clearBtn) clearBtn.style.display = 'none';
+  renderGudangTable();
+}
+
+function renderGudangTable(customList = null) {
   const tbody = document.getElementById('table-gudang-body');
   if (!tbody) return;
 
-  tbody.innerHTML = appData.medicines.map(m => {
+  const fullList = appData.medicines || [];
+  const query = (currentGudangSearchQuery || '').trim().toLowerCase();
+
+  const filteredList = customList || (query 
+    ? fullList.filter(m => 
+        (m.nama && m.nama.toLowerCase().includes(query)) ||
+        (m.kode && m.kode.toLowerCase().includes(query)) ||
+        (m.kategori && m.kategori.toLowerCase().includes(query))
+      )
+    : fullList);
+
+  const displayedCountEl = document.getElementById('gudang-displayed-count');
+  const totalCountEl = document.getElementById('gudang-total-count');
+
+  if (displayedCountEl) displayedCountEl.textContent = filteredList.length.toLocaleString('id-ID');
+  if (totalCountEl) totalCountEl.textContent = fullList.length.toLocaleString('id-ID');
+
+  if (filteredList.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
+          <i class="fa-solid fa-magnifying-glass" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>
+          <strong>Obat "${escapeHtml(query)}" tidak ditemukan.</strong>
+          <div style="font-size: 0.82rem; margin-top: 4px;">Periksa ejaan nama obat atau klik tombol <strong>+ Tambah Obat Baru</strong> di kanan atas untuk mendaftarkannya.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filteredList.map(m => {
     const isLow = m.stok <= 10;
     const statusBadge = isLow 
       ? `<span class="badge badge-danger">🔥 STOK MENIPIS</span>`
@@ -4774,19 +4826,112 @@ function setHSEObatFilterRange(range) {
   filterHSEObatKeluarTable();
 }
 
-function populateHSEObatFilterDropdown() {
-  const select = document.getElementById('hse-obat-filter-med');
-  if (!select) return;
+function showHSEMedFilterMenu() {
+  const menu = document.getElementById('hse-med-filter-menu');
+  const input = document.getElementById('hse-obat-filter-search');
+  if (!menu) return;
+  renderHSEMedFilterOptions(input ? input.value : '');
+  menu.style.display = 'block';
+}
 
-  const currentVal = select.value;
-  const meds = (appData.medicines || []).slice().sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
-  
-  let html = `<option value="">-- Semua Obat (${meds.length}) --</option>`;
-  meds.forEach(m => {
-    html += `<option value="${escapeHtml(m.nama)}">${escapeHtml(m.nama)}</option>`;
-  });
-  select.innerHTML = html;
-  if (currentVal) select.value = currentVal;
+function hideHSEMedFilterMenu() {
+  const menu = document.getElementById('hse-med-filter-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+function handleHSEMedFilterInput(val) {
+  const clearBtn = document.getElementById('btn-clear-hse-med-filter');
+  if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
+  const menu = document.getElementById('hse-med-filter-menu');
+  if (menu) menu.style.display = 'block';
+  renderHSEMedFilterOptions(val);
+
+  if (!val.trim()) {
+    const hidden = document.getElementById('hse-obat-filter-med');
+    if (hidden) hidden.value = '';
+    filterHSEObatKeluarTable();
+  }
+}
+
+function renderHSEMedFilterOptions(filterText = '') {
+  const menu = document.getElementById('hse-med-filter-menu');
+  if (!menu) return;
+
+  const cleanFilter = filterText.toLowerCase().trim();
+  const sortedMeds = (appData.medicines || []).slice().sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+  const currentSelected = (document.getElementById('hse-obat-filter-med')?.value || '').trim();
+
+  const filtered = sortedMeds.filter(m => 
+    !cleanFilter || 
+    (m.nama && m.nama.toLowerCase().includes(cleanFilter)) ||
+    (m.kategori && m.kategori.toLowerCase().includes(cleanFilter))
+  );
+
+  let html = `
+    <div class="searchable-option-item ${!currentSelected ? 'selected' : ''}" onclick="selectHSEMedFilter('')" style="border-bottom: 1px solid var(--border-card); font-weight: 700; color: #38bdf8;">
+      <div>
+        <i class="fa-solid fa-list"></i> -- Tampilkan Semua Obat (${sortedMeds.length}) --
+      </div>
+    </div>
+  `;
+
+  if (filtered.length === 0) {
+    html += `<div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Obat tidak ditemukan</div>`;
+  } else {
+    filtered.forEach(m => {
+      const isSel = currentSelected.toLowerCase() === (m.nama || '').toLowerCase();
+      html += `
+        <div class="searchable-option-item ${isSel ? 'selected' : ''}" onclick="selectHSEMedFilter('${escapeHtml(m.nama)}')" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>${escapeHtml(m.nama)}</strong>
+            <div class="option-sub">${escapeHtml(m.satuan || 'tab')} &bull; ${escapeHtml(m.kategori || 'Obat')}</div>
+          </div>
+          <span style="font-size: 0.75rem; font-weight: 700; color: ${(m.stok || 0) <= 10 ? '#ef4444' : '#10b981'}; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">
+            Stok: ${m.stok || 0}
+          </span>
+        </div>
+      `;
+    });
+  }
+
+  menu.innerHTML = html;
+}
+
+function selectHSEMedFilter(medName) {
+  const searchInput = document.getElementById('hse-obat-filter-search');
+  const hiddenInput = document.getElementById('hse-obat-filter-med');
+  const clearBtn = document.getElementById('btn-clear-hse-med-filter');
+
+  if (searchInput) searchInput.value = medName;
+  if (hiddenInput) hiddenInput.value = medName;
+  if (clearBtn) clearBtn.style.display = medName ? 'block' : 'none';
+
+  hideHSEMedFilterMenu();
+  filterHSEObatKeluarTable();
+}
+
+function clearHSEMedFilter() {
+  const searchInput = document.getElementById('hse-obat-filter-search');
+  const hiddenInput = document.getElementById('hse-obat-filter-med');
+  const clearBtn = document.getElementById('btn-clear-hse-med-filter');
+
+  if (searchInput) searchInput.value = '';
+  if (hiddenInput) hiddenInput.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+
+  hideHSEMedFilterMenu();
+  filterHSEObatKeluarTable();
+}
+
+function populateHSEObatFilterDropdown() {
+  const searchInput = document.getElementById('hse-obat-filter-search');
+  const hiddenInput = document.getElementById('hse-obat-filter-med');
+  const clearBtn = document.getElementById('btn-clear-hse-med-filter');
+
+  if (searchInput && hiddenInput) {
+    searchInput.value = hiddenInput.value || '';
+    if (clearBtn) clearBtn.style.display = hiddenInput.value ? 'block' : 'none';
+  }
 }
 
 function filterHSEObatKeluarTable() {
@@ -5139,15 +5284,12 @@ function renderHSEStockLogTable() {
 }
 
 function viewMedicineStockCard(medicineName) {
-  const select = document.getElementById('hse-obat-filter-med');
-  if (select) select.value = medicineName;
+  selectHSEMedFilter(medicineName);
   switchHSEObatTab('log');
 }
 
 function resetMedicineFilterLog() {
-  const select = document.getElementById('hse-obat-filter-med');
-  if (select) select.value = '';
-  filterHSEObatKeluarTable();
+  clearHSEMedFilter();
 }
 
 function exportHSEObatExcel() {
