@@ -326,6 +326,24 @@ let sseTimeout = null;
 let sseInstance = null;
 let sseReconnectTimer = null;
 
+function setSseLiveStatus(isConnected) {
+  const indicator = document.getElementById('sse-live-indicator');
+  const dot = document.getElementById('sse-dot');
+  const label = document.getElementById('sse-label');
+  if (!indicator) return;
+  if (isConnected) {
+    indicator.classList.remove('sse-disconnected');
+    indicator.title = 'Sinkronisasi Real-Time: TERHUBUNG ✅';
+    if (dot) { dot.style.background = '#34d399'; dot.style.boxShadow = '0 0 6px #34d399'; dot.style.animation = 'ssePulse 2s infinite'; }
+    if (label) { label.textContent = 'LIVE'; label.style.display = ''; }
+  } else {
+    indicator.classList.add('sse-disconnected');
+    indicator.title = 'Sinkronisasi Real-Time: TERPUTUS ⚠️ (mencoba ulang...)';
+    if (dot) { dot.style.background = '#f87171'; dot.style.boxShadow = '0 0 6px #f87171'; dot.style.animation = 'none'; }
+    if (label) { label.textContent = 'OFFLINE'; label.style.display = ''; }
+  }
+}
+
 function initSSE() {
   if (sseInstance) {
     try { sseInstance.close(); } catch (e) {}
@@ -336,6 +354,7 @@ function initSSE() {
 
     sseInstance.onopen = function () {
       console.log('⚡ Real-time SSE sync connected');
+      setSseLiveStatus(true);
     };
 
     sseInstance.onmessage = function (event) {
@@ -343,18 +362,24 @@ function initSSE() {
         if (sseTimeout) clearTimeout(sseTimeout);
         sseTimeout = setTimeout(() => {
           console.log('⚡ Real-time data update received, syncing dashboard...');
+          // Reset show-all agar tabel kembali ke tampilan ringkas setelah auto-refresh
+          _editDataShowAll = false;
           loadAllAppData();
+          // Toast notif singkat bahwa ada data baru masuk
+          showToast('🔄 Data diperbarui oleh petugas lain', 'info');
         }, 300);
       }
     };
 
     sseInstance.onerror = function () {
+      setSseLiveStatus(false);
       try { sseInstance.close(); } catch (e) {}
       if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
       sseReconnectTimer = setTimeout(initSSE, 5000);
     };
   } catch (err) {
     console.error('SSE initialization error:', err);
+    setSseLiveStatus(false);
   }
 }
 
@@ -2040,7 +2065,10 @@ function resetFormPoli() {
 // -------------------------------------------------------------
 // 2. TAB EDIT DATA & KOREKSI STOK LOGIC
 // -------------------------------------------------------------
-function renderEditDataTable() {
+let _editDataShowAll = false;
+
+function renderEditDataTable(forceShowAll) {
+  if (forceShowAll !== undefined) _editDataShowAll = forceShowAll;
   const tbody = document.getElementById('table-edit-data-body');
   if (!tbody) return;
 
@@ -2049,8 +2077,8 @@ function renderEditDataTable() {
 
   // 1. Urutkan berdasarkan waktu simpan/input terbaru (created_at)
   let filtered = appData.records.slice().sort((a, b) => {
-    const timeA = a.created_at ? new Date(a.created_at).getTime() : (a.id ? Number(a.id) || 0 : 0);
-    const timeB = b.created_at ? new Date(b.created_at).getTime() : (b.id ? Number(b.id) || 0 : 0);
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : (a.id ? Number(a.id.replace('REC-', '')) || 0 : 0);
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : (b.id ? Number(b.id.replace('REC-', '')) || 0 : 0);
     return timeB - timeA;
   });
 
@@ -2078,15 +2106,33 @@ function renderEditDataTable() {
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Tidak ada data rekam medis yang cocok dengan pencarian/filter</td></tr>`;
+    // Update counter
+    const counter = document.getElementById('edit-data-counter');
+    if (counter) counter.textContent = '';
     return;
   }
 
   const isFiltered = Boolean(dateFilter || searchFilter);
   const totalCount = filtered.length;
+  const PAGE_SIZE = 50;
+  const nowMs = Date.now();
+  const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
-  // Batasi 30 data diinput terbaru jika tanpa filter (agar UI di HP super ringan & responsif)
-  if (!isFiltered) {
-    filtered = filtered.slice(0, 30);
+  // Batasi 50 data jika tanpa filter dan belum klik "Tampilkan Semua"
+  let displayedCount = totalCount;
+  if (!isFiltered && !_editDataShowAll && totalCount > PAGE_SIZE) {
+    filtered = filtered.slice(0, PAGE_SIZE);
+    displayedCount = PAGE_SIZE;
+  }
+
+  // Update counter badge
+  const counter = document.getElementById('edit-data-counter');
+  if (counter) {
+    if (!isFiltered && !_editDataShowAll && totalCount > PAGE_SIZE) {
+      counter.innerHTML = `<span style="color: var(--text-muted); font-size: 0.82rem;">Menampilkan <strong>${PAGE_SIZE}</strong> dari <strong>${totalCount}</strong> total kunjungan</span>`;
+    } else {
+      counter.innerHTML = `<span style="color: var(--text-muted); font-size: 0.82rem;">Total: <strong>${totalCount}</strong> kunjungan${isFiltered ? ' (difilter)' : ''}</span>`;
+    }
   }
 
   let html = filtered.map(r => {
@@ -2102,11 +2148,18 @@ function renderEditDataTable() {
          </div>`
       : '';
 
+    // Deteksi apakah record baru (< 2 jam dari sekarang)
+    const recMs = r.created_at ? new Date(r.created_at).getTime() : 0;
+    const isNew = recMs > 0 && (nowMs - recMs) < TWO_HOURS_MS;
+    const newBadge = isNew ? `<span class="badge-new-record"><i class="fa-solid fa-bolt"></i> BARU</span>` : '';
+    const rowClass = isNew ? 'edit-data-row-new' : '';
+
     return `
-    <tr ondblclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer;" title="Klik 2x untuk melihat seluruh riwayat rekam medis pasien sejak pertama kali">
+    <tr class="${rowClass}" ondblclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer;" title="Klik 2x untuk melihat seluruh riwayat rekam medis pasien sejak pertama kali">
       <td data-label="Tanggal" style="vertical-align: top;">
         <div style="font-weight: 700; color: var(--text-color);">${r.tanggal || '-'}</div>
         <div style="margin-top: 4px;">${getStatusKelaikanBadges(r)}</div>
+        ${newBadge ? `<div style="margin-top: 4px;">${newBadge}</div>` : ''}
       </td>
       <td data-label="Nama Pasien" style="vertical-align: top;">
         <div onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline; font-weight: 800; font-size: 0.96rem;" title="Klik untuk membuka seluruh riwayat berobat pasien sejak pertama kali">
@@ -2153,18 +2206,26 @@ function renderEditDataTable() {
     `;
   }).join('');
 
-  if (!isFiltered && totalCount > 30) {
+  // Tombol "Tampilkan Semua" jika masih ada yang tersembunyi
+  if (!isFiltered && !_editDataShowAll && totalCount > PAGE_SIZE) {
     html += `
       <tr>
-        <td colspan="5" style="text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 12px; background: rgba(255,255,255,0.02);">
-          <i class="fa-solid fa-circle-info" style="color: var(--primary); margin-right: 4px;"></i>
-          Menampilkan <strong>30 data di-input terbaru</strong> (dari total ${totalCount} data). Gunakan pencarian/filter tanggal untuk menampilkan data lainnya.
+        <td colspan="5" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02);">
+          <button onclick="renderEditDataTable(true)" class="btn btn-secondary" style="font-weight: 700; font-size: 0.85rem; padding: 8px 20px;">
+            <i class="fa-solid fa-chevron-down" style="margin-right: 6px;"></i>
+            Tampilkan Semua ${totalCount} Data Kunjungan
+          </button>
+          <div style="color: var(--text-muted); font-size: 0.78rem; margin-top: 6px;">
+            <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i>
+            Atau gunakan <strong>Filter Tanggal</strong> / <strong>Pencarian</strong> di atas untuk menemukan data spesifik
+          </div>
         </td>
       </tr>`;
   }
 
   tbody.innerHTML = html;
 }
+
 
 function filterEditDataTable() {
   renderEditDataTable();

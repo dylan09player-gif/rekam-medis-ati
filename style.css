@@ -3278,3 +3278,48 @@ select.form-control {
 .catalog-qty-input[type=number] {
   -moz-appearance: textfield;
 }
+
+/* SSE Live Sync Pulse Animation */
+@keyframes ssePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* New Record Badge (baru diinput < 2 jam) */
+.badge-new-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(52, 211, 153, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  color: #34d399;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  animation: ssePulse 2.5s infinite;
+}
+
+/* SSE Disconnected state */
+#sse-live-indicator.sse-disconnected {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+#sse-live-indicator.sse-disconnected #sse-dot {
+  background: #f87171;
+  box-shadow: 0 0 6px #f87171;
+  animation: none;
+}
+
+/* Edit Data new-row highlight flash */
+@keyframes rowFlashIn {
+  0% { background: rgba(52, 211, 153, 0.18); }
+  100% { background: transparent; }
+}
+.edit-data-row-new {
+  animation: rowFlashIn 2.5s ease-out forwards;
+}
+

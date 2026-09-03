@@ -168,6 +168,12 @@
         <span id="nav-user-role" class="nav-user-role-badge">Dokter</span>
       </div>
 
+      <!-- SSE Live Sync Indicator -->
+      <div id="sse-live-indicator" title="Status Sinkronisasi Real-Time" style="display: flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 20px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); cursor: default; font-size: 0.75rem; font-weight: 700; color: #34d399; transition: all 0.3s;">
+        <span id="sse-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; display: inline-block; box-shadow: 0 0 6px #34d399; animation: ssePulse 2s infinite;"></span>
+        <span id="sse-label" style="display: none;">LIVE</span>
+      </div>
+
       <button class="theme-toggle-btn" id="btn-toggle-theme" title="Ubah Tema" style="width: 32px; height: 32px;">
         <i class="fa-solid fa-moon"></i>
       </button>
@@ -497,12 +503,14 @@
         <p style="color: var(--text-muted); font-size: 0.85rem;">Pilih tanggal atau cari pasien untuk mengedit rekam medis & mengoreksi stok obat secara otomatis.</p>
         
         <div class="filter-action-bar">
-          <input type="date" id="filter-edit-date" class="form-control" onchange="filterEditDataTable()">
-          <input type="text" id="filter-edit-search" class="form-control" placeholder="Cari Nama Pasien / NIK Pabrik / Keluhan..." onkeyup="filterEditDataTable()">
-          <button class="btn btn-primary" onclick="filterEditDataTable()">
+          <input type="date" id="filter-edit-date" class="form-control" onchange="_editDataShowAll=false; filterEditDataTable()">
+          <input type="text" id="filter-edit-search" class="form-control" placeholder="Cari Nama Pasien / NIK Pabrik / Keluhan..." onkeyup="_editDataShowAll=false; filterEditDataTable()">
+          <button class="btn btn-primary" onclick="_editDataShowAll=false; filterEditDataTable()">
             <i class="fa-solid fa-magnifying-glass"></i> CARI
           </button>
         </div>
+        <!-- Counter total data -->
+        <div id="edit-data-counter" style="margin-top: 8px; min-height: 20px;"></div>
       </div>
 
       <div class="glass-card">
