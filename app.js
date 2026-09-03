@@ -2114,22 +2114,45 @@ function renderEditDataTable(forceShowAll) {
 
   const isFiltered = Boolean(dateFilter || searchFilter);
   const totalCount = filtered.length;
-  const PAGE_SIZE = 50;
   const nowMs = Date.now();
   const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
-  // Batasi 50 data jika tanpa filter dan belum klik "Tampilkan Semua"
+  // Hitung batas waktu untuk "2 hari terakhir" (hari ini dan kemarin jam 00:00:00)
+  const today = new Date();
+  const twoDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  const twoDaysAgoMs = twoDaysAgo.getTime();
+
+  // Filter otomatis 2 hari terakhir jika tanpa filter dan belum klik "Tampilkan Semua"
   let displayedCount = totalCount;
-  if (!isFiltered && !_editDataShowAll && totalCount > PAGE_SIZE) {
-    filtered = filtered.slice(0, PAGE_SIZE);
-    displayedCount = PAGE_SIZE;
+  let hasOlderRecords = false;
+
+  if (!isFiltered && !_editDataShowAll) {
+    const recentRecords = [];
+    for (const r of filtered) {
+      const recDate = parseRecordDate(r);
+      const recMs = recDate ? recDate.getTime() : 0;
+      if (recMs >= twoDaysAgoMs) {
+        recentRecords.push(r);
+      } else {
+        hasOlderRecords = true;
+      }
+    }
+    
+    // Jika kebetulan tidak ada data sama sekali dalam 2 hari terakhir, tampilkan 10 terbaru agar tidak kosong
+    if (recentRecords.length === 0 && filtered.length > 0) {
+       filtered = filtered.slice(0, 10);
+       hasOlderRecords = filtered.length < totalCount;
+    } else {
+       filtered = recentRecords;
+    }
+    displayedCount = filtered.length;
   }
 
   // Update counter badge
   const counter = document.getElementById('edit-data-counter');
   if (counter) {
-    if (!isFiltered && !_editDataShowAll && totalCount > PAGE_SIZE) {
-      counter.innerHTML = `<span style="color: var(--text-muted); font-size: 0.82rem;">Menampilkan <strong>${PAGE_SIZE}</strong> dari <strong>${totalCount}</strong> total kunjungan</span>`;
+    if (!isFiltered && !_editDataShowAll && hasOlderRecords) {
+      counter.innerHTML = `<span style="color: var(--text-muted); font-size: 0.82rem;">Menampilkan <strong>${displayedCount}</strong> kunjungan 2 hari terakhir (Total: ${totalCount})</span>`;
     } else {
       counter.innerHTML = `<span style="color: var(--text-muted); font-size: 0.82rem;">Total: <strong>${totalCount}</strong> kunjungan${isFiltered ? ' (difilter)' : ''}</span>`;
     }
@@ -2207,17 +2230,17 @@ function renderEditDataTable(forceShowAll) {
   }).join('');
 
   // Tombol "Tampilkan Semua" jika masih ada yang tersembunyi
-  if (!isFiltered && !_editDataShowAll && totalCount > PAGE_SIZE) {
+  if (!isFiltered && !_editDataShowAll && hasOlderRecords) {
     html += `
       <tr>
         <td colspan="5" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02);">
           <button onclick="renderEditDataTable(true)" class="btn btn-secondary" style="font-weight: 700; font-size: 0.85rem; padding: 8px 20px;">
             <i class="fa-solid fa-chevron-down" style="margin-right: 6px;"></i>
-            Tampilkan Semua ${totalCount} Data Kunjungan
+            Tampilkan Riwayat Lama (${totalCount - displayedCount} kunjungan)
           </button>
           <div style="color: var(--text-muted); font-size: 0.78rem; margin-top: 6px;">
             <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i>
-            Atau gunakan <strong>Filter Tanggal</strong> / <strong>Pencarian</strong> di atas untuk menemukan data spesifik
+            Atau gunakan <strong>Filter Tanggal</strong> di atas untuk mencari data 3 hari lalu dan seterusnya
           </div>
         </td>
       </tr>`;
