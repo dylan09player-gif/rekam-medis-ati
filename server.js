@@ -1332,11 +1332,50 @@ app.get('/api/records', (req, res) => {
 app.post('/api/records', (req, res) => {
   const db = readDB();
   const newRecord = req.body;
-  
+  if (!newRecord || !newRecord.namaPasien) {
+    return res.status(400).json({ error: 'Nama pasien wajib diisi.' });
+  }
+
+  // 1. SMART DEDUPLICATION GUARD (Anti-Double Click / Sinyal Lola)
+  // Cek apakah ada kunjungan yang sama persis untuk pasien yang sama dalam 2 menit terakhir (120 detik)
+  if (!db.records) db.records = [];
+  const nowMs = Date.now();
+  const DUPLICATE_WINDOW_MS = 2 * 60 * 1000; // 2 Menit
+
+  const recentDuplicate = db.records.find(r => {
+    const rTime = r.created_at ? new Date(r.created_at).getTime() : 0;
+    if (rTime <= 0 || (nowMs - rTime) > DUPLICATE_WINDOW_MS) return false;
+
+    const rNik = String(r.nikPabrik || '').trim().toLowerCase();
+    const newNik = String(newRecord.nikPabrik || '').trim().toLowerCase();
+    const rNama = String(r.namaPasien || '').trim().toLowerCase();
+    const newNama = String(newRecord.namaPasien || '').trim().toLowerCase();
+
+    const isSamePatient = (newNik && rNik === newNik) || (newNama && rNama === newNama);
+    if (!isSamePatient) return false;
+
+    const rKeluhan = String(r.keluhan || '').trim().toLowerCase();
+    const newKeluhan = String(newRecord.keluhan || '').trim().toLowerCase();
+    const rAsesmen = String(r.asesmen || '').trim().toLowerCase();
+    const newAsesmen = String(newRecord.asesmen || '').trim().toLowerCase();
+
+    return (rKeluhan === newKeluhan) || (rAsesmen === newAsesmen);
+  });
+
+  if (recentDuplicate) {
+    console.log(`⚡ [IDEMPOTENCY] Mencegah input ganda: ${newRecord.namaPasien} (${newRecord.nikPabrik || '-'}) dalam 2 menit.`);
+    return res.status(200).json({
+      ...recentDuplicate,
+      _isDuplicatePrevented: true,
+      _message: 'Data kunjungan sudah tercatat sebelumnya. Pemotongan stok ganda dicegah.'
+    });
+  }
+
+  // Generate ID & Created At
   newRecord.id = 'REC-' + Date.now();
   newRecord.created_at = newRecord.created_at || new Date().toISOString();
   
-  // Auto-Deduct Stock from resep list
+  // 2. Auto-Deduct Stock from resep list & Log Mutation
   const logObatTeks = [];
   if (Array.isArray(newRecord.resep)) {
     if (!db.medicines) db.medicines = [];
@@ -1373,7 +1412,20 @@ app.post('/api/records', (req, res) => {
     });
   }
 
-  // Mark as pantauan if flagged (Deduplicate per employee)
+  // 3. Potong Saldo Obat Pasien Secara Atomik di Server
+  const grandTotalBiaya = Number(newRecord.totalBiaya || 0);
+  if (grandTotalBiaya > 0 && Array.isArray(db.patients)) {
+    const pIdx = db.patients.findIndex(p => 
+      (p.nikPabrik && newRecord.nikPabrik && p.nikPabrik === newRecord.nikPabrik) ||
+      (p.nama && newRecord.namaPasien && p.nama.toLowerCase() === newRecord.namaPasien.toLowerCase())
+    );
+    if (pIdx !== -1) {
+      const oldSaldo = parseInt(db.patients[pIdx].saldoObat) || 0;
+      db.patients[pIdx].saldoObat = oldSaldo - grandTotalBiaya;
+    }
+  }
+
+  // 4. Mark as pantauan if flagged (Deduplicate per employee)
   if (newRecord.isPantauan) {
     if (!db.pantauan) db.pantauan = [];
     const existIdx = db.pantauan.findIndex(p => 
@@ -1397,38 +1449,39 @@ app.post('/api/records', (req, res) => {
     }
   }
 
-  if (!db.records) db.records = [];
+  // 5. Simpan Record ke Database
   db.records.unshift(newRecord);
   writeDB(db);
-  autoPushMedicinesToGSheet(db);
 
-  // Telegram Notification (Full SOAP & Clinical Data)
-  const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-  
-  // Status Kelaikan
-  let kelaikanList = [];
-  if (newRecord.izinSakit) kelaikanList.push('📄 ISTIRAHAT SAKIT (Surkes)');
-  if (newRecord.isPantauan) kelaikanList.push('🔴 PASIEN PANTAUAN K3');
-  if (kelaikanList.length === 0) kelaikanList.push('🟢 FIT TO WORK');
-  const statusKelaikanTeks = kelaikanList.join(' | ');
+  // 6. RESPON CEPAT KE BROWSER PETUGAS (Agar Layar HP Tidak Menggantung / Loading Lama)
+  res.status(201).json(newRecord);
 
-  // Tindakan Medis
-  const logTindakanTeks = Array.isArray(newRecord.tindakan) && newRecord.tindakan.length > 0
-    ? newRecord.tindakan.map(t => `• ${t.nama || 'Tindakan'} (${t.qty || 1}x) [Tarif: Rp ${(t.subtotal || 0).toLocaleString('id-ID')}]`).join('\n')
-    : '• -';
+  // 7. PENGIRIMAN NOTIFIKASI TELEGRAM & G-SHEET DI BACKGROUND (ASINKRON)
+  setImmediate(() => {
+    try {
+      const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      
+      let kelaikanList = [];
+      if (newRecord.izinSakit) kelaikanList.push('📄 ISTIRAHAT SAKIT (Surkes)');
+      if (newRecord.isPantauan) kelaikanList.push('🔴 PASIEN PANTAUAN K3');
+      if (kelaikanList.length === 0) kelaikanList.push('🟢 FIT TO WORK');
+      const statusKelaikanTeks = kelaikanList.join(' | ');
 
-  // Resep Obat
-  const obatDetailTeks = logObatTeks.length > 0
-    ? logObatTeks.map(o => `• ${o}`).join('\n')
-    : (Array.isArray(newRecord.resep) && newRecord.resep.length > 0
-        ? newRecord.resep.map(r => `• ${r.namaObat || r.obat} (${r.qty || 1})`).join('\n')
-        : '• -');
+      const logTindakanTeks = Array.isArray(newRecord.tindakan) && newRecord.tindakan.length > 0
+        ? newRecord.tindakan.map(t => `• ${t.nama || 'Tindakan'} (${t.qty || 1}x) [Tarif: Rp ${(t.subtotal || 0).toLocaleString('id-ID')}]`).join('\n')
+        : '• -';
 
-  const totalBiayaTeks = Number(newRecord.totalBiaya || 0).toLocaleString('id-ID');
-  const biayaTindakanTeks = Number(newRecord.biayaTindakan || 0).toLocaleString('id-ID');
-  const biayaObatTeks = Number(newRecord.biayaObat || 0).toLocaleString('id-ID');
+      const obatDetailTeks = logObatTeks.length > 0
+        ? logObatTeks.map(o => `• ${o}`).join('\n')
+        : (Array.isArray(newRecord.resep) && newRecord.resep.length > 0
+            ? newRecord.resep.map(r => `• ${r.namaObat || r.obat} (${r.qty || 1})`).join('\n')
+            : '• -');
 
-  const telegramText = 
+      const totalBiayaTeks = Number(newRecord.totalBiaya || 0).toLocaleString('id-ID');
+      const biayaTindakanTeks = Number(newRecord.biayaTindakan || 0).toLocaleString('id-ID');
+      const biayaObatTeks = Number(newRecord.biayaObat || 0).toLocaleString('id-ID');
+
+      const telegramText = 
 `🏥 <b>LAPORAN HASIL PEMERIKSAAN PASIEN</b>
 ━━━━━━━━━━━━━━━━━━━━
 🕐 <b>Waktu:</b> ${nowWIB} WIB
@@ -1464,33 +1517,41 @@ ${obatDetailTeks}
 ━━━━━━━━━━━━━━━━━━━━
 🏥 <i>Sistem Rekam Medis & Manajemen Klinik PT ATI</i>`;
 
-  sendTelegramNotif(telegramText);
+      sendTelegramNotif(telegramText);
+    } catch (err) {
+      console.error('Telegram notification error:', err);
+    }
 
-  // Auto Push to Google Sheets if configured
-  const gsheetUrl = db.settings?.gsheet_url;
-  if (gsheetUrl) {
+    // Auto Push to Google Sheets if configured
     try {
-      const payload = JSON.stringify({
-        action: 'pushRecords',
-        records: [newRecord]
-      });
-      const urlObj = new URL(gsheetUrl);
-      const pushReq = https.request({
-        hostname: urlObj.hostname,
-        path: urlObj.pathname + urlObj.search,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(payload)
-        }
-      });
-      pushReq.on('error', () => {});
-      pushReq.write(payload);
-      pushReq.end();
-    } catch (e) {}
-  }
+      autoPushMedicinesToGSheet(db);
+    } catch (err) {
+      console.error('Auto push medicines error:', err);
+    }
 
-  res.status(201).json(newRecord);
+    const gsheetUrl = db.settings?.gsheet_url;
+    if (gsheetUrl) {
+      try {
+        const payload = JSON.stringify({
+          action: 'pushRecords',
+          records: [newRecord]
+        });
+        const urlObj = new URL(gsheetUrl);
+        const pushReq = https.request({
+          hostname: urlObj.hostname,
+          path: urlObj.pathname + urlObj.search,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payload)
+          }
+        });
+        pushReq.on('error', () => {});
+        pushReq.write(payload);
+        pushReq.end();
+      } catch (e) {}
+    }
+  });
 });
 
 // Edit Record & Auto Stock Correction

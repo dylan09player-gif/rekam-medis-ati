@@ -1818,8 +1818,17 @@ function closePhotoViewer() {
   if (modal) modal.style.display = 'none';
 }
 
+let _isSavingPoli = false;
+
 async function handleSavePoli(e) {
   if (e && e.preventDefault) e.preventDefault();
+  
+  // 1. Anti-Double Click Guard
+  if (_isSavingPoli) {
+    showToast('Sedang memproses penyimpanan data, mohon tunggu sebentar...', 'warning');
+    return;
+  }
+
   if (!appData.currentPoliPatient) {
     showToast('Silakan cari dan pilih pasien terlebih dahulu!', 'error');
     return;
@@ -1924,110 +1933,128 @@ async function handleSavePoli(e) {
   }
   const planText = planParts.length > 0 ? planParts.join('; ') : 'Edukasi Istirahat & Hidrasi Cukup';
 
-  // Handle File Upload to Google Drive
-  let linkFoto = '';
-  const fileInput = document.getElementById('poli-upload-file');
-  if (fileInput && fileInput.files && fileInput.files.length > 0) {
-    const file = fileInput.files[0];
-    showToast('Mengunggah foto penunjang ke Google Drive...', 'info');
-    try {
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      
-      const upRes = await fetch('/api/upload-foto', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileData: base64,
-          fileName: file.name,
-          mimeType: file.type
-        })
-      });
-      const upData = await upRes.json();
-      if (upData.fileUrl) linkFoto = upData.fileUrl;
-    } catch(err) {
-      console.error('File upload error:', err);
-    }
+  // 2. KUNCI TOMBOL & TAMPILKAN STATUS LOADING (Anti-Double Click UI)
+  const saveBtn = document.getElementById('btn-save-poli') || document.querySelector('button[onclick*="handleSavePoli"]');
+  const originalBtnHTML = saveBtn ? saveBtn.innerHTML : '';
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.style.opacity = '0.65';
+    saveBtn.style.cursor = 'not-allowed';
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan Data ke Server...';
   }
-
-  // Record Nakes frequency
-  recordNakesUsage(pemeriksa);
-
-  const selectedDateVal = document.getElementById('poli-tanggal-berobat').value;
-  let tanggalFormatted = '';
-  let customCreatedAt = '';
-  if (selectedDateVal) {
-    const [yr, mo, dy] = selectedDateVal.split('-');
-    tanggalFormatted = `${parseInt(dy)}/${parseInt(mo)}/${yr}`;
-    
-    const now = new Date();
-    const customDateObj = new Date(yr, mo - 1, dy, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
-    customCreatedAt = customDateObj.toISOString();
-  } else {
-    const now = new Date();
-    tanggalFormatted = now.toLocaleDateString('id-ID');
-    customCreatedAt = now.toISOString();
-  }
-
-  const newRecord = {
-    nikPabrik: appData.currentPoliPatient.nikPabrik || '',
-    namaPasien: appData.currentPoliPatient.nama,
-    dept: appData.currentPoliPatient.dept || '',
-    tanggal: tanggalFormatted,
-    created_at: customCreatedAt,
-    keluhan,
-    objektif: objektifFull,
-    asesmen: selectedICD || 'Pemeriksaan Umum',
-    plan: planText,
-    tindakan: tindakanList,
-    biayaTindakan: grandTotalTindakan,
-    resep: resepList,
-    biayaObat: grandTotalObat,
-    totalBiaya: grandTotalBiaya,
-    pemeriksa,
-    izinSakit: isIzinSakit,
-    isPantauan,
-    linkFoto
-  };
+  _isSavingPoli = true;
 
   try {
-    const res = await fetch('/api/records', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newRecord)
-    });
+    // Handle File Upload to Google Drive jika ada
+    let linkFoto = '';
+    const fileInput = document.getElementById('poli-upload-file');
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      showToast('Mengunggah foto penunjang ke Google Drive...', 'info');
+      try {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
+        const upRes = await fetch('/api/upload-foto', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileData: base64,
+            fileName: file.name,
+            mimeType: file.type
+          })
+        });
+        const upData = await upRes.json();
+        if (upData.fileUrl) linkFoto = upData.fileUrl;
+      } catch(err) {
+        console.error('File upload error:', err);
+      }
+    }
+
+    // Record Nakes frequency
+    recordNakesUsage(pemeriksa);
+
+    const selectedDateVal = document.getElementById('poli-tanggal-berobat').value;
+    let tanggalFormatted = '';
+    let customCreatedAt = '';
+    if (selectedDateVal) {
+      const [yr, mo, dy] = selectedDateVal.split('-');
+      tanggalFormatted = `${parseInt(dy)}/${parseInt(mo)}/${yr}`;
+      
+      const now = new Date();
+      const customDateObj = new Date(yr, mo - 1, dy, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+      customCreatedAt = customDateObj.toISOString();
+    } else {
+      const now = new Date();
+      tanggalFormatted = now.toLocaleDateString('id-ID');
+      customCreatedAt = now.toISOString();
+    }
+
+    const newRecord = {
+      nikPabrik: appData.currentPoliPatient.nikPabrik || '',
+      namaPasien: appData.currentPoliPatient.nama,
+      dept: appData.currentPoliPatient.dept || '',
+      tanggal: tanggalFormatted,
+      created_at: customCreatedAt,
+      keluhan,
+      objektif: objektifFull,
+      asesmen: selectedICD || 'Pemeriksaan Umum',
+      plan: planText,
+      tindakan: tindakanList,
+      biayaTindakan: grandTotalTindakan,
+      resep: resepList,
+      biayaObat: grandTotalObat,
+      totalBiaya: grandTotalBiaya,
+      pemeriksa,
+      izinSakit: isIzinSakit,
+      isPantauan,
+      linkFoto
+    };
+
+    // 3. FETCH DENGAN TIMEOUT 12 DETIK (Solusi Jaringan Sinyal Flaky)
+    const controller = new AbortController();
+    const timeoutTimer = setTimeout(() => controller.abort(), 12000);
+
+    let res;
+    try {
+      res = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRecord),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutTimer);
+    } catch (fetchErr) {
+      clearTimeout(timeoutTimer);
+      throw fetchErr;
+    }
 
     if (res.ok) {
-      showToast('Rekam Medis Berhasil Disimpan & Stok Berkurang!', 'success');
-      
-      // DEDUCT SALDO OBAT / BIAYA BEROBAT
-      if (grandTotalBiaya > 0 && appData.currentPoliPatient) {
-        const p = appData.currentPoliPatient;
-        const oldSaldo = parseInt(p.saldoObat) || 0;
-        const newSaldo = oldSaldo - grandTotalBiaya;
-        
-        const updatedPatient = { ...p, saldoObat: newSaldo };
-        try {
-          const patientId = p.id || p.nikPabrik || p.nik;
-          await fetch(`/api/patients/${encodeURIComponent(patientId)}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedPatient)
-          });
-        } catch (e) {
-          console.error('Gagal update saldo obat:', e);
-        }
+      const resData = await res.json().catch(() => ({}));
+
+      // Feedback khusus jika dicegah akibat duplikasi klik cepat
+      if (resData && resData._isDuplicatePrevented) {
+        showToast('ℹ️ Data kunjungan sudah tersimpan beberapa saat lalu (klik ganda dicegah).', 'info', 5000);
+      } else {
+        showToast('✅ Rekam Medis Berhasil Disimpan & Stok Berkurang!', 'success', 4000);
       }
 
+      // Bersihkan formulir poli
       resetFormPoli();
-      await loadAllAppData();
+
+      // Refresh seluruh data aplikasi secara asinkron dan aman
+      try {
+        await loadAllAppData();
+      } catch (loadErr) {
+        console.warn('Gagal me-refresh appData setelah simpan:', loadErr);
+      }
       
       if (appData.currentPoliPatient) {
-        // Refetch current patient to get the updated saldoObat
+        // Refetch current patient untuk mendapatkan saldoObat yang baru
         const refreshedPatient = appData.patients.find(x => 
           (x.id && x.id === appData.currentPoliPatient.id) ||
           (x.nikPabrik && x.nikPabrik === appData.currentPoliPatient.nikPabrik) ||
@@ -2049,10 +2076,25 @@ async function handleSavePoli(e) {
         calculateCombinedGrandTotal();
       }
     } else {
-      showToast('Gagal menyimpan data', 'error');
+      const errData = await res.json().catch(() => ({}));
+      showToast(`❌ Gagal menyimpan: ${errData.error || 'Server menolak permintaan'}`, 'error');
     }
   } catch (err) {
-    showToast('Terjadi kesalahan jaringan', 'error');
+    if (err.name === 'AbortError') {
+      showToast('⚠️ Sinyal pabrik sedang lambat / timeout (12 detik). Mohon periksa menu "Edit Data" terlebih dahulu sebelum klik simpan ulang agar data tidak ganda!', 'warning', 8000);
+    } else {
+      console.error('Save poli error:', err);
+      showToast('❌ Terjadi gangguan koneksi internet. Silakan cek koneksi lalu coba lagi.', 'error');
+    }
+  } finally {
+    // 4. KEMBALIKAN STATUS TOMBOL SEPERTI SEMULA
+    _isSavingPoli = false;
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.style.opacity = '1';
+      saveBtn.style.cursor = 'pointer';
+      saveBtn.innerHTML = originalBtnHTML;
+    }
   }
 }
 
