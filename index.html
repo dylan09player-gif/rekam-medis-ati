@@ -1505,8 +1505,35 @@ function setupTabDanHeader() {
       <form id="form-edit-record" onsubmit="handleSaveEditRecord(event)">
         <input type="hidden" id="edit-record-id">
         <input type="hidden" id="edit-nama-pasien">
+        <input type="hidden" id="edit-nik-pabrik">
+        <input type="hidden" id="edit-dept-pasien">
         
-        <!-- TANGGAL BEROBAT -->
+        <!-- 1. FITUR EDIT NIK / KARYAWAN (JIKA SALAH INPUT PASIEN) -->
+        <div class="form-group" style="margin-bottom: 14px; background: rgba(56, 189, 248, 0.06); border: 1.5px solid rgba(56, 189, 248, 0.25); border-radius: var(--r-md); padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="font-weight: 700; text-transform: uppercase; color: #38bdf8; margin: 0; font-size: 0.85rem;">
+              <i class="fa-solid fa-id-card-clip"></i> PASIEN / KARYAWAN
+            </label>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Ubah jika salah pilih karyawan</span>
+          </div>
+
+          <!-- Input Pencarian Pasien Autocomplete -->
+          <div style="position: relative;">
+            <input type="text" id="edit-patient-search" class="form-control" placeholder="🔍 Cari NIK Pabrik / Nama Pasien..." autocomplete="off" oninput="onEditPatientSearchInput(this.value)" onfocus="onEditPatientSearchInput(this.value)" style="border-color: rgba(56, 189, 248, 0.4);">
+            <div id="edit-patient-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 10005; max-height: 220px; overflow-y: auto; background: #1e293b; border: 1.5px solid #38bdf8; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);"></div>
+          </div>
+
+          <!-- Info Pasien Terpilih -->
+          <div id="edit-selected-patient-badge" style="margin-top: 8px; padding: 7px 12px; background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong id="edit-patient-display-name" style="color: #38bdf8;">Nama Pasien</strong>
+              <span id="edit-patient-display-sub" style="color: var(--text-muted); margin-left: 8px; font-size: 0.8rem;">(NIK: - | Dept: -)</span>
+            </div>
+            <span class="badge badge-info" style="font-size: 0.72rem; font-weight: 700;">Pasien Terpilih</span>
+          </div>
+        </div>
+
+        <!-- 2. TANGGAL BEROBAT -->
         <div class="form-group" style="margin-bottom: 14px;">
           <label class="form-label" style="font-weight: 700; text-transform: uppercase; color: var(--accent);"><i class="fa-regular fa-calendar-check"></i> TANGGAL BEROBAT</label>
           <input type="date" id="edit-tanggal" class="form-control" required>
@@ -1617,7 +1644,7 @@ function setupTabDanHeader() {
 
         <div style="display: flex; gap: 10px;">
           <button type="button" class="btn btn-secondary" onclick="closeModalEditRecord()" style="flex: 1;">Batal</button>
-          <button type="submit" class="btn btn-warning" style="flex: 2; font-weight: 800; background: #eab308; color: #000; padding: 12px; border: none;">
+          <button type="submit" id="btn-submit-edit-record" class="btn btn-warning" style="flex: 2; font-weight: 800; background: #eab308; color: #000; padding: 12px; border: none;">
             <i class="fa-solid fa-floppy-disk"></i> UPDATE &amp; REVISI STOK
           </button>
         </div>

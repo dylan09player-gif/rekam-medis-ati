@@ -365,8 +365,10 @@ function initSSE() {
           // Reset show-all agar tabel kembali ke tampilan ringkas setelah auto-refresh
           _editDataShowAll = false;
           loadAllAppData();
-          // Toast notif singkat bahwa ada data baru masuk
-          showToast('🔄 Data diperbarui oleh petugas lain', 'info');
+          // Toast notif hanya muncul jika update berasal dari petugas/perangkat lain (bukan aksi sendiri)
+          if (!window._lastLocalMutationTime || (Date.now() - window._lastLocalMutationTime) > 4000) {
+            showToast('🔄 Data diperbarui oleh petugas lain', 'info');
+          }
         }, 300);
       }
     };
@@ -2702,20 +2704,31 @@ function updateSisaSaldoEdit(overrideTotal) {
   const currentRecord = appData.records.find(r => r.id === document.getElementById('edit-record-id').value);
   if (!currentRecord) return;
   
-  const emp = appData.patients.find(e => e.nikPabrik === currentRecord.nikPabrik || e.nik === currentRecord.nikPabrik);
+  // Ambil data pasien terpilih (bisa jadi sudah diganti karyawan lain)
+  const selectedNik = (document.getElementById('edit-nik-pabrik')?.value || currentRecord.nikPabrik || '').trim();
+  const selectedNama = (document.getElementById('edit-nama-pasien')?.value || currentRecord.namaPasien || '').trim();
+
+  const emp = appData.patients.find(e => 
+    (selectedNik && (e.nikPabrik === selectedNik || e.nik === selectedNik)) ||
+    (selectedNama && e.nama && e.nama.toLowerCase() === selectedNama.toLowerCase())
+  );
   if (!emp) return;
 
   const currentSaldo = parseInt(emp.saldoObat) || 0;
   const oldBiaya = parseInt(currentRecord.totalBiaya) || 0;
   
-  // Saldo sebelum transaksi ini dilakukan (dikembalikan dulu)
-  const saldoSebelumTransaksi = currentSaldo + oldBiaya;
+  const isSamePatient = (selectedNik && currentRecord.nikPabrik && selectedNik === currentRecord.nikPabrik) ||
+                        (selectedNama && currentRecord.namaPasien && selectedNama.toLowerCase() === currentRecord.namaPasien.toLowerCase());
+
+  // Jika pasien sama: saldo sebelum transaksi ini adalah saldo sekarang + biaya lama
+  // Jika pasien berbeda: saldo sebelum transaksi adalah saldo utuh pasien baru
+  const saldoSebelumTransaksi = isSamePatient ? (currentSaldo + oldBiaya) : currentSaldo;
   
   let newBiaya = 0;
   if (typeof overrideTotal === 'number') {
     newBiaya = overrideTotal;
   } else {
-    const grandTotalStr = document.getElementById('edit-resep-grand-total').textContent.replace(/[^0-9]/g, '');
+    const grandTotalStr = document.getElementById('edit-resep-grand-total')?.textContent.replace(/[^0-9]/g, '') || '0';
     newBiaya = parseInt(grandTotalStr) || 0;
   }
 
@@ -2734,6 +2747,98 @@ function updateSisaSaldoEdit(overrideTotal) {
   }
 }
 
+// -------------------------------------------------------------
+// HELPER AUTOCOMPLETE PASIEN / KARYAWAN DI MODAL EDIT
+// -------------------------------------------------------------
+function onEditPatientSearchInput(query) {
+  const dropdown = document.getElementById('edit-patient-dropdown');
+  if (!dropdown) return;
+  const q = String(query || '').trim().toLowerCase();
+
+  const matches = (appData.patients || []).filter(p => {
+    if (!q) return true;
+    const nik = String(p.nikPabrik || p.nik || '').toLowerCase();
+    const nama = String(p.nama || '').toLowerCase();
+    const dept = String(p.dept || p.departemen || '').toLowerCase();
+    return nik.includes(q) || nama.includes(q) || dept.includes(q);
+  }).slice(0, 15);
+
+  if (matches.length === 0) {
+    dropdown.innerHTML = '<div style="padding: 12px; color: var(--text-muted); font-size: 0.82rem; text-align: center;">Tidak ada pasien/karyawan yang cocok</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  dropdown.innerHTML = matches.map(p => {
+    const nik = p.nikPabrik || p.nik || '-';
+    const dept = p.dept || p.departemen || '-';
+    const safeName = escapeHtml(p.nama);
+    const safeNik = escapeHtml(nik);
+    const safeDept = escapeHtml(dept);
+    const pDataAttr = encodeURIComponent(JSON.stringify({
+      id: p.id || '',
+      nama: p.nama || '',
+      nikPabrik: p.nikPabrik || p.nik || '',
+      dept: p.dept || p.departemen || '',
+      saldoObat: p.saldoObat || 0
+    }));
+
+    return `
+      <div onclick="selectEditPatient('${pDataAttr}')" 
+           style="padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;"
+           onmouseover="this.style.background='rgba(56,189,248,0.15)'" onmouseout="this.style.background='transparent'">
+        <div>
+          <strong style="color: #ffffff; font-size: 0.88rem; display: block;">${safeName}</strong>
+          <span style="color: var(--text-muted); font-size: 0.76rem;">Dept: ${safeDept}</span>
+        </div>
+        <span class="badge" style="background: rgba(56,189,248,0.18); color: #38bdf8; font-size: 0.74rem; font-weight: 700;">${safeNik}</span>
+      </div>
+    `;
+  }).join('');
+  dropdown.style.display = 'block';
+}
+
+function selectEditPatient(encodedPatient) {
+  try {
+    const p = JSON.parse(decodeURIComponent(encodedPatient));
+    const nik = p.nikPabrik || p.nik || '';
+    const nama = p.nama || '';
+    const dept = p.dept || p.departemen || '';
+
+    document.getElementById('edit-nama-pasien').value = nama;
+    document.getElementById('edit-nik-pabrik').value = nik;
+    document.getElementById('edit-dept-pasien').value = dept;
+
+    const searchInput = document.getElementById('edit-patient-search');
+    if (searchInput) searchInput.value = `${nama} (${nik || '-'})`;
+
+    const nameEl = document.getElementById('edit-patient-display-name');
+    if (nameEl) nameEl.textContent = nama;
+
+    const subEl = document.getElementById('edit-patient-display-sub');
+    if (subEl) subEl.textContent = `(NIK: ${nik || '-'} | Dept: ${dept || '-'})`;
+
+    const dropdown = document.getElementById('edit-patient-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+
+    // Update Saldo Preview sesuai pasien yang baru dipilih
+    updateSisaSaldoEdit();
+    showToast(`Pasien diubah ke: ${nama} (${nik || '-'})`, 'info');
+  } catch (err) {
+    console.error('Error selecting patient in edit modal:', err);
+  }
+}
+
+// Click outside untuk menyembunyikan autocomplete dropdown pasien edit
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('edit-patient-dropdown');
+  const searchInput = document.getElementById('edit-patient-search');
+  if (dropdown && dropdown.style.display === 'block') {
+    if (!dropdown.contains(e.target) && e.target !== searchInput) {
+      dropdown.style.display = 'none';
+    }
+  }
+});
 
 function openModalEditRecord(recordOrId) {
   let record = recordOrId;
@@ -2747,6 +2852,23 @@ function openModalEditRecord(recordOrId) {
 
   document.getElementById('edit-record-id').value = record.id;
   document.getElementById('edit-nama-pasien').value = record.namaPasien || '';
+  document.getElementById('edit-nik-pabrik').value = record.nikPabrik || '';
+  document.getElementById('edit-dept-pasien').value = record.dept || '';
+
+  // Isi data pasien ke input pencarian & info badge
+  const searchInput = document.getElementById('edit-patient-search');
+  if (searchInput) {
+    searchInput.value = `${record.namaPasien || ''} (${record.nikPabrik || '-'})`;
+  }
+  const nameEl = document.getElementById('edit-patient-display-name');
+  if (nameEl) nameEl.textContent = record.namaPasien || '-';
+
+  const subEl = document.getElementById('edit-patient-display-sub');
+  if (subEl) subEl.textContent = `(NIK: ${record.nikPabrik || '-'} | Dept: ${record.dept || '-'})`;
+
+  const dropdown = document.getElementById('edit-patient-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+
   document.getElementById('edit-keluhan').value = record.keluhan || '';
   document.getElementById('edit-objektif').value = record.objektif || '';
   document.getElementById('edit-pemeriksa').value = record.pemeriksa || 'dr. Dylan Fadhilah';
@@ -2821,11 +2943,31 @@ function closeModalEditRecord() {
   document.getElementById('modal-edit-record').style.display = 'none';
   const fileInput = document.getElementById('edit-upload-file');
   if (fileInput) fileInput.value = '';
+  const dropdown = document.getElementById('edit-patient-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
 }
+
+let _isSavingEditRecord = false;
 
 async function handleSaveEditRecord(e) {
   e.preventDefault();
+  if (_isSavingEditRecord) return;
+
   const id = document.getElementById('edit-record-id').value;
+  const currentRecord = appData.records.find(r => r.id === id);
+  if (!currentRecord) {
+    showToast('Data rekam medis tidak ditemukan', 'error');
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-submit-edit-record') || document.querySelector('#form-edit-record button[type="submit"]');
+  const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.7';
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan Perubahan & Revisi Stok...';
+  }
+  _isSavingEditRecord = true;
 
   // Gather ICD-10 Diagnoses
   const icdSelects = document.querySelectorAll('.select-edit-icd10');
@@ -2879,7 +3021,6 @@ async function handleSaveEditRecord(e) {
   const selectedDateVal = document.getElementById('edit-tanggal').value;
   let tanggalFormatted = '';
   let customCreatedAt = '';
-  const currentRecord = appData.records.find(r => r.id === id);
 
   if (selectedDateVal) {
     const [yr, mo, dy] = selectedDateVal.split('-');
@@ -2894,8 +3035,12 @@ async function handleSaveEditRecord(e) {
   }
 
   const totalBiayaAll = grandTotalObat + grandTotalTindakan;
+  const newBiaya = totalBiayaAll; // FIX: Ensure newBiaya is explicitly defined
 
   const updatedData = {
+    namaPasien: (document.getElementById('edit-nama-pasien')?.value || currentRecord.namaPasien || '').trim(),
+    nikPabrik: (document.getElementById('edit-nik-pabrik')?.value || currentRecord.nikPabrik || '').trim(),
+    dept: (document.getElementById('edit-dept-pasien')?.value || currentRecord.dept || '').trim(),
     tanggal: tanggalFormatted,
     created_at: customCreatedAt,
     keluhan: document.getElementById('edit-keluhan').value,
@@ -2945,42 +3090,24 @@ async function handleSaveEditRecord(e) {
   }
 
   try {
-    const currentRecord = appData.records.find(r => r.id === id);
-    
-    const res = await fetch(`/api/records/${id}`, {
+    // Catat waktu mutasi lokal agar notifikasi SSE tidak memunculkan toast "petugas lain"
+    window._lastLocalMutationTime = Date.now();
+
+    const res = await fetch(`/api/records/${encodeURIComponent(id)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedData)
     });
 
     if (res.ok) {
-      // HANDLE SALDO OBAT REFUND/DEDUCTION
-      if (currentRecord) {
-        const emp = appData.patients.find(e => e.nikPabrik === currentRecord.nikPabrik || e.nik === currentRecord.nikPabrik);
-        if (emp) {
-          const currentSaldo = parseInt(emp.saldoObat) || 0;
-          const oldBiaya = parseInt(currentRecord.totalBiaya) || 0;
-          const newSaldo = currentSaldo + oldBiaya - newBiaya;
-          
-          if (newSaldo !== currentSaldo) {
-            const updatedPatient = { ...emp, saldoObat: newSaldo };
-            const patientId = emp.id || emp.nikPabrik || emp.nik;
-            try {
-              await fetch(`/api/patients/${encodeURIComponent(patientId)}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedPatient)
-              });
-            } catch (err) {
-              console.error('Failed to update saldo obat during edit:', err);
-            }
-          }
-        }
-      }
-
-      showToast('Rekam Medis & Revisi Stok Berhasil Diperbarui!', 'success');
+      showToast('✅ Rekam Medis & Revisi Stok Berhasil Diperbarui!', 'success');
+      
+      // Tutup modal edit
       closeModalEditRecord();
+      
+      // Sinkronkan seluruh data aplikasi & dasbor secara real-time
       await loadAllAppData();
+
       if (appData.currentPoliPatient) {
         const refreshedPatient = appData.patients.find(x => 
           (x.id && x.id === appData.currentPoliPatient.id) ||
@@ -2997,10 +3124,19 @@ async function handleSaveEditRecord(e) {
         }
       }
     } else {
-      showToast('Gagal mengedit data', 'error');
+      const errRes = await res.json().catch(() => ({}));
+      showToast(`❌ Gagal mengedit data: ${errRes.error || 'Terjadi kesalahan server'}`, 'error');
     }
   } catch (err) {
-    showToast('Terjadi kesalahan', 'error');
+    console.error('Error saving edit record:', err);
+    showToast('❌ Terjadi kesalahan saat menyimpan pembaruan rekam medis', 'error');
+  } finally {
+    _isSavingEditRecord = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.innerHTML = originalBtnHTML;
+    }
   }
 }
 

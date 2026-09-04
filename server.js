@@ -1672,10 +1672,87 @@ app.put('/api/records/:id', (req, res) => {
     });
   }
 
+  // 3. Update Saldo Obat Pasien Secara Atomik (Termasuk jika Karyawan Diganti)
+  const oldTotalBiaya = Number(oldRecord.totalBiaya || 0);
+  const newTotalBiaya = Number(updatedData.totalBiaya !== undefined ? updatedData.totalBiaya : oldTotalBiaya);
+
+  if (Array.isArray(db.patients)) {
+    const oldNik = String(oldRecord.nikPabrik || '').trim();
+    const oldNama = String(oldRecord.namaPasien || '').trim().toLowerCase();
+    const newNik = String(updatedData.nikPabrik || oldRecord.nikPabrik || '').trim();
+    const newNama = String(updatedData.namaPasien || oldRecord.namaPasien || '').trim().toLowerCase();
+
+    const isSamePatient = (oldNik && newNik && oldNik === newNik) || (oldNama && newNama && oldNama === newNama);
+
+    if (isSamePatient) {
+      // Pasien sama: sesuaikan selisih biaya
+      const delta = oldTotalBiaya - newTotalBiaya;
+      if (delta !== 0) {
+        const pIdx = db.patients.findIndex(p => 
+          (newNik && (p.nikPabrik === newNik || p.nik === newNik)) ||
+          (newNama && p.nama && p.nama.toLowerCase() === newNama)
+        );
+        if (pIdx !== -1) {
+          db.patients[pIdx].saldoObat = (parseInt(db.patients[pIdx].saldoObat) || 0) + delta;
+        }
+      }
+    } else {
+      // Pasien BERBEDA (karena koreksi salah pilih karyawan saat berobat):
+      // 1) Kembalikan biaya lama ke pasien yang lama
+      if (oldTotalBiaya > 0) {
+        const oldPIdx = db.patients.findIndex(p => 
+          (oldNik && (p.nikPabrik === oldNik || p.nik === oldNik)) ||
+          (oldNama && p.nama && p.nama.toLowerCase() === oldNama)
+        );
+        if (oldPIdx !== -1) {
+          db.patients[oldPIdx].saldoObat = (parseInt(db.patients[oldPIdx].saldoObat) || 0) + oldTotalBiaya;
+        }
+      }
+      // 2) Potong biaya baru dari pasien yang baru
+      if (newTotalBiaya > 0) {
+        const newPIdx = db.patients.findIndex(p => 
+          (newNik && (p.nikPabrik === newNik || p.nik === newNik)) ||
+          (newNama && p.nama && p.nama.toLowerCase() === newNama)
+        );
+        if (newPIdx !== -1) {
+          db.patients[newPIdx].saldoObat = (parseInt(db.patients[newPIdx].saldoObat) || 0) - newTotalBiaya;
+        }
+      }
+    }
+  }
+
+  // 4. Update status Pantauan K3 jika ada perubahan
+  if (updatedData.isPantauan !== undefined) {
+    if (!db.pantauan) db.pantauan = [];
+    const targetNik = updatedData.nikPabrik || oldRecord.nikPabrik;
+    const targetNama = updatedData.namaPasien || oldRecord.namaPasien;
+    const pIdx = db.pantauan.findIndex(p => 
+      (p.nikPabrik && p.nikPabrik === targetNik) ||
+      (p.namaPasien && p.namaPasien.toLowerCase() === targetNama.toLowerCase())
+    );
+
+    if (updatedData.isPantauan) {
+      const item = {
+        id: pIdx !== -1 ? db.pantauan[pIdx].id : ('PP-' + Date.now()),
+        nikPabrik: targetNik || '',
+        namaPasien: targetNama || '',
+        dept: updatedData.dept || oldRecord.dept || '-',
+        keluhan: updatedData.keluhan || oldRecord.keluhan || '-',
+        asesmen: updatedData.asesmen || oldRecord.asesmen || '-',
+        status: 'AKTIF',
+        tanggal: updatedData.tanggal || oldRecord.tanggal || new Date().toLocaleDateString('id-ID')
+      };
+      if (pIdx !== -1) {
+        db.pantauan[pIdx] = item;
+      } else {
+        db.pantauan.unshift(item);
+      }
+    }
+  }
+
   db.records[idx] = { ...oldRecord, ...updatedData };
   writeDB(db);
   autoPushMedicinesToGSheet(db);
-  notifyClients();
   res.json(db.records[idx]);
 });
 
