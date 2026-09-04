@@ -347,6 +347,63 @@ app.post('/api/auth/register', (req, res) => {
   return res.status(201).json({ success: true, user: safeUser, message: 'Akun petugas berhasil dibuat!' });
 });
 
+// Change Password for Logged-In User
+app.post('/api/auth/change-password', (req, res) => {
+  const { username, currentPassword, newPassword, userId, nama, role } = req.body;
+  if (!username || !newPassword) {
+    return res.status(400).json({ success: false, error: 'Username dan Kata Sandi baru wajib diisi!' });
+  }
+  if (String(newPassword).trim().length < 4) {
+    return res.status(400).json({ success: false, error: 'Kata sandi baru minimal 4 karakter!' });
+  }
+
+  const db = readDB();
+  if (!db.users) db.users = [];
+  const cleanUser = String(username).trim().toLowerCase();
+  const masterPass = db.settings?.gate_password || "231067";
+
+  let userIdx = db.users.findIndex(u => 
+    (userId && u.id === userId) ||
+    (u.username && u.username.toLowerCase() === cleanUser) ||
+    (u.nama && u.nama.toLowerCase() === cleanUser)
+  );
+
+  // If user is not yet in db.users, add as new record
+  if (userIdx === -1) {
+    const newUser = {
+      id: userId || ('usr-' + Date.now()),
+      nama: nama || username,
+      username: cleanUser,
+      role: role || 'Dokter',
+      password: String(newPassword).trim(),
+      created_at: new Date().toISOString()
+    };
+    db.users.push(newUser);
+    writeDB(db);
+    notifyClients();
+    const { password: _, ...safeUser } = newUser;
+    return res.json({ success: true, message: 'Kata sandi baru berhasil disimpan!', user: safeUser });
+  }
+
+  const existingUser = db.users[userIdx];
+  // Verify current password unless master password was entered
+  if (currentPassword) {
+    const cleanCurrent = String(currentPassword).trim();
+    if (cleanCurrent !== masterPass && String(existingUser.password).trim() !== cleanCurrent) {
+      return res.status(400).json({ success: false, error: 'Kata sandi lama salah!' });
+    }
+  }
+
+  db.users[userIdx].password = String(newPassword).trim();
+  if (nama && String(nama).trim() !== '') db.users[userIdx].nama = String(nama).trim();
+  if (role && String(role).trim() !== '') db.users[userIdx].role = role;
+  db.users[userIdx].updated_at = new Date().toISOString();
+  writeDB(db);
+  notifyClients();
+  const { password: _, ...safeUser } = db.users[userIdx];
+  return res.json({ success: true, message: 'Kata sandi berhasil diperbarui!', user: safeUser });
+});
+
 // Legacy Gate Login (Pass: 231067)
 app.post('/api/auth/gate', (req, res) => {
   const { password } = req.body;
@@ -388,6 +445,7 @@ app.post('/api/users', (req, res) => {
   };
   db.users.push(newUser);
   writeDB(db);
+  notifyClients();
   const { password: _, ...safeUser } = newUser;
   res.status(201).json({ success: true, user: safeUser });
 });
@@ -407,6 +465,7 @@ app.put('/api/users/:id', (req, res) => {
     db.users[idx].password = String(password).trim();
   }
   writeDB(db);
+  notifyClients();
   const { password: _, ...safeUser } = db.users[idx];
   res.json({ success: true, user: safeUser });
 });
@@ -417,6 +476,7 @@ app.delete('/api/users/:id', (req, res) => {
   if (!db.users) return res.status(404).json({ error: 'User tidak ditemukan' });
   db.users = db.users.filter(u => u.id !== req.params.id);
   writeDB(db);
+  notifyClients();
   res.json({ success: true });
 });
 

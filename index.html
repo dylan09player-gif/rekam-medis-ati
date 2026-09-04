@@ -161,11 +161,12 @@
     </nav>
 
     <div class="app-navbar-actions" style="display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: auto;">
-      <!-- Active User Badge -->
-      <div id="navbar-user-badge" class="navbar-user-chip" title="Petugas yang sedang aktif">
+      <!-- Active User Badge (Click to open Account Settings) -->
+      <div id="navbar-user-badge" class="navbar-user-chip" title="Pengaturan Akun & Profil Petugas" onclick="openModalAccountSettings()" role="button" tabindex="0">
         <i class="fa-solid fa-user-doctor" style="color: #38bdf8;"></i>
         <span id="nav-user-name" style="font-weight: 700; font-size: 0.85rem;">Petugas</span>
         <span id="nav-user-role" class="nav-user-role-badge">Dokter</span>
+        <i class="fa-solid fa-gear" style="font-size: 0.72rem; opacity: 0.7; margin-left: 2px;"></i>
       </div>
 
       <!-- SSE Live Sync Indicator -->
@@ -2344,8 +2345,173 @@ function setupTabDanHeader() {
     </div>
   </div>
 
+  <!-- MODAL PENGATURAN AKUN & SWITCHER (ENTERPRISE ACCOUNT SETTINGS) -->
+  <div id="modal-account-settings" class="modal-overlay" style="display: none; z-index: 10005;">
+    <div class="modal-card" style="max-width: 680px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column; padding: 22px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(2,132,199,0.15); display: flex; align-items: center; justify-content: center; color: var(--primary-light); font-size: 1.2rem;">
+            <i class="fa-solid fa-user-gear"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: var(--text-main);">Pengaturan Akun &amp; Petugas</h3>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Kelola profil, ubah kata sandi, atau beralih petugas</span>
+          </div>
+        </div>
+        <button type="button" class="close-btn" onclick="closeModalAccountSettings()">&times;</button>
+      </div>
+
+      <!-- TAB NAVIGATION -->
+      <div class="acc-tabs-nav">
+        <button type="button" class="acc-tab-btn active" id="btn-tab-acc-password" onclick="switchAccountSettingsTab('password')">
+          <i class="fa-solid fa-key"></i> Ganti Password &amp; Profil
+        </button>
+        <button type="button" class="acc-tab-btn" id="btn-tab-acc-switch" onclick="switchAccountSettingsTab('switch')">
+          <i class="fa-solid fa-users-viewfinder"></i> Beralih Akun
+        </button>
+        <button type="button" class="acc-tab-btn" id="btn-tab-acc-manage" onclick="switchAccountSettingsTab('manage')">
+          <i class="fa-solid fa-users-gear"></i> Kelola Semua Akun
+        </button>
+      </div>
+
+      <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 0 4px 4px;">
+        <!-- TAB 1: GANTI PASSWORD & PROFIL -->
+        <div id="view-acc-password" style="display: block;">
+          <div class="acc-profile-card">
+            <div class="acc-profile-avatar" id="acc-profile-avatar-char">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+            <div class="acc-profile-info">
+              <div class="acc-profile-name" id="acc-profile-display-name">Petugas Medis</div>
+              <div class="acc-profile-meta">
+                <span class="badge badge-info" id="acc-profile-display-role" style="font-weight: 700;">Dokter</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);" id="acc-profile-display-username">@username</span>
+                <span class="badge badge-success" style="font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-circle-check"></i> Sesi Aktif</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc-form-card">
+            <h4 style="margin: 0 0 14px 0; font-size: 0.98rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Form Ubah Kata Sandi Akun
+            </h4>
+            <form onsubmit="handleAccountChangePassword(event)" id="form-account-change-pwd">
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Nama Lengkap &amp; Gelar</label>
+                <input type="text" id="acc-input-nama" class="form-control" placeholder="Nama Anda..." required>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Kata Sandi Saat Ini *</label>
+                <div class="acc-pwd-input-wrap">
+                  <input type="password" id="acc-current-password" class="form-control" placeholder="Masukkan kata sandi lama Anda..." required>
+                  <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-current-password', 'acc-peek-icon-old')" title="Lihat/Sembunyikan">
+                    <i class="fa-solid fa-eye" id="acc-peek-icon-old"></i>
+                  </button>
+                </div>
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 3px;">Kunci master (231067) dapat digunakan jika Anda lupa kata sandi lama.</small>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Kata Sandi Baru *</label>
+                <div class="acc-pwd-input-wrap">
+                  <input type="password" id="acc-new-password" class="form-control" placeholder="Minimal 4 karakter..." minlength="4" required>
+                  <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-new-password', 'acc-peek-icon-new')" title="Lihat/Sembunyikan">
+                    <i class="fa-solid fa-eye" id="acc-peek-icon-new"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 18px;">
+                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Konfirmasi Kata Sandi Baru *</label>
+                <div class="acc-pwd-input-wrap">
+                  <input type="password" id="acc-confirm-password" class="form-control" placeholder="Ketik ulang kata sandi baru..." minlength="4" required>
+                  <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-confirm-password', 'acc-peek-icon-conf')" title="Lihat/Sembunyikan">
+                    <i class="fa-solid fa-eye" id="acc-peek-icon-conf"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModalAccountSettings()">Tutup</button>
+                <button type="submit" id="btn-save-acc-pwd" class="btn btn-primary" style="font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- TAB 2: BERALIH AKUN (SWITCH ACCOUNT) -->
+        <div id="view-acc-switch" style="display: none;">
+          <div class="info-banner info-banner-yellow" style="margin-bottom: 16px;">
+            💡 <strong>Beralih Petugas Cepat:</strong> Klik tombol <strong>"Beralih"</strong> pada akun yang ingin Anda gunakan untuk pergantian shift atau rotasi tugas.
+          </div>
+          <div id="acc-switch-list" class="switch-account-grid">
+            <!-- Rendered dynamically via renderSwitchAccountsList() -->
+          </div>
+        </div>
+
+        <!-- TAB 3: KELOLA SEMUA AKUN (USER MANAGEMENT) -->
+        <div id="view-acc-manage" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-main);" id="acc-manage-count-lbl">
+              Daftar Petugas Terdaftar
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" onclick="toggleAccAddUserBox()" style="font-weight: 700;">
+              <i class="fa-solid fa-user-plus"></i> Tambah Akun Baru
+            </button>
+          </div>
+
+          <!-- COLLAPSIBLE ADD USER FORM -->
+          <div id="acc-add-user-box" style="display: none; background: var(--surface-2); border: 1.5px solid var(--border-card); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 0.95rem; font-weight: 800; color: var(--primary-light);">
+              <i class="fa-solid fa-plus-circle"></i> Tambah Akun Petugas Baru
+            </h4>
+            <form onsubmit="handleAccountCreateNewUser(event)">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Nama Lengkap &amp; Gelar *</label>
+                  <input type="text" id="acc-new-user-nama" class="form-control" placeholder="Contoh: dr. Dylan / Ns. Sari" required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Profesi / Jabatan *</label>
+                  <select id="acc-new-user-role" class="form-control" required>
+                    <option value="Dokter">Dokter</option>
+                    <option value="Perawat">Perawat</option>
+                    <option value="Bidan">Bidan</option>
+                    <option value="Apoteker">Apoteker</option>
+                    <option value="Petugas Medis">Petugas Medis</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Username *</label>
+                  <input type="text" id="acc-new-user-username" class="form-control" placeholder="Username login..." required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Kata Sandi Awal *</label>
+                  <input type="password" id="acc-new-user-pwd" class="form-control" placeholder="Minimal 4 karakter..." minlength="4" required>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAccAddUserBox()">Batal</button>
+                <button type="submit" class="btn btn-sm btn-primary" style="font-weight: 700;">Simpan Akun</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- USERS LIST -->
+          <div id="acc-manage-list" class="switch-account-grid">
+            <!-- Rendered dynamically via renderAccountManageList() -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL EDIT USER PETUGAS -->
-  <div id="modal-edit-user" class="modal-overlay" style="display: none; z-index: 10004;">
+  <div id="modal-edit-user" class="modal-overlay" style="display: none; z-index: 10006;">
     <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 20px;">
       <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
         <h3 class="modal-title" style="margin: 0; font-size: 1.1rem; color: #f59e0b;"><i class="fa-solid fa-user-pen"></i> Edit Akun Petugas</h3>

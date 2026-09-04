@@ -712,6 +712,18 @@ async function loadAllAppData() {
       }
     }
 
+    // Auto-refresh Account Settings modal if currently opened
+    const modalAcc = document.getElementById('modal-account-settings');
+    if (modalAcc && (modalAcc.style.display === 'flex' || modalAcc.style.display === 'block')) {
+      if (typeof _currentAccTab !== 'undefined') {
+        if (_currentAccTab === 'switch' && typeof renderSwitchAccountsList === 'function') {
+          renderSwitchAccountsList();
+        } else if (_currentAccTab === 'manage' && typeof renderAccountManageList === 'function') {
+          renderAccountManageList();
+        }
+      }
+    }
+
     console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}, Tindakan: ${appData.tindakan.length}, Users: ${appData.users.length}, SJ: ${appData.suratJalan.length}`);
 
   } catch (err) {
@@ -7344,6 +7356,400 @@ async function handleDeleteUser(id) {
     }
   } catch (err) {
     showToast('Terjadi kesalahan jaringan', 'error');
+  }
+}
+
+// -------------------------------------------------------------
+// ACCOUNT SETTINGS & PROFILE SWITCHER LOGIC (ENTERPRISE UX)
+// -------------------------------------------------------------
+let _currentAccTab = 'password';
+
+function openModalAccountSettings(defaultTab) {
+  const modal = document.getElementById('modal-account-settings');
+  if (!modal) return;
+
+  const cur = appData.currentUser || { nama: 'Petugas Medis', role: 'Dokter', username: 'petugas' };
+
+  // Set Profile Card info
+  const nameEl = document.getElementById('acc-profile-display-name');
+  const roleEl = document.getElementById('acc-profile-display-role');
+  const userEl = document.getElementById('acc-profile-display-username');
+  const avatarEl = document.getElementById('acc-profile-avatar-char');
+  const inputNama = document.getElementById('acc-input-nama');
+
+  if (nameEl) nameEl.textContent = cur.nama || 'Petugas Medis';
+  if (roleEl) roleEl.textContent = cur.role || 'Dokter';
+  if (userEl) userEl.textContent = '@' + (cur.username || 'petugas');
+  if (inputNama) inputNama.value = cur.nama || '';
+
+  // Avatar Icon based on Role
+  if (avatarEl) {
+    const roleLower = String(cur.role || '').toLowerCase();
+    if (roleLower.includes('dokter')) {
+      avatarEl.innerHTML = '<i class="fa-solid fa-user-doctor"></i>';
+    } else if (roleLower.includes('perawat') || roleLower.includes('bidan')) {
+      avatarEl.innerHTML = '<i class="fa-solid fa-user-nurse"></i>';
+    } else if (roleLower.includes('apotek')) {
+      avatarEl.innerHTML = '<i class="fa-solid fa-pills"></i>';
+    } else {
+      avatarEl.innerHTML = '<i class="fa-solid fa-user-gear"></i>';
+    }
+  }
+
+  // Clear password inputs
+  const pOld = document.getElementById('acc-current-password');
+  const pNew = document.getElementById('acc-new-password');
+  const pConf = document.getElementById('acc-confirm-password');
+  if (pOld) pOld.value = '';
+  if (pNew) pNew.value = '';
+  if (pConf) pConf.value = '';
+
+  // Hide add user box if open
+  const addBox = document.getElementById('acc-add-user-box');
+  if (addBox) addBox.style.display = 'none';
+
+  switchAccountSettingsTab(defaultTab || 'password');
+  modal.style.display = 'flex';
+}
+
+function closeModalAccountSettings() {
+  const modal = document.getElementById('modal-account-settings');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchAccountSettingsTab(tabName) {
+  _currentAccTab = tabName;
+
+  const btnPwd = document.getElementById('btn-tab-acc-password');
+  const btnSw = document.getElementById('btn-tab-acc-switch');
+  const btnMan = document.getElementById('btn-tab-acc-manage');
+
+  const viewPwd = document.getElementById('view-acc-password');
+  const viewSw = document.getElementById('view-acc-switch');
+  const viewMan = document.getElementById('view-acc-manage');
+
+  [btnPwd, btnSw, btnMan].forEach(b => { if (b) b.classList.remove('active'); });
+  [viewPwd, viewSw, viewMan].forEach(v => { if (v) v.style.display = 'none'; });
+
+  if (tabName === 'password') {
+    if (btnPwd) btnPwd.classList.add('active');
+    if (viewPwd) viewPwd.style.display = 'block';
+  } else if (tabName === 'switch') {
+    if (btnSw) btnSw.classList.add('active');
+    if (viewSw) viewSw.style.display = 'block';
+    renderSwitchAccountsList();
+  } else if (tabName === 'manage') {
+    if (btnMan) btnMan.classList.add('active');
+    if (viewMan) viewMan.style.display = 'block';
+    renderAccountManageList();
+  }
+}
+
+function togglePasswordVisibility(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (!input) return;
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (icon) {
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+    }
+  } else {
+    input.type = 'password';
+    if (icon) {
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
+    }
+  }
+}
+
+async function handleAccountChangePassword(e) {
+  e.preventDefault();
+  const cur = appData.currentUser;
+  if (!cur) {
+    showToast('Tidak ada sesi akun aktif.', 'error');
+    return;
+  }
+
+  const nama = document.getElementById('acc-input-nama')?.value.trim();
+  const currentPassword = document.getElementById('acc-current-password')?.value.trim();
+  const newPassword = document.getElementById('acc-new-password')?.value.trim();
+  const confirmPassword = document.getElementById('acc-confirm-password')?.value.trim();
+
+  if (!newPassword || !confirmPassword) {
+    showToast('Kata sandi baru wajib diisi!', 'warning');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showToast('Konfirmasi kata sandi baru tidak cocok!', 'error');
+    return;
+  }
+
+  if (newPassword.length < 4) {
+    showToast('Kata sandi baru minimal 4 karakter!', 'warning');
+    return;
+  }
+
+  const btnSubmit = document.getElementById('btn-save-acc-pwd');
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+  }
+
+  try {
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: cur.username,
+        userId: cur.id,
+        nama: nama || cur.nama,
+        role: cur.role,
+        currentPassword,
+        newPassword
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('Kata sandi berhasil diperbarui!', 'success');
+      if (data.user) {
+        appData.currentUser = { ...appData.currentUser, ...data.user };
+        localStorage.setItem('currentUser', JSON.stringify(appData.currentUser));
+        updateNavbarUserBadge();
+        autoFillPemeriksa();
+      }
+      // Reset inputs
+      const pOld = document.getElementById('acc-current-password');
+      const pNew = document.getElementById('acc-new-password');
+      const pConf = document.getElementById('acc-confirm-password');
+      if (pOld) pOld.value = '';
+      if (pNew) pNew.value = '';
+      if (pConf) pConf.value = '';
+      closeModalAccountSettings();
+      await loadAllAppData();
+    } else {
+      showToast(data.error || 'Gagal mengubah kata sandi', 'error');
+    }
+  } catch (err) {
+    console.error('Change pwd error:', err);
+    showToast('Terjadi kesalahan koneksi saat mengubah kata sandi.', 'error');
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan';
+    }
+  }
+}
+
+function renderSwitchAccountsList() {
+  const container = document.getElementById('acc-switch-list');
+  if (!container) return;
+
+  const users = appData.users || [];
+  const cur = appData.currentUser || {};
+
+  if (users.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 25px;">Belum ada akun lain terdaftar di sistem.</div>`;
+    return;
+  }
+
+  container.innerHTML = users.map(u => {
+    const isCurrent = (u.username && u.username.toLowerCase() === (cur.username || '').toLowerCase()) ||
+                      (u.id && u.id === cur.id);
+
+    const roleLower = String(u.role || '').toLowerCase();
+    let roleIcon = 'fa-user-doctor';
+    let roleBadgeClass = 'badge-info';
+    if (roleLower.includes('perawat') || roleLower.includes('bidan')) {
+      roleIcon = 'fa-user-nurse';
+      roleBadgeClass = 'badge-warning';
+    } else if (roleLower.includes('apotek')) {
+      roleIcon = 'fa-pills';
+      roleBadgeClass = 'badge-success';
+    } else if (roleLower.includes('admin')) {
+      roleIcon = 'fa-user-shield';
+      roleBadgeClass = 'badge-danger';
+    }
+
+    const cardClass = isCurrent ? 'switch-user-card active-user-card' : 'switch-user-card';
+
+    const actionBtn = isCurrent
+      ? `<span class="badge badge-success" style="font-size: 0.8rem; font-weight: 700; padding: 6px 12px;"><i class="fa-solid fa-circle-check"></i> Sedang Aktif</span>`
+      : `<button type="button" class="btn btn-sm btn-primary" style="font-weight: 700; padding: 7px 16px; border-radius: 6px;" onclick="handleSwitchAccountPrompt('${u.id}', '${u.username}', '${encodeURIComponent(u.nama || u.username)}')">
+           <i class="fa-solid fa-arrow-right-to-bracket"></i> Beralih
+         </button>`;
+
+    return `
+    <div class="${cardClass}">
+      <div class="switch-user-left">
+        <div class="switch-user-avatar">
+          <i class="fa-solid ${roleIcon}"></i>
+        </div>
+        <div>
+          <div class="switch-user-name">${u.nama || u.username}</div>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <span class="badge ${roleBadgeClass}" style="font-size: 0.72rem; padding: 1px 6px;">${u.role || 'Petugas'}</span>
+            <span class="switch-user-username">@${u.username}</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        ${actionBtn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function handleSwitchAccountPrompt(userId, username, encodedNama) {
+  const nama = decodeURIComponent(encodedNama || username);
+  const pwd = prompt(`Beralih ke akun: ${nama} (@${username})\n\nMasukkan kata sandi akun (atau master password):`);
+  if (pwd === null) return; // User pressed Cancel
+
+  if (!pwd.trim()) {
+    showToast('Kata sandi wajib diisi untuk beralih akun.', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password: pwd.trim() })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success && data.user) {
+      appData.currentUser = data.user;
+      localStorage.setItem('marunda_gate_auth', 'true');
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+      updateNavbarUserBadge();
+      autoFillPemeriksa();
+      closeModalAccountSettings();
+      showToast(`Berhasil beralih ke akun ${data.user.nama} 👋`, 'success');
+      await loadAllAppData();
+    } else {
+      showToast(data.error || 'Kata sandi salah!', 'error');
+    }
+  } catch (err) {
+    console.error('Switch account error:', err);
+    showToast('Gagal menghubungi server untuk verifikasi akun.', 'error');
+  }
+}
+
+function renderAccountManageList() {
+  const container = document.getElementById('acc-manage-list');
+  const countLbl = document.getElementById('acc-manage-count-lbl');
+  if (!container) return;
+
+  const users = appData.users || [];
+  const cur = appData.currentUser || {};
+
+  if (countLbl) countLbl.textContent = `Daftar Petugas Terdaftar (${users.length})`;
+
+  if (users.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 25px;">Belum ada akun petugas terdaftar.</div>`;
+    return;
+  }
+
+  container.innerHTML = users.map(u => {
+    const isCurrent = (u.username && u.username.toLowerCase() === (cur.username || '').toLowerCase()) ||
+                      (u.id && u.id === cur.id);
+
+    const deleteBtn = isCurrent
+      ? `<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">(Akun Sedang Aktif)</span>`
+      : `<button type="button" class="btn btn-sm btn-danger" style="padding: 6px 12px; font-weight: 700;" onclick="handleDeleteUserAccount('${u.id}', '${encodeURIComponent(u.nama || u.username)}')">
+           <i class="fa-solid fa-trash-can"></i> Hapus
+         </button>`;
+
+    return `
+    <div class="switch-user-card" style="padding: 12px 16px;">
+      <div class="switch-user-left">
+        <div class="switch-user-avatar" style="width: 38px; height: 38px; font-size: 1rem;">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div>
+          <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-main);">${u.nama || u.username}</div>
+          <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
+            <span class="badge badge-info" style="font-size: 0.72rem;">${u.role || 'Petugas'}</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">@${u.username}</span>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <button type="button" class="btn btn-sm btn-secondary" style="padding: 6px 12px; font-weight: 700;" onclick="openModalEditUser('${u.id}')">
+          <i class="fa-solid fa-user-pen"></i> Edit
+        </button>
+        ${deleteBtn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAccAddUserBox() {
+  const box = document.getElementById('acc-add-user-box');
+  if (!box) return;
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+async function handleAccountCreateNewUser(e) {
+  e.preventDefault();
+  const nama = document.getElementById('acc-new-user-nama')?.value.trim();
+  const role = document.getElementById('acc-new-user-role')?.value;
+  const username = document.getElementById('acc-new-user-username')?.value.trim();
+  const password = document.getElementById('acc-new-user-pwd')?.value.trim();
+
+  if (!nama || !username || !password) {
+    showToast('Semua kolom wajib diisi!', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama, role, username, password })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`Akun ${nama} berhasil didaftarkan! 🎉`, 'success');
+      document.getElementById('acc-new-user-nama').value = '';
+      document.getElementById('acc-new-user-username').value = '';
+      document.getElementById('acc-new-user-pwd').value = '';
+      toggleAccAddUserBox();
+      await loadAllAppData();
+      renderAccountManageList();
+      renderSwitchAccountsList();
+    } else {
+      showToast(data.error || 'Gagal membuat akun', 'error');
+    }
+  } catch (err) {
+    console.error('Create user error:', err);
+    showToast('Terjadi kesalahan jaringan.', 'error');
+  }
+}
+
+async function handleDeleteUserAccount(userId, encodedNama) {
+  const nama = decodeURIComponent(encodedNama || 'petugas');
+  if (!confirm(`Hapus akun petugas "${nama}" secara permanen dari sistem?`)) return;
+
+  try {
+    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`Akun ${nama} berhasil dihapus.`, 'success');
+      await loadAllAppData();
+      renderAccountManageList();
+      renderSwitchAccountsList();
+    } else {
+      showToast(data.error || 'Gagal menghapus akun', 'error');
+    }
+  } catch (err) {
+    console.error('Delete user error:', err);
+    showToast('Terjadi kesalahan jaringan saat menghapus akun.', 'error');
   }
 }
 
