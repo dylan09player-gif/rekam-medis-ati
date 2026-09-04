@@ -100,6 +100,7 @@ function notifyClients() {
   sseClients = sseClients.filter(client => {
     try {
       client.res.write(payload);
+      if (typeof client.res.flush === 'function') client.res.flush();
       return true;
     } catch (e) {
       return false;
@@ -155,6 +156,7 @@ app.get('/api/events', (req, res) => {
   res.flushHeaders();
 
   res.write(`data: connected\n\n`);
+  if (typeof res.flush === 'function') res.flush();
   
   const client = { id: Date.now() + Math.random(), res };
   sseClients.push(client);
@@ -162,10 +164,11 @@ app.get('/api/events', (req, res) => {
   const pingInterval = setInterval(() => {
     try {
       res.write(': ping\n\n');
+      if (typeof res.flush === 'function') res.flush();
     } catch (e) {
       clearInterval(pingInterval);
     }
-  }, 15000);
+  }, 5000);
   
   req.on('close', () => {
     clearInterval(pingInterval);

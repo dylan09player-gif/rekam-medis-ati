@@ -2118,23 +2118,8 @@ function setupTabDanHeader() {
         <div class="info-banner info-banner-red" style="margin-bottom: 16px;">
           ⚠️ Pasien di bawah ini sedang dalam kondisi perlu dipantau oleh Tim HSE & Medis.
         </div>
-        <div class="table-responsive">
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>Tanggal Ditandai</th>
-                <th>NIK Pabrik</th>
-                <th>Nama Pasien</th>
-                <th>Bagian</th>
-                <th>Alasan Pemantauan</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="table-hse-pantauan-body">
-              <!-- Rendered dynamically -->
-            </tbody>
-          </table>
+        <div id="table-hse-pantauan-body" style="display: flex; flex-direction: column; gap: 12px; width: 100%; overflow-x: hidden;">
+          <!-- Rendered dynamically as responsive vertical cards via renderHSEPasienPantauanTable() -->
         </div>
       </div>
     </div>
@@ -2149,29 +2134,12 @@ function setupTabDanHeader() {
         </h3>
         <button type="button" class="close-btn" onclick="closeModalHSESurkes()">&times;</button>
       </div>
-      <div class="modal-body" style="padding: 16px; flex: 1; overflow-y: auto;">
+      <div class="modal-body" style="padding: 16px; flex: 1; overflow-y: auto; overflow-x: hidden;">
         <div class="info-banner info-banner-yellow" style="margin-bottom: 16px;">
           📄 Pasien di bawah ini dipulangkan atau diberikan izin istirahat sakit dari PT ATI.
         </div>
-        <div class="table-responsive">
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Tanggal</th>
-                <th>NIK Pabrik</th>
-                <th>Nama Pasien</th>
-                <th>Bagian</th>
-                <th>Data Medis (S, O, A, P)</th>
-                <th>Status</th>
-                <th>Nakes Pemeriksa</th>
-                <th style="text-align: center;">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="table-hse-surkes-body">
-              <!-- Rendered dynamically via renderHSESurkesTable() -->
-            </tbody>
-          </table>
+        <div id="table-hse-surkes-body" style="display: flex; flex-direction: column; gap: 12px; width: 100%; overflow-x: hidden;">
+          <!-- Rendered dynamically as responsive vertical cards via renderHSESurkesTable() -->
         </div>
       </div>
     </div>
