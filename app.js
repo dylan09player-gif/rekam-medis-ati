@@ -6065,7 +6065,7 @@ function renderHSEPasienPantauanTable() {
   const pantauanRecords = appData.records.filter(r => r.isPantauan === true);
 
   if (pantauanRecords.length === 0) {
-    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 10px;">Belum ada data pasien dalam pemantauan K3</div>`;
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Belum ada data pasien dalam pemantauan K3</div>`;
     return;
   }
 
@@ -6112,51 +6112,61 @@ function renderHSEPasienPantauanTable() {
     const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
     
     const waBtn = rawHp 
-      ? `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; padding: 6px 12px; border-radius: 6px;" onclick="event.stopPropagation(); window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> WA</button>`
+      ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
       : '';
       
     const fileBtn = latestRec.linkFoto 
-      ? `<button type="button" class="btn btn-sm" style="background: var(--info); color: #fff; border: none; font-weight: 700; padding: 6px 12px; border-radius: 6px;" onclick="event.stopPropagation(); openPhotoViewer('${latestRec.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
+      ? `<button type="button" class="btn btn-sm" style="background: #0284c7; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); openPhotoViewer('${latestRec.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
       : '';
 
     return `
-    <div class="pantauan-card" ondblclick="openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(239, 68, 68, 0.35); border-left: 5px solid #ef4444; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); width: 100%; box-sizing: border-box;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+    <div class="hse-patient-card pantauan-card" ondblclick="openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" title="Dobel-klik untuk melihat seluruh riwayat rekam medis pasien">
+      <div class="hse-card-header">
         <div>
-          <div onclick="openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline; font-weight: 800; font-size: 1.05rem;" title="Klik untuk membuka riwayat berobat">
+          <div class="hse-card-patient-name" onclick="event.stopPropagation(); openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" title="Klik untuk membuka riwayat rekam medis">
             ${emp.namaPasien}
           </div>
-          <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
-            <span class="badge badge-danger" style="font-size: 0.78rem; font-weight: 700;"><i class="fa-solid fa-id-badge"></i> ${emp.nikPabrik}</span>
-            <span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-color); font-size: 0.78rem; font-weight: 600;"><i class="fa-solid fa-building"></i> ${emp.dept}</span>
+          <div class="hse-card-tags">
+            <span class="badge badge-danger"><i class="fa-solid fa-id-badge"></i> ${emp.nikPabrik}</span>
+            <span class="hse-card-dept-badge"><i class="fa-solid fa-building"></i> ${emp.dept}</span>
           </div>
         </div>
-        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-          <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-color);"><i class="fa-regular fa-calendar" style="color: #38bdf8;"></i> ${latestRec.tanggal || '-'}</div>
+        <div class="hse-card-meta">
+          <div class="hse-card-date"><i class="fa-regular fa-calendar" style="color: var(--danger);"></i> ${latestRec.tanggal || '-'}</div>
           <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-            ${visitCount > 1 ? `<span class="badge badge-info" style="font-size: 0.72rem;"><i class="fa-solid fa-repeat"></i> ${visitCount}x Kunjungan</span>` : ''}
-            <span class="badge badge-warning" style="white-space: nowrap; font-weight: 700; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 0.72rem;">
+            ${visitCount > 1 ? `<span class="badge badge-info" style="font-size: 0.74rem;"><i class="fa-solid fa-repeat"></i> ${visitCount}x Kunjungan</span>` : ''}
+            <span class="badge-status-pantauan">
               🔴 Dalam Pemantauan
             </span>
           </div>
         </div>
       </div>
 
-      <div style="background: rgba(0, 0, 0, 0.2); padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; display: flex; flex-direction: column; gap: 6px;">
-        <div><strong style="color: #cbd5e1;">S (Keluhan):</strong> <span style="color: var(--text-muted);">${latestRec.keluhan || '-'}</span></div>
-        ${latestRec.objektif ? `<div><strong style="color: #cbd5e1;">O (Fisik/Vital):</strong> <div style="display:inline-block; margin-left: 4px;">${renderObjektifBadges(latestRec.objektif)}</div></div>` : ''}
-        <div style="display: flex; flex-direction: column; gap: 3px;">
-          <strong style="color: #cbd5e1;">A (Diagnosis Terpantau):</strong>
-          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px;">
-            ${allDiags.length > 0 ? allDiags.map(d => `<span class="badge badge-info" style="font-size: 0.76rem;"><i class="fa-solid fa-stethoscope"></i> ${d}</span>`).join('') : '<span style="color: var(--text-muted);">-</span>'}
+      <div class="hse-card-soap-box">
+        <div class="hse-card-soap-row">
+          <strong class="hse-card-lbl">S (Keluhan):</strong>
+          <span class="hse-card-val">${latestRec.keluhan || '-'}</span>
+        </div>
+        ${latestRec.objektif ? `
+        <div class="hse-card-soap-row">
+          <strong class="hse-card-lbl">O (Fisik/Vital):</strong>
+          <div class="hse-card-val-block">${renderObjektifBadges(latestRec.objektif)}</div>
+        </div>` : ''}
+        <div class="hse-card-soap-row">
+          <strong class="hse-card-lbl">A (Diagnosis Terpantau):</strong>
+          <div class="hse-card-val-block" style="display: flex; flex-wrap: wrap; gap: 5px;">
+            ${allDiags.length > 0 ? allDiags.map(d => `<span class="badge badge-info" style="font-size: 0.76rem;"><i class="fa-solid fa-stethoscope"></i> ${d}</span>`).join('') : '<span class="hse-card-val">-</span>'}
           </div>
+        </div>
+        <div class="hse-card-pemeriksa">
+          <i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Pemeriksa: <strong>${latestRec.pemeriksa || '-'}</strong>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.06);">
-        <small style="color: var(--text-muted); font-size: 0.75rem;">💡 Klik nama / riwayat untuk histori lengkap</small>
-        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-          <button type="button" class="btn btn-sm btn-primary" style="padding: 6px 12px; font-weight: 700; border-radius: 6px;" onclick="event.stopPropagation(); openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" title="Buka Riwayat Rekam Medis">
+      <div class="hse-card-footer">
+        <span class="hse-card-hint"><i class="fa-solid fa-circle-info"></i> Dobel-klik card untuk histori lengkap</span>
+        <div class="hse-card-actions">
+          <button type="button" class="btn btn-sm btn-primary" style="padding: 7px 14px; font-weight: 800; border-radius: 6px;" onclick="event.stopPropagation(); openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" title="Buka Riwayat Rekam Medis">
             <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Pasien
           </button>
           ${waBtn}
@@ -6174,7 +6184,7 @@ function renderHSESurkesTable() {
   const surkesList = appData.records.filter(r => r.izinSakit === true);
 
   if (surkesList.length === 0) {
-    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 10px;">Belum ada data pasien yang dipulangkan / diberikan izin istirahat sakit (Surkes)</div>`;
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Belum ada data pasien yang dipulangkan / diberikan izin istirahat sakit (Surkes)</div>`;
     return;
   }
 
@@ -6191,50 +6201,62 @@ function renderHSESurkesTable() {
     const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
     
     const waBtn = rawHp 
-      ? `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; padding: 6px 12px; border-radius: 6px;" onclick="event.stopPropagation(); window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
-      : `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700; padding: 6px 12px; border-radius: 6px; opacity: 0.5;" onclick="event.stopPropagation(); showToast('No HP belum diisi di data pasien.', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`;
+      ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
+      : `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px; opacity: 0.5;" onclick="event.stopPropagation(); showToast('No HP belum diisi di data pasien.', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`;
       
     const fileBtn = r.linkFoto 
-      ? `<button type="button" class="btn btn-sm" style="background: var(--info); color: #fff; border: none; font-weight: 700; padding: 6px 12px; border-radius: 6px;" onclick="event.stopPropagation(); openPhotoViewer('${r.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
+      ? `<button type="button" class="btn btn-sm" style="background: #0284c7; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); openPhotoViewer('${r.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
       : '';
 
     return `
-    <div class="surkes-card" ondblclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 5px solid #f59e0b; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); width: 100%; box-sizing: border-box;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+    <div class="hse-patient-card surkes-card" ondblclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Dobel-klik untuk melihat seluruh riwayat rekam medis pasien">
+      <div class="hse-card-header">
         <div>
-          <div onclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline; font-weight: 800; font-size: 1.05rem;" title="Klik untuk membuka riwayat berobat">
+          <div class="hse-card-patient-name" onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Klik untuk membuka riwayat rekam medis">
             ${r.namaPasien || '-'}
           </div>
-          <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
-            <span class="badge badge-info" style="font-size: 0.78rem; font-weight: 700;"><i class="fa-solid fa-id-badge"></i> ${r.nikPabrik || '-'}</span>
-            <span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-color); font-size: 0.78rem; font-weight: 600;"><i class="fa-solid fa-building"></i> ${r.dept || '-'}</span>
+          <div class="hse-card-tags">
+            <span class="badge badge-info"><i class="fa-solid fa-id-badge"></i> ${r.nikPabrik || '-'}</span>
+            <span class="hse-card-dept-badge"><i class="fa-solid fa-building"></i> ${r.dept || '-'}</span>
           </div>
         </div>
-        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-          <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-color);"><i class="fa-regular fa-calendar" style="color: #f59e0b;"></i> ${r.tanggal || '-'}</div>
+        <div class="hse-card-meta">
+          <div class="hse-card-date"><i class="fa-regular fa-calendar" style="color: var(--warning);"></i> ${r.tanggal || '-'}</div>
           <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-            <span class="badge badge-warning" style="font-weight: 700; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.72rem;">
+            <span class="badge-status-surkes">
               📄 Izin Istirahat Sakit
             </span>
           </div>
         </div>
       </div>
 
-      <div style="background: rgba(0, 0, 0, 0.2); padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; display: flex; flex-direction: column; gap: 6px;">
-        <div><strong style="color: #cbd5e1;">S (Keluhan):</strong> <span style="color: var(--text-muted);">${r.keluhan || '-'}</span></div>
-        ${r.objektif ? `<div><strong style="color: #cbd5e1;">O (Fisik/Vital):</strong> <div style="display:inline-block; margin-left: 4px;">${renderObjektifBadges(r.objektif)}</div></div>` : ''}
-        <div style="display: flex; flex-direction: column; gap: 3px;">
-          <strong style="color: #cbd5e1;">A (Diagnosis):</strong>
-          <div style="display: inline-block; margin-top: 2px;">${renderDiagnosisBadges(r.asesmen)}</div>
+      <div class="hse-card-soap-box">
+        <div class="hse-card-soap-row">
+          <strong class="hse-card-lbl">S (Keluhan):</strong>
+          <span class="hse-card-val">${r.keluhan || '-'}</span>
         </div>
-        <div><strong style="color: #cbd5e1;">P (Instruksi/Plan):</strong> <span style="color: var(--text-muted);">${formatPlanForDisplay(r.plan)}</span></div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-user-doctor" style="color: #38bdf8;"></i> Pemeriksa: <strong style="color: var(--text-color);">${r.pemeriksa || '-'}</strong></div>
+        ${r.objektif ? `
+        <div class="hse-card-soap-row">
+          <strong class="hse-card-lbl">O (Fisik/Vital):</strong>
+          <div class="hse-card-val-block">${renderObjektifBadges(r.objektif)}</div>
+        </div>` : ''}
+        <div class="hse-card-soap-row">
+          <strong class="hse-card-lbl">A (Diagnosis):</strong>
+          <div class="hse-card-val-block">${renderDiagnosisBadges(r.asesmen)}</div>
+        </div>
+        <div class="hse-card-soap-row">
+          <strong class="hse-card-lbl">P (Instruksi/Plan):</strong>
+          <div class="hse-card-val" style="padding-left: 4px;">${formatPlanForDisplay(r.plan)}</div>
+        </div>
+        <div class="hse-card-pemeriksa">
+          <i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Pemeriksa: <strong>${r.pemeriksa || '-'}</strong>
+        </div>
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.06);">
-        <small style="color: var(--text-muted); font-size: 0.75rem;">💡 No: #${idx + 1} | Dobel-klik untuk riwayat</small>
-        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-          <button type="button" class="btn btn-sm btn-primary" style="padding: 6px 12px; font-weight: 700; border-radius: 6px;" onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat Rekam Medis">
+      <div class="hse-card-footer">
+        <span class="hse-card-hint"><i class="fa-solid fa-circle-info"></i> No: #${idx + 1} | Dobel-klik card untuk riwayat</span>
+        <div class="hse-card-actions">
+          <button type="button" class="btn btn-sm btn-primary" style="padding: 7px 14px; font-weight: 800; border-radius: 6px;" onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat Rekam Medis">
             <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Pasien
           </button>
           ${waBtn}

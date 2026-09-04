@@ -3323,3 +3323,266 @@ select.form-control {
   animation: rowFlashIn 2.5s ease-out forwards;
 }
 
+/* ============================================================
+   HSE PANTAUAN & SURKES HIGH-CONTRAST RESPONSIVE CARDS
+   ============================================================ */
+.hse-patient-card {
+  background: var(--surface-1);
+  border: 1.5px solid var(--border-card);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.hse-patient-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+.hse-patient-card.pantauan-card {
+  border-left: 6px solid #ef4444 !important;
+}
+
+.hse-patient-card.surkes-card {
+  border-left: 6px solid #f59e0b !important;
+}
+
+.hse-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hse-card-patient-name {
+  cursor: pointer;
+  color: var(--primary-light);
+  text-decoration: underline;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
+}
+
+.hse-card-patient-name:hover {
+  opacity: 0.85;
+}
+
+.hse-card-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.hse-card-dept-badge {
+  background: var(--surface-2);
+  color: var(--text-main);
+  border: 1px solid var(--border-card);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hse-card-meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.hse-card-date {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hse-card-soap-box {
+  background: #0d1527;
+  border: 1.5px solid #1e293b;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hse-card-soap-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.45;
+}
+
+.hse-card-lbl {
+  color: #f8fafc;
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+.hse-card-val {
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.hse-card-val-block {
+  margin-top: 2px;
+}
+
+.hse-card-pemeriksa {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hse-card-pemeriksa strong {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.hse-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.hse-card-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.hse-card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.badge-status-surkes {
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1.5px solid #f59e0b;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge-status-pantauan {
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1.5px solid #ef4444;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* --- LIGHT THEME HIGH CONTRAST OVERRIDES --- */
+[data-theme="light"] .hse-patient-card {
+  background: #ffffff !important;
+  border: 1.5px solid #94a3b8 !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+}
+
+[data-theme="light"] .hse-patient-card:hover {
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.14) !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="light"] .hse-patient-card.pantauan-card {
+  border-left: 6px solid #dc2626 !important;
+}
+
+[data-theme="light"] .hse-patient-card.surkes-card {
+  border-left: 6px solid #d97706 !important;
+}
+
+[data-theme="light"] .hse-card-patient-name {
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .hse-card-dept-badge {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .hse-card-date {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .hse-card-soap-box {
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .hse-card-lbl {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .hse-card-val {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .hse-card-pemeriksa {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .hse-card-pemeriksa strong {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .hse-card-footer {
+  border-top-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .hse-card-hint {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .badge-status-surkes {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: #d97706 !important;
+}
+
+[data-theme="light"] .badge-status-pantauan {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border-color: #dc2626 !important;
+}
+
