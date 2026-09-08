@@ -7,6 +7,7 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+const escapeHTML = escapeHtml;
 
 let appData = {
   patients: [],
@@ -545,10 +546,10 @@ function autoFillShipmentOfficers(force = false) {
 
   // Populate datalists if present
   if (sendersDatalist) {
-    sendersDatalist.innerHTML = Array.from(senderNames).map(name => `<option value="${escapeHTML(name)}">`).join('');
+    sendersDatalist.innerHTML = Array.from(senderNames).map(name => `<option value="${escapeHtml(name)}">`).join('');
   }
   if (receiversDatalist) {
-    receiversDatalist.innerHTML = Array.from(receiverNames).map(name => `<option value="${escapeHTML(name)}">`).join('');
+    receiversDatalist.innerHTML = Array.from(receiverNames).map(name => `<option value="${escapeHtml(name)}">`).join('');
   }
 
   // Determine auto-fill values based on logged-in user
@@ -820,7 +821,9 @@ async function loadAllAppData() {
 
   } catch (err) {
     console.error('Error loading app data:', err);
-    showToast('Server belum siap, coba refresh halaman.', 'warning');
+    if (!appData.patients || appData.patients.length === 0) {
+      showToast('Server belum siap atau koneksi terputus, coba refresh halaman.', 'warning');
+    }
   }
 }
 
