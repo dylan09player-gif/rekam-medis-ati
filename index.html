@@ -2447,6 +2447,54 @@ function setupTabDanHeader() {
           <div class="info-banner info-banner-yellow" style="margin-bottom: 16px;">
             💡 <strong>Beralih Petugas Cepat:</strong> Klik tombol <strong>"Beralih"</strong> pada akun yang ingin Anda gunakan untuk pergantian shift atau rotasi tugas.
           </div>
+
+          <!-- INLINE ACCOUNT SWITCH CONFIRMATION BOX -->
+          <div id="acc-switch-box" style="display: none; background: var(--surface-2); border: 2px solid var(--primary-light); border-radius: 12px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow-md);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div id="acc-switch-target-avatar" style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                  <i class="fa-solid fa-user-doctor"></i>
+                </div>
+                <div>
+                  <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);" id="acc-switch-target-nama">Nama Petugas</div>
+                  <div style="font-size: 0.8rem; color: var(--text-muted);" id="acc-switch-target-meta">@username &bull; Dokter</div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="closeAccSwitchBox()" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <form onsubmit="submitSwitchAccount(event)">
+              <input type="hidden" id="acc-switch-target-id">
+              <input type="hidden" id="acc-switch-target-username">
+              <input type="hidden" id="acc-switch-target-nama-val">
+              <input type="hidden" id="acc-switch-target-role-val">
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Kata Sandi Petugas (atau PIN Master 231067)</label>
+                <div class="acc-pwd-input-wrap">
+                  <input type="password" id="acc-switch-pwd-input" class="form-control" placeholder="Masukkan kata sandi..." required autocomplete="current-password">
+                  <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-switch-pwd-input', 'acc-switch-peek-icon')" title="Lihat/Sembunyikan">
+                    <i class="fa-solid fa-eye" id="acc-switch-peek-icon"></i>
+                  </button>
+                </div>
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">
+                  💡 Masukkan password akun atau kunci master <strong>231067</strong> jika lupa sandi.
+                </small>
+              </div>
+
+              <div id="acc-switch-error-alert" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; font-size: 0.85rem; font-weight: 700; margin-bottom: 12px;"></div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeAccSwitchBox()">Batal</button>
+                <button type="submit" id="btn-submit-acc-switch" class="btn btn-primary" style="font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sebagai Petugas Ini
+                </button>
+              </div>
+            </form>
+          </div>
+
           <div id="acc-switch-list" class="switch-account-grid">
             <!-- Rendered dynamically via renderSwitchAccountsList() -->
           </div>

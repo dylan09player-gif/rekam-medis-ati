@@ -504,10 +504,14 @@ function updateNavbarUserBadge() {
   }
 }
 
-function autoFillPemeriksa() {
+function autoFillPemeriksa(force = false) {
   const pemInput = document.getElementById('poli-pemeriksa');
-  if (pemInput && appData.currentUser?.nama && (!pemInput.value || pemInput.value.trim() === '')) {
-    pemInput.value = appData.currentUser.nama;
+  if (!pemInput) return;
+  const currentNama = appData.currentUser?.nama;
+  if (!currentNama) return;
+
+  if (force || !pemInput.value || pemInput.value.trim() === '') {
+    pemInput.value = currentNama;
   }
 }
 
@@ -534,9 +538,10 @@ async function handleUserLogin(e) {
       localStorage.setItem('marunda_gate_auth', 'true');
       localStorage.setItem('currentUser', JSON.stringify(user));
       updateNavbarUserBadge();
-      autoFillPemeriksa();
+      autoFillPemeriksa(true);
       document.getElementById('gate-login-overlay').style.display = 'none';
       showToast(`Selamat datang, ${user.nama} 👋`, 'success');
+      await loadAllAppData();
     } else {
       showToast(`❌ ${data.error || 'Username atau password salah!'}`, 'error');
     }
@@ -548,9 +553,10 @@ async function handleUserLogin(e) {
       localStorage.setItem('marunda_gate_auth', 'true');
       localStorage.setItem('currentUser', JSON.stringify(user));
       updateNavbarUserBadge();
-      autoFillPemeriksa();
+      autoFillPemeriksa(true);
       document.getElementById('gate-login-overlay').style.display = 'none';
-      showToast(`Login berhasil (Mode lokal)`, 'success');
+      showToast(`Login berhasil (Mode master key)`, 'success');
+      await loadAllAppData();
     } else {
       showToast('Gagal menghubungi server. Periksa koneksi.', 'error');
     }
@@ -582,9 +588,10 @@ async function handleUserRegister(e) {
       localStorage.setItem('marunda_gate_auth', 'true');
       localStorage.setItem('currentUser', JSON.stringify(user));
       updateNavbarUserBadge();
-      autoFillPemeriksa();
+      autoFillPemeriksa(true);
       document.getElementById('gate-login-overlay').style.display = 'none';
       showToast(`Akun berhasil dibuat! Selamat datang, ${user.nama} 🎉`, 'success');
+      await loadAllAppData();
     } else {
       showToast(`❌ ${data.error || 'Gagal mendaftar akun'}`, 'error');
     }
@@ -712,6 +719,9 @@ async function loadAllAppData() {
       }
     }
 
+    // Auto-refresh Poli & Edit medicine rows stock indicators
+    refreshPoliMedicineRowsStock();
+
     // Auto-refresh Account Settings modal if currently opened
     const modalAcc = document.getElementById('modal-account-settings');
     if (modalAcc && (modalAcc.style.display === 'flex' || modalAcc.style.display === 'block')) {
@@ -729,6 +739,52 @@ async function loadAllAppData() {
   } catch (err) {
     console.error('Error loading app data:', err);
     showToast('Server belum siap, coba refresh halaman.', 'warning');
+  }
+}
+
+function refreshPoliMedicineRowsStock() {
+  const tbody = document.getElementById('poli-resep-body');
+  const currentMeds = appData.medicines || [];
+
+  if (tbody) {
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(tr => {
+      const input = tr.querySelector('.med-search-input');
+      const stockInfo = tr.querySelector('.stock-badge-info');
+      const qtyInput = tr.querySelector('.med-qty');
+      if (!input) return;
+
+      const val = input.value.trim().toLowerCase();
+      if (val) {
+        const med = currentMeds.find(m => m.nama && m.nama.toLowerCase() === val);
+        if (med && stockInfo) {
+          const stok = parseInt(med.stok) || 0;
+          updateStockBadgeEl(stockInfo, stok, med.satuan, tr);
+          if (qtyInput) qtyInput.max = stok;
+        }
+      }
+    });
+  }
+
+  // Perbarui juga form obat di modal edit jika sedang terbuka
+  const editContainer = document.getElementById('edit-container-resep');
+  if (editContainer) {
+    const editRows = editContainer.querySelectorAll('.edit-resep-row');
+    editRows.forEach(div => {
+      const input = div.querySelector('.select-edit-medicine');
+      const stockInfo = div.querySelector('.stock-badge-info');
+      const qtyInput = div.querySelector('.edit-med-qty');
+      if (!input) return;
+      const val = input.value.trim().toLowerCase();
+      if (val) {
+        const med = currentMeds.find(m => m.nama && m.nama.toLowerCase() === val);
+        if (med && stockInfo) {
+          const stok = parseInt(med.stok) || 0;
+          updateStockBadgeEl(stockInfo, stok, med.satuan);
+          if (qtyInput) qtyInput.max = stok;
+        }
+      }
+    });
   }
 }
 
@@ -995,7 +1051,12 @@ function renderNakesSuggestions() {
     </span>
   `).join('');
 
-  if (inputEl && !inputEl.value.trim() && nakesList.length > 0) {
+  // Default value pemeriksaan HARUS akun yang sedang login
+  if (appData.currentUser && appData.currentUser.nama) {
+    if (inputEl && (!inputEl.value || inputEl.value.trim() === '')) {
+      inputEl.value = appData.currentUser.nama;
+    }
+  } else if (inputEl && !inputEl.value.trim() && nakesList.length > 0) {
     inputEl.value = nakesList[0].name;
   }
 }
@@ -1041,7 +1102,7 @@ function initPoliForm() {
   }
   
   renderNakesSuggestions();
-  autoFillPemeriksa();
+  autoFillPemeriksa(true); // Selalu set default nama nakes yang sedang login
   calculateCombinedGrandTotal();
 
   // Set default visit date to today
@@ -1356,6 +1417,7 @@ function addPoliMedicineRow(medName = '', qty = 1) {
   const stockInfo = tr.querySelector('.stock-badge-info');
 
   function renderMedOptions(filterText = '') {
+    const medList = getSortedMedicines();
     const cleanFilter = filterText.toLowerCase().trim();
     const filtered = medList.filter(m => 
       !cleanFilter || 
@@ -2092,15 +2154,27 @@ async function handleSavePoli(e) {
         showToast('✅ Rekam Medis Berhasil Disimpan & Stok Berkurang!', 'success', 4000);
       }
 
-      // Bersihkan formulir poli
-      resetFormPoli();
+      // 1. Potong stok obat seketika di memori lokal (optimistic update agar dropdown langsung berkurang)
+      if (Array.isArray(newRecord.resep)) {
+        newRecord.resep.forEach(item => {
+          const medName = (item.namaObat || item.obat || '').trim().toLowerCase();
+          const q = parseInt(item.qty || item.jumlah) || 1;
+          const found = (appData.medicines || []).find(m => m.nama && m.nama.toLowerCase() === medName);
+          if (found) {
+            found.stok = Math.max(0, (parseInt(found.stok) || 0) - q);
+          }
+        });
+      }
 
-      // Refresh seluruh data aplikasi secara asinkron dan aman
+      // 2. Refresh seluruh data aplikasi secara asinkron dan aman dari server
       try {
         await loadAllAppData();
       } catch (loadErr) {
         console.warn('Gagal me-refresh appData setelah simpan:', loadErr);
       }
+
+      // 3. Bersihkan formulir poli dan muat dropdown obat dengan stok yang sudah berkurang
+      resetFormPoli();
       
       if (appData.currentPoliPatient) {
         // Refetch current patient untuk mendapatkan saldoObat yang baru
@@ -2150,7 +2224,7 @@ async function handleSavePoli(e) {
 function resetFormPoli() {
   document.getElementById('form-poli-entry').reset();
   initPoliForm();
-  renderNakesSuggestions();
+  autoFillPemeriksa(true);
 }
 
 // -------------------------------------------------------------
@@ -2497,6 +2571,7 @@ function addEditResepRow(medName = '', qty = 1) {
   const stockInfo = div.querySelector('.stock-badge-info');
 
   function renderMedOptions(filterText = '') {
+    const medList = getSortedMedicines();
     const cleanFilter = filterText.toLowerCase().trim();
     const filtered = medList.filter(m => 
       !cleanFilter || 
@@ -7408,6 +7483,7 @@ function openModalAccountSettings(defaultTab) {
   const addBox = document.getElementById('acc-add-user-box');
   if (addBox) addBox.style.display = 'none';
 
+  closeAccSwitchBox();
   switchAccountSettingsTab(defaultTab || 'password');
   modal.style.display = 'flex';
 }
@@ -7415,6 +7491,7 @@ function openModalAccountSettings(defaultTab) {
 function closeModalAccountSettings() {
   const modal = document.getElementById('modal-account-settings');
   if (modal) modal.style.display = 'none';
+  closeAccSwitchBox();
 }
 
 function switchAccountSettingsTab(tabName) {
@@ -7579,7 +7656,7 @@ function renderSwitchAccountsList() {
 
     const actionBtn = isCurrent
       ? `<span class="badge badge-success" style="font-size: 0.8rem; font-weight: 700; padding: 6px 12px;"><i class="fa-solid fa-circle-check"></i> Sedang Aktif</span>`
-      : `<button type="button" class="btn btn-sm btn-primary" style="font-weight: 700; padding: 7px 16px; border-radius: 6px;" onclick="handleSwitchAccountPrompt('${u.id}', '${u.username}', '${encodeURIComponent(u.nama || u.username)}')">
+      : `<button type="button" class="btn btn-sm btn-primary" style="font-weight: 700; padding: 7px 16px; border-radius: 6px;" onclick="openAccSwitchBox('${u.id}', '${u.username}', '${encodeURIComponent(u.nama || u.username)}', '${u.role || 'Petugas'}')">
            <i class="fa-solid fa-arrow-right-to-bracket"></i> Beralih
          </button>`;
 
@@ -7604,21 +7681,76 @@ function renderSwitchAccountsList() {
   }).join('');
 }
 
-async function handleSwitchAccountPrompt(userId, username, encodedNama) {
+function openAccSwitchBox(userId, username, encodedNama, role) {
   const nama = decodeURIComponent(encodedNama || username);
-  const pwd = prompt(`Beralih ke akun: ${nama} (@${username})\n\nMasukkan kata sandi akun (atau master password):`);
-  if (pwd === null) return; // User pressed Cancel
+  const box = document.getElementById('acc-switch-box');
+  const alertEl = document.getElementById('acc-switch-error-alert');
+  if (!box) return;
 
-  if (!pwd.trim()) {
-    showToast('Kata sandi wajib diisi untuk beralih akun.', 'warning');
+  document.getElementById('acc-switch-target-id').value = userId || '';
+  document.getElementById('acc-switch-target-username').value = username || '';
+  document.getElementById('acc-switch-target-nama-val').value = nama;
+  document.getElementById('acc-switch-target-role-val').value = role || 'Petugas';
+
+  document.getElementById('acc-switch-target-nama').textContent = nama;
+  document.getElementById('acc-switch-target-meta').textContent = `@${username} • ${role || 'Petugas'}`;
+
+  const pwdInput = document.getElementById('acc-switch-pwd-input');
+  if (pwdInput) {
+    pwdInput.value = '';
+    setTimeout(() => pwdInput.focus(), 150);
+  }
+
+  if (alertEl) {
+    alertEl.style.display = 'none';
+    alertEl.textContent = '';
+  }
+
+  const avatarEl = document.getElementById('acc-switch-target-avatar');
+  if (avatarEl) {
+    const roleLower = String(role || '').toLowerCase();
+    if (roleLower.includes('dokter')) avatarEl.innerHTML = '<i class="fa-solid fa-user-doctor"></i>';
+    else if (roleLower.includes('perawat') || roleLower.includes('bidan')) avatarEl.innerHTML = '<i class="fa-solid fa-user-nurse"></i>';
+    else if (roleLower.includes('apotek')) avatarEl.innerHTML = '<i class="fa-solid fa-pills"></i>';
+    else avatarEl.innerHTML = '<i class="fa-solid fa-user-gear"></i>';
+  }
+
+  box.style.display = 'block';
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeAccSwitchBox() {
+  const box = document.getElementById('acc-switch-box');
+  if (box) box.style.display = 'none';
+}
+
+async function submitSwitchAccount(e) {
+  e.preventDefault();
+  const userId = document.getElementById('acc-switch-target-id')?.value;
+  const username = document.getElementById('acc-switch-target-username')?.value;
+  const pwdInput = document.getElementById('acc-switch-pwd-input');
+  const alertEl = document.getElementById('acc-switch-error-alert');
+  const submitBtn = document.getElementById('btn-submit-acc-switch');
+  const pwd = pwdInput ? pwdInput.value.trim() : '';
+
+  if (!pwd) {
+    if (alertEl) {
+      alertEl.textContent = 'Kata sandi atau PIN master wajib diisi!';
+      alertEl.style.display = 'block';
+    }
     return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi...';
   }
 
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password: pwd.trim() })
+      body: JSON.stringify({ userId, username, password: pwd })
     });
 
     const data = await res.json();
@@ -7627,17 +7759,34 @@ async function handleSwitchAccountPrompt(userId, username, encodedNama) {
       localStorage.setItem('marunda_gate_auth', 'true');
       localStorage.setItem('currentUser', JSON.stringify(data.user));
       updateNavbarUserBadge();
-      autoFillPemeriksa();
+      autoFillPemeriksa(true); // Langsung ubah nama nakes pemeriksa di poli!
+      closeAccSwitchBox();
       closeModalAccountSettings();
       showToast(`Berhasil beralih ke akun ${data.user.nama} 👋`, 'success');
       await loadAllAppData();
     } else {
-      showToast(data.error || 'Kata sandi salah!', 'error');
+      if (alertEl) {
+        alertEl.textContent = data.error || 'Kata sandi salah! Masukkan kata sandi akun atau PIN master (231067).';
+        alertEl.style.display = 'block';
+      }
+      if (pwdInput) pwdInput.select();
     }
   } catch (err) {
     console.error('Switch account error:', err);
-    showToast('Gagal menghubungi server untuk verifikasi akun.', 'error');
+    if (alertEl) {
+      alertEl.textContent = 'Gagal menghubungi server untuk verifikasi akun.';
+      alertEl.style.display = 'block';
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sebagai Petugas Ini';
+    }
   }
+}
+
+async function handleSwitchAccountPrompt(userId, username, encodedNama) {
+  openAccSwitchBox(userId, username, encodedNama, 'Petugas');
 }
 
 function renderAccountManageList() {

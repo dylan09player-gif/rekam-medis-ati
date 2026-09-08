@@ -269,29 +269,33 @@ function sendWhaCenterNotif(number, message) {
 
 // Universal User Login (Multi-Account)
 app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ success: false, error: 'Username dan Password wajib diisi' });
+  const { username, password, userId } = req.body;
+  if ((!username && !userId) || !password) {
+    return res.status(400).json({ success: false, error: 'Username / Akun dan Kata Sandi wajib diisi!' });
   }
 
   const db = readDB();
   const users = db.users || [];
-  const cleanUser = String(username).trim().toLowerCase();
+  const cleanUser = String(username || '').trim().toLowerCase();
   const cleanPass = String(password).trim();
   const masterPass = db.settings?.gate_password || "231067";
 
-  // Check if master password used
+  // 1. Cari user berdasarkan userId (paling presisi), username, atau nama lengkap
+  let matchedUser = users.find(u => 
+    (userId && u.id === userId) ||
+    (cleanUser && u.username && u.username.toLowerCase() === cleanUser) ||
+    (cleanUser && u.nama && u.nama.toLowerCase() === cleanUser) ||
+    (cleanUser && u.nama && u.nama.toLowerCase().includes(cleanUser)) ||
+    (cleanUser && u.username && u.username.toLowerCase().includes(cleanUser))
+  );
+
+  // 2. Jika menggunakan Master Password / PIN Klinik (231067)
   if (cleanPass === masterPass) {
-    // Check if user exists, otherwise create or return generic officer
-    let matchedUser = users.find(u => 
-      (u.username && u.username.toLowerCase() === cleanUser) ||
-      (u.nama && u.nama.toLowerCase() === cleanUser)
-    );
     if (!matchedUser) {
       matchedUser = {
         id: 'usr-master',
-        username: cleanUser,
-        nama: cleanUser.startsWith('dr.') ? cleanUser : `dr. ${cleanUser}`,
+        username: cleanUser || 'master',
+        nama: cleanUser ? (cleanUser.startsWith('dr.') ? cleanUser : `dr. ${cleanUser}`) : 'Petugas Medis',
         role: 'Dokter',
         created_at: new Date().toISOString()
       };
@@ -300,19 +304,27 @@ app.post('/api/auth/login', (req, res) => {
     return res.json({ success: true, status: 'SUCCESS', user: safeUser, message: 'Login berhasil (Master Key)' });
   }
 
-  // Normal user credentials check
-  const matchedUser = users.find(u => 
-    ((u.username && u.username.toLowerCase() === cleanUser) ||
-     (u.nama && u.nama.toLowerCase() === cleanUser)) &&
-    String(u.password).trim() === cleanPass
-  );
-
+  // 3. Jika user ditemukan
   if (matchedUser) {
-    const { password: _, ...safeUser } = matchedUser;
-    return res.json({ success: true, status: 'SUCCESS', user: safeUser, message: 'Login berhasil' });
+    // Toleransi akun migrasi lama yang belum memiliki password tersimpan di db.json
+    if (!matchedUser.password || String(matchedUser.password).trim() === '') {
+      matchedUser.password = cleanPass;
+      writeDB(db);
+      notifyClients();
+      const { password: _, ...safeUser } = matchedUser;
+      return res.json({ success: true, status: 'SUCCESS', user: safeUser, message: 'Login berhasil (Kata sandi baru diaktifkan)' });
+    }
+
+    // Cek kesesuaian password normal
+    if (String(matchedUser.password).trim() === cleanPass) {
+      const { password: _, ...safeUser } = matchedUser;
+      return res.json({ success: true, status: 'SUCCESS', user: safeUser, message: 'Login berhasil' });
+    }
+
+    return res.status(401).json({ success: false, error: 'Kata sandi salah! Masukkan password akun atau master key (231067).' });
   }
 
-  return res.status(401).json({ success: false, error: 'Username atau Password salah!' });
+  return res.status(401).json({ success: false, error: 'Akun petugas tidak ditemukan!' });
 });
 
 // User Registration (Buat Akun Petugas Baru)
@@ -342,6 +354,7 @@ app.post('/api/auth/register', (req, res) => {
 
   db.users.push(newUser);
   writeDB(db);
+  notifyClients();
 
   const { password: _, ...safeUser } = newUser;
   return res.status(201).json({ success: true, user: safeUser, message: 'Akun petugas berhasil dibuat!' });
