@@ -393,10 +393,6 @@ function initSSE() {
           // Reset show-all agar tabel kembali ke tampilan ringkas setelah auto-refresh
           _editDataShowAll = false;
           loadAllAppData();
-          // Toast notif hanya muncul jika update berasal dari petugas/perangkat lain (bukan aksi sendiri)
-          if (!window._lastLocalMutationTime || (Date.now() - window._lastLocalMutationTime) > 4000) {
-            showToast('🔄 Data diperbarui oleh petugas lain', 'info');
-          }
         }, 300);
       }
     };
