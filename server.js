@@ -1459,6 +1459,10 @@ app.post('/api/records', (req, res) => {
   // Generate ID & Created At
   newRecord.id = 'REC-' + Date.now();
   newRecord.created_at = newRecord.created_at || new Date().toISOString();
+  if (!newRecord.jam) {
+    const nowWIB = new Date();
+    newRecord.jam = nowWIB.toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' });
+  }
   
   // 2. Auto-Deduct Stock from resep list & Log Mutation
   const logObatTeks = [];
@@ -1499,14 +1503,15 @@ app.post('/api/records', (req, res) => {
 
   // 3. Potong Saldo Obat Pasien Secara Atomik di Server
   const grandTotalBiaya = Number(newRecord.totalBiaya || 0);
-  if (grandTotalBiaya > 0 && Array.isArray(db.patients)) {
-    const pIdx = db.patients.findIndex(p => 
-      (p.nikPabrik && newRecord.nikPabrik && p.nikPabrik === newRecord.nikPabrik) ||
+  const empList = db.employees || db.patients || [];
+  if (grandTotalBiaya > 0 && Array.isArray(empList)) {
+    const pIdx = empList.findIndex(p => 
+      (p.nikPabrik && newRecord.nikPabrik && String(p.nikPabrik).toLowerCase() === String(newRecord.nikPabrik).toLowerCase()) ||
       (p.nama && newRecord.namaPasien && p.nama.toLowerCase() === newRecord.namaPasien.toLowerCase())
     );
     if (pIdx !== -1) {
-      const oldSaldo = parseInt(db.patients[pIdx].saldoObat) || 0;
-      db.patients[pIdx].saldoObat = oldSaldo - grandTotalBiaya;
+      const oldSaldo = parseInt(empList[pIdx].saldoObat) || 0;
+      empList[pIdx].saldoObat = oldSaldo - grandTotalBiaya;
     }
   }
 

@@ -780,18 +780,20 @@ async function loadAllAppData() {
       renderBillingPTTable();
     }
 
-    // Auto-refresh active patient timeline in Poli if currently opened
-    if (appData.currentPoliPatient) {
-      const p = appData.currentPoliPatient;
-      const refPatient = (appData.patients || []).find(pt => 
-        (pt.id && pt.id === p.id) ||
-        (pt.nikPabrik && pt.nikPabrik === p.nikPabrik) ||
-        (pt.nik && pt.nik === p.nik)
-      );
-      if (refPatient) {
-        appData.currentPoliPatient = refPatient;
+    // Auto-refresh active patient timeline in Poli or today live visits
+    if (typeof updatePoliTimelineView === 'function') {
+      if (appData.currentPoliPatient) {
+        const p = appData.currentPoliPatient;
+        const refPatient = (appData.patients || []).find(pt => 
+          (pt.id && pt.id === p.id) ||
+          (pt.nikPabrik && pt.nikPabrik === p.nikPabrik) ||
+          (pt.nik && pt.nik === p.nik)
+        );
+        if (refPatient) {
+          appData.currentPoliPatient = refPatient;
+        }
       }
-      renderPatientHistoryTimeline(appData.currentPoliPatient);
+      updatePoliTimelineView();
     }
 
     // Auto-refresh HSE stock mutation modal if currently opened
@@ -1769,28 +1771,197 @@ function searchPatientByNIK() {
   showToast(`Pasien ${p.nama} dipilih`, 'info');
 }
 
-function renderPatientHistoryTimeline(patient) {
-  const container = document.getElementById('poli-timeline-container');
-  const countEl = document.getElementById('poli-history-count');
-  if (!container || !patient) return;
+let _poliTimelineTab = 'auto'; // 'patient' | 'today' | 'auto'
 
-  const pNik = String(patient.nikPabrik || patient.nik || '').trim().toLowerCase();
-  const pNama = String(patient.nama || '').trim().toLowerCase();
+function switchPoliTimelineTab(tab) {
+  _poliTimelineTab = tab;
+  updatePoliTimelineView();
+}
 
-  const history = (appData.records || []).filter(r => {
-    const rNik = String(r.nikPabrik || r.nik || '').trim().toLowerCase();
-    const rNama = String(r.namaPasien || r.nama || '').trim().toLowerCase();
-    return (pNik && rNik && rNik === pNik) || (pNama && rNama && rNama === pNama);
+function getTodayRecords() {
+  const today = new Date();
+  const tY = today.getFullYear();
+  const tM = today.getMonth();
+  const tD = today.getDate();
+
+  return (appData.records || []).filter(r => {
+    const d = parseRecordDate(r);
+    if (d) {
+      return d.getFullYear() === tY && d.getMonth() === tM && d.getDate() === tD;
+    }
+    if (r.created_at) {
+      const cd = new Date(r.created_at);
+      return cd.getFullYear() === tY && cd.getMonth() === tM && cd.getDate() === tD;
+    }
+    return false;
   }).sort((a, b) => getRecordTimestamp(b) - getRecordTimestamp(a));
+}
 
-  if (countEl) countEl.textContent = `${history.length} Kunjungan`;
+function updatePoliTimelineView() {
+  const container = document.getElementById('poli-timeline-container');
+  const countPatientEl = document.getElementById('poli-history-count');
+  const countTodayEl = document.getElementById('poli-today-count');
+  const btnPatient = document.getElementById('btn-poli-tab-patient');
+  const btnToday = document.getElementById('btn-poli-tab-today');
+  if (!container) return;
+
+  const todayRecords = getTodayRecords();
+  if (countTodayEl) countTodayEl.textContent = todayRecords.length;
+
+  const currentPatient = appData.currentPoliPatient;
+  let patientHistory = [];
+
+  if (currentPatient) {
+    const cleanNik = (s) => String(s || '').trim().toLowerCase().replace(/^0+/, '');
+    const cleanNama = (s) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const pNik = cleanNik(currentPatient.nikPabrik || currentPatient.nik);
+    const pNama = cleanNama(currentPatient.nama);
+
+    patientHistory = (appData.records || []).filter(r => {
+      const rNik = cleanNik(r.nikPabrik || r.nik);
+      const rNama = cleanNama(r.namaPasien || r.nama);
+      return (pNik && rNik && rNik === pNik) || (pNama && rNama && rNama === pNama);
+    }).sort((a, b) => getRecordTimestamp(b) - getRecordTimestamp(a));
+  }
+
+  if (countPatientEl) countPatientEl.textContent = patientHistory.length;
+
+  let activeTab = _poliTimelineTab;
+  if (activeTab === 'auto') {
+    activeTab = currentPatient ? 'patient' : 'today';
+  }
+
+  if (activeTab === 'today') {
+    if (btnToday) {
+      btnToday.style.background = 'var(--primary)';
+      btnToday.style.color = '#fff';
+    }
+    if (btnPatient) {
+      btnPatient.style.background = 'transparent';
+      btnPatient.style.color = 'var(--text-muted)';
+    }
+    renderTodayLiveVisits(todayRecords);
+  } else {
+    if (btnPatient) {
+      btnPatient.style.background = 'var(--primary)';
+      btnPatient.style.color = '#fff';
+    }
+    if (btnToday) {
+      btnToday.style.background = 'transparent';
+      btnToday.style.color = 'var(--text-muted)';
+    }
+    renderPatientSpecificHistory(currentPatient, patientHistory);
+  }
+}
+
+function renderTodayLiveVisits(todayRecords) {
+  const container = document.getElementById('poli-timeline-container');
+  if (!container) return;
+
+  if (todayRecords.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding: 48px 20px; color: var(--text-muted);">
+        <i class="fa-solid fa-bolt" style="font-size: 2.5rem; margin-bottom: 12px; color: #38bdf8; opacity: 0.6;"></i>
+        <p style="font-weight: 700; font-size: 0.95rem; color: var(--text-color);">Belum Ada Kunjungan Pasien Hari Ini</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Setiap kali data rekam medis poli disimpan, pasien akan seketika muncul di sini secara Live Real-Time.</p>
+      </div>`;
+    return;
+  }
+
+  const nowMs = Date.now();
+  const FIVE_MIN_MS = 5 * 60 * 1000;
+
+  container.innerHTML = `
+    <div style="padding: 4px 4px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 12px;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: #38bdf8;">
+        <i class="fa-solid fa-circle" style="color: #34d399; font-size: 0.55rem; vertical-align: middle; animation: ssePulse 2s infinite;"></i> Live Feed Kunjungan Hari Ini
+      </span>
+      <span style="font-size: 0.75rem; color: var(--text-muted);">Total: <strong>${todayRecords.length} Pasien</strong></span>
+    </div>
+  ` + todayRecords.map(r => {
+    const rTime = getRecordTimestamp(r);
+    const isJustNow = rTime > 0 && (nowMs - rTime) < FIVE_MIN_MS;
+    const jamText = r.jam ? `Jam ${r.jam}` : (rTime > 0 ? `Jam ${new Date(rTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}` : 'Hari Ini');
+    
+    // Format Diagnosis (A)
+    let diagHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
+    if (r.asesmen) {
+      diagHTML = renderDiagnosisBadges(r.asesmen);
+    }
+
+    // Format Resep Obat (P)
+    let planHTML = renderResepTimeline(r);
+
+    return `
+      <div class="timeline-item" style="${isJustNow ? 'border: 1.5px solid #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.25);' : ''}">
+        <div class="timeline-header">
+          <div>
+            <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-color);">
+              ${escapeHtml(r.namaPasien)}
+              <span style="font-weight: 600; font-size: 0.78rem; color: var(--text-muted);">(${escapeHtml(r.nikPabrik || '-')})</span>
+            </div>
+            <div class="timeline-date" style="margin-top: 2px;">
+              <i class="fa-regular fa-clock"></i> ${jamText} &bull; Dept: ${escapeHtml(r.dept || '-')}
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            ${isJustNow ? '<span class="badge" style="background: #10b981; color: #fff; font-weight: 800; font-size: 0.68rem; padding: 3px 6px;">✨ BARU MASUK</span>' : ''}
+            <button class="btn btn-sm" onclick="openModalEditRecord('${r.id}')" title="Edit Rekam Medis" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 6px; padding: 2px 7px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 700;">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
+          </div>
+        </div>
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-s">S</span>
+          <span style="font-weight: 700; color: var(--text-main);">${escapeHtml(r.keluhan || '-')}</span>
+        </div>
+
+        ${r.objektif ? `
+        <div class="timeline-section-row" style="align-items: flex-start;">
+          <span class="timeline-label-chip chip-o">O</span>
+          <div style="flex:1;">${renderObjektifBadges(r.objektif)}</div>
+        </div>` : ''}
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-a">A</span>
+          ${diagHTML}
+        </div>
+
+        <div class="timeline-section-row">
+          <span class="timeline-label-chip chip-p">P</span>
+          <div style="flex:1;">${planHTML}</div>
+        </div>
+
+        <div class="timeline-footer">
+          <div><i class="fa-solid fa-user-doctor"></i> ${escapeHtml(r.pemeriksa || 'Nakes')}</div>
+          ${r.linkFoto ? `<button type="button" class="btn btn-sm btn-primary" style="font-size: 0.74rem; padding: 3px 8px;" onclick="openPhotoViewer('${r.id}')"><i class="fa-solid fa-image"></i> Lihat Foto</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPatientSpecificHistory(currentPatient, history) {
+  const container = document.getElementById('poli-timeline-container');
+  if (!container) return;
+
+  if (!currentPatient) {
+    container.innerHTML = `
+      <div style="text-align:center; padding: 48px 20px; color: var(--text-muted);">
+        <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.35;"></i>
+        <p style="font-weight: 700;">Silakan Cari / Pilih Pasien</p>
+        <p style="font-size: 0.8rem; color: var(--text-faint); margin-top: 4px;">Atau klik tombol <strong>Live Hari Ini</strong> di atas untuk melihat seluruh kunjungan hari ini.</p>
+      </div>`;
+    return;
+  }
 
   if (history.length === 0) {
     container.innerHTML = `
       <div style="text-align:center; padding: 48px 20px; color: var(--text-muted);">
         <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.35;"></i>
-        <p style="font-weight: 700;">Belum ada riwayat rekam medis</p>
-        <p style="font-size: 0.8rem; color: var(--text-faint); margin-top: 4px;">Kunjungan pemeriksaan pasien ini akan tersimpan otomatis di sini.</p>
+        <p style="font-weight: 700;">Belum ada riwayat rekam medis sebelumnya</p>
+        <p style="font-size: 0.8rem; color: var(--text-faint); margin-top: 4px;">Kunjungan pemeriksaan pasien <strong>${escapeHtml(currentPatient.nama)}</strong> akan tersimpan otomatis di sini.</p>
       </div>`;
     return;
   }
@@ -1809,7 +1980,7 @@ function renderPatientHistoryTimeline(patient) {
       <div class="timeline-item">
         <div class="timeline-header">
           <div class="timeline-date">
-            <i class="fa-regular fa-calendar-check"></i> ${r.tanggal || '-'}
+            <i class="fa-regular fa-calendar-check"></i> ${r.tanggal || '-'} ${r.jam ? `(${r.jam})` : ''}
             <button class="btn btn-sm" onclick="openModalEditRecord('${r.id}')" title="Edit Rekam Medis" style="background: rgba(14, 165, 233, 0.08); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 700; box-shadow: none;">
               <i class="fa-solid fa-pen-to-square"></i> Edit
             </button>
@@ -1822,7 +1993,7 @@ function renderPatientHistoryTimeline(patient) {
 
         <div class="timeline-section-row">
           <span class="timeline-label-chip chip-s">S</span>
-          <span style="font-weight: 700; color: var(--text-main);">${r.keluhan || '-'}</span>
+          <span style="font-weight: 700; color: var(--text-main);">${escapeHtml(r.keluhan || '-')}</span>
         </div>
 
         <div class="timeline-section-row" style="align-items: flex-start;">
@@ -1841,7 +2012,7 @@ function renderPatientHistoryTimeline(patient) {
         </div>
 
         <div class="timeline-footer">
-          <div><i class="fa-solid fa-user-doctor"></i> ${r.pemeriksa || 'Nakes'}</div>
+          <div><i class="fa-solid fa-user-doctor"></i> ${escapeHtml(r.pemeriksa || 'Nakes')}</div>
           ${r.linkFoto ? `<button type="button" class="btn btn-sm btn-primary" style="font-size: 0.74rem; padding: 3px 8px;" onclick="openPhotoViewer('${r.id}')"><i class="fa-solid fa-image"></i> Lihat Foto</button>` : ''}
         </div>
 
@@ -1851,6 +2022,14 @@ function renderPatientHistoryTimeline(patient) {
       </div>
     `;
   }).join('');
+}
+
+function renderPatientHistoryTimeline(patient) {
+  if (patient) {
+    appData.currentPoliPatient = patient;
+    _poliTimelineTab = 'patient';
+  }
+  updatePoliTimelineView();
 }
 
 function openModalRiwayatPasien(identifier) {
@@ -2296,7 +2475,26 @@ async function handleSavePoli(e) {
         }
       }
 
-      // 4. Update tabel Edit Data dan Gudang seketika
+      // Tampilkan banner konfirmasi sukses live di atas timeline
+      const alertEl = document.getElementById('poli-recent-saved-alert');
+      if (alertEl) {
+        const jamNow = recordToStore.jam || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        alertEl.style.display = 'block';
+        alertEl.innerHTML = `
+          <div style="background: rgba(16, 185, 129, 0.15); border: 1.5px solid #10b981; color: #10b981; padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 0 12px rgba(16,185,129,0.2);">
+            <div>
+              <div style="font-weight: 800; font-size: 0.88rem;"><i class="fa-solid fa-circle-check"></i> Rekam Medis Berhasil Tersimpan Live!</div>
+              <div style="font-size: 0.78rem; color: var(--text-color); margin-top: 2px;">
+                <strong>${escapeHtml(recordToStore.namaPasien)}</strong> (${escapeHtml(recordToStore.nikPabrik || '-')}) &bull; ${escapeHtml(recordToStore.asesmen || '-')} &bull; Jam: <strong>${jamNow} WIB</strong>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm" onclick="this.parentElement.parentElement.style.display='none'" style="background: transparent; border: none; color: #10b981; font-size: 1.1rem; cursor: pointer; padding: 0 4px;" title="Tutup">&times;</button>
+          </div>
+        `;
+      }
+
+      // 4. Update timeline, tabel Edit Data, dan Gudang seketika
+      updatePoliTimelineView();
       renderEditDataTable();
       renderGudangTable();
 

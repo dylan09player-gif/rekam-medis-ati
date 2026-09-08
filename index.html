@@ -468,14 +468,23 @@
           </div>
         </div>
 
-        <!-- LAYAR KANAN: Timeline Riwayat Rekam Medis Pasien yang Dipilih -->
+        <!-- LAYAR KANAN: Timeline Riwayat Rekam Medis & Live Kunjungan Hari Ini -->
         <div class="glass-card soap-panel">
-          <div class="soap-panel-header">
+          <div class="soap-panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div class="soap-panel-title">
               <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent);"></i>
-              Riwayat Kunjungan Pasien (Timeline)
+              Riwayat Kunjungan
             </div>
-            <span class="banner-sub" id="poli-history-count">0 Kunjungan</span>
+            
+            <!-- Tab Switcher: Pasien Terpilih vs Live Hari Ini -->
+            <div style="display: inline-flex; background: rgba(0,0,0,0.25); border-radius: 20px; padding: 2px; border: 1px solid var(--border-color);">
+              <button type="button" id="btn-poli-tab-patient" class="btn btn-sm" onclick="switchPoliTimelineTab('patient')" style="border-radius: 16px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; background: var(--primary); color: #fff; border: none; cursor: pointer;">
+                <i class="fa-solid fa-user"></i> Pasien Ini (<span id="poli-history-count">0</span>)
+              </button>
+              <button type="button" id="btn-poli-tab-today" class="btn btn-sm" onclick="switchPoliTimelineTab('today')" style="border-radius: 16px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; background: transparent; color: var(--text-muted); border: none; cursor: pointer;">
+                <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i> Live Hari Ini (<span id="poli-today-count">0</span>)
+              </button>
+            </div>
           </div>
 
           <div id="poli-selected-banner" class="patient-info-banner">
@@ -485,6 +494,9 @@
             </div>
             <div id="poli-banner-alergi" style="font-size: 0.8rem; font-weight: 700; color: var(--danger);"></div>
           </div>
+
+          <!-- Alert Notifikasi Cepat Hasil Simpan -->
+          <div id="poli-recent-saved-alert" style="display: none; margin: 10px 14px 0 14px;"></div>
 
           <div class="soap-scrollable-body" id="poli-timeline-container">
             <div style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
