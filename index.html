@@ -669,11 +669,13 @@
                 <div class="pengiriman-name-grid">
                   <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label">Nama Pengirim (Apotek) *</label>
-                    <input type="text" id="ship-sender" class="form-control" placeholder="Nama Petugas Apotek..." style="font-weight: 700;">
+                    <input type="text" id="ship-sender" class="form-control" placeholder="Nama Petugas Apotek..." list="list-ship-senders" style="font-weight: 700;" autocomplete="off">
+                    <datalist id="list-ship-senders"></datalist>
                   </div>
                   <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label">Nama Penerima (Perawat PT) *</label>
-                    <input type="text" id="ship-receiver" class="form-control" placeholder="Nama Perawat PT ATI..." style="font-weight: 700;">
+                    <input type="text" id="ship-receiver" class="form-control" placeholder="Nama Perawat PT ATI..." list="list-ship-receivers" style="font-weight: 700;" autocomplete="off">
+                    <datalist id="list-ship-receivers"></datalist>
                   </div>
                 </div>
 

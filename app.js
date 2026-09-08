@@ -515,6 +515,80 @@ function autoFillPemeriksa(force = false) {
   }
 }
 
+function autoFillShipmentOfficers(force = false) {
+  const senderInput = document.getElementById('ship-sender');
+  const receiverInput = document.getElementById('ship-receiver');
+  const sendersDatalist = document.getElementById('list-ship-senders');
+  const receiversDatalist = document.getElementById('list-ship-receivers');
+
+  const users = appData.users || [];
+  const curUser = appData.currentUser || {};
+
+  // Build list of potential senders (Apoteker / Farmasi / Klinik)
+  const defaultSenders = ['Apt. Nafila Medika', 'OKTA', 'Apotek Nafila'];
+  const senderNames = new Set(defaultSenders);
+  
+  // Build list of potential receivers (Perawat / Dokter / Nakes PT ATI)
+  const defaultReceivers = ['CHANDRA', 'DADANG', 'dr. Dylan Fadhilah', 'dr. Nafila'];
+  const receiverNames = new Set(defaultReceivers);
+
+  users.forEach(u => {
+    if (!u.nama) return;
+    const roleLower = String(u.role || '').toLowerCase();
+    const namaLower = String(u.nama || '').toLowerCase();
+    if (roleLower.includes('apoteker') || roleLower.includes('farmasi') || namaLower.includes('apt') || namaLower.includes('okta')) {
+      senderNames.add(u.nama);
+    } else {
+      receiverNames.add(u.nama);
+    }
+  });
+
+  // Populate datalists if present
+  if (sendersDatalist) {
+    sendersDatalist.innerHTML = Array.from(senderNames).map(name => `<option value="${escapeHTML(name)}">`).join('');
+  }
+  if (receiversDatalist) {
+    receiversDatalist.innerHTML = Array.from(receiverNames).map(name => `<option value="${escapeHTML(name)}">`).join('');
+  }
+
+  // Determine auto-fill values based on logged-in user
+  const curRole = String(curUser.role || '').toLowerCase();
+  const curNama = curUser.nama ? curUser.nama.trim() : '';
+
+  if (!curNama) return;
+
+  const isApoteker = curRole.includes('apoteker') || curRole.includes('farmasi') || curNama.toLowerCase().includes('okta') || curNama.toLowerCase().includes('apt');
+
+  if (senderInput) {
+    if (force || !senderInput.value || senderInput.value.trim() === '') {
+      if (isApoteker) {
+        senderInput.value = curNama;
+      } else {
+        const firstApo = users.find(u => {
+          const r = String(u.role || '').toLowerCase();
+          const n = String(u.nama || '').toLowerCase();
+          return r.includes('apotek') || r.includes('farmasi') || n.includes('okta');
+        });
+        senderInput.value = firstApo ? firstApo.nama : 'OKTA';
+      }
+    }
+  }
+
+  if (receiverInput) {
+    if (force || !receiverInput.value || receiverInput.value.trim() === '') {
+      if (!isApoteker) {
+        receiverInput.value = curNama;
+      } else {
+        const firstPerawat = users.find(u => {
+          const r = String(u.role || '').toLowerCase();
+          return r.includes('perawat') || r.includes('dokter');
+        });
+        receiverInput.value = firstPerawat ? firstPerawat.nama : 'CHANDRA';
+      }
+    }
+  }
+}
+
 async function handleUserLogin(e) {
   e.preventDefault();
   const username = document.getElementById('gate-username-input')?.value.trim();
@@ -539,6 +613,7 @@ async function handleUserLogin(e) {
       localStorage.setItem('currentUser', JSON.stringify(user));
       updateNavbarUserBadge();
       autoFillPemeriksa(true);
+      autoFillShipmentOfficers(true);
       document.getElementById('gate-login-overlay').style.display = 'none';
       showToast(`Selamat datang, ${user.nama} 👋`, 'success');
       await loadAllAppData();
@@ -624,17 +699,18 @@ async function loadAllAppData() {
       try { return await res.json(); } catch { return []; }
     };
 
+    const noCacheOpt = { cache: 'no-store' };
     const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes, sjRes, mutRes] = await Promise.all([
-      fetch('/api/patients'),
-      fetch('/api/records'),
-      fetch('/api/medicines'),
-      fetch('/api/icd10'),
-      fetch('/api/absen-dokter'),
-      fetch('/api/pantauan'),
-      fetch('/api/users'),
-      fetch('/api/tindakan'),
-      fetch('/api/surat-jalan'),
-      fetch('/api/stock-mutations')
+      fetch('/api/patients', noCacheOpt),
+      fetch('/api/records', noCacheOpt),
+      fetch('/api/medicines', noCacheOpt),
+      fetch('/api/icd10', noCacheOpt),
+      fetch('/api/absen-dokter', noCacheOpt),
+      fetch('/api/pantauan', noCacheOpt),
+      fetch('/api/users', noCacheOpt),
+      fetch('/api/tindakan', noCacheOpt),
+      fetch('/api/surat-jalan', noCacheOpt),
+      fetch('/api/stock-mutations', noCacheOpt)
     ]);
 
     appData.patients = await safeJson(patRes);
@@ -651,8 +727,8 @@ async function loadAllAppData() {
     // Load Settings (GSheet & No WA Apoteker)
     try {
       const [gRes, sRes] = await Promise.all([
-        fetch('/api/gsheet/settings'),
-        fetch('/api/settings')
+        fetch('/api/gsheet/settings', noCacheOpt),
+        fetch('/api/settings', noCacheOpt)
       ]);
       if (gRes.ok) {
         const gData = await gRes.json();
@@ -688,7 +764,6 @@ async function loadAllAppData() {
     renderMasterTindakanTable();
     renderUsersTable();
     renderRiwayatSuratJalanTable();
-    // renderBillingPTTable(); // Dihapus agar tidak langsung diload berat, menunggu user klik CARI
     renderAbsenDirekturTable();
     renderNakesSuggestions();
     renderMobileKaryawanCards();
@@ -696,6 +771,13 @@ async function loadAllAppData() {
     renderWATargetSelectOptions();
     renderReqMedicineCatalog();
     autoFillPemeriksa();
+    autoFillShipmentOfficers();
+
+    // Auto-refresh Direktur billing table if visible
+    const billingTbody = document.getElementById('table-billing-body');
+    if (billingTbody && billingTbody.children.length > 0 && typeof renderBillingPTTable === 'function') {
+      renderBillingPTTable();
+    }
 
     // Auto-refresh active patient timeline in Poli if currently opened
     if (appData.currentPoliPatient) {
@@ -1687,13 +1769,18 @@ function searchPatientByNIK() {
 function renderPatientHistoryTimeline(patient) {
   const container = document.getElementById('poli-timeline-container');
   const countEl = document.getElementById('poli-history-count');
-  
-  const history = appData.records.filter(r => 
-    (r.nikPabrik && String(r.nikPabrik) === String(patient.nikPabrik)) ||
-    (r.namaPasien && r.namaPasien.toLowerCase() === patient.nama.toLowerCase())
-  ).sort((a,b) => new Date(b.created_at || b.tanggal) - new Date(a.created_at || a.tanggal));
+  if (!container || !patient) return;
 
-  countEl.textContent = `${history.length} Kunjungan`;
+  const pNik = String(patient.nikPabrik || patient.nik || '').trim().toLowerCase();
+  const pNama = String(patient.nama || '').trim().toLowerCase();
+
+  const history = (appData.records || []).filter(r => {
+    const rNik = String(r.nikPabrik || r.nik || '').trim().toLowerCase();
+    const rNama = String(r.namaPasien || r.nama || '').trim().toLowerCase();
+    return (pNik && rNik && rNik === pNik) || (pNama && rNama && rNama === pNama);
+  }).sort((a, b) => getRecordTimestamp(b) - getRecordTimestamp(a));
+
+  if (countEl) countEl.textContent = `${history.length} Kunjungan`;
 
   if (history.length === 0) {
     container.innerHTML = `
@@ -2127,6 +2214,7 @@ async function handleSavePoli(e) {
     };
 
     // 3. FETCH DENGAN TIMEOUT 12 DETIK (Solusi Jaringan Sinyal Flaky)
+    window._lastLocalMutationTime = Date.now(); // Suppress false-alarm toast on this client
     const controller = new AbortController();
     const timeoutTimer = setTimeout(() => controller.abort(), 12000);
 
@@ -2145,16 +2233,27 @@ async function handleSavePoli(e) {
     }
 
     if (res.ok) {
-      const resData = await res.json().catch(() => ({}));
+      window._lastLocalMutationTime = Date.now();
+      const resData = await res.json().catch(() => newRecord);
 
       // Feedback khusus jika dicegah akibat duplikasi klik cepat
       if (resData && resData._isDuplicatePrevented) {
-        showToast('ℹ️ Data kunjungan sudah tersimpan beberapa saat lalu (klik ganda dicegah).', 'info', 5000);
+        showToast('ℹ️ Data kunjungan sudah tersimpan sebelumnya (klik ganda dicegah).', 'info', 5000);
       } else {
         showToast('✅ Rekam Medis Berhasil Disimpan & Stok Berkurang!', 'success', 4000);
       }
 
-      // 1. Potong stok obat seketika di memori lokal (optimistic update agar dropdown langsung berkurang)
+      // 1. Seketika masukkan saved record ke appData.records di memori (selalu paling atas)
+      if (!Array.isArray(appData.records)) appData.records = [];
+      const recordToStore = (resData && resData.id) ? resData : { ...newRecord, id: 'REC-' + Date.now() };
+      const existIdx = appData.records.findIndex(r => r.id === recordToStore.id);
+      if (existIdx === -1) {
+        appData.records.unshift(recordToStore);
+      } else {
+        appData.records[existIdx] = recordToStore;
+      }
+
+      // 2. Potong stok obat seketika di memori lokal (optimistic update)
       if (Array.isArray(newRecord.resep)) {
         newRecord.resep.forEach(item => {
           const medName = (item.namaObat || item.obat || '').trim().toLowerCase();
@@ -2166,38 +2265,43 @@ async function handleSavePoli(e) {
         });
       }
 
-      // 2. Refresh seluruh data aplikasi secara asinkron dan aman dari server
-      try {
-        await loadAllAppData();
-      } catch (loadErr) {
-        console.warn('Gagal me-refresh appData setelah simpan:', loadErr);
-      }
-
-      // 3. Bersihkan formulir poli dan muat dropdown obat dengan stok yang sudah berkurang
-      resetFormPoli();
-      
-      if (appData.currentPoliPatient) {
-        // Refetch current patient untuk mendapatkan saldoObat yang baru
-        const refreshedPatient = appData.patients.find(x => 
-          (x.id && x.id === appData.currentPoliPatient.id) ||
-          (x.nikPabrik && x.nikPabrik === appData.currentPoliPatient.nikPabrik) ||
-          (x.nik && x.nik === appData.currentPoliPatient.nik)
-        );
-        if (refreshedPatient) {
-          appData.currentPoliPatient = refreshedPatient;
+      // 3. Update timeline dan saldo pasien saat ini SEKETIKA tanpa jeda!
+      const activePatient = appData.currentPoliPatient;
+      if (activePatient) {
+        const biaya = Number(newRecord.totalBiaya || 0);
+        if (biaya > 0 && !resData._isDuplicatePrevented) {
+          activePatient.saldoObat = (parseInt(activePatient.saldoObat) || 0) - biaya;
         }
-        
-        renderPatientHistoryTimeline(appData.currentPoliPatient);
-        
-        // Update UI Saldo Obat
+
+        // Render timeline samping seketika dengan data kunjungan yang baru disimpan!
+        renderPatientHistoryTimeline(activePatient);
+
+        // Update saldo obat di UI
         const saldoAwalEl = document.getElementById('poli-saldo-awal');
         if (saldoAwalEl) {
-          const saldoObat = parseInt(appData.currentPoliPatient.saldoObat) || 0;
+          const saldoObat = parseInt(activePatient.saldoObat) || 0;
           saldoAwalEl.textContent = `Rp ${saldoObat.toLocaleString('id-ID')}`;
           saldoAwalEl.style.color = saldoObat < 0 ? '#ef4444' : 'var(--text-primary)';
         }
-        calculateCombinedGrandTotal();
+
+        // Update Right Panel Banner Saldo
+        const ageStr = calculateAge(activePatient.tglLahir || activePatient.tgl_lahir);
+        const saldoInfo = (activePatient.saldoObat !== undefined) ? ` | <strong style="color:${parseInt(activePatient.saldoObat)<0?'#ef4444':'#059669'}; background: ${parseInt(activePatient.saldoObat)<0?'rgba(239,68,68,0.1)':'rgba(16,185,129,0.1)'}; padding: 2px 6px; border-radius: 4px;">Sisa Saldo: Rp ${(parseInt(activePatient.saldoObat)||0).toLocaleString('id-ID')}</strong>` : '';
+        const bannerSubEl = document.getElementById('poli-banner-sub');
+        if (bannerSubEl) {
+          bannerSubEl.innerHTML = `Dept: ${activePatient.dept || activePatient.departemen || '-'} | Usia: ${ageStr} | Gender: ${activePatient.gender || '-'}${saldoInfo}`;
+        }
       }
+
+      // 4. Update tabel Edit Data dan Gudang seketika
+      renderEditDataTable();
+      renderGudangTable();
+
+      // 5. Bersihkan formulir poli untuk entri berikutnya
+      resetFormPoli();
+
+      // 6. Sinkronkan secara asinkron di latar belakang
+      loadAllAppData().catch(loadErr => console.warn('Background sync:', loadErr));
     } else {
       const errData = await res.json().catch(() => ({}));
       showToast(`❌ Gagal menyimpan: ${errData.error || 'Server menolak permintaan'}`, 'error');
@@ -3493,18 +3597,21 @@ function initShipmentView() {
   shipmentDraft = [];
   renderShipmentDraftTable();
 
-  // Reset fields
-  document.getElementById('ship-sender').value = '';
-  document.getElementById('ship-receiver').value = '';
-  document.getElementById('ship-qty-input').value = '';
-  document.getElementById('ship-initial-stock').value = '';
-  document.getElementById('ship-final-stock').value = '';
+  // Reset medicine fields
+  const qtyInput = document.getElementById('ship-qty-input');
+  const initStock = document.getElementById('ship-initial-stock');
+  const finalStock = document.getElementById('ship-final-stock');
+  if (qtyInput) qtyInput.value = '';
+  if (initStock) initStock.value = '';
+  if (finalStock) finalStock.value = '';
 
   const inputId = document.getElementById('ship-medicine-id');
   const inputName = document.getElementById('ship-medicine-input');
-  
   if (inputId) inputId.value = '';
   if (inputName) inputName.value = '';
+
+  // Auto-fill sender and receiver based on logged-in account
+  autoFillShipmentOfficers(false);
 
   setupShipMedicineSearchable();
 }
@@ -7760,6 +7867,7 @@ async function submitSwitchAccount(e) {
       localStorage.setItem('currentUser', JSON.stringify(data.user));
       updateNavbarUserBadge();
       autoFillPemeriksa(true); // Langsung ubah nama nakes pemeriksa di poli!
+      autoFillShipmentOfficers(true); // Langsung perbarui petugas di surat jalan gudang!
       closeAccSwitchBox();
       closeModalAccountSettings();
       showToast(`Berhasil beralih ke akun ${data.user.nama} 👋`, 'success');

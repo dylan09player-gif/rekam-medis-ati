@@ -10,6 +10,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Anti-cache header for all API responses to ensure real-time consistency
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 app.use(express.static(path.join(__dirname)));
 
 const DATA_DIR = path.join(__dirname, 'data');
@@ -1420,7 +1429,7 @@ app.post('/api/records', (req, res) => {
 
   const recentDuplicate = db.records.find(r => {
     const rTime = r.created_at ? new Date(r.created_at).getTime() : 0;
-    if (rTime <= 0 || (nowMs - rTime) > DUPLICATE_WINDOW_MS) return false;
+    if (rTime <= 0 || Math.abs(nowMs - rTime) > DUPLICATE_WINDOW_MS) return false;
 
     const rNik = String(r.nikPabrik || '').trim().toLowerCase();
     const newNik = String(newRecord.nikPabrik || '').trim().toLowerCase();
