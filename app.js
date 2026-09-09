@@ -4806,9 +4806,45 @@ async function deleteObatDirect(id) {
 function renderReqMedicineCatalog() {
   const tbody = document.getElementById('req-catalog-body');
   if (!tbody) return;
+
+  const searchInput = document.getElementById('req-search-medicines');
+  const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+  const btnClear = document.getElementById('btn-clear-req-search');
+  if (btnClear) {
+    btnClear.style.display = query ? 'block' : 'none';
+  }
+
   const medList = getSortedMedicines();
-  
-  tbody.innerHTML = medList.map(m => {
+
+  // Filter daftar obat langsung berdasarkan kata kunci pencarian aktif
+  const filteredList = query
+    ? medList.filter(m => {
+        const name = (m.nama || '').toLowerCase();
+        const kat = (m.kategori || '').toLowerCase();
+        const sat = (m.satuan || '').toLowerCase();
+        return name.includes(query) || kat.includes(query) || sat.includes(query);
+      })
+    : medList;
+
+  if (filteredList.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="3" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
+          <i class="fa-solid fa-magnifying-glass" style="font-size: 1.8rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>
+          <p style="font-weight: 700; margin-bottom: 4px;">Obat Tidak Ditemukan</p>
+          <small style="color: var(--text-faint);">Tidak ada obat yang cocok dengan kata kunci "<strong>${escapeHtml(query)}</strong>"</small>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  // Jika petugas sedang aktif mengetik angka pada salah satu input kuantitas di dalam tabel, jangan timpa fokus input saat background sync
+  if (document.activeElement && tbody.contains(document.activeElement)) {
+    return;
+  }
+
+  tbody.innerHTML = filteredList.map(m => {
     const stok = parseInt(m.stok) || 0;
     let badgeHTML = '';
     if (stok <= 10) {
@@ -4937,19 +4973,18 @@ function removeCartItem(name) {
 }
 
 function filterReqMedicines() {
-  const filter = document.getElementById('req-search-medicines').value.toLowerCase().trim();
-  const rows = document.querySelectorAll('#req-catalog-body tr');
-  rows.forEach(tr => {
-    const nameEl = tr.querySelector('.catalog-med-name');
-    if (nameEl) {
-      const name = nameEl.textContent.toLowerCase();
-      if (name.includes(filter)) {
-        tr.style.display = '';
-      } else {
-        tr.style.display = 'none';
-      }
-    }
-  });
+  renderReqMedicineCatalog();
+}
+
+function clearReqSearch() {
+  const inp = document.getElementById('req-search-medicines');
+  if (inp) {
+    inp.value = '';
+    inp.focus();
+  }
+  const btnClear = document.getElementById('btn-clear-req-search');
+  if (btnClear) btnClear.style.display = 'none';
+  renderReqMedicineCatalog();
 }
 
 function addObatReqRowManual() {

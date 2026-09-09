@@ -800,7 +800,10 @@
             <div class="soap-panel-title">
               <i class="fa-solid fa-list-check" style="color: var(--primary);"></i> 💊 Daftar Stok &amp; Pilih Obat (A-Z)
             </div>
-            <input type="text" id="req-search-medicines" class="form-control form-control-sm" placeholder="🔍 Cari nama obat..." style="max-width: 220px; font-size: 0.85rem;" onkeyup="filterReqMedicines()">
+            <div style="position: relative; max-width: 240px; display: inline-flex; align-items: center; width: 100%;">
+              <input type="text" id="req-search-medicines" class="form-control form-control-sm" placeholder="🔍 Cari nama obat..." style="padding-right: 28px; font-size: 0.85rem;" oninput="filterReqMedicines()" onkeyup="filterReqMedicines()" autocomplete="off">
+              <button type="button" id="btn-clear-req-search" onclick="clearReqSearch()" style="display: none; position: absolute; right: 8px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 2px;">&times;</button>
+            </div>
           </div>
           
           <div class="table-responsive" style="flex: 1; overflow-y: auto; max-height: calc(100vh - 200px);">
