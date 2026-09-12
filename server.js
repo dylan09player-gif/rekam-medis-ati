@@ -1,10 +1,17 @@
 const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const whatsappService = require('./services/whatsapp');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: { origin: '*' }
+});
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -23,15 +30,162 @@ app.use(express.static(path.join(__dirname)));
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
+const CHATS_FILE = path.join(DATA_DIR, 'chat_sessions.json');
+const KONTROL_FILE = path.join(DATA_DIR, 'kontrol_pasien.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Uploads folder for WhatsApp attachments & medical documents
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+function loadChatSessions() {
+  try {
+    if (fs.existsSync(CHATS_FILE)) {
+      const content = fs.readFileSync(CHATS_FILE, 'utf8');
+      const loaded = JSON.parse(content);
+      if (Array.isArray(loaded)) return loaded;
+    }
+  } catch (err) {
+    console.error('[Chat Sessions] Error reading chat_sessions.json:', err.message);
+  }
+  return [];
+}
+
+function saveChatSessions(chats) {
+  try {
+    fs.writeFileSync(CHATS_FILE, JSON.stringify(chats, null, 2), 'utf8');
+  } catch (err) {
+    console.error('[Chat Sessions] Error saving chat_sessions.json:', err.message);
+  }
+}
+
+let chatSessions = loadChatSessions();
+
+function loadKontrolPasien() {
+  try {
+    if (fs.existsSync(KONTROL_FILE)) {
+      const content = fs.readFileSync(KONTROL_FILE, 'utf8');
+      const loaded = JSON.parse(content);
+      if (Array.isArray(loaded)) return loaded;
+    }
+  } catch (err) {
+    console.error('[Kontrol Pasien] Error reading kontrol_pasien.json:', err.message);
+  }
+  return [];
+}
+
+function saveKontrolPasien(list) {
+  try {
+    fs.writeFileSync(KONTROL_FILE, JSON.stringify(list, null, 2), 'utf8');
+  } catch (err) {
+    console.error('[Kontrol Pasien] Error saving kontrol_pasien.json:', err.message);
+  }
+}
+
+// Hubungkan WhatsApp Service ke Socket.io
+whatsappService.setSocketIO(io);
+
+// Callback pesan WA masuk / keluar dari HP fisik
+whatsappService.setOnMessageReceived(async (sessionType, msgData) => {
+  const { senderPhone, senderName, text, rawJid, participant, mediaUrl, mediaType, fileName, isFromMe, messageId } = msgData;
+
+  let formattedPhone = senderPhone;
+  if (senderPhone.startsWith('62')) {
+    formattedPhone = '0' + senderPhone.slice(2);
+  }
+
+  const cleanDigits = (senderPhone || '').replace(/\D/g, '');
+  const suffix8 = cleanDigits.length >= 8 ? cleanDigits.slice(-8) : cleanDigits;
+
+  let session = chatSessions.find(s => {
+    if (s.rawJid && (s.rawJid === rawJid || s.rawJid === participant)) return true;
+    if (rawJid && s.rawJid && (rawJid.includes(s.patientPhone) || s.rawJid.includes(senderPhone))) return true;
+    if (s.patientPhone === senderPhone || s.patientPhone === formattedPhone) return true;
+    const sDigits = (s.patientPhone || '').replace(/\D/g, '');
+    if (suffix8 && sDigits.endsWith(suffix8)) return true;
+    return false;
+  });
+
+  const db = readDB();
+  const allPatients = db.employees || db.patients || [];
+
+  if (!session) {
+    const regPatient = allPatients.find(p => {
+      const pDigits = (p.hp || p.noHp || p.telepon || '').replace(/\D/g, '');
+      return (suffix8 && pDigits.endsWith(suffix8)) || (p.nama && p.nama.toLowerCase() === senderName.toLowerCase());
+    });
+
+    session = {
+      id: 'CHAT-' + Date.now(),
+      patientId: regPatient ? (regPatient.nikPabrik || regPatient.nik || regPatient.id) : ('PAS-' + Date.now().toString().slice(-4)),
+      patientName: regPatient ? regPatient.nama : senderName,
+      patientPhone: formattedPhone || senderPhone,
+      nikPabrik: regPatient ? (regPatient.nikPabrik || regPatient.nik || '') : '',
+      dept: regPatient ? (regPatient.dept || regPatient.departemen || '') : '',
+      rawJid: rawJid,
+      sessionType: sessionType,
+      updatedAt: Date.now(),
+      unreadCount: isFromMe ? 0 : 1,
+      messages: []
+    };
+    chatSessions.unshift(session);
+  } else {
+    if (rawJid && (!session.rawJid || session.rawJid.includes('@lid'))) {
+      session.rawJid = rawJid;
+    }
+    if (!isFromMe && senderName && session.patientName.startsWith('Pasien ')) {
+      session.patientName = senderName;
+    }
+    if (!isFromMe) {
+      session.unreadCount = (session.unreadCount || 0) + 1;
+    }
+    session.updatedAt = Date.now();
+    const sIdx = chatSessions.indexOf(session);
+    if (sIdx > 0) {
+      chatSessions.splice(sIdx, 1);
+      chatSessions.unshift(session);
+    }
+  }
+
+  if (messageId && session.messages.some(m => m.messageId === messageId)) {
+    return;
+  }
+
+  const timestamp = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+
+  const newMsg = {
+    messageId: messageId || null,
+    sender: isFromMe ? 'staff' : 'patient',
+    staffName: isFromMe ? (sessionType === 'apotek' ? 'Apotek (via HP)' : 'Klinik (via HP)') : undefined,
+    text: text,
+    mediaUrl: mediaUrl || null,
+    mediaType: mediaType || null,
+    fileName: fileName || null,
+    timestamp: timestamp,
+    rawTime: Date.now()
+  };
+
+  session.messages.push(newMsg);
+  saveChatSessions(chatSessions);
+
+  io.emit('wa_new_message', {
+    chatId: session.id,
+    sessionType: sessionType,
+    message: newMsg,
+    chatSession: session
+  });
+});
+
+
 const DEFAULT_USERS = [
-  { id: 'usr-1', username: 'dr.dylan', nama: 'dr. Dylan Fadhilah', role: 'Dokter', password: 'dylan', created_at: '2026-08-01T00:00:00.000Z' },
-  { id: 'usr-2', username: 'dr.medika', nama: 'dr. Medika', role: 'Dokter', password: 'medika', created_at: '2026-08-01T00:00:00.000Z' },
-  { id: 'usr-3', username: 'perawat', nama: 'Ns. Perawat Jaga', role: 'Perawat', password: 'perawat', created_at: '2026-08-01T00:00:00.000Z' }
+  { id: 'usr-1', username: 'dr.dylan', nama: 'dr. Dylan Fadhilah', role: 'Dokter', password: 'dylan', noWa: '081291868456', created_at: '2026-08-01T00:00:00.000Z' },
+  { id: 'usr-2', username: 'dr.medika', nama: 'dr. Medika', role: 'Dokter', password: 'medika', noWa: '081234567890', created_at: '2026-08-01T00:00:00.000Z' },
+  { id: 'usr-3', username: 'perawat', nama: 'Ns. Perawat Jaga', role: 'Perawat', password: 'perawat', noWa: '089651512933', created_at: '2026-08-01T00:00:00.000Z' }
 ];
 
 const DEFAULT_TINDAKAN = [
@@ -56,9 +210,23 @@ function readDB() {
     if (!Array.isArray(data.users) || data.users.length === 0) {
       data.users = [...DEFAULT_USERS];
       modified = true;
+    } else {
+      data.users.forEach(u => {
+        if (!u.noWa) {
+          if (u.username === 'dr.dylan') u.noWa = '081291868456';
+          else if (u.username === 'dr.medika') u.noWa = '081234567890';
+          else if (u.username === 'perawat') u.noWa = '089651512933';
+          else u.noWa = '';
+          modified = true;
+        }
+      });
     }
     if (!Array.isArray(data.tindakan) || data.tindakan.length === 0) {
       data.tindakan = [...DEFAULT_TINDAKAN];
+      modified = true;
+    }
+    if (!Array.isArray(data.surat_sakit_luar)) {
+      data.surat_sakit_luar = [];
       modified = true;
     }
     
@@ -338,7 +506,7 @@ app.post('/api/auth/login', (req, res) => {
 
 // User Registration (Buat Akun Petugas Baru)
 app.post('/api/auth/register', (req, res) => {
-  const { nama, username, role, password } = req.body;
+  const { nama, username, role, password, noWa, hp } = req.body;
   if (!nama || !username || !password) {
     return res.status(400).json({ success: false, error: 'Nama, Username, dan Password wajib diisi!' });
   }
@@ -357,6 +525,7 @@ app.post('/api/auth/register', (req, res) => {
     nama: String(nama).trim(),
     username: cleanUser,
     role: role || 'Perawat',
+    noWa: String(noWa || hp || '').trim(),
     password: String(password).trim(),
     created_at: new Date().toISOString()
   };
@@ -371,7 +540,7 @@ app.post('/api/auth/register', (req, res) => {
 
 // Change Password for Logged-In User
 app.post('/api/auth/change-password', (req, res) => {
-  const { username, currentPassword, newPassword, userId, nama, role } = req.body;
+  const { username, currentPassword, newPassword, userId, nama, role, noWa, hp } = req.body;
   if (!username || !newPassword) {
     return res.status(400).json({ success: false, error: 'Username dan Kata Sandi baru wajib diisi!' });
   }
@@ -397,6 +566,7 @@ app.post('/api/auth/change-password', (req, res) => {
       nama: nama || username,
       username: cleanUser,
       role: role || 'Dokter',
+      noWa: String(noWa || hp || '').trim(),
       password: String(newPassword).trim(),
       created_at: new Date().toISOString()
     };
@@ -419,11 +589,12 @@ app.post('/api/auth/change-password', (req, res) => {
   db.users[userIdx].password = String(newPassword).trim();
   if (nama && String(nama).trim() !== '') db.users[userIdx].nama = String(nama).trim();
   if (role && String(role).trim() !== '') db.users[userIdx].role = role;
+  if (noWa !== undefined || hp !== undefined) db.users[userIdx].noWa = String(noWa || hp || '').trim();
   db.users[userIdx].updated_at = new Date().toISOString();
   writeDB(db);
   notifyClients();
   const { password: _, ...safeUser } = db.users[userIdx];
-  return res.json({ success: true, message: 'Kata sandi berhasil diperbarui!', user: safeUser });
+  return res.json({ success: true, message: 'Kata sandi dan profil berhasil diperbarui!', user: safeUser });
 });
 
 // Legacy Gate Login (Pass: 231067)
@@ -447,7 +618,7 @@ app.get('/api/users', (req, res) => {
 
 // Create User (Admin)
 app.post('/api/users', (req, res) => {
-  const { nama, username, role, password } = req.body;
+  const { nama, username, role, password, noWa, hp } = req.body;
   if (!nama || !username) {
     return res.status(400).json({ error: 'Nama dan Username wajib diisi' });
   }
@@ -462,6 +633,7 @@ app.post('/api/users', (req, res) => {
     nama: String(nama).trim(),
     username: cleanUser,
     role: role || 'Perawat',
+    noWa: String(noWa || hp || '').trim(),
     password: password ? String(password).trim() : '123456',
     created_at: new Date().toISOString()
   };
@@ -479,10 +651,11 @@ app.put('/api/users/:id', (req, res) => {
   const idx = db.users.findIndex(u => u.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'User tidak ditemukan' });
 
-  const { nama, username, role, password } = req.body;
+  const { nama, username, role, password, noWa, hp } = req.body;
   if (nama) db.users[idx].nama = String(nama).trim();
   if (username) db.users[idx].username = String(username).trim().toLowerCase();
   if (role) db.users[idx].role = role;
+  if (noWa !== undefined || hp !== undefined) db.users[idx].noWa = String(noWa || hp || '').trim();
   if (password && String(password).trim() !== '') {
     db.users[idx].password = String(password).trim();
   }
@@ -725,30 +898,60 @@ async function performGSheetSync(db, gsheetUrl) {
     const csvKary = await fetchFromGSheet('https://docs.google.com/spreadsheets/d/1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY/export?format=csv&gid=2005972852');
     if (typeof csvKary === 'string' && csvKary.includes(',')) {
       const lines = csvKary.trim().split(/\r?\n/).filter(l => l.trim() !== '');
-      for (let i = 1; i < lines.length; i++) {
-        const cols = parseCSVLine(lines[i]);
-        const noUrut = cols[0] || String(i);
-        const npk = cols[1] || '';
-        const nama = cols[2] || '';
-        if (!npk && !nama) continue;
-        empList.push({
-          id: 'EMP-' + i,
-          no: noUrut,
-          nikPabrik: npk,
-          nik: npk,
-          nama: nama,
-          dept: cols[3] || 'PT ATI',
-          departemen: cols[3] || 'PT ATI',
-          gender: cols[4] || 'Laki-laki',
-          golDarah: cols[5] || '-',
-          tglLahir: cols[6] || '',
-          tgl_lahir: cols[6] || '',
-          hp: cols[7] || '',
-          no_hp: cols[7] || '',
-          saldoObat: parseInt((cols[8] || '').replace(/\./g, '')) || 0,
-          sectionName: cols[9] || '',
-          birthPlace: cols[10] || ''
-        });
+      if (lines.length > 1) {
+        const headerCols = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/[\s_.-]/g, ''));
+        const getIdx = (keys) => headerCols.findIndex(h => keys.some(k => h === k || h.includes(k)));
+
+        const idxNik = getIdx(['nikpabrik', 'nik', 'npk']);
+        const idxNama = getIdx(['nama', 'name', 'pasien']);
+        const idxDept = getIdx(['dept', 'departemen', 'divisi', 'bagian']);
+        const idxGender = getIdx(['gender', 'jeniskelamin', 'jk', 'sex']);
+        const idxTgl = getIdx(['tgllahir', 'tgl_lahir', 'tanggallahir', 'dob', 'birth']);
+        const idxHp = getIdx(['hp', 'nohp', 'telepon', 'whatsapp', 'wa', 'telp']);
+        const idxGol = getIdx(['goldarah', 'gol_darah', 'darah', 'gol']);
+        const idxSaldo = getIdx(['saldoobat', 'saldo', 'limit']);
+        const idxSection = getIdx(['section', 'seksi']);
+        const idxBirthPlace = getIdx(['tempatlahir', 'birthplace', 'kota']);
+
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCSVLine(lines[i]);
+          const npk = String((idxNik >= 0 ? cols[idxNik] : cols[0]) || '').trim();
+          const nama = String((idxNama >= 0 ? cols[idxNama] : cols[1]) || '').trim();
+          if (!npk && !nama) continue;
+
+          const dept = String((idxDept >= 0 ? cols[idxDept] : cols[2]) || 'PT ATI').trim();
+          let gender = String((idxGender >= 0 ? cols[idxGender] : cols[3]) || 'Laki-laki').trim();
+          if (gender.toLowerCase().includes('wanita') || gender.toLowerCase().includes('perem')) gender = 'Perempuan';
+          else if (gender.toLowerCase().includes('pria') || gender.toLowerCase().includes('laki')) gender = 'Laki-laki';
+
+          const tglLahir = String((idxTgl >= 0 ? cols[idxTgl] : cols[4]) || '').trim();
+          let hp = String((idxHp >= 0 ? cols[idxHp] : cols[5]) || '').trim().replace(/\D/g, '');
+          if (hp && hp.startsWith('8')) hp = '0' + hp;
+
+          const golDarah = String((idxGol >= 0 ? cols[idxGol] : '') || '-').trim();
+          const saldoObat = idxSaldo >= 0 ? parseInt(String(cols[idxSaldo] || '').replace(/\./g, '')) || 0 : 0;
+          const sectionName = String((idxSection >= 0 ? cols[idxSection] : '') || '').trim();
+          const birthPlace = String((idxBirthPlace >= 0 ? cols[idxBirthPlace] : '') || '').trim();
+
+          empList.push({
+            id: 'EMP-' + i,
+            no: String(i),
+            nikPabrik: npk,
+            nik: npk,
+            nama: nama,
+            dept: dept,
+            departemen: dept,
+            gender: gender,
+            golDarah: golDarah,
+            tglLahir: tglLahir,
+            tgl_lahir: tglLahir,
+            hp: hp,
+            no_hp: hp,
+            saldoObat: saldoObat,
+            sectionName: sectionName,
+            birthPlace: birthPlace
+          });
+        }
       }
     }
   } catch(e) {
@@ -761,6 +964,11 @@ async function performGSheetSync(db, gsheetUrl) {
       const noUrut = gEmp.no || String(i + 1);
       const empNik = String(gEmp.nikPabrik || gEmp.nik || '').trim();
       const empNama = String(gEmp.nama || '').trim();
+      let hp = String(gEmp.hp || gEmp.no_hp || '').trim().replace(/\D/g, '');
+      if (hp && hp.startsWith('8')) hp = '0' + hp;
+      let gender = String(gEmp.gender || 'Laki-laki').trim();
+      if (gender.toLowerCase().includes('wanita') || gender.toLowerCase().includes('perem')) gender = 'Perempuan';
+      else if (gender.toLowerCase().includes('pria') || gender.toLowerCase().includes('laki')) gender = 'Laki-laki';
       return {
         id: 'EMP-' + (i + 1),
         no: noUrut,
@@ -769,12 +977,12 @@ async function performGSheetSync(db, gsheetUrl) {
         nama: empNama,
         dept: String(gEmp.dept || gEmp.departemen || 'PT ATI').trim(),
         departemen: String(gEmp.dept || gEmp.departemen || 'PT ATI').trim(),
-        gender: String(gEmp.gender || 'Laki-laki').trim(),
+        gender: gender,
         golDarah: String(gEmp.golDarah || '-').trim(),
         tglLahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
         tgl_lahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
-        hp: String(gEmp.hp || gEmp.no_hp || '').trim(),
-        no_hp: String(gEmp.hp || gEmp.no_hp || '').trim(),
+        hp: hp,
+        no_hp: hp,
         saldoObat: parseInt(String(gEmp.saldoObat || gEmp.sisaLimit || '0').replace(/\./g, '')) || 0,
         sectionName: String(gEmp.sectionName || '').trim(),
         birthPlace: String(gEmp.birthPlace || '').trim()
@@ -783,7 +991,37 @@ async function performGSheetSync(db, gsheetUrl) {
   }
 
   if (empList.length > 0) {
-    db.employees = empList;
+    // Smart merge with existing db.employees to preserve local rich fields (sectionName, golDarah, saldoObat, birthPlace)
+    const existingMap = new Map();
+    (db.employees || []).forEach(e => {
+      const k1 = String(e.nikPabrik || e.nik || '').trim().replace(/^0+/, '');
+      const k2 = String(e.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (k1) existingMap.set(k1, e);
+      if (k2) existingMap.set(k2, e);
+    });
+
+    db.employees = empList.map(item => {
+      const k1 = String(item.nikPabrik || item.nik || '').trim().replace(/^0+/, '');
+      const k2 = String(item.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const existing = (k1 && existingMap.get(k1)) || (k2 && existingMap.get(k2));
+      if (!existing) return item;
+
+      return {
+        ...item,
+        id: existing.id || item.id,
+        nikPabrik: existing.nikPabrik || item.nikPabrik,
+        nik: existing.nik || item.nik,
+        nama: existing.nama || item.nama,
+        sectionName: existing.sectionName || item.sectionName || '',
+        birthPlace: existing.birthPlace || item.birthPlace || '',
+        golDarah: (existing.golDarah && existing.golDarah !== '-') ? existing.golDarah : (item.golDarah || '-'),
+        saldoObat: (existing.saldoObat !== undefined && existing.saldoObat !== null && existing.saldoObat !== 0) ? existing.saldoObat : (item.saldoObat || 0),
+        hp: existing.hp || item.hp || '',
+        no_hp: existing.no_hp || item.no_hp || '',
+        tglLahir: item.tglLahir || existing.tglLahir || '',
+        tgl_lahir: item.tgl_lahir || existing.tgl_lahir || ''
+      };
+    });
     synced.employees = db.employees.length;
   }
 
@@ -1176,6 +1414,88 @@ app.delete('/api/medicines/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// Bulk Import Master Obat (Excel/CSV)
+app.post('/api/medicines/bulk-import', (req, res) => {
+  const db = readDB();
+  if (!Array.isArray(db.medicines)) db.medicines = [];
+
+  const { medicines, mode } = req.body; // mode: 'update' (tambah stok) | 'overwrite' (timpa) | 'skip'
+  if (!Array.isArray(medicines) || medicines.length === 0) {
+    return res.status(400).json({ success: false, error: 'Daftar obat tidak boleh kosong.' });
+  }
+
+  let added = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const item of medicines) {
+    const nama = String(item.nama || item.namaObat || '').trim();
+    if (!nama) continue;
+
+    const stok = parseInt(item.stok) || 0;
+    const satuan = String(item.satuan || 'tab').trim();
+    const harga = parseFloat(item.harga) || 0;
+    const kategori = String(item.kategori || 'Obat').trim();
+
+    const existingIndex = db.medicines.findIndex(m => m.nama.toLowerCase() === nama.toLowerCase());
+
+    if (existingIndex !== -1) {
+      if (mode === 'overwrite') {
+        db.medicines[existingIndex] = {
+          ...db.medicines[existingIndex],
+          stok,
+          satuan,
+          harga,
+          kategori
+        };
+        updated++;
+      } else if (mode === 'update') {
+        db.medicines[existingIndex].stok = (parseInt(db.medicines[existingIndex].stok) || 0) + stok;
+        if (satuan) db.medicines[existingIndex].satuan = satuan;
+        if (harga > 0) db.medicines[existingIndex].harga = harga;
+        if (kategori) db.medicines[existingIndex].kategori = kategori;
+        updated++;
+      } else {
+        skipped++;
+      }
+    } else {
+      db.medicines.push({
+        id: 'MED-' + (Date.now() + Math.floor(Math.random() * 1000)),
+        nama,
+        stok,
+        satuan,
+        harga,
+        kategori
+      });
+      added++;
+    }
+  }
+
+  writeDB(db);
+  autoPushMedicinesToGSheet(db);
+  res.json({
+    success: true,
+    message: `Import obat selesai: ${added} baru, ${updated} diperbarui, ${skipped} dilewati.`,
+    summary: { added, updated, skipped },
+    totalMedicines: db.medicines.length,
+    medicines: db.medicines
+  });
+});
+
+// Reset Master Obat (PIN: 231067)
+app.post('/api/medicines/reset', (req, res) => {
+  const { pin } = req.body;
+  const MASTER_PIN = '231067';
+  if (pin !== MASTER_PIN) {
+    return res.status(401).json({ success: false, error: 'Kunci Master PIN Salah!' });
+  }
+
+  const db = readDB();
+  db.medicines = [];
+  writeDB(db);
+  res.json({ success: true, message: 'Seluruh master obat berhasil dikosongkan!' });
+});
+
 app.post('/api/medicines/transfer', (req, res) => {
   const db = readDB();
   if (!db.medicines) return res.status(404).json({ error: 'Obat tidak ditemukan' });
@@ -1400,6 +1720,174 @@ app.post('/api/employees', (req, res) => {
   res.status(201).json(newEmp);
 });
 
+// Bulk Import Employees from Excel / CSV
+app.post('/api/employees/bulk-import', (req, res) => {
+  const { employees, mode } = req.body; // mode: 'skip' | 'overwrite'
+  if (!Array.isArray(employees) || employees.length === 0) {
+    return res.status(400).json({ success: false, error: 'Data karyawan tidak ditemukan atau kosong' });
+  }
+
+  const db = readDB();
+  if (!Array.isArray(db.employees)) db.employees = [];
+
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  employees.forEach((emp, index) => {
+    const rawNik = String(emp.nikPabrik || emp.nik || emp.npk || '').trim();
+    const nama = String(emp.nama || emp.namaKaryawan || '').trim();
+    if (!rawNik || !nama) {
+      skipped++;
+      return;
+    }
+
+    const cleanNik = rawNik;
+    const existingIdx = db.employees.findIndex(e => 
+      String(e.nikPabrik || e.nik || '').trim().toLowerCase() === cleanNik.toLowerCase()
+    );
+
+    const empRecord = {
+      id: existingIdx >= 0 ? db.employees[existingIdx].id : `EMP-${Date.now()}-${index}`,
+      no: existingIdx >= 0 ? db.employees[existingIdx].no : String(db.employees.length + 1),
+      nikPabrik: cleanNik,
+      nik: cleanNik,
+      nama: nama,
+      dept: String(emp.dept || emp.departemen || 'Umum').trim(),
+      departemen: String(emp.dept || emp.departemen || 'Umum').trim(),
+      gender: String(emp.gender || emp.jenisKelamin || 'Pria').trim(),
+      golDarah: String(emp.golDarah || emp.gol_darah || '-').trim(),
+      tglLahir: String(emp.tglLahir || emp.tgl_lahir || '').trim(),
+      tgl_lahir: String(emp.tglLahir || emp.tgl_lahir || '').trim(),
+      hp: String(emp.hp || emp.noHp || emp.telepon || '').replace(/\D/g, ''),
+      no_hp: String(emp.hp || emp.noHp || emp.telepon || '').replace(/\D/g, ''),
+      saldoObat: parseInt(String(emp.saldoObat || '10000000').replace(/\./g, '')) || 10000000,
+      sectionName: String(emp.sectionName || emp.section || emp.bagian || '').trim(),
+      birthPlace: String(emp.birthPlace || emp.tempatLahir || '').trim(),
+      alamat: String(emp.alamat || '').trim()
+    };
+
+    if (existingIdx >= 0) {
+      if (mode === 'overwrite') {
+        db.employees[existingIdx] = { ...db.employees[existingIdx], ...empRecord };
+        updated++;
+      } else {
+        skipped++;
+      }
+    } else {
+      db.employees.push(empRecord);
+      inserted++;
+    }
+  });
+
+  writeDB(db);
+  res.json({
+    success: true,
+    total: employees.length,
+    inserted,
+    updated,
+    skipped,
+    message: `Berhasil import data karyawan: ${inserted} baru, ${updated} diperbarui, ${skipped} dilewati.`
+  });
+});
+
+// Reset / Clear Employees (Master PIN Protected)
+app.post('/api/employees/reset', (req, res) => {
+  const { pin } = req.body;
+  const db = readDB();
+  const masterPass = db.settings?.gate_password || "231067";
+  if (String(pin).trim() !== masterPass) {
+    return res.status(401).json({ success: false, error: 'PIN Master Klinik salah!' });
+  }
+
+  const prevCount = (db.employees || []).length;
+  db.employees = [];
+  writeDB(db);
+  res.json({ success: true, message: `Seluruh data karyawan (${prevCount} data) berhasil direset.` });
+});
+
+// ============================================================
+// SURAT SAKIT LUAR (FASKES EKSTERNAL)
+// ============================================================
+
+app.get('/api/surat-luar', (req, res) => {
+  const db = readDB();
+  let list = db.surat_sakit_luar || [];
+  const { nik, tglMulai, tglSelesai } = req.query;
+  if (nik) {
+    const qNik = nik.toLowerCase();
+    list = list.filter(s => 
+      (s.nikPabrik && s.nikPabrik.toLowerCase().includes(qNik)) || 
+      (s.namaPasien && s.namaPasien.toLowerCase().includes(qNik))
+    );
+  }
+  if (tglMulai) {
+    list = list.filter(s => (s.tanggalMulai >= tglMulai || s.created_at >= tglMulai));
+  }
+  if (tglSelesai) {
+    list = list.filter(s => (s.tanggalMulai <= tglSelesai || s.created_at <= tglSelesai));
+  }
+  list.sort((a, b) => new Date(b.created_at || b.tanggalMulai) - new Date(a.created_at || a.tanggalMulai));
+  res.json(list);
+});
+
+app.post('/api/surat-luar', (req, res) => {
+  const db = readDB();
+  if (!Array.isArray(db.surat_sakit_luar)) db.surat_sakit_luar = [];
+
+  const nikPabrik = req.body.nikPabrik || req.body.nik;
+  const namaPasien = req.body.namaPasien || req.body.nama;
+  const dept = req.body.dept || req.body.departemen || '-';
+  const namaFaskes = req.body.namaFaskes || req.body.faskesLuar || req.body.faskes || 'RS/Klinik Luar';
+  const namaDokterLuar = req.body.namaDokterLuar || '-';
+  const tanggalMulai = req.body.tanggalMulai;
+  const tanggalSelesai = req.body.tanggalSelesai || req.body.tanggalMulai;
+  const durasiHari = parseInt(req.body.durasiHari) || 1;
+  const diagnosa = req.body.diagnosa || req.body.diagnosis || '-';
+  const linkFoto = req.body.linkFoto || req.body.fotoBukti || (Array.isArray(req.body.fotoList) && req.body.fotoList.length > 0 ? req.body.fotoList[0] : null);
+  const fotoList = Array.isArray(req.body.fotoList) ? req.body.fotoList : (linkFoto ? [linkFoto] : []);
+  const pemeriksaKlinik = req.body.pemeriksaKlinik || req.body.namaPerawat || 'Petugas Medis';
+  const catatan = req.body.catatan || '';
+
+  if (!nikPabrik || !namaPasien || !tanggalMulai) {
+    return res.status(400).json({ success: false, error: 'NIK, Nama Pasien, dan Tanggal Mulai Istirahat wajib diisi!' });
+  }
+
+  const newSurat = {
+    id: 'SSL-' + Date.now(),
+    nikPabrik: String(nikPabrik).trim(),
+    namaPasien: String(namaPasien).trim(),
+    dept: String(dept).trim(),
+    namaFaskes: String(namaFaskes).trim(),
+    namaDokterLuar: String(namaDokterLuar).trim(),
+    tanggalMulai: tanggalMulai,
+    tanggalSelesai: tanggalSelesai,
+    durasiHari: durasiHari,
+    diagnosa: String(diagnosa).trim(),
+    linkFoto: linkFoto,
+    fotoList: fotoList,
+    pemeriksaKlinik: String(pemeriksaKlinik).trim(),
+    catatan: String(catatan).trim(),
+    created_at: new Date().toISOString()
+  };
+
+  db.surat_sakit_luar.unshift(newSurat);
+  writeDB(db);
+  res.status(201).json({ success: true, data: newSurat, message: 'Surat Sakit Luar berhasil disimpan!' });
+});
+
+app.delete('/api/surat-luar/:id', (req, res) => {
+  const db = readDB();
+  if (!Array.isArray(db.surat_sakit_luar)) return res.status(404).json({ error: 'Data kosong' });
+  const prevLen = db.surat_sakit_luar.length;
+  db.surat_sakit_luar = db.surat_sakit_luar.filter(s => s.id !== req.params.id);
+  if (db.surat_sakit_luar.length === prevLen) {
+    return res.status(404).json({ error: 'Surat Sakit Luar tidak ditemukan' });
+  }
+  writeDB(db);
+  res.json({ success: true, message: 'Surat Sakit Luar berhasil dihapus' });
+});
+
 // ============================================================
 // RECORDS / KUNJUNGAN POLI (WITH AUTO STOCK DEDUCT)
 // ============================================================
@@ -1412,6 +1900,78 @@ app.get('/api/records', (req, res) => {
   if (nikPabrik) records = records.filter(r => r.nikPabrik === nikPabrik);
   records.sort((a, b) => new Date(b.created_at || b.tanggal) - new Date(a.created_at || a.tanggal));
   res.json(records);
+});
+
+// Bulk Import Riwayat Rekam Medis Pasien dari PT Sebelumnya
+app.post('/api/records/bulk-import', (req, res) => {
+  const db = readDB();
+  if (!Array.isArray(db.records)) db.records = [];
+
+  const { records } = req.body;
+  if (!Array.isArray(records) || records.length === 0) {
+    return res.status(400).json({ success: false, error: 'Daftar riwayat rekam medis tidak boleh kosong.' });
+  }
+
+  let added = 0;
+  for (const item of records) {
+    const namaPasien = String(item.namaPasien || item.nama || '').trim();
+    if (!namaPasien) continue;
+
+    const nikPabrik = String(item.nikPabrik || item.npk || item.nik || '-').trim();
+    const dept = String(item.dept || item.departemen || '-').trim();
+    const tanggal = String(item.tanggal || item.tanggalBerobat || new Date().toLocaleDateString('id-ID')).trim();
+    const keluhan = String(item.keluhan || item.keluhanSubjektif || '-').trim();
+    const objektif = String(item.objektif || item.pemeriksaanFisik || '-').trim();
+    const asesmen = String(item.asesmen || item.diagnosa || '-').trim();
+    const plan = String(item.plan || item.terapi || item.resep || '-').trim();
+    const pemeriksa = String(item.pemeriksa || item.dokter || 'Dokter/Perawat').trim();
+
+    db.records.unshift({
+      id: 'REC-' + (Date.now() + Math.floor(Math.random() * 10000)),
+      nikPabrik,
+      namaPasien,
+      dept,
+      noHp: String(item.noHp || item.hp || '').trim(),
+      tanggal,
+      created_at: item.created_at || new Date().toISOString(),
+      keluhan,
+      objektif,
+      asesmen,
+      plan,
+      tindakan: [],
+      biayaTindakan: 0,
+      resep: [],
+      biayaObat: 0,
+      totalBiaya: 0,
+      pemeriksa,
+      izinSakit: Boolean(item.izinSakit),
+      isPantauan: Boolean(item.isPantauan),
+      linkFoto: ''
+    });
+    added++;
+  }
+
+  writeDB(db);
+  res.json({
+    success: true,
+    message: `Berhasil mengimpor ${added} riwayat rekam medis pasien.`,
+    totalRecords: db.records.length,
+    records: db.records
+  });
+});
+
+// Reset Riwayat Rekam Medis (PIN: 231067)
+app.post('/api/records/reset', (req, res) => {
+  const { pin } = req.body;
+  const MASTER_PIN = '231067';
+  if (pin !== MASTER_PIN) {
+    return res.status(401).json({ success: false, error: 'Kunci Master PIN Salah!' });
+  }
+
+  const db = readDB();
+  db.records = [];
+  writeDB(db);
+  res.json({ success: true, message: 'Seluruh riwayat rekam medis berhasil dikosongkan!' });
 });
 
 app.post('/api/records', (req, res) => {
@@ -1536,6 +2096,67 @@ app.post('/api/records', (req, res) => {
       db.pantauan[existIdx] = pantauanItem;
     } else {
       db.pantauan.unshift(pantauanItem);
+    }
+  }
+
+  // 4b. Auto-Integrasi Jadwal Kontrol Pasien (Berdasarkan NIK/NPK dari Poli)
+  if (newRecord.tanggalKontrol) {
+    try {
+      let kontrolList = loadKontrolPasien();
+      const cleanTgl = String(newRecord.tanggalKontrol).trim();
+      if (cleanTgl) {
+        let targetHp = newRecord.noHp || '';
+        if (!targetHp && Array.isArray(empList)) {
+          const emp = empList.find(p => 
+            (p.nikPabrik && newRecord.nikPabrik && String(p.nikPabrik).toLowerCase() === String(newRecord.nikPabrik).toLowerCase()) ||
+            (p.nama && newRecord.namaPasien && p.nama.toLowerCase() === newRecord.namaPasien.toLowerCase())
+          );
+          if (emp) targetHp = emp.hp || emp.noHp || emp.telepon || '';
+        }
+
+        const rawNotes = newRecord.catatanKontrol || (newRecord.izinSakit ? 'Evaluasi Akhir Istirahat Sakit (Surkes)' : (newRecord.isPantauan ? 'Evaluasi Berkala Pasien Pantauan K3' : 'Kontrol Lanjutan Pengobatan'));
+        const rawDiag = newRecord.asesmen || 'Pemeriksaan Umum';
+        const rawDept = newRecord.dept || '-';
+        const rawNik = newRecord.nikPabrik || '';
+
+        const ktrItem = {
+          id: 'KTR-' + Date.now(),
+          recordId: newRecord.id,
+          nikPabrik: rawNik,
+          npkPabrik: rawNik,
+          namaPasien: newRecord.namaPasien || '',
+          dept: rawDept,
+          departemen: rawDept,
+          noHp: targetHp,
+          noHpPasien: targetHp,
+          tanggalPeriksa: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
+          tanggalKontrol: cleanTgl,
+          catatanKontrol: rawNotes,
+          catatan: rawNotes,
+          asesmen: rawDiag,
+          diagnosa: rawDiag,
+          isIzinSakit: !!newRecord.izinSakit,
+          isPantauan: !!newRecord.isPantauan,
+          pemeriksa: newRecord.pemeriksa || 'Petugas Medis',
+          status: 'MENUNGGU',
+          created_at: new Date().toISOString()
+        };
+
+        const existIdx = kontrolList.findIndex(k => 
+          k.status === 'MENUNGGU' && (
+            (k.nikPabrik && newRecord.nikPabrik && k.nikPabrik === newRecord.nikPabrik) ||
+            (k.namaPasien && newRecord.namaPasien && k.namaPasien.toLowerCase() === newRecord.namaPasien.toLowerCase())
+          )
+        );
+        if (existIdx !== -1) {
+          kontrolList[existIdx] = { ...kontrolList[existIdx], ...ktrItem, id: kontrolList[existIdx].id };
+        } else {
+          kontrolList.unshift(ktrItem);
+        }
+        saveKontrolPasien(kontrolList);
+      }
+    } catch (ktrErr) {
+      console.error('Error auto-creating jadwal kontrol:', ktrErr);
     }
   }
 
@@ -2050,13 +2671,16 @@ app.post('/api/absen', (req, res) => {
 });
 
 // ============================================================
-// SHIFT REPORTS (TELEGRAM)
+// SHIFT REPORTS (WHATSAPP WEB - SISTEM MARUNDA)
 // ============================================================
 
-app.post('/api/shift/format1', (req, res) => {
-  const { tglMulai, tglSelesai, jamMulai, jamSelesai, dari, ke } = req.body;
+app.post('/api/shift/format1', async (req, res) => {
+  const { tglMulai, tglSelesai, jamMulai, jamSelesai, dari, ke, targetWa, targetPhone } = req.body;
   const db = readDB();
   const records = db.records || [];
+  const suratLuar = db.surat_sakit_luar || [];
+  const kontrolList = loadKontrolPasien();
+  const namaKlinik = db.settings?.nama_klinik || 'Klinik PT ATI & Nafila Medika';
   
   const start = new Date(`${tglMulai}T${jamMulai || '00:00'}:00`);
   const end = new Date(`${tglSelesai}T${jamSelesai || '23:59'}:59`);
@@ -2066,59 +2690,169 @@ app.post('/api/shift/format1', (req, res) => {
     return d >= start && d <= end;
   });
 
-  const msg = 
-    `📋 <b>LAPORAN OPER SHIFT KLINIK</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📅 Periode : ${tglMulai} s/d ${tglSelesai}\n` +
-    `⏰ Waktu   : ${jamMulai} - ${jamSelesai}\n` +
-    `👥 Serah   : ${dari} ➜ ${ke}\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `🏥 Total Kunjungan : <b>${filtered.length} Pasien</b>\n` +
-    filtered.slice(0, 10).map((r, i) =>
-      `${i+1}. <b>${r.namaPasien || '-'}</b> - ${r.asesmen || '-'}`
-    ).join('\n');
+  const suratLuarFiltered = suratLuar.filter(s => {
+    const d = new Date(s.created_at || s.tanggalMulai);
+    return d >= start && d <= end;
+  });
 
-  sendTelegramNotif(msg);
-  res.json({ success: true, message: 'Laporan Oper Shift terkirim ke Telegram' });
+  const totalSurkes = filtered.filter(r => r.izinSakit === true).length;
+  const rujukanCount = filtered.filter(r => r.rujukan === true || (r.resep && r.resep.some(o => o.nama && o.nama.toLowerCase().includes('rujuk')))).length;
+  const observasiCount = filtered.filter(r => r.observasi === true || (r.diagnosa && r.diagnosa.toLowerCase().includes('observasi'))).length;
+
+  let msg = 
+    `*📋 LAPORAN OPER SHIFT KLINIK*\n` +
+    `*🏥 ${namaKlinik.toUpperCase()}*\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `📅 *Periode :* ${tglMulai} s/d ${tglSelesai}\n` +
+    `⏰ *Waktu   :* ${jamMulai || '07:00'} - ${jamSelesai || '14:00'}\n` +
+    `👥 *Serah Terima :* ${dari || 'Petugas Shift 1'} ➜ ${ke || 'Petugas Shift 2'}\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `*📊 RINGKASAN PELAYANAN:*\n` +
+    `• Total Pasien Berobat : *${filtered.length} Pasien*\n` +
+    `• Surat Sakit Internal (Surkes) : *${totalSurkes} Pasien*\n` +
+    `• Surat Sakit Luar Diterima : *${suratLuarFiltered.length} Berkas*\n` +
+    `• Pasien Rujukan : *${rujukanCount} Pasien*\n` +
+    `• Pasien Observasi : *${observasiCount} Pasien*\n\n`;
+
+  if (filtered.length > 0) {
+    msg += `*📝 RINCIAN PASIEN BEROBAT:*\n`;
+    filtered.slice(0, 15).forEach((r, idx) => {
+      const obat = (r.resep || []).map(o => o.nama).join(', ') || '-';
+      msg += `${idx + 1}. *${r.namaPasien || '-'}* (${r.dept || '-'}) - _${r.asesmen || r.diagnosa || '-'}_ [${obat}]\n`;
+    });
+    if (filtered.length > 15) {
+      msg += `_...dan ${filtered.length - 15} pasien lainnya_\n`;
+    }
+    msg += `\n`;
+  } else {
+    msg += `*📝 RINCIAN PASIEN:* Tidak ada kunjungan dalam shift ini.\n\n`;
+  }
+
+  if (suratLuarFiltered.length > 0) {
+    msg += `*📑 SURAT SAKIT LUAR MASUK:*\n`;
+    suratLuarFiltered.forEach((s, idx) => {
+      msg += `• *${s.namaPasien}* (${s.dept}) - ${s.namaFaskes} (${s.durasiHari} Hari) [_${s.diagnosa}_]\n`;
+    });
+    msg += `\n`;
+  }
+
+  msg += `━━━━━━━━━━━━━━━━━━━━\n` +
+    `_Laporan otomatis sistem rekam medis Nafila Medika_ 🩺`;
+
+  // Resolusi nomor tujuan WA
+  let destWa = String(targetWa || targetPhone || '').trim();
+  if (!destWa) {
+    const loggedUser = (db.users || []).find(u => u.nama === dari || u.username === dari);
+    if (loggedUser && loggedUser.noWa) destWa = loggedUser.noWa;
+  }
+  if (!destWa && db.settings?.wa_contacts?.length > 0) {
+    destWa = db.settings.wa_contacts[0].hp;
+  }
+
+  let waResult = { success: false };
+  if (destWa) {
+    try {
+      waResult = await whatsappService.sendWhatsAppMessage('klinik', destWa, msg);
+    } catch (e) {
+      console.error('[Shift 1] WA send error:', e.message);
+    }
+  }
+
+  // Telegram fallback jika ada konfigurasi
+  try { sendTelegramNotif(msg.replace(/\*/g, '<b>').replace(/\_/g, '<i>')); } catch (e) {}
+
+  res.json({
+    success: true,
+    destWa: destWa,
+    waResult: waResult,
+    message: destWa 
+      ? `Laporan Oper Shift berhasil dikirim via WhatsApp ke ${destWa}!`
+      : 'Laporan Oper Shift dibuat (Nomor WhatsApp petugas belum diset).'
+  });
 });
 
-app.post('/api/shift/format2', (req, res) => {
-  const { tglMulai, tglSelesai, petugas1, petugas2, petugas3 } = req.body;
+app.post('/api/shift/format2', async (req, res) => {
+  const { tglMulai, tglSelesai, petugas1, petugas2, petugas3, targetWa, targetPhone } = req.body;
   const db = readDB();
   const records = db.records || [];
+  const suratLuar = db.surat_sakit_luar || [];
+  const kontrolList = loadKontrolPasien();
+  const namaKlinik = db.settings?.nama_klinik || 'Klinik PT ATI & Nafila Medika';
   
   const start = new Date(`${tglMulai}T00:00:00`);
   const end = new Date(`${tglSelesai}T23:59:59`);
   
   const deptMap = {};
   let total = 0;
+  let totalSurkes = 0;
   records.forEach(r => {
     const d = new Date(r.created_at || r.tanggal);
     if (d >= start && d <= end) {
       const dept = r.dept || 'Lain-lain';
       deptMap[dept] = (deptMap[dept] || 0) + 1;
       total++;
+      if (r.izinSakit === true) totalSurkes++;
     }
   });
 
-  const deptDetail = Object.keys(deptMap).map(d => `  🔹 ${d} : <b>${deptMap[d]}</b>`).join('\n');
+  const totalSuratLuar = suratLuar.filter(s => {
+    const d = new Date(s.created_at || s.tanggalMulai);
+    return d >= start && d <= end;
+  }).length;
+
+  const totalKontrol = kontrolList.filter(k => {
+    const d = new Date(k.tanggalRencana || k.created_at);
+    return d >= start && d <= end;
+  }).length;
+
+  const deptDetail = Object.keys(deptMap).map(d => `  • ${d} : *${deptMap[d]} Pasien*`).join('\n');
 
   const msg = 
-    `🌅 <b>Selamat Pagi Bapak/Ibu 🙏🏻</b>\n` +
-    `<i>Berikut Rekap Laporan Kunjungan 24 Jam</i>\n` +
+    `*🌅 LAPORAN REKAPITULASI PELAYANAN 24 JAM*\n` +
+    `*🏥 ${namaKlinik.toUpperCase()}*\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📅 <b>Periode :</b> ${tglMulai} s/d ${tglSelesai}\n\n` +
-    `🏥 <b>KUNJUNGAN KLINIK :</b>\n${deptDetail || '  🔹 Tidak ada kunjungan'}\n` +
-    `📋 <b>Total : ${total} Kunjungan</b>\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `👨‍⚕️ <b>Petugas Medis:</b>\n` +
+    `📅 *Periode :* ${tglMulai} s/d ${tglSelesai}\n` +
+    `👨‍⚕️ *Petugas Jaga:*\n` +
     `  ☀️ Shift 1 : ${petugas1 || '-'}\n` +
     `  🌇 Shift 2 : ${petugas2 || '-'}\n` +
-    `  🌙 Shift 3 : ${petugas3 || '-'}\n\n` +
-    `<i>Tetap utamakan keselamatan kerja! ⛑️</i>`;
+    `  🌙 Shift 3 : ${petugas3 || '-'}\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `*📊 KUNJUNGAN PER DEPARTEMEN:*\n` +
+    (deptDetail || '  • Tidak ada kunjungan\n') + `\n` +
+    `*📈 TOTAL REKAPITULASI 24 JAM:*\n` +
+    `• Total Kunjungan Poli : *${total} Pasien*\n` +
+    `• Surat Sakit Internal (Surkes) : *${totalSurkes} Kasus*\n` +
+    `• Surat Sakit Luar : *${totalSuratLuar} Berkas*\n` +
+    `• Pasien Perlu Kontrol : *${totalKontrol} Pasien*\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `_Tetap utamakan Keselamatan dan Kesehatan Kerja! ⛑️_`;
 
-  sendTelegramNotif(msg);
-  res.json({ success: true, message: 'Rekap 24H terkirim ke Telegram' });
+  // Resolusi nomor tujuan WA
+  let destWa = String(targetWa || targetPhone || '').trim();
+  if (!destWa && db.settings?.wa_contacts?.length > 0) {
+    destWa = db.settings.wa_contacts[0].hp;
+  }
+
+  let waResult = { success: false };
+  if (destWa) {
+    try {
+      waResult = await whatsappService.sendWhatsAppMessage('klinik', destWa, msg);
+    } catch (e) {
+      console.error('[Shift 2] WA send error:', e.message);
+    }
+  }
+
+  // Telegram fallback jika ada konfigurasi
+  try { sendTelegramNotif(msg.replace(/\*/g, '<b>').replace(/\_/g, '<i>')); } catch (e) {}
+
+  res.json({
+    success: true,
+    destWa: destWa,
+    waResult: waResult,
+    message: destWa 
+      ? `Rekap 24H berhasil dikirim via WhatsApp ke ${destWa}!`
+      : 'Rekap 24H dibuat (Nomor WhatsApp petugas belum diset).'
+  });
 });
 
 // ============================================================
@@ -2154,14 +2888,21 @@ app.post('/api/send-wa', async (req, res) => {
 
 app.get('/api/settings', (req, res) => {
   const db = readDB();
-  res.json(db.settings || {});
+  if (!db.settings) db.settings = {};
+  if (!db.settings.nama_pt) db.settings.nama_pt = 'PT ATI';
+  if (!db.settings.nama_klinik) db.settings.nama_klinik = 'Mobile Klinik System';
+  if (!db.settings.sub_title) db.settings.sub_title = 'Klinik Nafila Medika & ' + (db.settings.nama_pt || 'PT ATI');
+  if (!db.settings.logo_pt) db.settings.logo_pt = 'ATI Logo.png';
+  if (!db.settings.logo_nafila) db.settings.logo_nafila = 'Salinan Logo nafila.webp';
+  res.json(db.settings);
 });
 
 app.post('/api/settings', (req, res) => {
   const db = readDB();
+  if (!db.settings) db.settings = {};
   db.settings = { ...db.settings, ...req.body };
   writeDB(db);
-  res.json(db.settings);
+  res.json({ success: true, settings: db.settings });
 });
 
 app.get('/api/backup/export', (req, res) => {
@@ -2185,16 +2926,550 @@ app.post('/api/backup/import', (req, res) => {
   }
 });
 
+// ============================================================
+// BATCH OFFLINE SYNC (SOLUSI SINYAL FLAKY / PUTUS-NYAMBUNG DI PABRIK)
+// ============================================================
+app.post('/api/records/offline-sync', (req, res) => {
+  const db = readDB();
+  const incomingRecords = req.body.records;
+
+  if (!Array.isArray(incomingRecords) || incomingRecords.length === 0) {
+    return res.status(400).json({ error: 'Tidak ada data antrean offline yang dikirim' });
+  }
+
+  if (!db.records) db.records = [];
+  if (!db.medicines) db.medicines = [];
+  const empList = db.employees || db.patients || [];
+  let kontrolList = loadKontrolPasien();
+
+  let processedCount = 0;
+  let skippedDuplicates = 0;
+  const syncedRecords = [];
+
+  incomingRecords.forEach(rec => {
+    if (!rec || !rec.namaPasien) return;
+
+    // Idempotency / Duplicate Check
+    const recId = rec.id || '';
+    const existById = recId ? db.records.find(r => r.id === recId) : null;
+    if (existById) {
+      skippedDuplicates++;
+      syncedRecords.push(existById);
+      return;
+    }
+
+    const recTime = rec.created_at ? new Date(rec.created_at).getTime() : 0;
+    const existByPatient = db.records.find(r => {
+      const rTime = r.created_at ? new Date(r.created_at).getTime() : 0;
+      if (recTime && rTime && Math.abs(recTime - rTime) < 3 * 60 * 1000) {
+        const isSame = (rec.nikPabrik && r.nikPabrik === rec.nikPabrik) ||
+                       (rec.namaPasien && r.namaPasien.toLowerCase() === rec.namaPasien.toLowerCase());
+        return isSame && (r.keluhan === rec.keluhan || r.asesmen === rec.asesmen);
+      }
+      return false;
+    });
+
+    if (existByPatient) {
+      skippedDuplicates++;
+      syncedRecords.push(existByPatient);
+      return;
+    }
+
+    const recordToSave = {
+      ...rec,
+      id: rec.id || ('REC-' + Date.now() + '-' + Math.floor(Math.random() * 1000)),
+      created_at: rec.created_at || new Date().toISOString(),
+      synced_at: new Date().toISOString()
+    };
+
+    // 1. Potong stok obat
+    if (Array.isArray(recordToSave.resep)) {
+      recordToSave.resep.forEach(item => {
+        const namaObat = item.namaObat || item.obat || '';
+        const qty = parseSafeInt(item.qty || item.jumlah, 1);
+        if (namaObat) {
+          const med = db.medicines.find(m => m.nama && m.nama.toLowerCase() === namaObat.toLowerCase());
+          if (med) {
+            const prevStok = parseSafeInt(med.stok, 0);
+            const nextStok = Math.max(0, prevStok - qty);
+            med.stok = nextStok;
+            logStockMutation(db, {
+              tanggal: recordToSave.tanggal,
+              created_at: recordToSave.created_at,
+              type: 'OUT',
+              namaObat: med.nama,
+              satuan: med.satuan || 'tab',
+              qty: qty,
+              delta: -qty,
+              stokSebelum: prevStok,
+              stokSesudah: nextStok,
+              refType: 'RESEP_POLI_OFFLINE',
+              refId: recordToSave.id,
+              refDoc: 'Kunjungan Offline Sync',
+              pasien: recordToSave.namaPasien || '',
+              nik: recordToSave.nikPabrik || '',
+              petugas: recordToSave.pemeriksa || 'Petugas Medis',
+              keterangan: `Sync Offline: ${recordToSave.namaPasien || ''} (${recordToSave.asesmen || 'Pemeriksaan'})`
+            });
+          }
+        }
+      });
+    }
+
+    // 2. Potong Saldo Obat Pasien
+    const grandTotalBiaya = Number(recordToSave.totalBiaya || 0);
+    if (grandTotalBiaya > 0 && Array.isArray(empList)) {
+      const pIdx = empList.findIndex(p => 
+        (p.nikPabrik && recordToSave.nikPabrik && String(p.nikPabrik).toLowerCase() === String(recordToSave.nikPabrik).toLowerCase()) ||
+        (p.nama && recordToSave.namaPasien && p.nama.toLowerCase() === recordToSave.namaPasien.toLowerCase())
+      );
+      if (pIdx !== -1) {
+        const oldSaldo = parseInt(empList[pIdx].saldoObat) || 0;
+        empList[pIdx].saldoObat = oldSaldo - grandTotalBiaya;
+      }
+    }
+
+    // 3. Mark as pantauan if flagged
+    if (recordToSave.isPantauan) {
+      if (!db.pantauan) db.pantauan = [];
+      const existIdx = db.pantauan.findIndex(p => 
+        (p.nikPabrik && p.nikPabrik === recordToSave.nikPabrik) || 
+        (p.namaPasien && p.namaPasien.toLowerCase() === recordToSave.namaPasien.toLowerCase())
+      );
+      const pantauanItem = {
+        id: existIdx !== -1 ? db.pantauan[existIdx].id : ('PP-' + Date.now()),
+        nikPabrik: recordToSave.nikPabrik,
+        namaPasien: recordToSave.namaPasien,
+        dept: recordToSave.dept || '-',
+        keluhan: recordToSave.keluhan,
+        asesmen: recordToSave.asesmen,
+        status: 'AKTIF',
+        tanggal: recordToSave.tanggal || new Date().toLocaleDateString('id-ID')
+      };
+      if (existIdx !== -1) {
+        db.pantauan[existIdx] = pantauanItem;
+      } else {
+        db.pantauan.unshift(pantauanItem);
+      }
+    }
+
+    // 4. Jadwal Kontrol auto-integrasi
+    if (recordToSave.tanggalKontrol) {
+      const cleanTgl = String(recordToSave.tanggalKontrol).trim();
+      if (cleanTgl) {
+        let targetHp = recordToSave.noHp || '';
+        if (!targetHp && Array.isArray(empList)) {
+          const emp = empList.find(p => 
+            (p.nikPabrik && recordToSave.nikPabrik && String(p.nikPabrik).toLowerCase() === String(recordToSave.nikPabrik).toLowerCase()) ||
+            (p.nama && recordToSave.namaPasien && p.nama.toLowerCase() === recordToSave.namaPasien.toLowerCase())
+          );
+          if (emp) targetHp = emp.hp || emp.noHp || emp.telepon || '';
+        }
+
+        const ktrItem = {
+          id: 'KTR-' + Date.now() + '-' + Math.floor(Math.random() * 100),
+          recordId: recordToSave.id,
+          nikPabrik: recordToSave.nikPabrik || '',
+          namaPasien: recordToSave.namaPasien || '',
+          dept: recordToSave.dept || '-',
+          noHp: targetHp,
+          tanggalPeriksa: recordToSave.tanggal || new Date().toLocaleDateString('id-ID'),
+          tanggalKontrol: cleanTgl,
+          catatanKontrol: recordToSave.catatanKontrol || (recordToSave.izinSakit ? 'Evaluasi Akhir Istirahat Sakit (Surkes)' : (recordToSave.isPantauan ? 'Evaluasi Berkala Pasien Pantauan K3' : 'Kontrol Lanjutan Pengobatan')),
+          asesmen: recordToSave.asesmen || 'Pemeriksaan Umum',
+          isIzinSakit: !!recordToSave.izinSakit,
+          isPantauan: !!recordToSave.isPantauan,
+          pemeriksa: recordToSave.pemeriksa || 'Petugas Medis',
+          status: 'MENUNGGU',
+          created_at: new Date().toISOString()
+        };
+
+        const existKtr = kontrolList.findIndex(k => 
+          k.status === 'MENUNGGU' && (
+            (k.nikPabrik && recordToSave.nikPabrik && k.nikPabrik === recordToSave.nikPabrik) ||
+            (k.namaPasien && recordToSave.namaPasien && k.namaPasien.toLowerCase() === recordToSave.namaPasien.toLowerCase())
+          )
+        );
+        if (existKtr !== -1) {
+          kontrolList[existKtr] = { ...kontrolList[existKtr], ...ktrItem, id: kontrolList[existKtr].id };
+        } else {
+          kontrolList.unshift(ktrItem);
+        }
+      }
+    }
+
+    db.records.unshift(recordToSave);
+    syncedRecords.push(recordToSave);
+    processedCount++;
+  });
+
+  saveKontrolPasien(kontrolList);
+  writeDB(db);
+
+  console.log(`📡 [OFFLINE SYNC] Sukses memproses ${processedCount} data antrean offline (${skippedDuplicates} duplikat dicegah).`);
+  res.json({
+    success: true,
+    processedCount,
+    skippedDuplicates,
+    total: incomingRecords.length,
+    syncedRecords
+  });
+});
+
+// ============================================================
+// WHATSAPP WEB ENGINE ENDPOINTS (BAILEYS MULTI-DEVICE)
+// ============================================================
+
+app.get('/api/wa/sessions', (req, res) => {
+  const result = {};
+  Object.keys(whatsappService.sessions).forEach(k => {
+    const s = whatsappService.sessions[k];
+    result[k] = {
+      id: s.id,
+      deviceName: s.deviceName,
+      number: s.number,
+      status: s.status,
+      battery: s.battery,
+      qrDataUrl: s.qrDataUrl,
+      lastSync: s.lastSync
+    };
+  });
+  res.json(result);
+});
+
+app.get('/api/wa/qr', (req, res) => {
+  const sessionType = req.query.sessionType || req.query.sessionName || 'klinik';
+  const s = whatsappService.sessions[sessionType] || {};
+  res.json({
+    success: true,
+    isConnected: s.status === 'CONNECTED',
+    sessionName: sessionType,
+    phone: s.number,
+    qr: s.qrDataUrl,
+    status: s.status
+  });
+});
+
+app.post('/api/wa/qr', async (req, res) => {
+  const sessionType = req.body.sessionType || req.body.sessionName || 'klinik';
+  const s = whatsappService.sessions[sessionType] || {};
+
+  // 1. Jika sudah connected, kirim status connected langsung
+  if (s.status === 'CONNECTED') {
+    return res.json({
+      success: true,
+      isConnected: true,
+      sessionName: sessionType,
+      phone: s.number
+    });
+  }
+
+  // 2. Jika QR data URL sudah ada di memori, kirim seketika (instant, tanpa delay)!
+  if (s.qrDataUrl) {
+    return res.json({
+      success: true,
+      isConnected: false,
+      sessionName: sessionType,
+      qr: s.qrDataUrl
+    });
+  }
+
+  // 3. Jika belum ada atau socket mati, inisialisasi session
+  try {
+    if (!s.sock || s.status === 'DISCONNECTED') {
+      whatsappService.initSession(sessionType).catch(e => console.warn('Init WA session err:', e));
+    }
+
+    // Tunggu maksimal 4 detik sampai QR di-generate Baileys
+    let waited = 0;
+    while (waited < 4000 && !s.qrDataUrl && s.status !== 'CONNECTED') {
+      await new Promise(r => setTimeout(r, 250));
+      waited += 250;
+    }
+
+    res.json({
+      success: true,
+      isConnected: s.status === 'CONNECTED',
+      sessionName: sessionType,
+      phone: s.number,
+      qr: s.qrDataUrl
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/wa/chats', (req, res) => {
+  const sessionType = req.query.sessionType || 'klinik';
+  const chats = chatSessions.filter(c => !sessionType || c.sessionType === sessionType);
+  res.json(chats);
+});
+
+app.post('/api/wa/send', async (req, res) => {
+  const { sessionType = 'klinik', targetPhone, text, mediaBase64, mediaType, fileName } = req.body;
+  if (!targetPhone || (!text && !mediaBase64)) {
+    return res.status(400).json({ error: 'Nomor tujuan dan isi pesan / lampiran wajib diisi.' });
+  }
+
+  let options = {};
+  let mediaUrl = null;
+  if (mediaBase64) {
+    try {
+      const buffer = Buffer.from(mediaBase64.replace(/^data:.*?;base64,/, ''), 'base64');
+      const cleanFileName = `out_${Date.now()}_${(fileName || 'file').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      fs.writeFileSync(path.join(UPLOADS_DIR, cleanFileName), buffer);
+      mediaUrl = `/uploads/${cleanFileName}`;
+      options = {
+        mediaBuffer: buffer,
+        mediaType: mediaType || 'document',
+        fileName: fileName || cleanFileName,
+        mimetype: mediaType === 'image' ? 'image/jpeg' : 'application/pdf'
+      };
+    } catch (bErr) {
+      console.error('Error saving media attachment:', bErr);
+    }
+  }
+
+  const result = await whatsappService.sendWhatsAppMessage(sessionType, targetPhone, text, options);
+
+  let formattedPhone = targetPhone.replace(/[^0-9]/g, '');
+  if (formattedPhone.startsWith('62')) formattedPhone = '0' + formattedPhone.slice(2);
+
+  const cleanDigits = (targetPhone || '').replace(/\D/g, '');
+  const suffix8 = cleanDigits.length >= 8 ? cleanDigits.slice(-8) : cleanDigits;
+
+  let session = chatSessions.find(s => {
+    if (s.sessionType !== sessionType) return false;
+    const sDigits = (s.patientPhone || '').replace(/\D/g, '');
+    return (suffix8 && sDigits.endsWith(suffix8)) || s.patientPhone === formattedPhone || s.patientPhone === targetPhone;
+  });
+
+  const timestamp = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+
+  const newMsg = {
+    messageId: result.id || ('MSG-' + Date.now()),
+    sender: 'staff',
+    staffName: 'Petugas Medis',
+    text: text || (mediaType === 'image' ? '[Foto]' : '[Dokumen]'),
+    mediaUrl: mediaUrl,
+    mediaType: mediaType || null,
+    fileName: fileName || null,
+    timestamp: timestamp,
+    rawTime: Date.now()
+  };
+
+  if (!session) {
+    session = {
+      id: 'CHAT-' + Date.now(),
+      patientId: 'PAS-' + Date.now().toString().slice(-4),
+      patientName: req.body.patientName || ('Pasien ' + formattedPhone.slice(-4)),
+      patientPhone: formattedPhone,
+      sessionType: sessionType,
+      updatedAt: Date.now(),
+      unreadCount: 0,
+      messages: [newMsg]
+    };
+    chatSessions.unshift(session);
+  } else {
+    session.updatedAt = Date.now();
+    session.messages.push(newMsg);
+    const sIdx = chatSessions.indexOf(session);
+    if (sIdx > 0) {
+      chatSessions.splice(sIdx, 1);
+      chatSessions.unshift(session);
+    }
+  }
+
+  saveChatSessions(chatSessions);
+
+  io.emit('wa_new_message', {
+    chatId: session.id,
+    sessionType: sessionType,
+    message: newMsg,
+    chatSession: session
+  });
+
+  res.json({ success: true, result, message: newMsg, chatSession: session });
+});
+
+app.post('/api/wa/disconnect', async (req, res) => {
+  const sessionType = req.body.sessionType || 'klinik';
+  try {
+    await whatsappService.logoutSession(sessionType);
+    res.json({ success: true, message: `Sesi ${sessionType} berhasil diputuskan.` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/wa/read', (req, res) => {
+  const { chatId } = req.body;
+  const session = chatSessions.find(s => s.id === chatId);
+  if (session) {
+    session.unreadCount = 0;
+    saveChatSessions(chatSessions);
+  }
+  res.json({ success: true });
+});
+
+// ============================================================
+// JADWAL KONTROL PASIEN ENDPOINTS (TERINTEGRASI POLI & DHSE)
+// ============================================================
+
+app.get('/api/kontrol', (req, res) => {
+  const list = loadKontrolPasien();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+  let hariIniCount = 0;
+  let besokCount = 0;
+  let mendatangCount = 0;
+  let izinSakitCount = 0;
+  let pantauanCount = 0;
+
+  list.forEach(k => {
+    const tgl = k.tanggalKontrol || '';
+    if (k.status === 'MENUNGGU') {
+      if (tgl === todayStr) hariIniCount++;
+      else if (tgl === tomorrowStr) besokCount++;
+      else if (tgl > todayStr) mendatangCount++;
+    }
+    if (k.isIzinSakit) izinSakitCount++;
+    if (k.isPantauan) pantauanCount++;
+  });
+
+  // Urutkan jadwal: Yang MENUNGGU lebih dulu, lalu terdekat berdasarkan tanggal
+  list.sort((a, b) => {
+    if (a.status === 'MENUNGGU' && b.status !== 'MENUNGGU') return -1;
+    if (a.status !== 'MENUNGGU' && b.status === 'MENUNGGU') return 1;
+    return (a.tanggalKontrol || '').localeCompare(b.tanggalKontrol || '');
+  });
+
+  res.json({
+    list,
+    stats: {
+      hariIni: hariIniCount,
+      besok: besokCount,
+      mendatang: mendatangCount,
+      totalMendatang: hariIniCount + besokCount + mendatangCount,
+      izinSakit: izinSakitCount,
+      pantauan: pantauanCount,
+      totalSemua: list.length
+    }
+  });
+});
+
+app.post('/api/kontrol', (req, res) => {
+  const nikVal = req.body.nikPabrik || req.body.npkPabrik || '';
+  const namaVal = req.body.namaPasien || '';
+  const deptVal = req.body.dept || req.body.departemen || '-';
+  const hpVal = req.body.noHp || req.body.noHpPasien || '';
+  const tglVal = req.body.tanggalKontrol || '';
+  const notesVal = req.body.catatanKontrol || req.body.catatan || 'Kontrol rutin pengobatan';
+  const diagVal = req.body.asesmen || req.body.diagnosa || 'Pemeriksaan Umum';
+
+  if (!namaVal || !tglVal) {
+    return res.status(400).json({ error: 'Nama pasien dan tanggal kontrol wajib diisi.' });
+  }
+
+  const list = loadKontrolPasien();
+  const newKtr = {
+    id: 'KTR-' + Date.now(),
+    nikPabrik: nikVal,
+    npkPabrik: nikVal,
+    namaPasien: namaVal,
+    dept: deptVal,
+    departemen: deptVal,
+    noHp: hpVal,
+    noHpPasien: hpVal,
+    tanggalPeriksa: req.body.tanggalPeriksa || new Date().toLocaleDateString('id-ID'),
+    tanggalKontrol: String(tglVal).trim(),
+    catatanKontrol: notesVal,
+    catatan: notesVal,
+    asesmen: diagVal,
+    diagnosa: diagVal,
+    isIzinSakit: !!(req.body.isIzinSakit || req.body.kategori === 'izinSakit'),
+    isPantauan: !!(req.body.isPantauan || req.body.kategori === 'pantauan'),
+    pemeriksa: req.body.pemeriksa || 'Petugas Medis',
+    status: 'MENUNGGU',
+    created_at: new Date().toISOString()
+  };
+
+  list.unshift(newKtr);
+  saveKontrolPasien(list);
+  res.status(201).json(newKtr);
+});
+
+app.put('/api/kontrol/:id', (req, res) => {
+  const list = loadKontrolPasien();
+  const idx = list.findIndex(k => k.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).json({ error: 'Jadwal kontrol tidak ditemukan.' });
+  }
+
+  list[idx] = { ...list[idx], ...req.body };
+  saveKontrolPasien(list);
+  res.json(list[idx]);
+});
+
+app.delete('/api/kontrol/:id', (req, res) => {
+  let list = loadKontrolPasien();
+  const initialLen = list.length;
+  list = list.filter(k => k.id !== req.params.id);
+  if (list.length === initialLen) {
+    return res.status(404).json({ error: 'Jadwal kontrol tidak ditemukan.' });
+  }
+  saveKontrolPasien(list);
+  res.json({ success: true, message: 'Jadwal kontrol berhasil dihapus.' });
+});
+
+// Laporan DHSE (Departemen K3/HSE PT ATI)
+app.get('/api/kontrol/laporan-dhse', (req, res) => {
+  const list = loadKontrolPasien();
+  const { startDate, endDate, kategori, dept } = req.query;
+
+  let filtered = list.filter(k => k.isIzinSakit || k.isPantauan);
+
+  if (startDate) {
+    filtered = filtered.filter(k => (k.tanggalKontrol || k.tanggalPeriksa) >= startDate);
+  }
+  if (endDate) {
+    filtered = filtered.filter(k => (k.tanggalKontrol || k.tanggalPeriksa) <= endDate);
+  }
+  if (kategori === 'izinSakit') {
+    filtered = filtered.filter(k => k.isIzinSakit);
+  } else if (kategori === 'pantauan') {
+    filtered = filtered.filter(k => k.isPantauan);
+  }
+  if (dept) {
+    filtered = filtered.filter(k => (k.dept || '').toLowerCase().includes(dept.toLowerCase()));
+  }
+
+  res.json({
+    total: filtered.length,
+    izinSakitCount: filtered.filter(k => k.isIzinSakit).length,
+    pantauanCount: filtered.filter(k => k.isPantauan).length,
+    data: filtered
+  });
+});
+
 // Catch-all: serve index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`=================================================`);
   console.log(`Mobile Klinik System PT ATI running on port ${PORT}`);
   console.log(`- Akses Lokal:  http://localhost:${PORT}`);
   console.log(`- Akses Wi-Fi:  http://10.125.149.122:${PORT} (atau sesuaikan IP Wi-Fi Anda)`);
-  console.log(`System status: READY & SECURE (Bisa dibuka via HP/Tablet di Wi-Fi yang sama)`);
+  console.log(`System status: READY & SECURE (Multi-Device WA & Offline Sync Active)`);
   console.log(`=================================================`);
+
+  // Start WhatsApp Engine
+  whatsappService.initEngine().catch(e => {
+    console.error('[WhatsApp Engine] Inisialisasi awal error:', e.message);
+  });
 });

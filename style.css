@@ -3850,4 +3850,285 @@ select.form-control {
   color: var(--text-muted);
 }
 
+/* ========================================================= */
+/* JADWAL KONTROL & WA WEB STYLES                            */
+/* ========================================================= */
+.btn-filter-kontrol {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-filter-kontrol:hover {
+  background: var(--surface-3);
+  color: var(--text-main);
+  border-color: var(--border-card);
+}
+
+.btn-filter-kontrol.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #modal-laporan-dhse,
+  #modal-laporan-dhse * {
+    visibility: visible;
+  }
+  #modal-laporan-dhse {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    background: #ffffff !important;
+    color: #000000 !important;
+    display: block !important;
+    z-index: 999999;
+  }
+  #modal-laporan-dhse .modal-card {
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  #modal-laporan-dhse button,
+  #modal-laporan-dhse .close-btn,
+  #modal-laporan-dhse .modal-overlay,
+  #modal-laporan-dhse div[style*="background: var(--surface-2)"] {
+    display: none !important;
+  }
+  #dhse-printable-area {
+    overflow: visible !important;
+  }
+  #dhse-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #000000 !important;
+  }
+  #dhse-report-table th, #dhse-report-table td {
+    border: 1px solid #333333 !important;
+    color: #000000 !important;
+    padding: 6px 8px !important;
+  }
+}
+
+/* ============================================================
+   JADWAL KONTROL SUMMARY CARDS (HIGH-CONTRAST & INTERACTIVE)
+   ============================================================ */
+.kontrol-card-interactive {
+  cursor: pointer;
+  border-radius: var(--r-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+.kontrol-card-interactive:hover {
+  transform: translateY(-2px);
+}
+.kontrol-card-interactive:active {
+  transform: translateY(0);
+}
+
+/* Card 1: Hari Ini (Red) */
+.kontrol-card-red {
+  background: linear-gradient(135deg, #fff5f5 0%, #fee2e2 100%);
+  border: 1.5px solid #f87171;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.12);
+}
+.kontrol-card-red .card-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #ef4444;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);
+}
+.kontrol-card-red .card-title-text {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #dc2626;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.kontrol-card-red .card-num-text {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #991b1b;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* Card 2: Besok (Amber) */
+.kontrol-card-amber {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1.5px solid #fbbf24;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+}
+.kontrol-card-amber .card-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #f59e0b;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
+}
+.kontrol-card-amber .card-title-text {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #d97706;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.kontrol-card-amber .card-num-text {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #b45309;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* Card 3: Mendatang (Blue) */
+.kontrol-card-blue {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1.5px solid #38bdf8;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+}
+.kontrol-card-blue .card-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #0284c7;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35);
+}
+.kontrol-card-blue .card-title-text {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #0284c7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.kontrol-card-blue .card-num-text {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #0369a1;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* Dark Theme Adjustments for Summary Cards */
+[data-theme="dark"] .kontrol-card-red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(24, 15, 20, 0.85));
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);
+}
+[data-theme="dark"] .kontrol-card-red .card-title-text { color: #f87171; }
+[data-theme="dark"] .kontrol-card-red .card-num-text { color: #ffffff; }
+
+[data-theme="dark"] .kontrol-card-amber {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(26, 20, 15, 0.85));
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
+}
+[data-theme="dark"] .kontrol-card-amber .card-title-text { color: #fbbf24; }
+[data-theme="dark"] .kontrol-card-amber .card-num-text { color: #ffffff; }
+
+[data-theme="dark"] .kontrol-card-blue {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(15, 23, 42, 0.85));
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.2);
+}
+[data-theme="dark"] .kontrol-card-blue .card-title-text { color: #38bdf8; }
+[data-theme="dark"] .kontrol-card-blue .card-num-text { color: #ffffff; }
+
+/* ============================================================
+   WHATSAPP WEB CHAT DASHBOARD THEME & CONTRAST
+   ============================================================ */
+#wa-messages-feed {
+  background-color: #efeae2 !important;
+  background-image: radial-gradient(rgba(0,0,0,0.06) 1px, transparent 0) !important;
+  background-size: 20px 20px !important;
+}
+
+[data-theme="dark"] #wa-messages-feed {
+  background-color: #0b141a !important;
+  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 0) !important;
+  background-size: 20px 20px !important;
+}
+
+/* Chat bubble styling for staff (outgoing) & patient (incoming) */
+.wa-bubble-staff {
+  background: #d9fdd3 !important;
+  color: #111b21 !important;
+  border: 1px solid #bbf7d0 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+.wa-bubble-staff .bubble-time {
+  color: #54656f !important;
+}
+.wa-bubble-patient {
+  background: #ffffff !important;
+  color: #111b21 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+.wa-bubble-patient .bubble-time {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .wa-bubble-staff {
+  background: #005c4b !important;
+  color: #e9edef !important;
+  border: 1px solid rgba(52,211,153,0.3) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+}
+[data-theme="dark"] .wa-bubble-staff .bubble-time {
+  color: #8696a0 !important;
+}
+[data-theme="dark"] .wa-bubble-patient {
+  background: #202c33 !important;
+  color: #e9edef !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+}
+[data-theme="dark"] .wa-bubble-patient .bubble-time {
+  color: #8696a0 !important;
+}
+
+
 

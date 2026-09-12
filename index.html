@@ -18,6 +18,8 @@
   <!-- Chart.js & DataLabels Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <!-- SheetJS for Excel Template & Multi-PT Import -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -93,6 +95,13 @@
           </div>
         </div>
         <div class="gate-input-group">
+          <label class="gate-label" for="gate-reg-nowa">Nomor WhatsApp Aktif *</label>
+          <div class="gate-input-wrap">
+            <i class="fa-brands fa-whatsapp gate-input-icon" style="color: #22c55e;"></i>
+            <input type="tel" id="gate-reg-nowa" class="gate-input" placeholder="Contoh: 081234567890" required>
+          </div>
+        </div>
+        <div class="gate-input-group">
           <label class="gate-label" for="gate-reg-password">Kata Sandi Baru *</label>
           <div class="gate-input-wrap">
             <i class="fa-solid fa-lock gate-input-icon"></i>
@@ -113,11 +122,11 @@
   <!-- App Header Navbar (PT ATI Style Complete Tabs) -->
   <header class="app-navbar">
     <div class="brand-section">
-      <img src="ATI Logo.png" alt="ATI Logo" class="brand-logo-img">
-      <img src="Salinan Logo nafila.webp" alt="Nafila Logo" class="brand-logo-img">
+      <img src="ATI Logo.png" alt="Logo PT" id="navbar-pt-logo" class="brand-logo-img">
+      <img src="Salinan Logo nafila.webp" alt="Nafila Logo" id="navbar-nafila-logo" class="brand-logo-img">
       <div>
-        <h1 class="brand-title">Mobile Klinik System</h1>
-        <p class="brand-subtitle">Klinik PT ATI & ATI Medika</p>
+        <h1 class="brand-title" id="navbar-brand-title">Mobile Klinik System</h1>
+        <p class="brand-subtitle" id="navbar-brand-subtitle">Klinik PT ATI & ATI Medika</p>
       </div>
     </div>
 
@@ -126,21 +135,30 @@
         <i class="fa-solid fa-stethoscope"></i> POLI
       </button>
       <button class="nav-btn" data-target="view-edit-data">
-        <i class="fa-solid fa-clock-rotate-left"></i> EDIT DATA
+        <i class="fa-solid fa-clipboard-check"></i> DATA YANG SUDAH MASUK
       </button>
       <button class="nav-btn" data-target="view-karyawan">
         <i class="fa-solid fa-id-card"></i> KARYAWAN
       </button>
-      <button class="nav-btn" data-target="view-gudang">
-        <i class="fa-solid fa-boxes-stacked"></i> GUDANG
+      <button class="nav-btn" data-target="view-wa-web" id="nav-btn-wa">
+        <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> WA WEB
+        <span id="badge-nav-wa-unread" style="display: none; background: #ef4444; color: #fff; border-radius: 12px; font-size: 0.7rem; font-weight: 800; padding: 1px 6px; margin-left: 4px;">Baru</span>
       </button>
 
-      <!-- DROPDOWN MENU LAINNYA -->
+      <!-- DROPDOWN MENU LAINNYA (MENAMPUNG MENU 5 KE ATAS) -->
       <div class="nav-dropdown" id="nav-dropdown-more">
         <button type="button" class="nav-btn nav-dropdown-btn" id="nav-more-toggle" onclick="toggleNavMoreDropdown(event)" title="Menu Lainnya">
           <i class="fa-solid fa-ellipsis"></i> LAINNYA <i class="fa-solid fa-chevron-down" style="font-size: 0.65rem; margin-left: 3px;"></i>
+          <span id="badge-nav-more-indicator" style="display: none; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; margin-left: 4px;"></span>
         </button>
         <div class="nav-dropdown-content" id="nav-more-content">
+          <button type="button" class="nav-dropdown-item" data-target="view-jadwal-kontrol" id="nav-btn-kontrol" onclick="handleNavDropdownClick('view-jadwal-kontrol', this)">
+            <i class="fa-solid fa-calendar-check" style="color: #f59e0b;"></i> KONTROL
+            <span id="badge-nav-kontrol-today" style="display: none; background: #ef4444; color: #fff; border-radius: 12px; font-size: 0.7rem; font-weight: 800; padding: 1px 6px; margin-left: 6px;">0</span>
+          </button>
+          <button type="button" class="nav-dropdown-item" data-target="view-gudang" onclick="handleNavDropdownClick('view-gudang', this)">
+            <i class="fa-solid fa-boxes-stacked" style="color: #38bdf8;"></i> GUDANG
+          </button>
           <button type="button" class="nav-dropdown-item" data-target="view-hse" onclick="handleNavDropdownClick('view-hse', this)">
             <i class="fa-solid fa-chart-pie" style="color: #c084fc;"></i> HSE
           </button>
@@ -152,6 +170,9 @@
           </button>
           <button type="button" class="nav-dropdown-item" data-target="view-manajemen" onclick="handleNavDropdownClick('view-manajemen', this)">
             <i class="fa-solid fa-sack-dollar" style="color: #fbbf24;"></i> MANAJEMEN
+          </button>
+          <button type="button" class="nav-dropdown-item" data-target="view-surat-luar" id="nav-btn-surat-luar" onclick="handleNavDropdownClick('view-surat-luar', this)">
+            <i class="fa-solid fa-file-circle-check" style="color: #ec4899;"></i> SURAT SAKIT (LUAR)
           </button>
           <button type="button" class="nav-dropdown-item" data-target="view-gsheet" onclick="handleNavDropdownClick('view-gsheet', this)">
             <i class="fa-brands fa-google-drive" style="color: #60a5fa;"></i> G-SHEET SYNC
@@ -235,6 +256,10 @@
         <i class="fa-solid fa-sack-dollar"></i>
         Manajemen
       </button>
+      <button class="mobile-more-item" onclick="switchMobileNav('view-surat-luar', null, true)">
+        <i class="fa-solid fa-file-circle-check" style="color: #ec4899;"></i>
+        Surat Luar
+      </button>
       <button class="mobile-more-item" onclick="switchMobileNav('view-gsheet', null, true)">
         <i class="fa-brands fa-google-drive"></i>
         G-Sheet
@@ -256,13 +281,29 @@
               <i class="fa-solid fa-notes-medical" style="color: var(--primary);"></i>
               Input Kunjungan Poli
             </div>
-            <button class="btn btn-sm btn-secondary" onclick="resetFormPoli()">
-              <i class="fa-solid fa-rotate-left"></i> Reset
-            </button>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button type="button" id="btn-poli-restore-draft" class="btn btn-sm" onclick="restorePoliDraft()" style="display: none; background: rgba(245, 158, 11, 0.18); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 700; border-radius: 8px; padding: 4px 10px;" title="Kembalikan ketikan formulir terakhir yang belum sempat disimpan">
+                <i class="fa-solid fa-clock-rotate-left"></i> Pulihkan Input
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="resetFormPoli()">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+              </button>
+            </div>
           </div>
 
           <div class="soap-scrollable-body">
             
+            <!-- BAR STATUS ANTREAN OFFLINE (Solusi Sinyal Pabrik Flaky) -->
+            <div id="poli-offline-status-bar" style="display: none; margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); border: 1.5px solid #f59e0b; color: #fbbf24; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.85rem; font-weight: 700;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-cloud-arrow-up" style="color: #f59e0b; font-size: 1.15rem;"></i>
+                <span>Sinyal terputus. <strong id="poli-offline-count-text">0 data rekam medis tersimpan aman di komputer ini</strong>.</span>
+              </div>
+              <button type="button" class="btn btn-sm" onclick="syncOfflineQueueNow()" style="background: #f59e0b; color: #000; font-weight: 800; padding: 4px 12px; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">
+                <i class="fa-solid fa-rotate"></i> Upload ke VPS
+              </button>
+            </div>
+
             <!-- Scan / Cari NIK Pabrik atau Nama Pasien -->
             <div class="patient-select-bar">
               <div style="position: relative; flex: 1;">
@@ -435,7 +476,7 @@
                 
                 <!-- Izin Sakit (Kuning) -->
                 <div style="border: 1.5px dashed #f59e0b; background: rgba(245, 158, 11, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; align-items: center; gap: 12px;">
-                  <input type="checkbox" id="poli-izin-sakit" style="width: 20px; height: 20px; cursor: pointer;">
+                  <input type="checkbox" id="poli-izin-sakit" onchange="handlePoliCheckboxChange()" style="width: 20px; height: 20px; cursor: pointer;">
                   <label for="poli-izin-sakit" style="color: #d97706; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; width: 100%;">
                     <i class="fa-solid fa-file-medical"></i> IZIN SAKIT / SURAT ISTIRAHAT DOKTER (SURKES)
                   </label>
@@ -443,10 +484,34 @@
 
                 <!-- Pantauan (Merah) -->
                 <div style="border: 1.5px dashed #ef4444; background: rgba(239, 68, 68, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; align-items: center; gap: 12px;">
-                  <input type="checkbox" id="poli-pantauan" style="width: 20px; height: 20px; cursor: pointer;">
+                  <input type="checkbox" id="poli-pantauan" onchange="handlePoliCheckboxChange()" style="width: 20px; height: 20px; cursor: pointer;">
                   <label for="poli-pantauan" style="color: #b91c1c; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; width: 100%;">
                     <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
                   </label>
+                </div>
+
+                <!-- Jadwal Kontrol Terintegrasi (Otomatis Aktif jika Izin Sakit / Pantauan, atau Manual) -->
+                <div id="poli-box-kontrol" style="border: 1.5px dashed #38bdf8; background: rgba(56, 189, 248, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <label style="color: #38bdf8; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0;">
+                      <input type="checkbox" id="poli-chk-kontrol" onchange="togglePoliKontrolFields()" style="width: 20px; height: 20px; cursor: pointer;">
+                      <i class="fa-solid fa-calendar-check"></i> RENCANA JADWAL KONTROL BERIKUTNYA
+                    </label>
+                    <span id="badge-kontrol-auto-hint" style="font-size: 0.75rem; color: var(--text-muted); background: rgba(56,189,248,0.15); padding: 2px 8px; border-radius: 10px;">
+                      Terintegrasi Dashboard &amp; WA
+                    </span>
+                  </div>
+
+                  <div id="poli-kontrol-fields" style="display: none; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 6px;">
+                    <div>
+                      <label class="form-label" style="font-size: 0.8rem; margin-bottom: 4px; color: var(--text-main);">Tanggal Rencana Kontrol *</label>
+                      <input type="date" id="poli-tanggal-kontrol" class="form-control" style="font-size: 0.88rem; padding: 7px 10px; background: var(--surface-2); border: 1.5px solid #38bdf8;">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size: 0.8rem; margin-bottom: 4px; color: var(--text-main);">Catatan / Rencana Evaluasi Kontrol</label>
+                      <input type="text" id="poli-catatan-kontrol" class="form-control" placeholder="Contoh: Evaluasi akhir surkes / cek tensi / lab..." style="font-size: 0.88rem; padding: 7px 10px; background: var(--surface-2);">
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Upload File (Hijau) -->
@@ -509,11 +574,270 @@
       </div>
     </section>
 
+    <!-- ============================================================ -->
+    <!-- TAB BARU: JADWAL KONTROL PASIEN & PEMANTAUAN DHSE (SESUAI SS 4) -->
+    <!-- ============================================================ -->
+    <section id="view-jadwal-kontrol" class="page-view">
+      <div class="glass-card" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.35rem; color: #38bdf8;">
+              <i class="fa-solid fa-calendar-check" style="color: #f59e0b;"></i> Jadwal Pasien Kontrol &amp; DHSE
+            </h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+              Terintegrasi langsung dari poli: memantau kontrol izin sakit, pasien pantauan K3/DHSE, dan kontrol rutin.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary" onclick="openModalLaporanDHSE()" style="background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1.5px solid rgba(192, 132, 252, 0.4); font-weight: 700;">
+              <i class="fa-solid fa-file-waveform"></i> Laporan DHSE (K3)
+            </button>
+            <button type="button" class="btn btn-primary" onclick="openModalManualKontrol()" style="background: #0284c7; font-weight: 700;">
+              <i class="fa-solid fa-plus-circle"></i> + Tambah Kontrol Manual
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 KARTU RINGKASAN JADWAL KONTROL (KLIK UNTUK POP-UP) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 18px;">
+          
+          <!-- Card 1: Hari Ini -->
+          <div class="kontrol-card-interactive kontrol-card-red" onclick="openKontrolCardPopup('hari-ini')" title="Klik untuk membuka pop-up daftar pasien kontrol hari ini">
+            <div class="card-icon-wrap">🔥</div>
+            <div style="flex: 1; min-width: 0;">
+              <div class="card-title-text">KONTROL HARI INI (PRIORITAS)</div>
+              <div id="stat-kontrol-hari-ini" class="card-num-text">0 Pasien</div>
+              <div style="font-size: 0.72rem; opacity: 0.8; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Klik lihat daftar
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Besok -->
+          <div class="kontrol-card-interactive kontrol-card-amber" onclick="openKontrolCardPopup('besok')" title="Klik untuk membuka pop-up daftar pasien kontrol besok (H-1)">
+            <div class="card-icon-wrap">⏳</div>
+            <div style="flex: 1; min-width: 0;">
+              <div class="card-title-text">KONTROL BESOK (PERSIAPAN H-1)</div>
+              <div id="stat-kontrol-besok" class="card-num-text">0 Pasien</div>
+              <div style="font-size: 0.72rem; opacity: 0.8; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Klik lihat daftar
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Total Mendatang -->
+          <div class="kontrol-card-interactive kontrol-card-blue" onclick="openKontrolCardPopup('mendatang')" title="Klik untuk membuka pop-up seluruh jadwal kontrol mendatang">
+            <div class="card-icon-wrap">🗓️</div>
+            <div style="flex: 1; min-width: 0;">
+              <div class="card-title-text">TOTAL JADWAL MENDATANG</div>
+              <div id="stat-kontrol-mendatang" class="card-num-text">0 Pasien</div>
+              <div style="font-size: 0.72rem; opacity: 0.8; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Klik lihat daftar
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Filter Sub-Tabs & Pencarian -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-sm btn-filter-kontrol active" id="filter-btn-kontrol-semua" onclick="filterKontrolTable('semua', this)">
+              Semua Jadwal
+            </button>
+            <button type="button" class="btn btn-sm btn-filter-kontrol" id="filter-btn-kontrol-hari-ini" onclick="filterKontrolTable('hari-ini', this)" style="color: #f87171;">
+              🔥 Hari Ini
+            </button>
+            <button type="button" class="btn btn-sm btn-filter-kontrol" id="filter-btn-kontrol-besok" onclick="filterKontrolTable('besok', this)" style="color: #fbbf24;">
+              ⏳ Besok
+            </button>
+            <button type="button" class="btn btn-sm btn-filter-kontrol" id="filter-btn-kontrol-izin" onclick="filterKontrolTable('izin-sakit', this)" style="color: #f59e0b;">
+              📄 Izin Sakit (Surkes)
+            </button>
+            <button type="button" class="btn btn-sm btn-filter-kontrol" id="filter-btn-kontrol-pantauan" onclick="filterKontrolTable('pantauan', this)" style="color: #ef4444;">
+              🔴 Pantauan K3 / DHSE
+            </button>
+            <button type="button" class="btn btn-sm btn-filter-kontrol" id="filter-btn-kontrol-selesai" onclick="filterKontrolTable('selesai', this)" style="color: #34d399;">
+              🟢 Selesai / Terkontrol
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex: 1; max-width: 380px; min-width: 240px;">
+            <input type="text" id="filter-kontrol-search" class="form-control" placeholder="Cari Pasien, NPK, Dept, atau Diagnosa..." onkeyup="renderKontrolTable()" style="font-size: 0.85rem;">
+          </div>
+        </div>
+      </div>
+
+      <!-- TABEL DAFTAR PASIEN JADWAL KONTROL -->
+      <div class="glass-card">
+        <div style="overflow-x: auto;">
+          <table class="data-table" id="table-jadwal-kontrol">
+            <thead>
+              <tr>
+                <th style="width: 22%;">Pasien &amp; Dept</th>
+                <th style="width: 18%;">Kategori &amp; Kelaikan</th>
+                <th style="width: 18%;">Tanggal &amp; Waktu Kontrol</th>
+                <th style="width: 24%;">Diagnosa &amp; Catatan Kontrol</th>
+                <th style="width: 18%; text-align: center;">Aksi Medis &amp; WA</th>
+              </tr>
+            </thead>
+            <tbody id="table-kontrol-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- TAB BARU: WHATSAPP WEB DASHBOARD (SESUAI SS 1 & SS 2) -->
+    <!-- ============================================================ -->
+    <section id="view-wa-web" class="page-view">
+      <div class="glass-card" style="padding: 12px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          
+          <!-- Single Session Title & Kirim Pesan Baru -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="background: rgba(2, 132, 199, 0.15); border: 1.5px solid #0284c7; color: #38bdf8; font-weight: 800; border-radius: 10px; padding: 6px 14px; display: flex; align-items: center; gap: 6px; font-size: 0.88rem;">
+              <i class="fa-brands fa-whatsapp" style="color: #22c55e; font-size: 1.15rem;"></i> WA Klinik PT ATI
+            </div>
+            <button type="button" onclick="openModalNewWaMessage()" class="btn btn-sm" style="background: #10b981; color: #fff; font-weight: 800; border-radius: 10px; padding: 6px 14px; border: none; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-paper-plane"></i> + Kirim Pesan Baru
+            </button>
+          </div>
+
+          <!-- Status HP & Tombol Tautkan Barcode QR -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div id="wa-header-status-badge" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); font-size: 0.8rem; font-weight: 700; color: #34d399;">
+              <span id="wa-header-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399;"></span>
+              <span id="wa-header-device-label">HP Klinik: Memeriksa...</span>
+            </div>
+            <button type="button" class="btn btn-sm" onclick="openModalWaQr()" style="background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 10px; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-qrcode"></i> Tautkan HP
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CHAT INTERFACE: SPLIT LAYOUT (DAFTAR OBROLAN & JENDELA PERCAKAPAN) -->
+      <div class="wa-chat-container" style="display: grid; grid-template-columns: 360px 1fr; gap: 14px; height: clamp(520px, calc(100vh - 180px), 760px);">
+        
+        <!-- KOLOM KIRI: Daftar Obrolan Pasien -->
+        <div class="glass-card" style="padding: 0; display: flex; flex-direction: column; overflow: hidden; height: 100%;">
+          
+          <div style="padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: 800; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-comments" style="color: #38bdf8;"></i> Daftar Obrolan Pasien
+            </div>
+            <button type="button" onclick="markCurrentChatRead()" title="Tandai Sudah Dibaca" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; font-weight: 700;">
+              <i class="fa-solid fa-check-double" style="color: #38bdf8;"></i> Tandai Dibaca
+            </button>
+          </div>
+
+          <!-- Input Search Chat -->
+          <div style="padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); background: var(--surface-1);">
+            <div style="position: relative;">
+              <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-size: 0.8rem;"></i>
+              <input type="text" id="wa-chat-search" oninput="handleSearchWaChats()" class="form-control" placeholder="Cari nama, pesan, atau nomor WA..." style="padding-left: 32px; font-size: 0.82rem; border-radius: 20px;">
+            </div>
+          </div>
+
+          <!-- List Obrolan -->
+          <div id="wa-chat-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
+            <!-- Rendered dynamically -->
+          </div>
+
+        </div>
+
+        <!-- KOLOM KANAN: Jendela Percakapan Pasien -->
+        <div class="glass-card" id="wa-chat-window" style="padding: 0; display: flex; flex-direction: column; overflow: hidden; height: 100%;">
+          
+          <!-- Header Percakapan Aktif -->
+          <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); background: var(--surface-1); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: #0284c7; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem;">
+                <span id="wa-active-avatar">P</span>
+              </div>
+              <div>
+                <div id="wa-active-name" style="font-weight: 800; font-size: 0.95rem; color: var(--text-main);">Pilih Percakapan Pasien</div>
+                <div id="wa-active-sub" style="font-size: 0.78rem; color: var(--text-muted);">Pesan disinkronkan langsung dari WhatsApp HP &amp; Web</div>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" id="btn-wa-open-poli" onclick="openActiveChatInPoli()" class="btn btn-sm btn-secondary" style="font-size: 0.76rem; display: none; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-stethoscope" style="color: #38bdf8;"></i> Buka di Poli
+              </button>
+              <div style="padding: 4px 10px; border-radius: 12px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25); color: #38bdf8; font-size: 0.76rem; font-weight: 700;">
+                <i class="fa-solid fa-user-shield"></i> Balasan Manual Petugas
+              </div>
+            </div>
+          </div>
+
+          <!-- Feed Pesan (Chat Bubbles) -->
+          <div id="wa-messages-feed" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align: center; padding: 80px 20px;">
+              <i class="fa-brands fa-whatsapp" style="font-size: 3.5rem; color: #22c55e; opacity: 0.85; margin-bottom: 12px; display: block;"></i>
+              <p style="font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">WhatsApp Web Poliklinik PT ATI</p>
+              <p style="font-size: 0.88rem; color: var(--text-muted); max-width: 380px; margin: 0 auto; line-height: 1.45;">Silakan pilih salah satu obrolan pasien di panel sebelah kiri untuk mulai berkirim pesan.</p>
+            </div>
+          </div>
+
+          <!-- Bar Lampiran File Preview Sebelum Terkirim -->
+          <div id="wa-attachment-preview-bar" style="display: none; padding: 8px 16px; background: rgba(56, 189, 248, 0.1); border-top: 1px solid rgba(56, 189, 248, 0.3); align-items: center; justify-content: space-between; font-size: 0.8rem;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-paperclip" style="color: #38bdf8;"></i>
+              <span id="wa-attachment-filename" style="font-weight: 700; color: var(--text-main);">nama_file.pdf</span>
+            </div>
+            <button type="button" onclick="cancelWaAttachment()" style="background: transparent; border: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;">&times;</button>
+          </div>
+
+          <!-- Input Bar Kirim Pesan -->
+          <form onsubmit="handleSendWaMessage(event)" style="padding: 12px 16px; border-top: 1px solid var(--border-subtle); background: var(--surface-1); display: flex; align-items: center; gap: 8px; position: relative;">
+            
+            <!-- File Attachment Button -->
+            <input type="file" id="wa-file-input" style="display: none;" onchange="handleWaFileSelected(this)" accept="image/*,.pdf,.doc,.docx,.xlsx,.txt">
+            <button type="button" onclick="document.getElementById('wa-file-input').click()" class="btn btn-secondary" style="width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;" title="Lampirkan Gambar atau Berkas">
+              <i class="fa-solid fa-paperclip" style="font-size: 1rem;"></i>
+            </button>
+
+            <!-- Emoji Picker Toggle Button -->
+            <button type="button" onclick="toggleWaEmojiPicker()" class="btn btn-secondary" style="width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 1.1rem;" title="Pilih Emoji">
+              😊
+            </button>
+
+            <!-- Popover Emoji Picker -->
+            <div id="wa-emoji-picker" style="display: none; position: absolute; bottom: 60px; left: 60px; background: var(--surface-1); border: 1.5px solid var(--border-card); border-radius: 14px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 50; width: 280px;">
+              <div style="font-weight: 800; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>Pilih Emoticon</span>
+                <span onclick="toggleWaEmojiPicker()" style="cursor: pointer; color: var(--text-faint);">&times;</span>
+              </div>
+              <div id="wa-emoji-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; font-size: 1.3rem; text-align: center; max-height: 180px; overflow-y: auto;">
+                <!-- Dynamically injected emojis -->
+              </div>
+            </div>
+
+            <!-- Message Text Input -->
+            <input type="text" id="wa-message-input" class="form-control" placeholder="Ketik balasan pesan ke pasien..." autocomplete="off" style="flex: 1; border-radius: 20px; padding: 10px 16px; font-size: 0.9rem;">
+
+            <!-- Send Button -->
+            <button type="submit" class="btn btn-primary" style="background: #10b981; border: none; border-radius: 20px; padding: 8px 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px rgba(16,185,129,0.3);">
+              <i class="fa-solid fa-paper-plane"></i> Kirim
+            </button>
+
+          </form>
+
+        </div>
+
+      </div>
+    </section>
+
     <!-- 2. TAB EDIT DATA & KOREKSI STOK -->
     <section id="view-edit-data" class="page-view">
       <div class="glass-card" style="margin-bottom: 20px;">
-        <h2><i class="fa-solid fa-clock-rotate-left" style="color: var(--warning);"></i> Edit Data & Koreksi Stok</h2>
-        <p style="color: var(--text-muted); font-size: 0.85rem;">Pilih tanggal atau cari pasien untuk mengedit rekam medis & mengoreksi stok obat secara otomatis.</p>
+        <h2><i class="fa-solid fa-clipboard-check" style="color: var(--warning);"></i> Data Yang Sudah Masuk (Rekam Medis)</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Pilih tanggal atau cari pasien untuk melihat rekam medis yang sudah masuk & koreksi data / stok obat.</p>
         
         <div class="filter-action-bar">
           <input type="date" id="filter-edit-date" class="form-control" onchange="_editDataShowAll=false; filterEditDataTable()">
@@ -878,39 +1202,42 @@
       </div>
     </section>
 
-    <!-- 5. TAB KARYAWAN (SEARCH NAMA & NPK PABRIK) -->
+    <!-- 5. TAB KARYAWAN (SEARCH NAMA & NPK PABRIK + EXCEL ONBOARDING) -->
     <section id="view-karyawan" class="page-view">
       <div class="glass-card" style="margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
           <div>
-            <h2><i class="fa-solid fa-id-card" style="color: var(--primary);"></i> Data Karyawan &amp; Pasien PT ATI</h2>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Master 1.400+ data karyawan &amp; pasien pabrik terdaftar.</p>
+            <h2><i class="fa-solid fa-id-card" style="color: var(--primary);"></i> Data Karyawan &amp; Pasien In-House PT</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Master data karyawan &amp; pasien terdaftar. Dilengkapi sinkronisasi onboarding multi-PT Nafila Medika.</p>
           </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="search-karyawan-input" class="form-control" placeholder="Cari NPK Pabrik, Nama, Dept, No WA..." style="width: 300px;" onkeyup="filterKaryawanTable()">
-            <button class="btn btn-primary" onclick="openModalTambahKaryawan()">
-              <i class="fa-solid fa-user-plus"></i> Tambah Karyawan Baru
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="search-karyawan-input" class="form-control" placeholder="Cari NPK, Nama, Dept, No WA..." style="width: 240px;" onkeyup="filterKaryawanTable()">
+            <button class="btn btn-primary" onclick="openModalTambahKaryawan()" style="font-weight: 700;">
+              <i class="fa-solid fa-user-plus"></i> Tambah Karyawan
             </button>
           </div>
         </div>
       </div>
+
+      <div id="karyawan-stat-bar" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px;"></div>
 
       <div class="glass-card">
         <div class="table-responsive">
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width: 4%; text-align: center;">NO</th>
-                <th style="width: 9%;">NPK PABRIK</th>
-                <th style="width: 15%;">NAMA KARYAWAN / PASIEN</th>
+                <th style="width: 3%; text-align: center;">NO</th>
+                <th style="width: 7%;">NPK PABRIK</th>
+                <th style="width: 16%;">NAMA KARYAWAN / PASIEN</th>
                 <th style="width: 10%;">DEPARTEMEN</th>
-                <th style="width: 10%;">SECTION</th>
-                <th style="width: 9%;">TGL LAHIR</th>
+                <th style="width: 8%;">TGL LAHIR</th>
                 <th style="width: 5%;">USIA</th>
-                <th style="width: 6%;">GENDER</th>
-                <th style="width: 10%;">NO. WHATSAPP</th>
-                <th style="width: 10%;">SALDO OBAT</th>
-                <th style="width: 12%; text-align: center;">AKSI</th>
+                <th style="width: 5%; text-align: center;">GENDER</th>
+                <th style="width: 5%; text-align: center;">GOL.</th>
+                <th style="width: 13%;">NO. WHATSAPP</th>
+                <th style="width: 8%;">SALDO OBAT</th>
+                <th style="width: 7%; text-align: center;">RIWAYAT</th>
+                <th style="width: 11%; text-align: center;">AKSI</th>
               </tr>
             </thead>
             <tbody id="table-karyawan-body">
@@ -926,13 +1253,28 @@
       </div>
     </section>
 
-    <!-- 7. TAB SHIFT (LAPORAN OPER SHIFT KE TELEGRAM) -->
+    <!-- 7. TAB SHIFT (LAPORAN OPER SHIFT & REKAP 24H VIA WHATSAPP - SISTEM MARUNDA) -->
     <section id="view-shift" class="page-view">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
         <div class="glass-card">
-          <h3><i class="fa-solid fa-paper-plane" style="color: var(--primary);"></i> FORMAT 1 – Oper Shift</h3>
-          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rangkuman kunjungan pasien shift ke Telegram Bot Klinik.</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <h3 style="margin: 0;"><i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> FORMAT 1 – Oper Shift (Sistem Marunda)</h3>
+            <span class="badge badge-success" style="font-size: 0.72rem; font-weight: 800;">WA Web</span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rangkuman kunjungan pasien, surkes, dan surat luar langsung ke nomor WhatsApp petugas login.</p>
+          
           <form onsubmit="handleKirimShift1(event)">
+            <!-- Nomor WhatsApp Penerima -->
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-weight: 700; font-size: 0.82rem;">
+                <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> No. WhatsApp Petugas Penerima Laporan *
+              </label>
+              <input type="tel" id="shift1-target-wa" class="form-control" placeholder="Contoh: 081291868456" required>
+              <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 3px;">
+                💡 Otomatis terisi nomor WhatsApp akun petugas yang sedang login.
+              </small>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
               <div>
                 <label class="form-label">Tgl Mulai</label>
@@ -963,16 +1305,31 @@
                 <input type="text" id="shift1-ke" class="form-control" placeholder="Contoh: Nisa">
               </div>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px;">
-              <i class="fa-solid fa-paper-plane"></i> KIRIM OPER SHIFT TELEGRAM
+            <button type="submit" id="btn-submit-shift1" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fa-brands fa-whatsapp"></i> KIRIM OPER SHIFT KE WA PETUGAS
             </button>
           </form>
         </div>
 
         <div class="glass-card">
-          <h3><i class="fa-solid fa-chart-line" style="color: var(--success);"></i> FORMAT 2 – Rekap 24 Jam</h3>
-          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rekapitulasi total kunjungan 24 jam per departemen ke Telegram.</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <h3 style="margin: 0;"><i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> FORMAT 2 – Rekap 24 Jam (Sistem Marunda)</h3>
+            <span class="badge badge-success" style="font-size: 0.72rem; font-weight: 800;">WA Web</span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rekapitulasi total kunjungan 24 jam per departemen dan surat sakit luar ke WhatsApp petugas.</p>
+          
           <form onsubmit="handleKirimShift2(event)">
+            <!-- Nomor WhatsApp Penerima -->
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-weight: 700; font-size: 0.82rem;">
+                <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> No. WhatsApp Petugas Penerima Rekap *
+              </label>
+              <input type="tel" id="shift2-target-wa" class="form-control" placeholder="Contoh: 081291868456" required>
+              <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 3px;">
+                💡 Otomatis terisi nomor WhatsApp akun petugas yang sedang login.
+              </small>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
               <div>
                 <label class="form-label">Tgl Mulai</label>
@@ -995,10 +1352,133 @@
               <label class="form-label">Petugas Shift 3</label>
               <input type="text" id="shift2-s3" class="form-control" placeholder="Shift 3: Andi">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; background: var(--success);">
-              <i class="fa-solid fa-paper-plane"></i> KIRIM REKAP 24H TELEGRAM
+            <button type="submit" id="btn-submit-shift2" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; background: linear-gradient(135deg, #16a34a, #15803d); border: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fa-brands fa-whatsapp"></i> KIRIM REKAP 24H KE WA PETUGAS
             </button>
           </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7B. TAB SURAT SAKIT LUAR (FASKES EKSTERNAL - PERSIS SS 4) -->
+    <section id="view-surat-luar" class="page-view">
+      <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 12px;">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0;">
+              <i class="fa-solid fa-file-circle-check" style="color: #ec4899;"></i> Input Surat Sakit (Luar)
+            </h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Pencatatan surat izin istirahat sakit dari RS / Klinik / Puskesmas luar &amp; bukti fisik foto.</p>
+          </div>
+          <div>
+            <span class="badge badge-info" style="font-size: 0.82rem; font-weight: 700; padding: 6px 14px;" id="badge-total-surat-luar">
+              0 Berkas Tercatat
+            </span>
+          </div>
+        </div>
+
+        <form onsubmit="handleSimpanSuratLuar(event)" id="form-surat-luar">
+          <!-- Row 1: NIK Karyawan & Tombol CEK NIK -->
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 12px;">
+            <input type="text" id="surat-luar-nik" class="form-control" placeholder="NIK Karyawan..." required oninput="handleSuratLuarNikInput(this.value)">
+            <button type="button" class="btn btn-primary" onclick="cekNikSuratLuar()" style="font-weight: 800; background: #00a8e8; border: none; padding: 0 24px;">
+              CEK NIK
+            </button>
+          </div>
+
+          <!-- Info Karyawan Auto-Fill Box -->
+          <div id="surat-luar-pasien-info" style="display: none; background: var(--surface-2); padding: 10px 14px; border-radius: 8px; border-left: 4px solid var(--primary); margin-bottom: 12px;">
+            <div style="font-weight: 800; color: var(--text-main); font-size: 0.92rem;" id="surat-luar-info-nama">-</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);" id="surat-luar-info-meta">-</div>
+          </div>
+
+          <input type="hidden" id="surat-luar-nama">
+          <input type="hidden" id="surat-luar-dept">
+
+          <!-- Row 2: Diagnosis Sakit -->
+          <div class="form-group" style="margin-bottom: 12px;">
+            <input type="text" id="surat-luar-diagnosa" class="form-control" placeholder="Diagnosis Sakit..." required>
+          </div>
+
+          <!-- Row 3: Rentang Tanggal Istirahat -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px;">
+            <div>
+              <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">Tanggal Mulai Istirahat</label>
+              <input type="date" id="surat-luar-tgl-mulai" class="form-control" required onchange="hitungDurasiSuratLuar()">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">Tanggal Selesai Istirahat</label>
+              <input type="date" id="surat-luar-tgl-selesai" class="form-control" required onchange="hitungDurasiSuratLuar()">
+            </div>
+          </div>
+          <div style="margin-bottom: 14px; font-size: 0.82rem; color: #38bdf8; font-weight: 800;" id="surat-luar-durasi-info">
+            ⏱️ Total Durasi Istirahat: 1 Hari
+          </div>
+
+          <!-- Row 4: Nama RS/Klinik Luar & Nama Perawat/Pemeriksa -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div>
+              <input type="text" id="surat-luar-faskes" class="form-control" placeholder="Nama RS/Klinik Luar..." required>
+            </div>
+            <div>
+              <input type="text" id="surat-luar-perawat" class="form-control" placeholder="Nama Perawat..." required>
+            </div>
+          </div>
+
+          <!-- Row 5: Upload Foto Surat Sakit (Opsional) -->
+          <div style="margin-bottom: 16px; border: 1.5px dashed var(--border-card); padding: 14px; border-radius: 10px; background: var(--surface-2);">
+            <div style="font-size: 0.8rem; font-weight: 800; color: #0088ff; margin-bottom: 8px; text-transform: uppercase;">
+              UPLOAD FOTO SURAT SAKIT (Opsional)
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="file" id="surat-luar-file" accept="image/*,application/pdf" class="form-control" style="flex: 1; max-width: 320px;" onchange="handlePreviewFotoSuratLuar(event)">
+              <button type="button" class="btn btn-sm btn-secondary" onclick="clearFotoSuratLuar()" title="Hapus Foto" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); padding: 7px 12px;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div id="surat-luar-foto-preview-container" style="display: none; margin-top: 10px;">
+              <img id="surat-luar-foto-preview" src="" alt="Preview Surat" style="max-height: 140px; border-radius: 8px; border: 1px solid var(--border-card); cursor: pointer;" onclick="openPreviewFotoSurat(this.src)">
+            </div>
+          </div>
+
+          <button type="submit" id="btn-simpan-surat-luar" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1rem; font-weight: 800; background: #0066ff; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-floppy-disk"></i> SIMPAN SURAT
+          </button>
+        </form>
+      </div>
+
+      <!-- RIWAYAT SURAT SAKIT LUAR TABEL -->
+      <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">
+            <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Riwayat Surat Sakit (Luar) Masuk
+          </h3>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input type="text" id="search-surat-luar-input" class="form-control" placeholder="Cari NPK / Nama / Faskes..." style="width: 240px;" onkeyup="filterSuratLuarTable()">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th style="width: 4%; text-align: center;">NO</th>
+                <th style="width: 10%;">TGL TERIMA</th>
+                <th style="width: 8%;">NPK</th>
+                <th style="width: 16%;">NAMA PASIEN</th>
+                <th style="width: 10%;">DEPARTEMEN</th>
+                <th style="width: 14%;">FASKES PENERBIT</th>
+                <th style="width: 12%;">PERIODE</th>
+                <th style="width: 6%; text-align: center;">DURASI</th>
+                <th style="width: 12%;">DIAGNOSIS</th>
+                <th style="width: 5%; text-align: center;">BUKTI</th>
+                <th style="width: 8%; text-align: center;">AKSI</th>
+              </tr>
+            </thead>
+            <tbody id="table-surat-luar-body">
+              <!-- Rendered dynamically via renderSuratLuarTable() -->
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -1404,8 +1884,197 @@
 
       <!-- Unlocked State -->
       <div id="gsheet-unlocked-view" style="display: none;">
+        <!-- Header Panel Admin -->
+        <div class="glass-card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <h2 style="margin: 0; font-size: 1.25rem; color: var(--text-main);">
+              <i class="fa-solid fa-shield-halved" style="color: #0284c7;"></i> Pusat Kendali Administrator &amp; Setup PT Baru
+            </h2>
+            <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.85rem;">
+              Konfigurasi Identitas Pabrik Klien, Onboarding Multi-PT (Excel Import/Reset), dan Sinkronisasi Cloud.
+            </p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="lockGSheetSync()" style="font-weight: 700;">
+              <i class="fa-solid fa-lock"></i> Kunci Kembali
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 1. PENGATURAN IDENTITAS PT & LOGO KLINIK (PERSIS SCREENSHOT 3) -->
+        <!-- ============================================================ -->
+        <div class="glass-card" style="margin-bottom: 20px; border-left: 4px solid #00a8e8;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">
+              <i class="fa-solid fa-building-circle-check" style="color: #00a8e8;"></i> 1. Identitas PT Klien &amp; Logo Klinik
+            </h3>
+            <span class="badge badge-info" style="font-size: 0.75rem;">Konfigurasi Multi-PT</span>
+          </div>
+
+          <!-- Preview Header Banner -->
+          <div style="background: var(--surface-2); border: 1.5px dashed var(--border-card); border-radius: 12px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img id="branding-preview-pt-logo" src="ATI Logo.png" alt="Logo PT" style="height: 42px; max-width: 100px; object-fit: contain; background: #fff; padding: 3px; border-radius: 6px;">
+              <img id="branding-preview-nafila-logo" src="Salinan Logo nafila.webp" alt="Logo Nafila" style="height: 42px; max-width: 100px; object-fit: contain;">
+            </div>
+            <div style="border-left: 2px solid var(--border-color); padding-left: 14px;">
+              <div style="font-weight: 800; font-size: 1.15rem; color: var(--text-main);" id="branding-preview-title">Mobile Klinik System</div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); font-weight: 600;" id="branding-preview-subtitle">Klinik PT ATI &amp; ATI Medika</div>
+            </div>
+          </div>
+
+          <form onsubmit="handleSaveBranding(event)">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 14px;">
+              <div>
+                <label class="form-label" style="font-weight: 700; font-size: 0.82rem; color: #0284c7;">
+                  <i class="fa-solid fa-heading"></i> Judul Besar (Nama Utama Klinik / Brand) *
+                </label>
+                <input type="text" id="branding-nama-klinik" class="form-control" placeholder="Contoh: Mobile Klinik System / Klinik Nafila Medika" required oninput="updateBrandingPreview()">
+                <small style="color: var(--text-muted); font-size: 0.72rem;">Ditampilkan sebagai judul utama paling besar di navbar & kop.</small>
+              </div>
+              <div>
+                <label class="form-label" style="font-weight: 700; font-size: 0.82rem; color: #10b981;">
+                  <i class="fa-solid fa-subscript"></i> Judul Kecil (Subtitle Kop / Kolaborasi) *
+                </label>
+                <input type="text" id="branding-subtitle" class="form-control" placeholder="Contoh: Klinik Nafila Medika & PT ATI" required oninput="updateBrandingPreview()">
+                <small style="color: var(--text-muted); font-size: 0.72rem;">Ditampilkan sebagai teks kecil di bawah judul besar.</small>
+              </div>
+              <div>
+                <label class="form-label" style="font-weight: 700; font-size: 0.82rem; color: #f59e0b;">
+                  <i class="fa-solid fa-building"></i> Nama PT / Pabrik Klien *
+                </label>
+                <input type="text" id="branding-nama-pt" class="form-control" placeholder="Contoh: PT ATI / PT Astra / dll." required oninput="updateBrandingPreview()">
+                <small style="color: var(--text-muted); font-size: 0.72rem;">Nama PT klien rujukan sistem dan rekam medis.</small>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: flex-end; margin-bottom: 16px;">
+              <div>
+                <label class="form-label" style="font-weight: 700; font-size: 0.82rem;">Upload Logo PT Klien Baru (PNG / JPG / WEBP)</label>
+                <input type="file" id="branding-logo-file" accept="image/*" class="form-control" onchange="handlePreviewLogoPtFile(event)">
+                <small style="color: var(--text-muted); font-size: 0.74rem;">Logo Nafila Medika tetap berdampingan sebagai faskes resmi In-House.</small>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="resetBrandingToDefault()" style="font-size: 0.85rem;">
+                  <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+                <button type="submit" id="btn-save-branding" class="btn btn-primary" style="font-weight: 800; font-size: 0.85rem; background: #00a8e8; border: none; padding: 10px 20px;">
+                  <i class="fa-solid fa-floppy-disk"></i> Simpan Identitas &amp; Logo PT
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 2. SETUP & ONBOARDING MASTER DATA PT BARU (EXCEL & RESET) -->
+        <!-- ============================================================ -->
+        <div class="glass-card" style="margin-bottom: 20px; border-left: 4px solid #10b981;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">
+              <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> 2. Onboarding Master Data PT Baru (Excel &amp; Reset)
+            </h3>
+            <span class="badge badge-success" style="font-size: 0.75rem;">Aman Dilindungi Password</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+            
+            <!-- SUB-CARD A: DATA KARYAWAN & PASIEN -->
+            <div style="background: var(--surface-2); border: 1px solid var(--border-card); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                  <span style="font-weight: 800; font-size: 0.92rem; color: var(--text-main);">
+                    <i class="fa-solid fa-id-card" style="color: #38bdf8;"></i> Master Karyawan
+                  </span>
+                  <span class="badge badge-info" id="badge-admin-count-karyawan">0 Karyawan</span>
+                </div>
+                <p style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+                  Format resmi template NPK, Nama, Bagian, Dept, Gender, No HP, Alamat.
+                </p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="downloadKaryawanTemplateExcel()" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.4); font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-download"></i> Unduh Template Excel (.xlsx)
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="exportKaryawanExcel()" style="font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-file-export"></i> Export Data Karyawan (.xlsx)
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openModalImportKaryawan()" style="font-weight: 800; background: #0284c7; border: none; text-align: left;">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Import Excel / CSV Karyawan
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="openModalResetKaryawan()" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-trash-can"></i> Reset Data Karyawan (PIN)
+                </button>
+              </div>
+            </div>
+
+            <!-- SUB-CARD B: DATA STOK & MASTER OBAT -->
+            <div style="background: var(--surface-2); border: 1px solid var(--border-card); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                  <span style="font-weight: 800; font-size: 0.92rem; color: var(--text-main);">
+                    <i class="fa-solid fa-pills" style="color: #f59e0b;"></i> Master Stok Obat
+                  </span>
+                  <span class="badge badge-warning" id="badge-admin-count-obat">0 Item Obat</span>
+                </div>
+                <p style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+                  Melanjutkan stok obat yang ada di PT baru atau import katalog obat baru.
+                </p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="downloadObatTemplateExcel()" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.4); font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-download"></i> Unduh Template Excel (.xlsx)
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="exportObatExcel()" style="font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-file-export"></i> Export Data Obat (.xlsx)
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openModalImportObat()" style="font-weight: 800; background: #f59e0b; color: #000; border: none; text-align: left;">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Import Excel / CSV Obat
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="openModalResetObat()" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-trash-can"></i> Reset Stok &amp; Obat (PIN)
+                </button>
+              </div>
+            </div>
+
+            <!-- SUB-CARD C: RIWAYAT REKAM MEDIS PASIEN -->
+            <div style="background: var(--surface-2); border: 1px solid var(--border-card); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                  <span style="font-weight: 800; font-size: 0.92rem; color: var(--text-main);">
+                    <i class="fa-solid fa-notes-medical" style="color: #ec4899;"></i> Riwayat Rekam Medis
+                  </span>
+                  <span class="badge badge-danger" id="badge-admin-count-records">0 Berkas</span>
+                </div>
+                <p style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+                  Melanjutkan riwayat berobat pasien di PT tersebut dari sistem sebelumnya.
+                </p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="downloadRekamMedisTemplateExcel()" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.4); font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-download"></i> Unduh Template Excel (.xlsx)
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="exportRekamMedisExcel()" style="font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-file-export"></i> Export Seluruh Medis (.xlsx)
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openModalImportRekamMedis()" style="font-weight: 800; background: #ec4899; border: none; text-align: left;">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Import Riwayat Medis (Excel)
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="openModalResetRekamMedis()" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); font-weight: 700; text-align: left;">
+                  <i class="fa-solid fa-trash-can"></i> Reset Riwayat Medis (PIN)
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 3. SINKRONISASI GOOGLE SHEETS & BACKUP LOKAL -->
+        <!-- ============================================================ -->
         <div class="glass-card" style="margin-bottom: 20px;">
-          <h2><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Sinkronisasi Google Sheets (Integrasi Real-Time)</h2>
+          <h2><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> 3. Sinkronisasi Google Sheets (Integrasi Real-Time)</h2>
           <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.85rem;">Master ICD-10, Stok Obat dan Karyawan tersinkron otomatis 24 Jam di background.</p>
           <div id="gsheet-last-sync" style="font-size: 0.8rem; color: var(--success); font-weight: 600; margin-top: 6px;"></div>
         </div>
@@ -2419,6 +3088,14 @@ function setupTabDanHeader() {
               </div>
 
               <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">
+                  <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> Nomor WhatsApp Aktif (Menerima Laporan Shift) *
+                </label>
+                <input type="tel" id="acc-input-nowa" class="form-control" placeholder="Contoh: 081291868456" required>
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 3px;">Nomor ini wajib aktif untuk menerima laporan oper shift &amp; rekap 24H.</small>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
                 <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Kata Sandi Saat Ini *</label>
                 <div class="acc-pwd-input-wrap">
                   <input type="password" id="acc-current-password" class="form-control" placeholder="Masukkan kata sandi lama Anda..." required>
@@ -2555,6 +3232,10 @@ function setupTabDanHeader() {
                   <input type="text" id="acc-new-user-username" class="form-control" placeholder="Username login..." required>
                 </div>
                 <div>
+                  <label class="form-label" style="font-size: 0.8rem; font-weight: 700;"><i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> No. WhatsApp Aktif *</label>
+                  <input type="tel" id="acc-new-user-nowa" class="form-control" placeholder="08xxxxxxxxxx" required>
+                </div>
+                <div>
                   <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Kata Sandi Awal *</label>
                   <input type="password" id="acc-new-user-pwd" class="form-control" placeholder="Minimal 4 karakter..." minlength="4" required>
                 </div>
@@ -2602,6 +3283,10 @@ function setupTabDanHeader() {
           <label class="form-label">Username *</label>
           <input type="text" id="edit-user-username" class="form-control" required>
         </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label"><i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> Nomor WhatsApp Aktif (Menerima Laporan) *</label>
+          <input type="tel" id="edit-user-nowa" class="form-control" placeholder="Contoh: 081291868456" required>
+        </div>
         <div class="form-group" style="margin-bottom: 18px;">
           <label class="form-label">Ganti Password (Kosongkan jika tidak ingin diubah)</label>
           <input type="password" id="edit-user-password" class="form-control" placeholder="Kata sandi baru...">
@@ -2614,8 +3299,666 @@ function setupTabDanHeader() {
     </div>
   </div>
 
+  <!-- ============================================================ -->
+  <!-- MODAL: IMPORT DATA KARYAWAN (EXCEL / CSV) -->
+  <!-- ============================================================ -->
+  <div id="modal-import-karyawan" class="modal-overlay" style="display: none; z-index: 10012;">
+    <div class="modal-card" style="max-width: 680px; width: 94vw; padding: 22px; border-radius: 16px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: var(--primary);">
+          <i class="fa-solid fa-file-excel" style="color: #22c55e;"></i> Import Data Karyawan (Excel / CSV)
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalImportKaryawan()">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div class="info-banner info-banner-blue" style="margin-bottom: 14px; font-size: 0.85rem;">
+          💡 <strong>Petunjuk Onboarding PT Baru:</strong> Pastikan Anda menggunakan file Excel sesuai format template resmi Nafila Medika. Jika belum memiliki formatnya, klik tombol di bawah untuk mengunduh template.
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="downloadKaryawanTemplateExcel()" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.4); font-weight: 700; margin-bottom: 14px;">
+          <i class="fa-solid fa-download"></i> Unduh Format Template Excel (.xlsx)
+        </button>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 700;">Pilih File Excel (.xlsx, .xls) atau CSV *</label>
+          <input type="file" id="excel-import-file-input" accept=".xlsx, .xls, .csv" class="form-control" onchange="handleExcelFileSelected(event)">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 700;">Opsi Data NIK/NPK Duplikat:</label>
+          <div style="display: flex; gap: 16px;">
+            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="radio" name="import-dup-mode" value="skip" checked> Lewati (Skip jika NIK sudah ada)
+            </label>
+            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="radio" name="import-dup-mode" value="overwrite"> Perbarui (Update data yang cocok)
+            </label>
+          </div>
+        </div>
+
+        <!-- Preview Area -->
+        <div id="excel-import-preview-area" style="display: none; margin-top: 14px; border: 1px solid var(--border-card); border-radius: 8px; padding: 12px; background: var(--surface-2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 800; font-size: 0.88rem; color: var(--text-main);" id="excel-preview-stat-lbl">0 baris terdeteksi</span>
+            <span class="badge badge-success" id="excel-preview-valid-badge">Siap Diimpor</span>
+          </div>
+          <div style="max-height: 180px; overflow-y: auto; font-size: 0.78rem;">
+            <table class="custom-table" style="margin: 0;">
+              <thead>
+                <tr>
+                  <th>NPK</th>
+                  <th>Nama</th>
+                  <th>Dept</th>
+                  <th>Gender</th>
+                  <th>No WA</th>
+                </tr>
+              </thead>
+              <tbody id="excel-preview-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModalImportKaryawan()">Batal</button>
+        <button type="button" id="btn-submit-excel-import" class="btn btn-primary" onclick="submitExcelImport()" style="font-weight: 800;" disabled>
+          <i class="fa-solid fa-cloud-arrow-up"></i> Mulai Import Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: RESET DATA KARYAWAN PT (ONBOARDING PT BARU) -->
+  <!-- ============================================================ -->
+  <div id="modal-reset-karyawan" class="modal-overlay" style="display: none; z-index: 10012;">
+    <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 22px; border-radius: 16px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: #ef4444;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Reset Data Karyawan (PT Baru)
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalResetKaryawan()">&times;</button>
+      </div>
+      
+      <div class="info-banner" style="background: rgba(239, 68, 68, 0.12); border: 1.5px solid #ef4444; color: #f87171; margin-bottom: 16px; font-size: 0.85rem;">
+        ⚠️ <strong>Perhatian:</strong> Fitur ini digunakan saat aplikasi baru saja diinstal di PT/Pabrik klien baru untuk mengosongkan seluruh master data karyawan pabrik sebelumnya. Data rekam medis tidak akan terhapus.
+      </div>
+
+      <form onsubmit="handleConfirmResetKaryawan(event)">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-weight: 700;">Masukkan Kunci Master / PIN Klinik (231067) *</label>
+          <input type="password" id="reset-karyawan-pin" class="form-control" placeholder="Ketik PIN Master..." required autocomplete="off">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalResetKaryawan()">Batal</button>
+          <button type="submit" class="btn btn-danger" style="font-weight: 800; background: #dc2626; border: none;">
+            <i class="fa-solid fa-trash-can"></i> Ya, Kosongkan Data Sekarang
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: IMPORT MASTER OBAT (EXCEL / CSV) -->
+  <!-- ============================================================ -->
+  <div id="modal-import-obat" class="modal-overlay" style="display: none; z-index: 10012;">
+    <div class="modal-card" style="max-width: 680px; width: 94vw; padding: 22px; border-radius: 16px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: #f59e0b;">
+          <i class="fa-solid fa-file-excel"></i> Import Master &amp; Stok Obat (Excel / CSV)
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalImportObat()">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div class="info-banner info-banner-blue" style="margin-bottom: 14px; font-size: 0.85rem;">
+          💡 <strong>Petunjuk Onboarding Farmasi PT Baru:</strong> Anda dapat mengimpor stok obat yang sudah ada di PT klien baru untuk melanjutkan pelayanan resep di klinik.
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="downloadObatTemplateExcel()" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.4); font-weight: 700; margin-bottom: 14px;">
+          <i class="fa-solid fa-download"></i> Unduh Format Template Excel Obat (.xlsx)
+        </button>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 700;">Pilih File Excel (.xlsx, .xls) atau CSV Obat *</label>
+          <input type="file" id="excel-import-obat-file-input" accept=".xlsx, .xls, .csv" class="form-control" onchange="handleExcelObatSelected(event)">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 700;">Opsi Obat yang Sudah Ada di Sistem:</label>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="radio" name="import-obat-dup-mode" value="update" checked> Tambah Stok (Akumulasi stok lama + baru)
+            </label>
+            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="radio" name="import-obat-dup-mode" value="overwrite"> Timpa (Ganti stok &amp; info dengan file baru)
+            </label>
+            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="radio" name="import-obat-dup-mode" value="skip"> Lewati (Skip jika nama sudah ada)
+            </label>
+          </div>
+        </div>
+
+        <!-- Preview Area -->
+        <div id="excel-import-obat-preview-area" style="display: none; margin-top: 14px; border: 1px solid var(--border-card); border-radius: 8px; padding: 12px; background: var(--surface-2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 800; font-size: 0.88rem; color: var(--text-main);" id="excel-preview-obat-stat-lbl">0 baris terdeteksi</span>
+            <span class="badge badge-success" id="excel-preview-obat-valid-badge">Siap Diimpor</span>
+          </div>
+          <div style="max-height: 180px; overflow-y: auto; font-size: 0.78rem;">
+            <table class="custom-table" style="margin: 0;">
+              <thead>
+                <tr>
+                  <th>Nama Obat</th>
+                  <th>Kategori</th>
+                  <th>Stok</th>
+                  <th>Satuan</th>
+                  <th>Harga Satuan</th>
+                </tr>
+              </thead>
+              <tbody id="excel-preview-obat-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModalImportObat()">Batal</button>
+        <button type="button" id="btn-submit-excel-obat-import" class="btn btn-primary" onclick="submitExcelObatImport()" style="font-weight: 800; background: #f59e0b; color: #000; border: none;" disabled>
+          <i class="fa-solid fa-cloud-arrow-up"></i> Mulai Import Obat
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: RESET MASTER OBAT PT (PIN: 231067) -->
+  <!-- ============================================================ -->
+  <div id="modal-reset-obat" class="modal-overlay" style="display: none; z-index: 10012;">
+    <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 22px; border-radius: 16px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: #ef4444;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Reset Master &amp; Stok Obat
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalResetObat()">&times;</button>
+      </div>
+      
+      <div class="info-banner" style="background: rgba(239, 68, 68, 0.12); border: 1.5px solid #ef4444; color: #f87171; margin-bottom: 16px; font-size: 0.85rem;">
+        ⚠️ <strong>Perhatian:</strong> Fitur ini digunakan saat klinik PT baru ingin memulai dari katalog obat kosong atau mengganti total stok pabrik sebelumnya.
+      </div>
+
+      <form onsubmit="handleConfirmResetObat(event)">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-weight: 700;">Masukkan Kunci Master / PIN Klinik (231067) *</label>
+          <input type="password" id="reset-obat-pin" class="form-control" placeholder="Ketik PIN Master..." required autocomplete="off">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalResetObat()">Batal</button>
+          <button type="submit" class="btn btn-danger" style="font-weight: 800; background: #dc2626; border: none;">
+            <i class="fa-solid fa-trash-can"></i> Ya, Kosongkan Data Obat
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: IMPORT RIWAYAT REKAM MEDIS PASIEN (EXCEL / CSV) -->
+  <!-- ============================================================ -->
+  <div id="modal-import-rekam-medis" class="modal-overlay" style="display: none; z-index: 10012;">
+    <div class="modal-card" style="max-width: 720px; width: 94vw; padding: 22px; border-radius: 16px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: #ec4899;">
+          <i class="fa-solid fa-file-excel"></i> Import Riwayat Berobat Pasien (Excel / CSV)
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalImportRekamMedis()">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div class="info-banner info-banner-blue" style="margin-bottom: 14px; font-size: 0.85rem;">
+          💡 <strong>Melanjutkan Rekam Medis PT Klien:</strong> Impor riwayat kunjungan / berobat karyawan yang sudah ada di faskes PT sebelumnya agar kontinuitas pengobatan pasien tetap terjaga di In-House Nafila Medika.
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="downloadRekamMedisTemplateExcel()" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.4); font-weight: 700; margin-bottom: 14px;">
+          <i class="fa-solid fa-download"></i> Unduh Format Template Excel Riwayat (.xlsx)
+        </button>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 700;">Pilih File Excel (.xlsx, .xls) atau CSV Riwayat *</label>
+          <input type="file" id="excel-import-rm-file-input" accept=".xlsx, .xls, .csv" class="form-control" onchange="handleExcelRekamMedisSelected(event)">
+        </div>
+
+        <!-- Preview Area -->
+        <div id="excel-import-rm-preview-area" style="display: none; margin-top: 14px; border: 1px solid var(--border-card); border-radius: 8px; padding: 12px; background: var(--surface-2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 800; font-size: 0.88rem; color: var(--text-main);" id="excel-preview-rm-stat-lbl">0 baris terdeteksi</span>
+            <span class="badge badge-success" id="excel-preview-rm-valid-badge">Siap Diimpor</span>
+          </div>
+          <div style="max-height: 180px; overflow-y: auto; font-size: 0.78rem;">
+            <table class="custom-table" style="margin: 0;">
+              <thead>
+                <tr>
+                  <th>Tgl Berobat</th>
+                  <th>NPK</th>
+                  <th>Nama Pasien</th>
+                  <th>Dept</th>
+                  <th>Diagnosa</th>
+                </tr>
+              </thead>
+              <tbody id="excel-preview-rm-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModalImportRekamMedis()">Batal</button>
+        <button type="button" id="btn-submit-excel-rm-import" class="btn btn-primary" onclick="submitExcelRekamMedisImport()" style="font-weight: 800; background: #ec4899; border: none;" disabled>
+          <i class="fa-solid fa-cloud-arrow-up"></i> Mulai Import Riwayat Pasien
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: RESET REKAM MEDIS PT (PIN: 231067) -->
+  <!-- ============================================================ -->
+  <div id="modal-reset-rekam-medis" class="modal-overlay" style="display: none; z-index: 10012;">
+    <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 22px; border-radius: 16px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: #ef4444;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Reset Riwayat Rekam Medis
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalResetRekamMedis()">&times;</button>
+      </div>
+      
+      <div class="info-banner" style="background: rgba(239, 68, 68, 0.12); border: 1.5px solid #ef4444; color: #f87171; margin-bottom: 16px; font-size: 0.85rem;">
+        ⚠️ <strong>Perhatian:</strong> Fitur ini mengosongkan seluruh riwayat kunjungan &amp; pemeriksaan berobat pasien sebelumnya saat aplikasi baru diinstal di PT/Pabrik baru.
+      </div>
+
+      <form onsubmit="handleConfirmResetRekamMedis(event)">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-weight: 700;">Masukkan Kunci Master / PIN Klinik (231067) *</label>
+          <input type="password" id="reset-rm-pin" class="form-control" placeholder="Ketik PIN Master..." required autocomplete="off">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalResetRekamMedis()">Batal</button>
+          <button type="submit" class="btn btn-danger" style="font-weight: 800; background: #dc2626; border: none;">
+            <i class="fa-solid fa-trash-can"></i> Ya, Kosongkan Riwayat Medis
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: PREVIEW FOTO BUKTI SURAT SAKIT LUAR -->
+  <!-- ============================================================ -->
+  <div id="modal-preview-foto-surat" class="modal-overlay" style="display: none; z-index: 10020;" onclick="closeModalPreviewFotoSurat()">
+    <div class="modal-card" style="max-width: 720px; width: 94vw; padding: 16px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15);" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 style="margin: 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-image"></i> Foto Bukti Surat Sakit Luar</h4>
+        <button type="button" class="close-btn" onclick="closeModalPreviewFotoSurat()" style="color: #fff;">&times;</button>
+      </div>
+      <div style="text-align: center; max-height: 75vh; overflow: auto;">
+        <img id="modal-preview-surat-img" src="" alt="Bukti Surat Sakit" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;">
+      </div>
+      <div style="text-align: right; margin-top: 10px;">
+        <a id="modal-preview-surat-download" href="" target="_blank" download="surat-sakit-luar.png" class="btn btn-sm btn-primary">
+          <i class="fa-solid fa-download"></i> Buka / Unduh File Asli
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: TAUTKAN WHATSAPP KE DASBOR (PERSIS SCREENSHOT 1) -->
+  <!-- ============================================================ -->
+  <div id="modal-wa-qr" class="modal-overlay" style="display: none; z-index: 10010;">
+    <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 22px; border-radius: 20px; background: var(--surface-1); border: 1.5px solid var(--border-card);">
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; color: #22c55e; font-size: 1.25rem;">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">Tautkan WhatsApp Klinik ke Dasbor</h3>
+            <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Multi-Device Resmi - Sinkron Otomatis</p>
+          </div>
+        </div>
+        <button type="button" class="close-btn" onclick="closeModalWaQr()" style="font-size: 1.4rem; color: var(--text-faint); background: none; border: none; cursor: pointer;">&times;</button>
+      </div>
+
+      <!-- Subtitle Single Device HP Klinik -->
+      <div style="text-align: center; margin-bottom: 16px;">
+        <span style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 16px; border-radius: 20px; font-weight: 800; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> WhatsApp HP Klinik PT ATI
+        </span>
+      </div>
+
+      <!-- Status Banner -->
+      <div id="modal-wa-status-connected" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1.5px solid #10b981; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 18px;">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin: 0 auto 12px auto; box-shadow: 0 0 16px rgba(16,185,129,0.4);">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div style="font-weight: 800; font-size: 0.95rem; color: #34d399; margin-bottom: 4px;">WhatsApp Berhasil Terhubung &amp; Siap Digunakan!</div>
+        <div id="modal-wa-device-name" style="font-weight: 800; font-size: 1.15rem; color: #fff; margin-top: 6px;">Klinik PT ATI &amp; Nafila Medika</div>
+        <div id="modal-wa-device-number" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 2px;">+62 813-9816-9819</div>
+        <div style="font-size: 0.75rem; color: var(--text-faint); margin-top: 6px;">Sinkronisasi pesan masuk &amp; keluar aktif</div>
+        
+        <button type="button" onclick="disconnectWaSession()" style="margin-top: 16px; padding: 8px 16px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Putuskan Tautan &amp; Ganti HP
+        </button>
+      </div>
+
+      <!-- Area QR Scanner -->
+      <div id="modal-wa-status-scanning" style="display: block; text-align: center; margin-bottom: 16px;">
+        <div style="background: #ffffff; padding: 14px; border-radius: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid var(--border-focus);">
+          <img id="modal-wa-qr-img" src="" alt="Scan Barcode WhatsApp" style="width: 220px; height: 220px; display: block; object-fit: contain;">
+          <div id="modal-wa-qr-placeholder" style="width: 220px; height: 220px; display: none; align-items: center; justify-content: center; flex-direction: column; color: #000;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: #0284c7; margin-bottom: 8px;"></i>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Memuat Barcode WhatsApp...</span>
+          </div>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">
+          Arahkan kamera WhatsApp HP ke barcode di atas sampai terhubung.
+        </div>
+      </div>
+
+      <!-- Petunjuk Langkah Scan (Persis SS 1) -->
+      <div style="background: var(--surface-2); border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 0.78rem; line-height: 1.5; color: var(--text-main); border: 1px solid var(--border-subtle);">
+        <div style="font-weight: 800; color: #38bdf8; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-mobile-screen"></i> Cara Menautkan di WhatsApp HP Anda:
+        </div>
+        <ol style="margin: 0; padding-left: 18px; color: var(--text-muted);">
+          <li>Buka aplikasi <strong>WhatsApp</strong> di HP Anda.</li>
+          <li>Ketuk <strong>Menu Titik Tiga (⋮)</strong> di kanan atas (atau Pengaturan di iPhone).</li>
+          <li>Pilih <strong>Perangkat tertaut (Linked devices)</strong>.</li>
+          <li>Ketuk tombol <strong>Tautkan perangkat (Link a device)</strong>.</li>
+          <li>Arahkan kamera HP Anda ke barcode di atas sampai bergetar/sukses.</li>
+        </ol>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="refreshWaQrCode()" style="flex: 1; font-weight: 700; font-size: 0.85rem;">
+          <i class="fa-solid fa-rotate"></i> Muat Ulang Barcode
+        </button>
+        <button type="button" class="btn btn-primary" onclick="closeModalWaQr()" style="flex: 1; font-weight: 800; font-size: 0.85rem; background: #0284c7;">
+          Selesai / Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: KIRIM PESAN WHATSAPP BARU -->
+  <!-- ============================================================ -->
+  <div id="modal-new-wa-message" class="modal-overlay" style="display: none; z-index: 10008;">
+    <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 20px; border-radius: 16px; background: var(--surface-1); border: 1.5px solid var(--border-card);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #22c55e;">
+          <i class="fa-solid fa-paper-plane"></i> Kirim Pesan WhatsApp Baru
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalNewWaMessage()">&times;</button>
+      </div>
+
+      <form onsubmit="handleSendNewWaDirect(event)">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Pilih Pasien / Karyawan (Opsional)</label>
+          <input type="text" id="new-wa-patient-select" class="form-control" list="list-all-patients-wa" placeholder="Ketik nama atau NPK karyawan..." onchange="handleNewWaPatientSelect(this)">
+          <datalist id="list-all-patients-wa"></datalist>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Nomor WhatsApp Tujuan *</label>
+          <input type="text" id="new-wa-phone-input" class="form-control" placeholder="Contoh: 081234567890 / 628123..." required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Nama Pasien</label>
+          <input type="text" id="new-wa-name-input" class="form-control" placeholder="Nama pasien...">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Pesan WhatsApp *</label>
+          <textarea id="new-wa-text-input" class="form-control" rows="4" placeholder="Ketik pesan yang ingin disampaikan..." required></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalNewWaMessage()">Batal</button>
+          <button type="submit" class="btn btn-primary" style="background: #22c55e; border: none; font-weight: 800;">
+            <i class="fa-solid fa-paper-plane"></i> Kirim Sekarang
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: TAMBAH KONTROL MANUAL -->
+  <!-- ============================================================ -->
+  <div id="modal-manual-kontrol" class="modal-overlay" style="display: none; z-index: 10007;">
+    <div class="modal-card" style="max-width: 500px; width: 92vw; padding: 20px; border-radius: 16px; background: var(--surface-1); border: 1.5px solid var(--border-card);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #38bdf8;">
+          <i class="fa-solid fa-calendar-plus"></i> Tambah Jadwal Kontrol Pasien
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalManualKontrol()">&times;</button>
+      </div>
+
+      <form onsubmit="handleSaveManualKontrol(event)">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Pilih Pasien (Cari NPK atau Nama) *</label>
+          <input type="text" id="manual-kontrol-pasien-search" class="form-control" list="list-all-patients-kontrol" placeholder="Ketik NPK atau Nama Karyawan..." required onchange="handleManualKontrolPatientSelect(this)">
+          <datalist id="list-all-patients-kontrol"></datalist>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">NPK Pabrik</label>
+            <input type="text" id="manual-kontrol-npk" class="form-control" readonly>
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Departemen</label>
+            <input type="text" id="manual-kontrol-dept" class="form-control" readonly>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Nomor WhatsApp Pasien</label>
+          <input type="text" id="manual-kontrol-phone" class="form-control" placeholder="08...">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Tanggal Kontrol *</label>
+            <input type="date" id="manual-kontrol-date" class="form-control" required>
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Kategori</label>
+            <select id="manual-kontrol-kategori" class="form-control">
+              <option value="umum">Kontrol Rutin</option>
+              <option value="izinSakit">Izin Sakit (Surkes)</option>
+              <option value="pantauan">Pasien Pantauan K3 / DHSE</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Catatan / Rencana Pemeriksaan Kontrol</label>
+          <input type="text" id="manual-kontrol-notes" class="form-control" placeholder="Contoh: Evaluasi istirahat sakit / tensi lanjutan..." required>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalManualKontrol()">Batal</button>
+          <button type="submit" class="btn btn-primary" style="font-weight: 800; background: #0284c7;">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan Jadwal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: UBAH TANGGAL KONTROL / RESCHEDULE -->
+  <!-- ============================================================ -->
+  <div id="modal-edit-kontrol" class="modal-overlay" style="display: none; z-index: 10008;">
+    <div class="modal-card" style="max-width: 440px; width: 92vw; padding: 20px; border-radius: 16px; background: var(--surface-1); border: 1.5px solid var(--border-card);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #f59e0b;">
+          <i class="fa-solid fa-calendar-days"></i> Ubah Tanggal Kontrol
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalEditKontrol()">&times;</button>
+      </div>
+
+      <form onsubmit="handleSaveEditKontrol(event)">
+        <input type="hidden" id="edit-kontrol-id">
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 0.95rem; font-weight: 800; color: #fff;" id="edit-kontrol-nama-label">Nama Pasien</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);" id="edit-kontrol-sub-label">NPK: - | Dept: -</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Tanggal Kontrol Baru *</label>
+          <input type="date" id="edit-kontrol-new-date" class="form-control" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-size: 0.82rem; font-weight: 700;">Catatan / Rencana Kontrol</label>
+          <input type="text" id="edit-kontrol-new-notes" class="form-control" required>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalEditKontrol()">Batal</button>
+          <button type="submit" class="btn btn-primary" style="background: #f59e0b; color: #000; font-weight: 800; border: none;">
+            Simpan Jadwal Baru
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: POP-UP DETAIL PASIEN KONTROL (KLIK KARTU SUMMARY) -->
+  <!-- ============================================================ -->
+  <div id="modal-kontrol-card-popup" class="modal-overlay" style="display: none; z-index: 10009;">
+    <div class="modal-card" style="max-width: 760px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; padding: 22px; border-radius: 18px; background: var(--surface-1); border: 1.5px solid var(--border-card); box-shadow: 0 16px 40px rgba(0,0,0,0.35);">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+        <h3 id="modal-kontrol-popup-title" style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-calendar-check" style="color: #f59e0b;"></i> Daftar Pasien Kontrol
+        </h3>
+        <button type="button" class="close-btn" onclick="closeKontrolCardPopup()" style="font-size: 1.4rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <!-- Quick Search inside Modal -->
+      <div style="margin-bottom: 12px; position: relative;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-size: 0.85rem;"></i>
+        <input type="text" id="modal-kontrol-popup-search" oninput="filterKontrolCardPopupList()" class="form-control" placeholder="Cari nama pasien, NPK, atau catatan kontrol..." style="padding-left: 36px; font-size: 0.85rem;">
+      </div>
+
+      <!-- Scrollable list of patients -->
+      <div id="modal-kontrol-popup-body" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; min-height: 160px;">
+        <!-- Dynamically rendered -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+        <span id="modal-kontrol-popup-count" style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">0 Pasien</span>
+        <button type="button" class="btn btn-secondary" onclick="closeKontrolCardPopup()">Tutup</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: LAPORAN DHSE (DEPARTEMEN K3 / HSE PT ATI) -->
+  <!-- ============================================================ -->
+  <div id="modal-laporan-dhse" class="modal-overlay" style="display: none; z-index: 10009;">
+    <div class="modal-card" style="max-width: 900px; width: 95vw; max-height: 90vh; padding: 22px; border-radius: 18px; background: var(--surface-1); border: 1.5px solid var(--border-card); display: flex; flex-direction: column;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(192, 132, 252, 0.15); display: flex; align-items: center; justify-content: center; color: #c084fc; font-size: 1.25rem;">
+            <i class="fa-solid fa-file-waveform"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #fff;">Laporan Pemantauan Kesehatan &amp; K3 (DHSE PT ATI)</h3>
+            <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: var(--text-muted);">Rekapitulasi Karyawan Izin Sakit (Surkes) &amp; Pasien Pantauan K3</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-sm btn-primary" onclick="printLaporanDHSE()" style="background: #c084fc; color: #000; font-weight: 800; border: none;">
+            <i class="fa-solid fa-print"></i> Cetak Laporan
+          </button>
+          <button type="button" class="close-btn" onclick="closeModalLaporanDHSE()">&times;</button>
+        </div>
+      </div>
+
+      <!-- Filter Bar Laporan DHSE -->
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; background: var(--surface-2); padding: 12px; border-radius: 12px;">
+        <div style="flex: 1; min-width: 140px;">
+          <label class="form-label" style="font-size: 0.78rem; margin-bottom: 4px;">Dari Tanggal</label>
+          <input type="date" id="dhse-filter-start" class="form-control" style="font-size: 0.82rem; padding: 6px 10px;" onchange="renderLaporanDHSETable()">
+        </div>
+        <div style="flex: 1; min-width: 140px;">
+          <label class="form-label" style="font-size: 0.78rem; margin-bottom: 4px;">Sampai Tanggal</label>
+          <input type="date" id="dhse-filter-end" class="form-control" style="font-size: 0.82rem; padding: 6px 10px;" onchange="renderLaporanDHSETable()">
+        </div>
+        <div style="flex: 1; min-width: 150px;">
+          <label class="form-label" style="font-size: 0.78rem; margin-bottom: 4px;">Kategori</label>
+          <select id="dhse-filter-kategori" class="form-control" style="font-size: 0.82rem; padding: 6px 10px;" onchange="renderLaporanDHSETable()">
+            <option value="semua">Semua (Izin Sakit &amp; Pantauan)</option>
+            <option value="izinSakit">Khusus Izin Sakit (Surkes)</option>
+            <option value="pantauan">Khusus Pasien Pantauan K3</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Content Table (Printable Area) -->
+      <div id="dhse-printable-area" style="flex: 1; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 4px 6px;">
+          <div style="font-weight: 800; font-size: 0.88rem; color: #38bdf8;" id="dhse-summary-text">
+            Total Data: 0 Pasien
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-faint);">
+            Poliklinik PT ATI &amp; PT ATI Medika
+          </div>
+        </div>
+
+        <table class="data-table" id="dhse-report-table">
+          <thead>
+            <tr>
+              <th style="width: 5%;">No</th>
+              <th style="width: 25%;">Karyawan (NPK &amp; Dept)</th>
+              <th style="width: 15%;">Status Kelaikan</th>
+              <th style="width: 15%;">Tgl Periksa</th>
+              <th style="width: 15%;">Tgl Rencana Kontrol</th>
+              <th style="width: 25%;">Diagnosa &amp; Keterangan K3</th>
+            </tr>
+          </thead>
+          <tbody id="dhse-report-body">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
+  <!-- Socket.io for Real-time WhatsApp & Live Updates -->
+  <script src="/socket.io/socket.io.js"></script>
   <script src="gdrive-sync.js?v=20260817_2320"></script>
   <script src="app.js?v=20260817_2320"></script>
 </body>

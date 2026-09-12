@@ -640,6 +640,7 @@ async function handleUserRegister(e) {
   const nama = document.getElementById('gate-reg-nama')?.value.trim();
   const role = document.getElementById('gate-reg-role')?.value;
   const username = document.getElementById('gate-reg-username')?.value.trim();
+  const noWa = document.getElementById('gate-reg-nowa')?.value.trim();
   const password = document.getElementById('gate-reg-password')?.value.trim();
 
   if (!nama || !username || !password) {
@@ -651,11 +652,11 @@ async function handleUserRegister(e) {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, role, username, password })
+      body: JSON.stringify({ nama, role, username, password, noWa })
     });
     const data = await res.json();
     if (data.success === true) {
-      const user = data.user || { nama, role, username };
+      const user = data.user || { nama, role, username, noWa };
       appData.currentUser = user;
       localStorage.setItem('marunda_gate_auth', 'true');
       localStorage.setItem('currentUser', JSON.stringify(user));
@@ -697,7 +698,7 @@ async function loadAllAppData() {
     };
 
     const noCacheOpt = { cache: 'no-store' };
-    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes, sjRes, mutRes] = await Promise.all([
+    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes, sjRes, mutRes, slRes] = await Promise.all([
       fetch('/api/patients', noCacheOpt),
       fetch('/api/records', noCacheOpt),
       fetch('/api/medicines', noCacheOpt),
@@ -707,7 +708,8 @@ async function loadAllAppData() {
       fetch('/api/users', noCacheOpt),
       fetch('/api/tindakan', noCacheOpt),
       fetch('/api/surat-jalan', noCacheOpt),
-      fetch('/api/stock-mutations', noCacheOpt)
+      fetch('/api/stock-mutations', noCacheOpt),
+      fetch('/api/surat-luar', noCacheOpt)
     ]);
 
     appData.patients = await safeJson(patRes);
@@ -720,6 +722,7 @@ async function loadAllAppData() {
     appData.tindakan = await safeJson(tndRes);
     appData.suratJalan = await safeJson(sjRes);
     appData.stockMutations = await safeJson(mutRes);
+    appData.suratSakitLuar = await safeJson(slRes);
 
     // Load Settings (GSheet & No WA Apoteker)
     try {
@@ -731,7 +734,7 @@ async function loadAllAppData() {
         const gData = await gRes.json();
         if (gData.gsheetUrl) {
           const inp = document.getElementById('gsheet-app-url');
-          if (inp) inp.value = gData.gsheetUrl;
+          if (inp && document.activeElement !== inp) inp.value = gData.gsheetUrl;
         }
         if (gData.lastSync) {
           const el = document.getElementById('gsheet-last-sync');
@@ -747,10 +750,14 @@ async function loadAllAppData() {
         }
         if (sData.whacenter_device_id) {
           const inp = document.getElementById('whacenter-device-id');
-          if (inp) inp.value = sData.whacenter_device_id;
+          if (inp && document.activeElement !== inp) inp.value = sData.whacenter_device_id;
         }
+        appData.settings = sData;
+        if (typeof applyBranding === 'function') applyBranding(sData, false);
       }
     } catch {}
+
+    if (typeof updateAdminStatBadges === 'function') updateAdminStatBadges();
 
     renderEditDataTable();
     renderGudangTable();
@@ -758,6 +765,7 @@ async function loadAllAppData() {
     renderHSERekamMedisTable();
     renderHSEPasienPantauanTable();
     renderHSESurkesTable();
+    renderSuratLuarTable();
     renderMasterTindakanTable();
     renderUsersTable();
     renderRiwayatSuratJalanTable();
@@ -768,6 +776,7 @@ async function loadAllAppData() {
     renderWATargetSelectOptions();
     renderReqMedicineCatalog();
     autoFillPemeriksa();
+    initShiftView();
     autoFillShipmentOfficers();
 
     // Auto-refresh Direktur billing table if visible
@@ -813,6 +822,16 @@ async function loadAllAppData() {
           renderAccountManageList();
         }
       }
+    }
+
+    if (typeof loadKontrolData === 'function') {
+      loadKontrolData().catch(() => {});
+    }
+    if (typeof checkWaSessionStatus === 'function') {
+      checkWaSessionStatus().catch(() => {});
+    }
+    if (typeof updateOfflineStatusBar === 'function') {
+      updateOfflineStatusBar();
     }
 
     console.log(`Data loaded - Karyawan: ${appData.patients.length}, Obat: ${appData.medicines.length}, ICD-10: ${appData.icd10.length}, Tindakan: ${appData.tindakan.length}, Users: ${appData.users.length}, SJ: ${appData.suratJalan.length}`);
@@ -922,6 +941,19 @@ function handleNavDropdownClick(targetId, el) {
   if (targetId === 'view-obat-req') {
     renderReqMedicineCatalog();
   }
+  if (targetId === 'view-jadwal-kontrol') {
+    loadKontrolData();
+  }
+  if (targetId === 'view-gudang') {
+    renderGudangTable();
+  }
+  if (targetId === 'view-surat-luar') {
+    if (typeof renderSuratLuarTable === 'function') renderSuratLuarTable();
+    if (typeof initSuratLuarForm === 'function') initSuratLuarForm();
+  }
+  if (targetId === 'view-shift') {
+    if (typeof initShiftView === 'function') initShiftView();
+  }
 }
 
 function initNavigation() {
@@ -946,6 +978,12 @@ function initNavigation() {
 
       if (targetId === 'view-obat-req') {
         renderReqMedicineCatalog();
+      }
+      if (targetId === 'view-jadwal-kontrol') {
+        loadKontrolData();
+      }
+      if (targetId === 'view-wa-web') {
+        initWaWeb();
       }
     });
   });
@@ -1888,8 +1926,13 @@ function renderTodayLiveVisits(todayRecords) {
     // Format Resep Obat (P)
     let planHTML = renderResepTimeline(r);
 
+    const isOffline = Boolean(r._isOfflineQueue || (String(r.id || '').startsWith('OFFLINE-')));
+    const borderStyle = isOffline 
+      ? 'border: 2px solid #f59e0b; box-shadow: 0 0 12px rgba(245,158,11,0.35); background: rgba(245,158,11,0.05);' 
+      : (isJustNow ? 'border: 1.5px solid #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.25);' : '');
+
     return `
-      <div class="timeline-item" style="${isJustNow ? 'border: 1.5px solid #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.25);' : ''}">
+      <div class="timeline-item" style="${borderStyle}">
         <div class="timeline-header">
           <div>
             <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-color);">
@@ -1901,7 +1944,7 @@ function renderTodayLiveVisits(todayRecords) {
             </div>
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
-            ${isJustNow ? '<span class="badge" style="background: #10b981; color: #fff; font-weight: 800; font-size: 0.68rem; padding: 3px 6px;">✨ BARU MASUK</span>' : ''}
+            ${isOffline ? '<span class="badge" style="background: #f59e0b; color: #000; font-weight: 800; font-size: 0.68rem; padding: 3px 8px; border-radius: 6px;"><i class="fa-solid fa-cloud-arrow-up"></i> TERSIMPAN OFFLINE</span>' : (isJustNow ? '<span class="badge" style="background: #10b981; color: #fff; font-weight: 800; font-size: 0.68rem; padding: 3px 6px;">✨ BARU MASUK</span>' : '')}
             <button class="btn btn-sm" onclick="openModalEditRecord('${r.id}')" title="Edit Rekam Medis" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 6px; padding: 2px 7px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 700;">
               <i class="fa-solid fa-pen-to-square"></i> Edit
             </button>
@@ -1972,8 +2015,11 @@ function renderPatientSpecificHistory(currentPatient, history) {
     // Format Resep Obat (P)
     let planHTML = renderResepTimeline(r);
 
+    const isOffline = Boolean(r._isOfflineQueue || (String(r.id || '').startsWith('OFFLINE-')));
+    const borderStyle = isOffline ? 'border: 2px solid #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,0.25); background: rgba(245,158,11,0.04);' : '';
+
     return `
-      <div class="timeline-item">
+      <div class="timeline-item" style="${borderStyle}">
         <div class="timeline-header">
           <div class="timeline-date">
             <i class="fa-regular fa-calendar-check"></i> ${r.tanggal || '-'} ${r.jam ? `(${r.jam})` : ''}
@@ -1981,7 +2027,8 @@ function renderPatientSpecificHistory(currentPatient, history) {
               <i class="fa-solid fa-pen-to-square"></i> Edit
             </button>
           </div>
-          <div style="display: flex; gap: 6px;">
+          <div style="display: flex; gap: 6px; align-items: center;">
+            ${isOffline ? '<span class="badge" style="background: #f59e0b; color: #000; font-weight: 800; font-size: 0.68rem; padding: 3px 8px; border-radius: 6px;"><i class="fa-solid fa-cloud-arrow-up"></i> TERSIMPAN OFFLINE</span>' : ''}
             ${r.isPantauan ? '<span class="badge badge-danger">🔴 Pantauan</span>' : ''}
             ${r.izinSakit ? '<span class="badge badge-warning">📄 Surkes</span>' : ''}
           </div>
@@ -2370,10 +2417,19 @@ async function handleSavePoli(e) {
       customCreatedAt = now.toISOString();
     }
 
+    const chkKontrol = document.getElementById('poli-chk-kontrol');
+    const tglKontrolInput = document.getElementById('poli-tanggal-kontrol');
+    const catatanKontrolInput = document.getElementById('poli-catatan-kontrol');
+    const tglKontrolVal = (chkKontrol && chkKontrol.checked && tglKontrolInput && tglKontrolInput.value) 
+      ? tglKontrolInput.value 
+      : ((isIzinSakit || isPantauan) && tglKontrolInput ? tglKontrolInput.value : '');
+    const catatanKontrolVal = catatanKontrolInput ? catatanKontrolInput.value.trim() : '';
+
     const newRecord = {
       nikPabrik: appData.currentPoliPatient.nikPabrik || '',
       namaPasien: appData.currentPoliPatient.nama,
       dept: appData.currentPoliPatient.dept || '',
+      noHp: appData.currentPoliPatient.hp || appData.currentPoliPatient.noHp || appData.currentPoliPatient.telepon || '',
       tanggal: tanggalFormatted,
       created_at: customCreatedAt,
       keluhan,
@@ -2388,6 +2444,8 @@ async function handleSavePoli(e) {
       pemeriksa,
       izinSakit: isIzinSakit,
       isPantauan,
+      tanggalKontrol: tglKontrolVal,
+      catatanKontrol: catatanKontrolVal,
       linkFoto
     };
 
@@ -2451,10 +2509,8 @@ async function handleSavePoli(e) {
           activePatient.saldoObat = (parseInt(activePatient.saldoObat) || 0) - biaya;
         }
 
-        // Render timeline samping seketika dengan data kunjungan yang baru disimpan!
         renderPatientHistoryTimeline(activePatient);
 
-        // Update saldo obat di UI
         const saldoAwalEl = document.getElementById('poli-saldo-awal');
         if (saldoAwalEl) {
           const saldoObat = parseInt(activePatient.saldoObat) || 0;
@@ -2462,7 +2518,6 @@ async function handleSavePoli(e) {
           saldoAwalEl.style.color = saldoObat < 0 ? '#ef4444' : 'var(--text-primary)';
         }
 
-        // Update Right Panel Banner Saldo
         const ageStr = calculateAge(activePatient.tglLahir || activePatient.tgl_lahir);
         const saldoInfo = (activePatient.saldoObat !== undefined) ? ` | <strong style="color:${parseInt(activePatient.saldoObat)<0?'#ef4444':'#059669'}; background: ${parseInt(activePatient.saldoObat)<0?'rgba(239,68,68,0.1)':'rgba(16,185,129,0.1)'}; padding: 2px 6px; border-radius: 4px;">Sisa Saldo: Rp ${(parseInt(activePatient.saldoObat)||0).toLocaleString('id-ID')}</strong>` : '';
         const bannerSubEl = document.getElementById('poli-banner-sub');
@@ -2489,27 +2544,79 @@ async function handleSavePoli(e) {
         `;
       }
 
-      // 4. Update timeline, tabel Edit Data, dan Gudang seketika
+      // 4. Beralih ke tab 'today' agar data pasien yang baru disimpan seketika muncul di puncak riwayat
+      _poliTimelineTab = 'today';
       updatePoliTimelineView();
       renderEditDataTable();
       renderGudangTable();
 
-      // 5. Bersihkan formulir poli untuk entri berikutnya
+      // 5. Bersihkan formulir poli untuk entri berikutnya & hapus draf tersimpan
+      clearPoliDraft();
       resetFormPoli();
 
       // 6. Sinkronkan secara asinkron di latar belakang
       loadAllAppData().catch(loadErr => console.warn('Background sync:', loadErr));
+      loadKontrolData().catch(() => {});
     } else {
       const errData = await res.json().catch(() => ({}));
       showToast(`❌ Gagal menyimpan: ${errData.error || 'Server menolak permintaan'}`, 'error');
     }
   } catch (err) {
-    if (err.name === 'AbortError') {
-      showToast('⚠️ Sinyal pabrik sedang lambat / timeout (12 detik). Mohon periksa menu "Edit Data" terlebih dahulu sebelum klik simpan ulang agar data tidak ganda!', 'warning', 8000);
-    } else {
-      console.error('Save poli error:', err);
-      showToast('❌ Terjadi gangguan koneksi internet. Silakan cek koneksi lalu coba lagi.', 'error');
+    console.warn('Network / fetch issue in savePoliRecord, saving to local offline queue:', err);
+    
+    // PENYELAMATAN DATA OFFLINE (Solusi Sinyal Pabrik Flaky)
+    const offlineRecord = {
+      ...newRecord,
+      id: 'OFFLINE-' + Date.now(),
+      _isOfflineQueue: true,
+      jam: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      offlineSavedAt: new Date().toISOString()
+    };
+
+    saveToOfflineQueue(offlineRecord);
+
+    // 1. Masukkan ke appData.records di memori lokal seketika
+    if (!Array.isArray(appData.records)) appData.records = [];
+    appData.records.unshift(offlineRecord);
+
+    // 2. Potong stok lokal (optimistic update)
+    if (Array.isArray(newRecord.resep)) {
+      newRecord.resep.forEach(item => {
+        const medName = (item.namaObat || item.obat || '').trim().toLowerCase();
+        const q = parseInt(item.qty || item.jumlah) || 1;
+        const found = (appData.medicines || []).find(m => m.nama && m.nama.toLowerCase() === medName);
+        if (found) {
+          found.stok = Math.max(0, (parseInt(found.stok) || 0) - q);
+        }
+      });
     }
+
+    // 3. Update timeline dan banner sukses offline (langsung tampilkan tab Live Hari Ini)
+    _poliTimelineTab = 'today';
+    updatePoliTimelineView();
+    renderEditDataTable();
+    renderGudangTable();
+    updateOfflineStatusBar();
+
+    const alertEl = document.getElementById('poli-recent-saved-alert');
+    if (alertEl) {
+      alertEl.style.display = 'block';
+      alertEl.innerHTML = `
+        <div style="background: rgba(245, 158, 11, 0.18); border: 1.5px solid #f59e0b; color: #fbbf24; padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 0 12px rgba(245,158,11,0.2);">
+          <div>
+            <div style="font-weight: 800; font-size: 0.88rem;"><i class="fa-solid fa-cloud-arrow-up"></i> Rekam Medis Tersimpan Offline di Komputer Ini!</div>
+            <div style="font-size: 0.78rem; color: var(--text-color); margin-top: 2px;">
+              <strong>${escapeHtml(offlineRecord.namaPasien)}</strong> (${escapeHtml(offlineRecord.nikPabrik || '-')}) &bull; Sinyal pabrik sedang terputus, data aman &amp; akan otomatis terunggah ke VPS.
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm" onclick="this.parentElement.parentElement.style.display='none'" style="background: transparent; border: none; color: #f59e0b; font-size: 1.1rem; cursor: pointer; padding: 0 4px;" title="Tutup">&times;</button>
+        </div>
+      `;
+    }
+
+    showToast('💾 Sinyal pabrik terputus. Rekam medis berhasil disimpan di komputer lokal (Offline)! Otomatis sync saat online.', 'warning', 8000);
+    clearPoliDraft();
+    resetFormPoli();
   } finally {
     // 4. KEMBALIKAN STATUS TOMBOL SEPERTI SEMULA
     _isSavingPoli = false;
@@ -2635,18 +2742,20 @@ function renderEditDataTable(forceShowAll) {
          </div>`
       : '';
 
-    // Deteksi apakah record baru (< 2 jam dari sekarang)
+    // Deteksi apakah record baru (< 2 jam dari sekarang) atau offline
     const recMs = r.created_at ? new Date(r.created_at).getTime() : 0;
     const isNew = recMs > 0 && (nowMs - recMs) < TWO_HOURS_MS;
-    const newBadge = isNew ? `<span class="badge-new-record"><i class="fa-solid fa-bolt"></i> BARU</span>` : '';
-    const rowClass = isNew ? 'edit-data-row-new' : '';
+    const isOffline = Boolean(r._isOfflineQueue || (String(r.id || '').startsWith('OFFLINE-')));
+    const offlineBadge = isOffline ? `<span class="badge" style="background: #f59e0b; color: #000; font-weight: 800; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px;"><i class="fa-solid fa-cloud-arrow-up"></i> TERSIMPAN OFFLINE</span>` : '';
+    const newBadge = (!isOffline && isNew) ? `<span class="badge-new-record"><i class="fa-solid fa-bolt"></i> BARU</span>` : '';
+    const rowClass = isOffline ? 'edit-data-row-offline' : (isNew ? 'edit-data-row-new' : '');
 
     return `
-    <tr class="${rowClass}" ondblclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer;" title="Klik 2x untuk melihat seluruh riwayat rekam medis pasien sejak pertama kali">
+    <tr class="${rowClass}" ${isOffline ? 'style="background: rgba(245, 158, 11, 0.06); border-left: 4px solid #f59e0b;"' : ''} ondblclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer;" title="Klik 2x untuk melihat seluruh riwayat rekam medis pasien sejak pertama kali">
       <td data-label="Tanggal" style="vertical-align: top;">
-        <div style="font-weight: 700; color: var(--text-color);">${r.tanggal || '-'}</div>
+        <div style="font-weight: 700; color: var(--text-color);">${r.tanggal || '-'} ${r.jam ? `<span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">(${r.jam})</span>` : ''}</div>
         <div style="margin-top: 4px;">${getStatusKelaikanBadges(r)}</div>
-        ${newBadge ? `<div style="margin-top: 4px;">${newBadge}</div>` : ''}
+        ${offlineBadge ? `<div style="margin-top: 4px;">${offlineBadge}</div>` : (newBadge ? `<div style="margin-top: 4px;">${newBadge}</div>` : '')}
       </td>
       <td data-label="Nama Pasien" style="vertical-align: top;">
         <div onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline; font-weight: 800; font-size: 0.96rem;" title="Klik untuk membuka seluruh riwayat berobat pasien sejak pertama kali">
@@ -5043,14 +5152,14 @@ async function handleSendObatReqWA(e) {
       showToast('✅ Permintaan Obat Berhasil Terkirim via WhaCenter WA API!', 'success');
     } else {
       const errMsg = data.response?.message || data.error || 'Server API Offline';
-      showToast(`⚠️ API WA: ${errMsg}. Membuka WhatsApp Web...`, 'warning');
+      showToast(`⚠️ API WA: ${errMsg}. Mengalihkan ke dasbor WhatsApp Web...`, 'warning');
       const encoded = encodeURIComponent(textWA);
-      window.open(`https://wa.me/${targetHP}?text=${encoded}`, '_blank');
+      openWaChatWithPatient(targetHP, 'Apoteker', encoded);
     }
   } catch (err) {
-    showToast('⚠️ Gagal menghubungi server WA. Membuka WhatsApp Web...', 'warning');
+    showToast('⚠️ Mengalihkan ke dasbor WhatsApp Web...', 'warning');
     const encoded = encodeURIComponent(textWA);
-    window.open(`https://wa.me/${targetHP}?text=${encoded}`, '_blank');
+    openWaChatWithPatient(targetHP, 'Apoteker', encoded);
   }
 }
 
@@ -5110,8 +5219,7 @@ function getPatientWABtnHTML(nikPabrik, text = 'WA') {
   if (!rawHp) {
     return `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; padding: 5px 8px; font-weight: 700; opacity: 0.5;" onclick="event.stopPropagation(); showToast('No HP pasien belum diisi', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> ${text}</button>`;
   }
-  const cleanWA = cleanPhoneForWA(rawHp);
-  return `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; padding: 5px 8px; font-weight: 700;" onclick="event.stopPropagation(); window.open('https://wa.me/${cleanWA}','_blank')" title="Chat WA Pasien"><i class="fa-brands fa-whatsapp"></i> ${text}</button>`;
+  return `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; padding: 5px 8px; font-weight: 700;" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(p.nama || '')}')" title="Chat WA Pasien di Dasbor"><i class="fa-brands fa-whatsapp"></i> ${text}</button>`;
 }
 
 function renderKaryawanTable() {
@@ -5124,12 +5232,14 @@ function renderKaryawanTable() {
     const nikP = String(k.nikPabrik || k.nik || '').toLowerCase();
     const nama = String(k.nama || '').toLowerCase();
     const dept = String(k.dept || k.departemen || '').toLowerCase();
+    const sec = String(k.sectionName || '').toLowerCase();
+    const kota = String(k.birthPlace || '').toLowerCase();
     const hp = String(k.hp || k.no_hp || '').toLowerCase();
-    return !query || nikP.includes(query) || nama.includes(query) || dept.includes(query) || hp.includes(query);
+    return !query || nikP.includes(query) || nama.includes(query) || dept.includes(query) || sec.includes(query) || kota.includes(query) || hp.includes(query);
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan pencarian '${query}'</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan pencarian '${query}'</td></tr>`;
     return;
   }
 
@@ -5137,44 +5247,73 @@ function renderKaryawanTable() {
     const no = k.no || String(idx + 1);
     const npk = k.nikPabrik || k.nik || '-';
     const nama = k.nama || '-';
-    const dept = k.dept || k.departemen || 'PT ATI';
-    const sectionName = k.sectionName || '-';
+    const dept = k.dept || k.departemen || '-';
+    const sectionName = k.sectionName || '';
+    const birthPlace = k.birthPlace || '';
     const tgl = k.tglLahir || k.tgl_lahir || '-';
     const usia = calculateAge(tgl);
     const gender = k.gender || '-';
-    const golDarah = k.golDarah || '-';
+    const golDarah = k.golDarah || '';
     const rawHp = k.hp || k.no_hp || '';
     const saldoObat = parseInt(k.saldoObat) || 0;
-    const cleanWA = cleanPhoneForWA(rawHp);
+
+    // Hitung jumlah riwayat rekam medis karyawan ini
+    const jumlahRM = (appData.records || []).filter(r =>
+      String(r.nikPabrik || r.nik || '').trim() === String(npk).trim() ||
+      String(r.namaPasien || r.nama || '').toLowerCase().trim() === String(nama).toLowerCase().trim()
+    ).length;
+
+    // Badge riwayat medis
+    const rmBadgeColor = jumlahRM === 0 ? 'rgba(100,100,100,0.15)' : jumlahRM < 3 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+    const rmBadgeText = jumlahRM === 0 ? 'var(--text-muted)' : jumlahRM < 3 ? '#34d399' : '#f87171';
+    const rmBadgeHTML = `<span class="badge" title="Jumlah kunjungan rekam medis" style="background:${rmBadgeColor}; color:${rmBadgeText}; font-weight:700; cursor:${jumlahRM>0?'pointer':'default'};" ${jumlahRM>0?`onclick="event.stopPropagation(); openModalRiwayatPasien('${npk}')"`:''}>${jumlahRM > 0 ? `<i class="fa-solid fa-file-medical" style="margin-right:3px;"></i>${jumlahRM}x` : '-'}</span>`;
+
+    // Badge gender
+    const genderIsLaki = ['laki','l','pria','male','m'].some(v => gender.toLowerCase().includes(v));
+    const genderIsPerempuan = ['perem','p','wanita','female','f'].some(v => gender.toLowerCase().includes(v));
+    const genderColor = genderIsLaki ? '#60a5fa' : genderIsPerempuan ? '#f472b6' : 'var(--text-muted)';
+    const genderBg = genderIsLaki ? 'rgba(96,165,250,0.15)' : genderIsPerempuan ? 'rgba(244,114,182,0.15)' : 'transparent';
+    const genderLabel = genderIsLaki ? '♂ L' : genderIsPerempuan ? '♀ P' : gender;
+    const genderHTML = (genderIsLaki || genderIsPerempuan) ? `<span class="badge" style="background:${genderBg}; color:${genderColor}; font-weight:700;">${genderLabel}</span>` : `<span style="color:var(--text-muted);">-</span>`;
+
+    // Badge golongan darah
+    const golBadge = golDarah && golDarah !== '-' && golDarah !== ''
+      ? `<span class="badge" style="background:rgba(239,68,68,0.15); color:#f87171; font-weight:800;">${escapeHtml(golDarah)}</span>`
+      : `<span style="color:var(--text-muted);">-</span>`;
 
     let waHTML = `<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">-</span>`;
     if (rawHp) {
-      waHTML = `<a href="https://wa.me/${cleanWA}" target="_blank" class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;" title="Kirim Pesan WhatsApp Pemantauan">
-        <i class="fa-brands fa-whatsapp"></i> ${rawHp}
-      </a>`;
+      const tpl = encodeURIComponent(`Halo rekan ${nama} (${npk}), ini dari Tim Medis Poliklinik.`);
+      waHTML = `<button type="button" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(nama)}', '${tpl}')" class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; cursor: pointer; padding: 4px 8px; border-radius: 8px;" title="Buka Chat di WA Web Klinik"><i class="fa-brands fa-whatsapp"></i> ${escapeHtml(rawHp)}</button>`;
     }
-    
-    let saldoHTML = `<span style="font-weight: 700; color: ${saldoObat < 0 ? '#ef4444' : '#10b981'};">Rp ${saldoObat.toLocaleString('id-ID')}</span>`;
+
+    let saldoHTML = `<span style="font-weight: 700; color: ${saldoObat < 0 ? '#ef4444' : saldoObat > 0 ? '#10b981' : 'var(--text-muted)'};">Rp ${saldoObat.toLocaleString('id-ID')}</span>`;
 
     return `
       <tr ondblclick="openModalRiwayatPasien('${npk}')" style="cursor: pointer;" title="Klik 2x untuk melihat riwayat medis">
         <td style="text-align: center; color: var(--text-muted); font-weight: 500;">${no}</td>
-        <td><span class="badge badge-info" style="font-weight: 700;">${npk}</span></td>
-        <td><strong>${nama}</strong></td>
-        <td>${dept}</td>
-        <td>${sectionName}</td>
-        <td>${tgl}</td>
+        <td><span class="badge badge-info" style="font-weight: 700;">${escapeHtml(String(npk))}</span></td>
+        <td>
+          <strong>${escapeHtml(nama)}</strong>
+          ${birthPlace ? `<div style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-location-dot" style="font-size:0.68rem; margin-right:3px;"></i>${escapeHtml(birthPlace)}</div>` : ''}
+        </td>
+        <td style="font-size:0.85rem;">
+          <div>${escapeHtml(dept)}</div>
+          ${sectionName ? `<div style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-layer-group" style="font-size:0.68rem; margin-right:3px;"></i>${escapeHtml(sectionName)}</div>` : ''}
+        </td>
+        <td style="font-size:0.82rem; color:var(--text-muted);">${escapeHtml(tgl)}</td>
         <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; font-weight: 700;">${usia}</span></td>
-        <td>${gender}</td>
-        <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; font-weight: 700;">${golDarah}</span></td>
+        <td>${genderHTML}</td>
+        <td style="text-align:center;">${golBadge}</td>
         <td>${waHTML}</td>
         <td>${saldoHTML}</td>
+        <td style="text-align:center;">${rmBadgeHTML}</td>
         <td style="text-align: center;">
           <div style="display: flex; gap: 6px; justify-content: center;">
             <button class="btn btn-sm btn-primary" onclick="selectPatientDirectFromKaryawan('${k.id || npk}')" title="Periksa di Poli">
-              <i class="fa-solid fa-stethoscope"></i> Poli
+              <i class="fa-solid fa-stethoscope"></i>
             </button>
-            <button class="btn btn-sm btn-secondary" onclick="openModalEditKaryawan('${k.id || npk}')" title="Edit Data & No WhatsApp Pasien">
+            <button class="btn btn-sm btn-secondary" onclick="openModalEditKaryawan('${k.id || npk}')" title="Edit Data">
               <i class="fa-solid fa-pen"></i>
             </button>
           </div>
@@ -5182,11 +5321,54 @@ function renderKaryawanTable() {
       </tr>
     `;
   }).join('');
+  renderKaryawanStats();
 }
 
 function filterKaryawanTable() {
   renderKaryawanTable();
   renderMobileKaryawanCards();
+  renderKaryawanStats();
+}
+
+function renderKaryawanStats() {
+  const bar = document.getElementById('karyawan-stat-bar');
+  if (!bar) return;
+  const total = appData.patients.length;
+  const laki = appData.patients.filter(k => {
+    const g = String(k.gender || '').toLowerCase();
+    return g.includes('laki') || g.includes('pria') || g === 'l' || g === 'm';
+  }).length;
+  const wanita = appData.patients.filter(k => {
+    const g = String(k.gender || '').toLowerCase();
+    return g.includes('perem') || g.includes('wanita') || g === 'p' || g === 'f';
+  }).length;
+  const punyaWa = appData.patients.filter(k => !!(k.hp || k.no_hp)).length;
+  const punyaRM = appData.patients.filter(k => {
+    const npk = String(k.nikPabrik || k.nik || '').trim();
+    const nama = String(k.nama || '').toLowerCase().trim();
+    return (appData.records || []).some(r =>
+      String(r.nikPabrik || r.nik || '').trim() === npk ||
+      String(r.namaPasien || r.nama || '').toLowerCase().trim() === nama
+    );
+  }).length;
+
+  const stats = [
+    { icon: 'fa-users', label: 'Total Karyawan', value: total, color: '#818cf8', bg: 'rgba(129,140,248,0.1)' },
+    { icon: 'fa-mars', label: 'Laki-laki', value: laki, color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' },
+    { icon: 'fa-venus', label: 'Perempuan', value: wanita, color: '#f472b6', bg: 'rgba(244,114,182,0.1)' },
+    { icon: 'fa-whatsapp fab', label: 'Punya No WA', value: punyaWa, color: '#34d399', bg: 'rgba(52,211,153,0.1)' },
+    { icon: 'fa-file-medical', label: 'Ada Rekam Medis', value: punyaRM, color: '#fbbf24', bg: 'rgba(251,191,36,0.1)' }
+  ];
+
+  bar.innerHTML = stats.map(s => `
+    <div class="glass-card" style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; background: ${s.bg}; border: 1px solid ${s.color}33;">
+      <i class="fa-solid ${s.icon}" style="font-size: 1.4rem; color: ${s.color};"></i>
+      <div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: ${s.color}; line-height: 1.1;">${s.value.toLocaleString('id-ID')}</div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">${s.label}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
 function selectPatientDirectFromKaryawan(idOrNpkOrPatient) {
@@ -5361,18 +5543,46 @@ async function handleSaveAbsenDokter(e) {
 }
 
 // -------------------------------------------------------------
-// 7. TAB SHIFT LOGIC (TELEGRAM BOT NOTIFICATIONS)
+// 7. TAB SHIFT LOGIC (WHATSAPP WEB - SISTEM MARUNDA)
 // -------------------------------------------------------------
+function initShiftView() {
+  const curUser = appData.currentUser;
+  const userWa = curUser?.noWa || '';
+  const userName = curUser?.nama || '';
+
+  const waInput1 = document.getElementById('shift1-target-wa');
+  const waInput2 = document.getElementById('shift2-target-wa');
+  const dariInput = document.getElementById('shift1-dari');
+
+  if (waInput1 && (!waInput1.value || waInput1.value.trim() === '')) waInput1.value = userWa;
+  if (waInput2 && (!waInput2.value || waInput2.value.trim() === '')) waInput2.value = userWa;
+  if (dariInput && (!dariInput.value || dariInput.value.trim() === '')) dariInput.value = userName;
+}
+
 async function handleKirimShift1(e) {
   e.preventDefault();
+  const btn = document.getElementById('btn-submit-shift1');
+  const targetWa = document.getElementById('shift1-target-wa')?.value.trim() || appData.currentUser?.noWa || '';
+  
+  if (!targetWa) {
+    showToast('Nomor WhatsApp petugas penerima wajib diisi!', 'warning');
+    return;
+  }
+
   const data = {
     tglMulai: document.getElementById('shift1-tgl-mulai').value,
     tglSelesai: document.getElementById('shift1-tgl-selesai').value,
     jamMulai: document.getElementById('shift1-jam-mulai').value,
     jamSelesai: document.getElementById('shift1-jam-selesai').value,
-    dari: document.getElementById('shift1-dari').value,
-    ke: document.getElementById('shift1-ke').value
+    dari: document.getElementById('shift1-dari').value || appData.currentUser?.nama || 'Petugas Shift 1',
+    ke: document.getElementById('shift1-ke').value || 'Petugas Shift 2',
+    targetWa: targetWa
   };
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim via WA...';
+  }
 
   try {
     const res = await fetch('/api/shift/format1', {
@@ -5380,21 +5590,45 @@ async function handleKirimShift1(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (res.ok) showToast('Laporan Oper Shift Terkirim ke Telegram!', 'success');
+    const result = await res.json();
+    if (res.ok && result.success) {
+      showToast(result.message || `Laporan Oper Shift Terkirim ke WhatsApp (${targetWa})!`, 'success');
+    } else {
+      showToast(result.error || 'Gagal mengirim laporan', 'error');
+    }
   } catch (err) {
-    showToast('Gagal mengirim telegram', 'error');
+    showToast('Gagal mengirim WhatsApp. Periksa koneksi server.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> KIRIM OPER SHIFT KE WA PETUGAS';
+    }
   }
 }
 
 async function handleKirimShift2(e) {
   e.preventDefault();
+  const btn = document.getElementById('btn-submit-shift2');
+  const targetWa = document.getElementById('shift2-target-wa')?.value.trim() || appData.currentUser?.noWa || '';
+
+  if (!targetWa) {
+    showToast('Nomor WhatsApp petugas penerima wajib diisi!', 'warning');
+    return;
+  }
+
   const data = {
     tglMulai: document.getElementById('shift2-tgl-mulai').value,
     tglSelesai: document.getElementById('shift2-tgl-selesai').value,
-    petugas1: document.getElementById('shift2-s1').value,
-    petugas2: document.getElementById('shift2-s2').value,
-    petugas3: document.getElementById('shift2-s3').value
+    petugas1: document.getElementById('shift2-s1').value || '-',
+    petugas2: document.getElementById('shift2-s2').value || '-',
+    petugas3: document.getElementById('shift2-s3').value || '-',
+    targetWa: targetWa
   };
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim via WA...';
+  }
 
   try {
     const res = await fetch('/api/shift/format2', {
@@ -5402,9 +5636,19 @@ async function handleKirimShift2(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (res.ok) showToast('Rekap 24H Terkirim ke Telegram!', 'success');
+    const result = await res.json();
+    if (res.ok && result.success) {
+      showToast(result.message || `Rekap 24H Terkirim ke WhatsApp (${targetWa})!`, 'success');
+    } else {
+      showToast(result.error || 'Gagal mengirim laporan', 'error');
+    }
   } catch (err) {
-    showToast('Gagal mengirim telegram', 'error');
+    showToast('Gagal mengirim WhatsApp. Periksa koneksi server.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> KIRIM REKAP 24H KE WA PETUGAS';
+    }
   }
 }
 
@@ -6537,8 +6781,9 @@ function renderHSEPasienPantauanTable() {
     const rawHp = patient.hp || patient.no_hp || '';
     const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
     
+    const tplPantauan = encodeURIComponent(`Halo rekan ${emp.namaPasien || ''} (${emp.nikPabrik || ''}), ini dari Tim Medis PT ATI mengenai evaluasi pemantauan kesehatan Anda.`);
     const waBtn = rawHp 
-      ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
+      ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(emp.namaPasien || '')}', '${tplPantauan}')" title="Kirim Pesan WhatsApp di Dasbor"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
       : '';
       
     const fileBtn = latestRec.linkFoto 
@@ -6626,8 +6871,9 @@ function renderHSESurkesTable() {
     const rawHp = patient.hp || patient.no_hp || '';
     const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
     
+    const tplSurkes = encodeURIComponent(`Halo rekan ${r.namaPasien || ''} (${r.nikPabrik || ''}), ini dari Tim Medis PT ATI terkait surat izin istirahat sakit Anda.`);
     const waBtn = rawHp 
-      ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
+      ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(r.namaPasien || '')}', '${tplSurkes}')" title="Kirim Pesan WhatsApp di Dasbor"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
       : `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px; opacity: 0.5;" onclick="event.stopPropagation(); showToast('No HP belum diisi di data pasien.', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`;
       
     const fileBtn = r.linkFoto 
@@ -7722,6 +7968,7 @@ function openModalEditUser(id) {
   document.getElementById('edit-user-nama').value = u.nama || '';
   document.getElementById('edit-user-role').value = u.role || 'Perawat';
   document.getElementById('edit-user-username').value = u.username || '';
+  document.getElementById('edit-user-nowa').value = u.noWa || '';
   document.getElementById('edit-user-password').value = '';
   const modal = document.getElementById('modal-edit-user');
   if (modal) modal.style.display = 'flex';
@@ -7738,16 +7985,25 @@ async function handleSaveEditUser(e) {
   const nama = document.getElementById('edit-user-nama').value.trim();
   const role = document.getElementById('edit-user-role').value;
   const username = document.getElementById('edit-user-username').value.trim();
+  const noWa = document.getElementById('edit-user-nowa')?.value.trim();
   const password = document.getElementById('edit-user-password').value.trim();
 
   try {
     const res = await fetch(`/api/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, role, username, password })
+      body: JSON.stringify({ nama, role, username, password, noWa })
     });
     if (res.ok) {
       closeModalEditUser();
+      if (appData.currentUser && appData.currentUser.id === id) {
+        appData.currentUser.nama = nama;
+        appData.currentUser.role = role;
+        appData.currentUser.username = username;
+        appData.currentUser.noWa = noWa;
+        localStorage.setItem('currentUser', JSON.stringify(appData.currentUser));
+        updateNavbarUserBadge();
+      }
       showToast('Perubahan data petugas berhasil disimpan!', 'success');
       await loadAllAppData();
     } else {
@@ -7790,11 +8046,13 @@ function openModalAccountSettings(defaultTab) {
   const userEl = document.getElementById('acc-profile-display-username');
   const avatarEl = document.getElementById('acc-profile-avatar-char');
   const inputNama = document.getElementById('acc-input-nama');
+  const inputNoWa = document.getElementById('acc-input-nowa');
 
   if (nameEl) nameEl.textContent = cur.nama || 'Petugas Medis';
   if (roleEl) roleEl.textContent = cur.role || 'Dokter';
   if (userEl) userEl.textContent = '@' + (cur.username || 'petugas');
   if (inputNama) inputNama.value = cur.nama || '';
+  if (inputNoWa) inputNoWa.value = cur.noWa || '';
 
   // Avatar Icon based on Role
   if (avatarEl) {
@@ -7890,6 +8148,7 @@ async function handleAccountChangePassword(e) {
   }
 
   const nama = document.getElementById('acc-input-nama')?.value.trim();
+  const noWa = document.getElementById('acc-input-nowa')?.value.trim();
   const currentPassword = document.getElementById('acc-current-password')?.value.trim();
   const newPassword = document.getElementById('acc-new-password')?.value.trim();
   const confirmPassword = document.getElementById('acc-confirm-password')?.value.trim();
@@ -7924,6 +8183,7 @@ async function handleAccountChangePassword(e) {
         userId: cur.id,
         nama: nama || cur.nama,
         role: cur.role,
+        noWa: noWa,
         currentPassword,
         newPassword
       })
@@ -8162,9 +8422,12 @@ function renderAccountManageList() {
         </div>
         <div>
           <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-main);">${u.nama || u.username}</div>
-          <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
+          <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
             <span class="badge badge-info" style="font-size: 0.72rem;">${u.role || 'Petugas'}</span>
             <span style="font-size: 0.8rem; color: var(--text-muted);">@${u.username}</span>
+            <span class="badge" style="background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); font-size: 0.72rem; font-weight: 700; padding: 1px 7px;">
+              <i class="fa-brands fa-whatsapp"></i> ${u.noWa || 'No WA belum diisi'}
+            </span>
           </div>
         </div>
       </div>
@@ -8189,6 +8452,7 @@ async function handleAccountCreateNewUser(e) {
   const nama = document.getElementById('acc-new-user-nama')?.value.trim();
   const role = document.getElementById('acc-new-user-role')?.value;
   const username = document.getElementById('acc-new-user-username')?.value.trim();
+  const noWa = document.getElementById('acc-new-user-nowa')?.value.trim();
   const password = document.getElementById('acc-new-user-pwd')?.value.trim();
 
   if (!nama || !username || !password) {
@@ -8200,13 +8464,14 @@ async function handleAccountCreateNewUser(e) {
     const res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, role, username, password })
+      body: JSON.stringify({ nama, role, username, password, noWa })
     });
     const data = await res.json();
     if (res.ok && data.success) {
       showToast(`Akun ${nama} berhasil didaftarkan! 🎉`, 'success');
       document.getElementById('acc-new-user-nama').value = '';
       document.getElementById('acc-new-user-username').value = '';
+      if (document.getElementById('acc-new-user-nowa')) document.getElementById('acc-new-user-nowa').value = '';
       document.getElementById('acc-new-user-pwd').value = '';
       toggleAccAddUserBox();
       await loadAllAppData();
@@ -8879,6 +9144,13 @@ function switchMobileNav(viewId, mobileBtn, fromMore = false) {
   if (viewId === 'view-obat-req') {
     renderReqMedicineCatalog();
   }
+  if (viewId === 'view-surat-luar') {
+    if (typeof renderSuratLuarTable === 'function') renderSuratLuarTable();
+    if (typeof initSuratLuarForm === 'function') initSuratLuarForm();
+  }
+  if (viewId === 'view-shift') {
+    if (typeof initShiftView === 'function') initShiftView();
+  }
 }
 
 function syncMobileNavHighlight(viewId, explicitBtn) {
@@ -8966,8 +9238,9 @@ function renderMobileKaryawanCards() {
     const genderIcon = gender.toLowerCase().includes('perempuan') ? 'fa-venus' : 'fa-mars';
     const genderColor = gender.toLowerCase().includes('perempuan') ? '#f472b6' : '#60a5fa';
 
+    const tplMobile = encodeURIComponent(`Halo rekan ${k.nama || ''} (${npk}), ini dari Tim Medis Poliklinik PT ATI.`);
     const waBtn = rawHp
-      ? `<button class="btn btn-sm" style="flex: 1.2; background: #25D366; color: #fff; border: none; font-weight: 700;" onclick="window.open('https://wa.me/${cleanWA}','_blank')" title="Kirim Pesan WhatsApp">
+      ? `<button class="btn btn-sm" style="flex: 1.2; background: #25D366; color: #fff; border: none; font-weight: 700;" onclick="openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(k.nama || '')}', '${tplMobile}')" title="Chat WhatsApp di Dasbor">
            <i class="fa-brands fa-whatsapp"></i> Chat WA
          </button>`
       : `<button class="btn btn-sm" style="flex: 1.2; background: #25D366; color: #fff; border: none; font-weight: 700; opacity: 0.5;" onclick="showToast('No HP belum diisi. Silakan klik Edit untuk menambah No WhatsApp.', 'warning')" title="No WA belum diisi">
@@ -9261,3 +9534,3024 @@ function renderBarChart(canvasId, labels, dataValues, barColor) {
     }
   });
 }
+
+// ============================================================================
+// 1. SISTEM PENYELAMATAN DATA OFFLINE (OFFLINE QUEUE & AUTO-SYNC)
+// Mengatasi masalah koneksi WiFi pabrik yang sering drop/timeout
+// ============================================================================
+const OFFLINE_QUEUE_KEY = 'ati_poli_offline_queue';
+
+function getOfflineQueue() {
+  try {
+    return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  } catch (e) {
+    console.error('Error parsing offline queue:', e);
+    return [];
+  }
+}
+
+function saveToOfflineQueue(record) {
+  try {
+    const queue = getOfflineQueue();
+    const idx = queue.findIndex(item => item.id === record.id);
+    if (idx >= 0) {
+      queue[idx] = record;
+    } else {
+      queue.unshift(record);
+    }
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    updateOfflineStatusBar();
+  } catch (e) {
+    console.error('Error saving to offline queue:', e);
+  }
+}
+
+function removeBatchFromOfflineQueue(ids) {
+  try {
+    const queue = getOfflineQueue();
+    const idSet = new Set(ids);
+    const updated = queue.filter(item => !idSet.has(item.id));
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(updated));
+    updateOfflineStatusBar();
+  } catch (e) {
+    console.error('Error clearing batch from offline queue:', e);
+  }
+}
+
+async function syncOfflineQueueNow(isManual = false) {
+  const queue = getOfflineQueue();
+  if (queue.length === 0) {
+    if (isManual) showToast('Tidak ada data rekam medis offline yang menunggu sinkronisasi.', 'info');
+    updateOfflineStatusBar();
+    return;
+  }
+
+  if (!navigator.onLine) {
+    if (isManual) showToast('⚠️ Perangkat masih offline / tidak ada koneksi internet.', 'warning');
+    return;
+  }
+
+  try {
+    const syncBtn = document.getElementById('btn-sync-offline-queue');
+    if (syncBtn) {
+      syncBtn.disabled = true;
+      syncBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyinkronkan...';
+    }
+
+    const res = await fetch('/api/records/offline-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: queue })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const syncedIds = (data.syncedRecords || []).map(r => r.offlineId || r.id);
+      removeBatchFromOfflineQueue(syncedIds);
+
+      await loadAllAppData().catch(() => {});
+      showToast(`✅ Berhasil menyinkronkan ${data.savedCount || syncedIds.length} rekam medis offline ke VPS server!`, 'success');
+    } else {
+      const err = await res.json().catch(() => ({}));
+      console.warn('Sync failed:', err);
+      if (isManual) showToast(`❌ Gagal sinkronisasi: ${err.error || 'Server menolak data'}`, 'error');
+    }
+  } catch (err) {
+    console.warn('Sync network error:', err);
+    if (isManual) showToast('❌ Gagal menghubungi server. Pastikan sinyal internet stabil.', 'error');
+  } finally {
+    const syncBtn = document.getElementById('btn-sync-offline-queue');
+    if (syncBtn) {
+      syncBtn.disabled = false;
+      syncBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Sinkronkan Sekarang';
+    }
+    updateOfflineStatusBar();
+  }
+}
+
+function updateOfflineStatusBar() {
+  const bar = document.getElementById('poli-offline-status-bar');
+  const countText = document.getElementById('poli-offline-count-text');
+  if (!bar) return;
+
+  const queue = getOfflineQueue();
+  const count = queue.length;
+  const isOffline = !navigator.onLine;
+
+  if (count > 0 || isOffline) {
+    bar.style.display = 'flex';
+    if (countText) {
+      if (isOffline) {
+        countText.textContent = `${count} data rekam medis tersimpan offline (Sinyal Terputus)`;
+      } else {
+        countText.textContent = `${count} data rekam medis tersimpan lokal & siap diunggah ke server`;
+      }
+    }
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+// Auto-sync listener & periodic timer
+window.addEventListener('online', () => {
+  showToast('🌐 Sinyal terhubung kembali! Memulai sinkronisasi otomatis...', 'info');
+  updateOfflineStatusBar();
+  syncOfflineQueueNow();
+});
+
+window.addEventListener('offline', () => {
+  showToast('⚠️ Sinyal internet pabrik terputus! Mode offline aktif, rekam medis akan tersimpan aman di komputer ini.', 'warning');
+  updateOfflineStatusBar();
+});
+
+setInterval(() => {
+  if (navigator.onLine && getOfflineQueue().length > 0) {
+    syncOfflineQueueNow();
+  }
+}, 30000);
+
+
+// ============================================================================
+// 2. FORM POLI KONTROL AUTO-TOGGLE
+// ============================================================================
+function handlePoliCheckboxChange() {
+  const chkIzin = document.getElementById('poli-izin-sakit');
+  const chkPantauan = document.getElementById('poli-pantauan');
+  const chkKontrol = document.getElementById('poli-chk-kontrol');
+  const fields = document.getElementById('poli-kontrol-fields');
+  const hint = document.getElementById('badge-kontrol-auto-hint');
+  const tglInput = document.getElementById('poli-tanggal-kontrol');
+  const notesInput = document.getElementById('poli-catatan-kontrol');
+
+  if (!chkKontrol || !fields) return;
+
+  if (chkIzin && chkIzin.checked) {
+    chkKontrol.checked = true;
+    fields.style.display = 'grid';
+    if (hint) hint.textContent = 'Otomatis aktif (Izin Sakit / Surkes)';
+    
+    const baseDate = new Date(document.getElementById('poli-tanggal-berobat')?.value || new Date());
+    baseDate.setDate(baseDate.getDate() + 3);
+    const yyyy = baseDate.getFullYear();
+    const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(baseDate.getDate()).padStart(2, '0');
+    if (tglInput) tglInput.value = `${yyyy}-${mm}-${dd}`;
+    if (notesInput && !notesInput.value) {
+      notesInput.value = 'Evaluasi kelayakan kerja pasca istirahat sakit';
+    }
+  } else if (chkPantauan && chkPantauan.checked) {
+    chkKontrol.checked = true;
+    fields.style.display = 'grid';
+    if (hint) hint.textContent = 'Otomatis aktif (Pasien Pantauan K3)';
+
+    const baseDate = new Date(document.getElementById('poli-tanggal-berobat')?.value || new Date());
+    baseDate.setDate(baseDate.getDate() + 7);
+    const yyyy = baseDate.getFullYear();
+    const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(baseDate.getDate()).padStart(2, '0');
+    if (tglInput) tglInput.value = `${yyyy}-${mm}-${dd}`;
+    if (notesInput && !notesInput.value) {
+      notesInput.value = 'Pemeriksaan berkala pasien pantauan K3 / DHSE';
+    }
+  }
+}
+
+function togglePoliKontrolFields() {
+  const chk = document.getElementById('poli-chk-kontrol');
+  const fields = document.getElementById('poli-kontrol-fields');
+  const tglInput = document.getElementById('poli-tanggal-kontrol');
+  if (!chk || !fields) return;
+
+  fields.style.display = chk.checked ? 'grid' : 'none';
+  if (chk.checked && tglInput && !tglInput.value) {
+    const d = new Date();
+    d.setDate(d.getDate() + 3);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    tglInput.value = `${yyyy}-${mm}-${dd}`;
+  }
+}
+
+
+// ============================================================================
+// 3. JADWAL KONTROL PASIEN & LAPORAN DHSE
+// ============================================================================
+let _activeKontrolFilter = 'semua';
+
+async function loadKontrolData() {
+  try {
+    const res = await fetch('/api/kontrol', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      appData.kontrolPasien = Array.isArray(data) ? data : (data.list || []);
+    } else {
+      appData.kontrolPasien = [];
+    }
+  } catch (err) {
+    console.warn('Error loading kontrol data:', err);
+    if (!appData.kontrolPasien) appData.kontrolPasien = [];
+  }
+
+  updateKontrolMetricBadges();
+  renderKontrolTable();
+}
+
+function updateKontrolMetricBadges() {
+  const list = appData.kontrolPasien || [];
+  const todayStr = new Date().toISOString().split('T')[0];
+  
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+  const todayCount = list.filter(k => (k.status || '').toLowerCase() !== 'selesai' && k.tanggalKontrol === todayStr).length;
+  const tomorrowCount = list.filter(k => (k.status || '').toLowerCase() !== 'selesai' && k.tanggalKontrol === tomorrowStr).length;
+  const totalUpcoming = list.filter(k => (k.status || '').toLowerCase() !== 'selesai').length;
+
+  const elToday = document.getElementById('kontrol-count-today');
+  const elTomorrow = document.getElementById('kontrol-count-tomorrow');
+  const elTotal = document.getElementById('kontrol-count-total');
+
+  const elStatToday = document.getElementById('stat-kontrol-hari-ini');
+  const elStatTomorrow = document.getElementById('stat-kontrol-besok');
+  const elStatTotal = document.getElementById('stat-kontrol-mendatang');
+
+  if (elToday) elToday.textContent = todayCount;
+  if (elTomorrow) elTomorrow.textContent = tomorrowCount;
+  if (elTotal) elTotal.textContent = totalUpcoming;
+
+  if (elStatToday) elStatToday.textContent = `${todayCount} Pasien`;
+  if (elStatTomorrow) elStatTomorrow.textContent = `${tomorrowCount} Pasien`;
+  if (elStatTotal) elStatTotal.textContent = `${totalUpcoming} Pasien`;
+
+  if (navBadge) {
+    if (todayCount > 0) {
+      navBadge.style.display = 'inline-block';
+      navBadge.textContent = todayCount;
+    } else {
+      navBadge.style.display = 'none';
+    }
+  }
+}
+
+function filterKontrolTable(filterType, btnEl) {
+  _activeKontrolFilter = filterType;
+  document.querySelectorAll('.btn-filter-kontrol').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  renderKontrolTable();
+}
+
+function renderKontrolTable() {
+  const tbody = document.getElementById('table-kontrol-body');
+  if (!tbody) return;
+
+  const list = appData.kontrolPasien || [];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+  const searchVal = (document.getElementById('filter-kontrol-search')?.value || '').toLowerCase().trim();
+
+  let filtered = list.filter(k => {
+    const isDone = (k.status || '').toLowerCase() === 'selesai';
+    if (_activeKontrolFilter === 'hari-ini') {
+      if (isDone || k.tanggalKontrol !== todayStr) return false;
+    } else if (_activeKontrolFilter === 'besok') {
+      if (isDone || k.tanggalKontrol !== tomorrowStr) return false;
+    } else if (_activeKontrolFilter === 'izin-sakit') {
+      if (k.kategori !== 'izinSakit' && !k.isIzinSakit && !k.izinSakit) return false;
+    } else if (_activeKontrolFilter === 'pantauan') {
+      if (k.kategori !== 'pantauan' && !k.isPantauan && !k.pantauan) return false;
+    } else if (_activeKontrolFilter === 'selesai') {
+      if (!isDone) return false;
+    }
+
+    if (searchVal) {
+      const matchNama = (k.namaPasien || '').toLowerCase().includes(searchVal);
+      const matchNpk = (k.npkPabrik || k.nikPabrik || '').toLowerCase().includes(searchVal);
+      const matchDept = (k.departemen || k.dept || '').toLowerCase().includes(searchVal);
+      const matchDiag = (k.diagnosa || k.asesmen || '').toLowerCase().includes(searchVal);
+      const matchNotes = (k.catatan || k.catatanKontrol || '').toLowerCase().includes(searchVal);
+      if (!matchNama && !matchNpk && !matchDept && !matchDiag && !matchNotes) return false;
+    }
+
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    const aDone = (a.status || '').toLowerCase() === 'selesai';
+    const bDone = (b.status || '').toLowerCase() === 'selesai';
+    if (aDone && !bDone) return 1;
+    if (!aDone && bDone) return -1;
+    return (a.tanggalKontrol || '').localeCompare(b.tanggalKontrol || '');
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 32px 16px;">
+          <i class="fa-solid fa-calendar-xmark" style="font-size: 2rem; opacity: 0.4; margin-bottom: 8px; display: block;"></i>
+          Tidak ada data jadwal kontrol pasien yang sesuai dengan filter.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(k => {
+    const isToday = k.tanggalKontrol === todayStr;
+    const isTomorrow = k.tanggalKontrol === tomorrowStr;
+    const isDone = (k.status || '').toLowerCase() === 'selesai';
+
+    let dateBadge = '';
+    if (isDone) {
+      dateBadge = `<span style="background: rgba(16,185,129,0.15); color: #34d399; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;">🟢 Sudah Kontrol</span>`;
+    } else if (isToday) {
+      dateBadge = `<span style="background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid #ef4444; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 800;">🔥 HARI INI</span>`;
+    } else if (isTomorrow) {
+      dateBadge = `<span style="background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid #f59e0b; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;">⏳ BESOK</span>`;
+    }
+
+    let categoryBadge = '';
+    if (k.kategori === 'izinSakit' || k.izinSakit) {
+      categoryBadge = `<span style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); padding: 2px 8px; border-radius: 6px; font-size: 0.73rem; font-weight: 700;"><i class="fa-solid fa-file-medical"></i> Izin Sakit</span>`;
+    } else if (k.kategori === 'pantauan' || k.pantauan) {
+      categoryBadge = `<span style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 2px 8px; border-radius: 6px; font-size: 0.73rem; font-weight: 700;"><i class="fa-solid fa-triangle-exclamation"></i> Pantauan K3</span>`;
+    } else {
+      categoryBadge = `<span style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); padding: 2px 8px; border-radius: 6px; font-size: 0.73rem; font-weight: 700;"><i class="fa-solid fa-stethoscope"></i> Kontrol Rutin</span>`;
+    }
+
+    const patientPhone = k.noHpPasien || k.noHp || '';
+    const reminderMsg = `Halo rekan ${k.namaPasien || ''} (${k.npkPabrik || k.nikPabrik || '-'}), ini dari Tim Medis Klinik PT ATI. Mengingatkan jadwal kontrol kesehatan Anda pada hari *${formatDateIndo(k.tanggalKontrol)}* untuk evaluasi: *${k.catatan || k.diagnosa || 'Pemeriksaan kesehatan lanjutan'}*. Mohon hadir di poliklinik sebelum jam kerja berakhir. Terima kasih!`;
+
+    return `
+      <tr style="${isToday && !isDone ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
+        <td>
+          <div style="font-weight: 800; font-size: 0.92rem; color: var(--text-main);">${escapeHtml(k.namaPasien || '-')}</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+            NPK: <strong>${escapeHtml(k.npkPabrik || k.nikPabrik || '-')}</strong> &bull; Dept: <strong>${escapeHtml(k.departemen || k.dept || '-')}</strong>
+          </div>
+        </td>
+        <td>
+          <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+            ${categoryBadge}
+            <span style="font-size: 0.75rem; color: var(--text-faint);">${escapeHtml(k.statusKelaikan || 'Dalam Evaluasi')}</span>
+          </div>
+        </td>
+        <td>
+          <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main);">${formatDateIndo(k.tanggalKontrol)}</div>
+          <div style="margin-top: 3px;">${dateBadge}</div>
+        </td>
+        <td>
+          <div style="font-weight: 700; font-size: 0.82rem; color: #0284c7;">${escapeHtml(k.diagnosa || k.asesmen || '-')}</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; font-style: italic;">
+            ${escapeHtml(k.catatan || k.catatanKontrol || 'Rencana kontrol dokter')}
+          </div>
+        </td>
+        <td style="text-align: center;">
+          <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-sm" onclick="openWaChatWithPatient('${escapeHtml(patientPhone)}', '${escapeHtml(k.namaPasien || '')}', '${encodeURIComponent(reminderMsg)}')" style="background: rgba(34,197,94,0.15); border: 1px solid #22c55e; color: #22c55e; font-weight: 700; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Kirim Pengingat WhatsApp">
+              <i class="fa-brands fa-whatsapp"></i> WA
+            </button>
+            ${!isDone ? `
+              <button type="button" class="btn btn-sm" onclick="markKontrolSelesai('${k.id}')" style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #10b981; font-weight: 700; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Tandai Sudah Selesai Kontrol">
+                <i class="fa-solid fa-check"></i> Selesai
+              </button>
+            ` : ''}
+            <button type="button" class="btn btn-sm btn-secondary" onclick="openModalEditKontrol('${k.id}')" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Ubah Tanggal Kontrol">
+              <i class="fa-solid fa-calendar-days"></i>
+            </button>
+            <button type="button" class="btn btn-sm" onclick="deleteKontrol('${k.id}')" style="background: transparent; border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Hapus Jadwal">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function markKontrolSelesai(id) {
+  try {
+    const res = await fetch(`/api/kontrol/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'Selesai' })
+    });
+    if (res.ok) {
+      showToast('✅ Pasien telah ditandai selesai kontrol!', 'success');
+      await loadKontrolData();
+    } else {
+      showToast('❌ Gagal memperbarui status kontrol', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Gangguan koneksi ke server', 'error');
+  }
+}
+
+async function deleteKontrol(id) {
+  if (!confirm('Apakah Anda yakin ingin menghapus jadwal kontrol pasien ini?')) return;
+  try {
+    const res = await fetch(`/api/kontrol/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Jadwal kontrol berhasil dihapus.', 'info');
+      await loadKontrolData();
+    } else {
+      showToast('❌ Gagal menghapus jadwal kontrol', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Gangguan koneksi ke server', 'error');
+  }
+}
+
+// ============================================================
+// POP-UP DETAIL PASIEN KONTROL (KLIK KARTU SUMMARY)
+// ============================================================
+let _currentKontrolPopupType = 'hari-ini';
+
+function openKontrolCardPopup(type) {
+  _currentKontrolPopupType = type;
+  const modal = document.getElementById('modal-kontrol-card-popup');
+  const titleEl = document.getElementById('modal-kontrol-popup-title');
+  const searchInput = document.getElementById('modal-kontrol-popup-search');
+  if (!modal) return;
+
+  if (searchInput) searchInput.value = '';
+
+  if (type === 'hari-ini') {
+    if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-fire" style="color: #ef4444;"></i> Pasien Kontrol Hari Ini (Prioritas)`;
+  } else if (type === 'besok') {
+    if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-hourglass-half" style="color: #f59e0b;"></i> Pasien Kontrol Besok (Persiapan H-1)`;
+  } else {
+    if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-calendar-days" style="color: #0284c7;"></i> Seluruh Jadwal Pasien Kontrol Mendatang`;
+  }
+
+  renderKontrolCardPopupList();
+  modal.style.display = 'flex';
+}
+
+function closeKontrolCardPopup() {
+  const modal = document.getElementById('modal-kontrol-card-popup');
+  if (modal) modal.style.display = 'none';
+}
+
+function filterKontrolCardPopupList() {
+  renderKontrolCardPopupList();
+}
+
+function renderKontrolCardPopupList() {
+  const container = document.getElementById('modal-kontrol-popup-body');
+  const countEl = document.getElementById('modal-kontrol-popup-count');
+  const searchVal = (document.getElementById('modal-kontrol-popup-search')?.value || '').toLowerCase().trim();
+  if (!container) return;
+
+  const list = appData.kontrolPasien || [];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+  let filtered = list.filter(k => {
+    const isDone = (k.status || '').toLowerCase() === 'selesai';
+    if (_currentKontrolPopupType === 'hari-ini') {
+      if (isDone || k.tanggalKontrol !== todayStr) return false;
+    } else if (_currentKontrolPopupType === 'besok') {
+      if (isDone || k.tanggalKontrol !== tomorrowStr) return false;
+    } else {
+      if (isDone) return false;
+    }
+
+    if (searchVal) {
+      const matchNama = (k.namaPasien || '').toLowerCase().includes(searchVal);
+      const matchNpk = (k.npkPabrik || k.nikPabrik || '').toLowerCase().includes(searchVal);
+      const matchDept = (k.departemen || k.dept || '').toLowerCase().includes(searchVal);
+      const matchDiag = (k.diagnosa || k.asesmen || '').toLowerCase().includes(searchVal);
+      const matchNotes = (k.catatan || k.catatanKontrol || '').toLowerCase().includes(searchVal);
+      if (!matchNama && !matchNpk && !matchDept && !matchDiag && !matchNotes) return false;
+    }
+
+    return true;
+  });
+
+  filtered.sort((a, b) => (a.tanggalKontrol || '').localeCompare(b.tanggalKontrol || ''));
+
+  if (countEl) countEl.textContent = `${filtered.length} Pasien`;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); padding: 40px 16px;">
+        <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: #10b981; opacity: 0.7; margin-bottom: 10px; display: block;"></i>
+        <p style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin-bottom: 4px;">Tidak Ada Pasien Pada Kategori Ini</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Semua jadwal kontrol sudah selesai atau belum ada jadwal yang terdaftar.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(k => {
+    const isToday = k.tanggalKontrol === todayStr;
+    const isTomorrow = k.tanggalKontrol === tomorrowStr;
+
+    let dateBadge = '';
+    if (isToday) {
+      dateBadge = `<span style="background: rgba(239,68,68,0.2); color: #dc2626; border: 1px solid #ef4444; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 800;">🔥 HARI INI</span>`;
+    } else if (isTomorrow) {
+      dateBadge = `<span style="background: rgba(245,158,11,0.2); color: #d97706; border: 1px solid #f59e0b; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;">⏳ BESOK</span>`;
+    } else {
+      dateBadge = `<span style="background: rgba(2,132,199,0.12); color: #0284c7; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;">🗓️ ${formatDateIndo(k.tanggalKontrol)}</span>`;
+    }
+
+    const patientPhone = k.noHpPasien || k.noHp || '';
+    const diagText = k.diagnosa || k.asesmen || '-';
+    const notesText = k.catatanKontrol || k.catatan || 'Rencana kontrol dokter';
+    const reminderMsg = `Halo rekan ${k.namaPasien || ''} (${k.npkPabrik || k.nikPabrik || '-'}), ini dari Tim Medis Klinik PT ATI. Mengingatkan jadwal kontrol kesehatan Anda pada hari *${formatDateIndo(k.tanggalKontrol)}* untuk evaluasi: *${notesText}*. Mohon hadir di poliklinik sebelum jam kerja berakhir. Terima kasih!`;
+
+    return `
+      <div style="background: var(--surface-2); border: 1px solid var(--border-card); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+          <div>
+            <div style="font-weight: 800; font-size: 0.96rem; color: var(--text-main);">${escapeHtml(k.namaPasien || '-')}</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+              NPK: <strong>${escapeHtml(k.npkPabrik || k.nikPabrik || '-')}</strong> &bull; Dept: <strong>${escapeHtml(k.departemen || k.dept || '-')}</strong>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            ${dateBadge}
+            <button type="button" class="btn btn-sm" onclick="closeKontrolCardPopup(); openWaChatWithPatient('${escapeHtml(patientPhone)}', '${escapeHtml(k.namaPasien || '')}', '${encodeURIComponent(reminderMsg)}')" style="background: rgba(34,197,94,0.15); border: 1px solid #22c55e; color: #15803d; font-weight: 700; font-size: 0.75rem; padding: 4px 10px; border-radius: 8px;" title="Kirim Pengingat WhatsApp">
+              <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> Chat WA
+            </button>
+            <button type="button" class="btn btn-sm" onclick="markKontrolSelesai('${k.id}'); setTimeout(renderKontrolCardPopupList, 300);" style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #047857; font-weight: 700; font-size: 0.75rem; padding: 4px 10px; border-radius: 8px;" title="Tandai Selesai Kontrol">
+              <i class="fa-solid fa-check"></i> Selesai
+            </button>
+          </div>
+        </div>
+
+        <div style="background: var(--surface-1); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 3px; border: 1px solid var(--border-subtle);">
+          <div><strong style="color: var(--text-main);">Diagnosa Medis:</strong> <span style="color: #0284c7; font-weight: 700;">${escapeHtml(diagText)}</span></div>
+          <div><strong style="color: var(--text-main);">Rencana Evaluasi:</strong> <span style="color: var(--text-muted); font-style: italic;">${escapeHtml(notesText)}</span></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Modal Manual Kontrol
+function openModalManualKontrol() {
+  const modal = document.getElementById('modal-manual-kontrol');
+  if (!modal) return;
+
+  const datalist = document.getElementById('list-all-patients-kontrol');
+  if (datalist) {
+    const patients = appData.patients || [];
+    const empMap = new Map();
+    patients.forEach(p => {
+      const npk = p.nikPabrik || p.nik || '';
+      const name = p.nama || p.namaPasien || '';
+      if (name) empMap.set(`${name} (${npk})`, p);
+    });
+    datalist.innerHTML = Array.from(empMap.keys()).map(k => `<option value="${escapeHtml(k)}">`).join('');
+  }
+
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  const dInput = document.getElementById('manual-kontrol-date');
+  if (dInput) dInput.value = d.toISOString().split('T')[0];
+
+  modal.style.display = 'flex';
+}
+
+function closeModalManualKontrol() {
+  const modal = document.getElementById('modal-manual-kontrol');
+  if (modal) modal.style.display = 'none';
+}
+
+function handleManualKontrolPatientSelect(input) {
+  const val = (input.value || '').trim();
+  const patients = appData.patients || [];
+  const found = patients.find(p => {
+    const npk = p.nikPabrik || p.nik || '';
+    const name = p.nama || p.namaPasien || '';
+    return val === `${name} (${npk})` || val === name || val === npk;
+  });
+
+  if (found) {
+    document.getElementById('manual-kontrol-npk').value = found.nikPabrik || found.nik || '';
+    document.getElementById('manual-kontrol-dept').value = found.dept || found.departemen || '';
+    document.getElementById('manual-kontrol-phone').value = found.hp || found.noHp || found.telepon || '';
+  }
+}
+
+async function handleSaveManualKontrol(e) {
+  if (e) e.preventDefault();
+  const searchVal = document.getElementById('manual-kontrol-pasien-search')?.value || '';
+  const npk = document.getElementById('manual-kontrol-npk')?.value || '';
+  const dept = document.getElementById('manual-kontrol-dept')?.value || '';
+  const phone = document.getElementById('manual-kontrol-phone')?.value || '';
+  const date = document.getElementById('manual-kontrol-date')?.value || '';
+  const kategori = document.getElementById('manual-kontrol-kategori')?.value || 'umum';
+  const notes = document.getElementById('manual-kontrol-notes')?.value || '';
+
+  const cleanName = searchVal.replace(/\(.*\)/, '').trim() || searchVal;
+
+  if (!cleanName || !date) {
+    showToast('Harap lengkapi nama pasien dan tanggal kontrol!', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/kontrol', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        namaPasien: cleanName,
+        nikPabrik: npk,
+        npkPabrik: npk,
+        dept: dept,
+        departemen: dept,
+        noHp: phone,
+        noHpPasien: phone,
+        tanggalKontrol: date,
+        kategori: kategori,
+        catatan: notes || 'Rencana kontrol dokter',
+        catatanKontrol: notes || 'Rencana kontrol dokter',
+        diagnosa: notes ? `Kontrol: ${notes}` : 'Jadwal Kontrol Mandiri',
+        asesmen: notes ? `Kontrol: ${notes}` : 'Jadwal Kontrol Mandiri',
+        isIzinSakit: kategori === 'izinSakit',
+        isPantauan: kategori === 'pantauan',
+        statusKelaikan: 'Dalam Pantauan'
+      })
+    });
+
+    if (res.ok) {
+      showToast('✅ Jadwal kontrol berhasil ditambahkan!', 'success');
+      closeModalManualKontrol();
+      await loadKontrolData();
+    } else {
+      showToast('❌ Gagal menyimpan jadwal kontrol', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Gangguan koneksi ke server', 'error');
+  }
+}
+
+// Modal Edit Kontrol
+function openModalEditKontrol(id) {
+  const item = (appData.kontrolPasien || []).find(k => k.id === id);
+  if (!item) return;
+
+  document.getElementById('edit-kontrol-id').value = item.id;
+  document.getElementById('edit-kontrol-nama-label').textContent = item.namaPasien || '-';
+  document.getElementById('edit-kontrol-sub-label').textContent = `NPK: ${item.npkPabrik || item.nikPabrik || '-'} | Dept: ${item.departemen || '-'}`;
+  document.getElementById('edit-kontrol-new-date').value = item.tanggalKontrol || '';
+  document.getElementById('edit-kontrol-new-notes').value = item.catatan || '';
+
+  const modal = document.getElementById('modal-edit-kontrol');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalEditKontrol() {
+  const modal = document.getElementById('modal-edit-kontrol');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleSaveEditKontrol(e) {
+  if (e) e.preventDefault();
+  const id = document.getElementById('edit-kontrol-id')?.value;
+  const newDate = document.getElementById('edit-kontrol-new-date')?.value;
+  const newNotes = document.getElementById('edit-kontrol-new-notes')?.value;
+
+  if (!id || !newDate) return;
+
+  try {
+    const res = await fetch(`/api/kontrol/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tanggalKontrol: newDate,
+        catatan: newNotes
+      })
+    });
+
+    if (res.ok) {
+      showToast('✅ Jadwal kontrol berhasil diperbarui!', 'success');
+      closeModalEditKontrol();
+      await loadKontrolData();
+    } else {
+      showToast('❌ Gagal memperbarui jadwal', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Gangguan koneksi server', 'error');
+  }
+}
+
+// Modal Laporan DHSE (K3)
+function openModalLaporanDHSE() {
+  const modal = document.getElementById('modal-laporan-dhse');
+  if (!modal) return;
+
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  const startInp = document.getElementById('dhse-filter-start');
+  const endInp = document.getElementById('dhse-filter-end');
+
+  if (startInp && !startInp.value) startInp.value = firstDay.toISOString().split('T')[0];
+  if (endInp && !endInp.value) endInp.value = today.toISOString().split('T')[0];
+
+  modal.style.display = 'flex';
+  renderLaporanDHSETable();
+}
+
+function closeModalLaporanDHSE() {
+  const modal = document.getElementById('modal-laporan-dhse');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderLaporanDHSETable() {
+  const tbody = document.getElementById('dhse-report-body');
+  const summaryEl = document.getElementById('dhse-summary-text');
+  if (!tbody) return;
+
+  const startDate = document.getElementById('dhse-filter-start')?.value;
+  const endDate = document.getElementById('dhse-filter-end')?.value;
+  const kat = document.getElementById('dhse-filter-kategori')?.value || 'semua';
+
+  const list = appData.kontrolPasien || [];
+  let filtered = list.filter(item => {
+    const d = item.tanggalPeriksa || item.tanggalKontrol || '';
+    if (startDate && d < startDate) return false;
+    if (endDate && d > endDate) return false;
+
+    if (kat === 'izinSakit' && item.kategori !== 'izinSakit' && !item.izinSakit) return false;
+    if (kat === 'pantauan' && item.kategori !== 'pantauan' && !item.pantauan) return false;
+
+    return true;
+  });
+
+  if (summaryEl) summaryEl.textContent = `Total Data: ${filtered.length} Karyawan (Periode ${formatDateIndo(startDate)} s.d. ${formatDateIndo(endDate)})`;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted); font-style: italic;">Tidak ada data pemantauan DHSE pada rentang tanggal ini.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((item, idx) => {
+    return `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td>
+          <div style="font-weight: 800; color: var(--text-main);">${escapeHtml(item.namaPasien || '-')}</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">NPK: ${escapeHtml(item.npkPabrik || item.nikPabrik || '-')} &bull; Dept: ${escapeHtml(item.departemen || '-')}</div>
+        </td>
+        <td>
+          <span style="font-weight: 700; font-size: 0.8rem; color: ${item.kategori === 'pantauan' ? '#f87171' : '#f59e0b'};">
+            ${item.kategori === 'pantauan' ? 'Pantauan K3' : 'Izin Sakit (Surkes)'}
+          </span>
+        </td>
+        <td>${formatDateIndo(item.tanggalPeriksa || item.createdAt?.split('T')[0] || '-')}</td>
+        <td style="font-weight: 700; color: #38bdf8;">${formatDateIndo(item.tanggalKontrol || '-')}</td>
+        <td>
+          <div style="font-weight: 700; font-size: 0.82rem;">${escapeHtml(item.diagnosa || '-')}</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(item.catatan || '-')}</div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function printLaporanDHSE() {
+  window.print();
+}
+
+
+// ============================================================================
+// 4. WHATSAPP WEB DASHBOARD (BAILEYS MULTI-DEVICE, CHAT MANUAL TANPA AI)
+// ============================================================================
+let waSocket = null;
+let currentWaSession = 'klinik';
+let activeWaChatJid = null;
+let waChats = [];
+let waSelectedFile = null;
+
+function initWaSocket() {
+  if (typeof io === 'undefined') return;
+  if (!waSocket) {
+    waSocket = io();
+
+    waSocket.on('wa_qr', (data) => {
+      if (data && data.qr) {
+        handleWaQrReceived(data.qr);
+      }
+    });
+
+    waSocket.on('wa_status', (data) => {
+      handleWaStatusUpdate(data);
+    });
+
+    waSocket.on('wa_session_status', (data) => {
+      if (data) {
+        if (data.qrDataUrl) handleWaQrReceived(data.qrDataUrl);
+        if (data.status === 'CONNECTED') handleWaStatusUpdate({ isConnected: true, phone: data.number });
+      }
+    });
+
+    waSocket.on('wa_new_message', (data) => {
+      handleWaNewMessageReceived(data);
+    });
+  }
+}
+
+async function initWaWeb() {
+  initWaSocket();
+  initWaEmojiGrid();
+  await checkWaSessionStatus();
+  await loadWaChats();
+}
+
+async function checkWaSessionStatus() {
+  try {
+    const res = await fetch('/api/wa/sessions', { cache: 'no-store' });
+    if (!res.ok) return;
+    const sessions = await res.json();
+    const session = Array.isArray(sessions) ? (sessions.find(s => s.sessionName === 'klinik') || sessions[0] || { isConnected: false }) : (sessions.sessionName === 'klinik' ? sessions : { isConnected: false });
+
+    const dot = document.getElementById('wa-header-dot');
+    const label = document.getElementById('wa-header-device-label');
+    const badge = document.getElementById('wa-header-status-badge');
+
+    if (session.isConnected) {
+      if (dot) {
+        dot.style.background = '#34d399';
+        dot.style.boxShadow = '0 0 6px #34d399';
+      }
+      if (label) label.textContent = `HP Klinik: Terhubung (${session.phone || 'Aktif'})`;
+      if (badge) {
+        badge.style.background = 'rgba(16,185,129,0.15)';
+        badge.style.borderColor = 'rgba(16,185,129,0.3)';
+        badge.style.color = '#34d399';
+      }
+    } else {
+      if (dot) {
+        dot.style.background = '#f59e0b';
+        dot.style.boxShadow = '0 0 6px #f59e0b';
+      }
+      if (label) label.textContent = 'HP Klinik: Belum Tertaut Barcode';
+      if (badge) {
+        badge.style.background = 'rgba(245,158,11,0.15)';
+        badge.style.borderColor = 'rgba(245,158,11,0.3)';
+        badge.style.color = '#fbbf24';
+      }
+    }
+  } catch (e) {
+    console.warn('Error checking WA session status:', e);
+  }
+}
+
+// Modal QR Tautkan WhatsApp dengan Fast Polling (Bebas Delay)
+let _waQrPollTimer = null;
+
+async function openModalWaQr() {
+  currentWaSession = 'klinik';
+  const modal = document.getElementById('modal-wa-qr');
+  if (!modal) return;
+
+  const img = document.getElementById('modal-wa-qr-img');
+  const placeholder = document.getElementById('modal-wa-qr-placeholder');
+  const connectedBox = document.getElementById('modal-wa-status-connected');
+  const scanningBox = document.getElementById('modal-wa-status-scanning');
+
+  if (img) img.style.display = 'none';
+  if (placeholder) {
+    placeholder.style.display = 'flex';
+    placeholder.innerHTML = `
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: #0284c7; margin-bottom: 8px;"></i>
+      <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Memuat Barcode WhatsApp...</span>
+    `;
+  }
+  if (connectedBox) connectedBox.style.display = 'none';
+  if (scanningBox) scanningBox.style.display = 'block';
+
+  modal.style.display = 'flex';
+
+  const fetchAndDisplayQR = async () => {
+    try {
+      const res = await fetch('/api/wa/qr?sessionType=klinik', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.isConnected) {
+        if (scanningBox) scanningBox.style.display = 'none';
+        if (connectedBox) {
+          connectedBox.style.display = 'block';
+          document.getElementById('modal-wa-device-name').textContent = 'Klinik PT ATI & Nafila Medika';
+          document.getElementById('modal-wa-device-number').textContent = data.phone || 'Nomor WhatsApp Aktif';
+        }
+        if (_waQrPollTimer) {
+          clearInterval(_waQrPollTimer);
+          _waQrPollTimer = null;
+        }
+      } else if (data.qr) {
+        if (placeholder) placeholder.style.display = 'none';
+        if (img) {
+          img.src = data.qr;
+          img.style.display = 'block';
+        }
+      }
+    } catch (e) {
+      console.warn('QR poll error:', e);
+    }
+  };
+
+  // 1. Initial request to ensure socket session is triggered
+  fetch('/api/wa/qr', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionType: 'klinik' })
+  }).then(r => r.json()).then(data => {
+    if (data.isConnected) {
+      if (scanningBox) scanningBox.style.display = 'none';
+      if (connectedBox) {
+        connectedBox.style.display = 'block';
+        document.getElementById('modal-wa-device-name').textContent = 'Klinik PT ATI & Nafila Medika';
+        document.getElementById('modal-wa-device-number').textContent = data.phone || 'Nomor WhatsApp Aktif';
+      }
+      if (_waQrPollTimer) {
+        clearInterval(_waQrPollTimer);
+        _waQrPollTimer = null;
+      }
+    } else if (data.qr) {
+      if (placeholder) placeholder.style.display = 'none';
+      if (img) {
+        img.src = data.qr;
+        img.style.display = 'block';
+      }
+    }
+  }).catch(() => {});
+
+  // 2. Poll every 1.5 detik sampai QR muncul / terhubung
+  if (_waQrPollTimer) clearInterval(_waQrPollTimer);
+  _waQrPollTimer = setInterval(() => {
+    if (modal.style.display === 'none') {
+      clearInterval(_waQrPollTimer);
+      _waQrPollTimer = null;
+      return;
+    }
+    fetchAndDisplayQR();
+  }, 1500);
+
+  fetchAndDisplayQR();
+}
+
+function closeModalWaQr() {
+  if (_waQrPollTimer) {
+    clearInterval(_waQrPollTimer);
+    _waQrPollTimer = null;
+  }
+  const modal = document.getElementById('modal-wa-qr');
+  if (modal) modal.style.display = 'none';
+}
+
+function refreshWaQrCode() {
+  openModalWaQr();
+}
+
+function handleWaQrReceived(qrCodeDataUrl) {
+  const img = document.getElementById('modal-wa-qr-img');
+  const placeholder = document.getElementById('modal-wa-qr-placeholder');
+  if (img && qrCodeDataUrl) {
+    img.src = qrCodeDataUrl;
+    img.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  }
+}
+
+function handleWaStatusUpdate(statusData) {
+  checkWaSessionStatus();
+  const connectedBox = document.getElementById('modal-wa-status-connected');
+  const scanningBox = document.getElementById('modal-wa-status-scanning');
+
+  if (statusData.isConnected) {
+    if (scanningBox) scanningBox.style.display = 'none';
+    if (connectedBox) {
+      connectedBox.style.display = 'block';
+      const devName = document.getElementById('modal-wa-device-name');
+      const devNum = document.getElementById('modal-wa-device-number');
+      if (devName) devName.textContent = currentWaSession === 'klinik' ? 'Klinik PT ATI' : 'Apotek Nafila';
+      if (devNum) devNum.textContent = statusData.phone || 'Terhubung';
+    }
+    showToast('🎉 WhatsApp HP Berhasil Tertaut ke Dashboard!', 'success');
+  }
+}
+
+async function disconnectWaSession() {
+  if (!confirm('Putuskan tautan WhatsApp HP dari dashboard? Anda perlu scan ulang QR untuk menghubungkan kembali.')) return;
+  try {
+    const res = await fetch('/api/wa/disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionName: currentWaSession })
+    });
+    if (res.ok) {
+      showToast('Sesi WhatsApp telah diputuskan.', 'info');
+      closeModalWaQr();
+      await checkWaSessionStatus();
+      await loadWaChats();
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Gagal memutuskan sesi WhatsApp', 'error');
+  }
+}
+
+// Chat List & Conversation
+async function loadWaChats() {
+  try {
+    const res = await fetch(`/api/wa/chats?sessionName=${currentWaSession}`, { cache: 'no-store' });
+    if (res.ok) {
+      waChats = await res.json();
+    } else {
+      waChats = [];
+    }
+  } catch (err) {
+    console.warn('Error loading WA chats:', err);
+    waChats = [];
+  }
+
+  renderWaChatList();
+  if (activeWaChatJid) {
+    renderWaMessages();
+  }
+}
+
+function renderWaChatList() {
+  const container = document.getElementById('wa-chat-list');
+  if (!container) return;
+
+  const searchVal = (document.getElementById('wa-chat-search')?.value || '').toLowerCase().trim();
+
+  let filtered = (waChats || []).filter(chat => {
+    if (!searchVal) return true;
+    const nameMatch = (chat.name || '').toLowerCase().includes(searchVal);
+    const phoneMatch = (chat.phone || '').toLowerCase().includes(searchVal);
+    const lastMsgMatch = (chat.lastMessage || '').toLowerCase().includes(searchVal);
+    return nameMatch || phoneMatch || lastMsgMatch;
+  });
+
+  filtered.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); padding: 40px 16px; font-size: 0.85rem;">
+        <i class="fa-solid fa-inbox" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>
+        Belum ada percakapan pasien.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(chat => {
+    const isActive = chat.jid === activeWaChatJid;
+    const displayName = chat.name || chat.phone || chat.jid.split('@')[0];
+    const initial = (displayName[0] || 'P').toUpperCase();
+    const lastTime = chat.lastTimestamp ? formatChatTime(chat.lastTimestamp) : '';
+    const unreadBadge = chat.unreadCount > 0 ? `
+      <span style="background: #22c55e; color: #000; font-weight: 800; font-size: 0.72rem; border-radius: 10px; padding: 1px 6px; min-width: 18px; text-align: center;">
+        ${chat.unreadCount}
+      </span>
+    ` : '';
+
+    return `
+      <div onclick="selectWaChat('${chat.jid}')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); cursor: pointer; transition: background 0.15s; ${isActive ? 'background: rgba(56, 189, 248, 0.12); border-left: 3px solid #38bdf8;' : 'background: transparent;'}" onmouseover="if(!${isActive}) this.style.background='var(--surface-2)'" onmouseout="if(!${isActive}) this.style.background='transparent'">
+        
+        <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; flex-shrink: 0;">
+          ${initial}
+        </div>
+
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">
+              ${escapeHtml(displayName)}
+            </span>
+            <span style="font-size: 0.7rem; color: var(--text-faint);">${lastTime}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px;">
+              ${escapeHtml(chat.lastMessage || 'Lampiran media')}
+            </span>
+            ${unreadBadge}
+          </div>
+        </div>
+
+      </div>
+    `;
+  }).join('');
+}
+
+function handleSearchWaChats() {
+  renderWaChatList();
+}
+
+async function selectWaChat(jid) {
+  activeWaChatJid = jid;
+  renderWaChatList();
+
+  const chat = (waChats || []).find(c => c.jid === jid);
+  if (chat) {
+    chat.unreadCount = 0;
+    const nameEl = document.getElementById('wa-active-name');
+    const subEl = document.getElementById('wa-active-sub');
+    const avatarEl = document.getElementById('wa-active-avatar');
+    const btnPoli = document.getElementById('btn-wa-open-poli');
+
+    const displayName = chat.name || chat.phone || jid.split('@')[0];
+    if (nameEl) nameEl.textContent = displayName;
+    if (subEl) subEl.textContent = `${chat.phone || jid.split('@')[0]} &bull; Riwayat obrolan sinkron`;
+    if (avatarEl) avatarEl.textContent = (displayName[0] || 'P').toUpperCase();
+
+    if (btnPoli) {
+      btnPoli.style.display = 'inline-flex';
+    }
+  }
+
+  fetch('/api/wa/read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionName: currentWaSession, jid })
+  }).catch(() => {});
+
+  renderWaMessages();
+}
+
+function renderWaMessages() {
+  const feed = document.getElementById('wa-messages-feed');
+  if (!feed) return;
+
+  const chat = (waChats || []).find(c => c.jid === activeWaChatJid);
+  if (!chat || !Array.isArray(chat.messages) || chat.messages.length === 0) {
+    feed.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); padding: 80px 20px;">
+        <i class="fa-regular fa-comment-dots" style="font-size: 2.5rem; color: #38bdf8; opacity: 0.4; margin-bottom: 10px; display: block;"></i>
+        <p style="font-size: 0.88rem;">Belum ada riwayat pesan dalam obrolan ini.<br>Ketik pesan di bawah untuk memulai percakapan manual dengan pasien.</p>
+      </div>
+    `;
+    return;
+  }
+
+  feed.innerHTML = chat.messages.map(msg => {
+    const fromMe = Boolean(msg.fromMe);
+    const timeStr = msg.timestamp ? formatChatTime(msg.timestamp) : '';
+
+    let mediaContent = '';
+    if (msg.mediaUrl) {
+      if (msg.mediaType === 'image') {
+        mediaContent = `
+          <div style="margin-bottom: 6px; border-radius: 8px; overflow: hidden; max-width: 280px;">
+            <img src="${msg.mediaUrl}" alt="Foto WA" style="width: 100%; max-height: 220px; object-fit: cover; cursor: pointer;" onclick="window.open('${msg.mediaUrl}', '_blank')">
+          </div>
+        `;
+      } else {
+        mediaContent = `
+          <div style="margin-bottom: 6px;">
+            <a href="${msg.mediaUrl}" target="_blank" download style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px; text-decoration: none; color: inherit; font-size: 0.8rem; font-weight: 700;">
+              <i class="fa-solid fa-file-arrow-down" style="font-size: 1.1rem; color: #38bdf8;"></i>
+              <span>${escapeHtml(msg.fileName || 'Unduh Berkas')}</span>
+            </a>
+          </div>
+        `;
+      }
+    }
+
+    return `
+      <div style="display: flex; justify-content: ${fromMe ? 'flex-end' : 'flex-start'}; width: 100%;">
+        <div class="${fromMe ? 'wa-bubble-staff' : 'wa-bubble-patient'}" style="max-width: 75%; min-width: 140px; padding: 10px 14px; border-radius: ${fromMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; word-break: break-word;">
+          
+          ${mediaContent}
+          
+          ${msg.text ? `<div style="font-size: 0.88rem; line-height: 1.45; white-space: pre-wrap; font-weight: 500;">${escapeHtml(msg.text)}</div>` : ''}
+
+          <div class="bubble-time" style="display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 4px; font-size: 0.68rem; font-weight: 600;">
+            <span>${timeStr}</span>
+            ${fromMe ? '<i class="fa-solid fa-check-double" style="color: #0284c7; font-size: 0.72rem;"></i>' : ''}
+          </div>
+
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function handleWaNewMessageReceived(data) {
+  loadWaChats();
+}
+
+function markCurrentChatRead() {
+  if (!activeWaChatJid) return;
+  fetch('/api/wa/read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionName: currentWaSession, jid: activeWaChatJid })
+  }).then(() => {
+    const chat = (waChats || []).find(c => c.jid === activeWaChatJid);
+    if (chat) chat.unreadCount = 0;
+    renderWaChatList();
+    showToast('Obrolan ditandai sudah dibaca.', 'info');
+  }).catch(() => {});
+}
+
+// Sending messages
+async function handleSendWaMessage(e) {
+  if (e) e.preventDefault();
+  if (!activeWaChatJid) {
+    showToast('Pilih penerima pesan dari daftar obrolan terlebih dahulu!', 'warning');
+    return;
+  }
+
+  const input = document.getElementById('wa-message-input');
+  const text = (input ? input.value : '').trim();
+
+  if (!text && !waSelectedFile) {
+    return;
+  }
+
+  try {
+    let res;
+    if (waSelectedFile) {
+      const fd = new FormData();
+      fd.append('sessionName', currentWaSession);
+      fd.append('jid', activeWaChatJid);
+      fd.append('message', text);
+      fd.append('file', waSelectedFile);
+
+      res = await fetch('/api/wa/send', { method: 'POST', body: fd });
+    } else {
+      res = await fetch('/api/wa/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionName: currentWaSession,
+          jid: activeWaChatJid,
+          message: text
+        })
+      });
+    }
+
+    if (res.ok) {
+      if (input) input.value = '';
+      cancelWaAttachment();
+      await loadWaChats();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast(`❌ Gagal mengirim pesan: ${err.error || 'Server menolak pesan'}`, 'error');
+    }
+  } catch (err) {
+    console.error('Error sending WA message:', err);
+    showToast('❌ Gangguan koneksi ke WhatsApp server', 'error');
+  }
+}
+
+// File Attachment Handlers
+function handleWaFileSelected(input) {
+  if (input.files && input.files[0]) {
+    waSelectedFile = input.files[0];
+    const previewBar = document.getElementById('wa-attachment-preview-bar');
+    const nameSpan = document.getElementById('wa-attachment-filename');
+    if (previewBar) previewBar.style.display = 'flex';
+    if (nameSpan) nameSpan.textContent = `${waSelectedFile.name} (${(waSelectedFile.size / 1024).toFixed(1)} KB)`;
+  }
+}
+
+function cancelWaAttachment() {
+  waSelectedFile = null;
+  const fileInput = document.getElementById('wa-file-input');
+  if (fileInput) fileInput.value = '';
+  const previewBar = document.getElementById('wa-attachment-preview-bar');
+  if (previewBar) previewBar.style.display = 'none';
+}
+
+// Emoji Picker Handlers
+function toggleWaEmojiPicker() {
+  const picker = document.getElementById('wa-emoji-picker');
+  if (picker) {
+    picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+function initWaEmojiGrid() {
+  const grid = document.getElementById('wa-emoji-grid');
+  if (!grid || grid.children.length > 0) return;
+
+  const emojis = ['😊', '👍', '🙏', '🏥', '💊', '💉', '🩺', '👨‍⚕️', '👩‍⚕️', '❤️', '🤒', '😷', '📋', '✅', '❌', '⚠️', '📞', '⏰', '🗓️', '👌', '👋', '🤝', '☕', '🌟'];
+  grid.innerHTML = emojis.map(em => `
+    <div onclick="insertWaEmoji('${em}')" style="cursor: pointer; padding: 4px; border-radius: 6px; user-select: none;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='transparent'">
+      ${em}
+    </div>
+  `).join('');
+}
+
+function insertWaEmoji(emoji) {
+  const input = document.getElementById('wa-message-input');
+  if (input) {
+    input.value += emoji;
+    input.focus();
+  }
+  toggleWaEmojiPicker();
+}
+
+// Direct New Message Modal
+function openModalNewWaMessage() {
+  const modal = document.getElementById('modal-new-wa-message');
+  if (!modal) return;
+
+  const datalist = document.getElementById('list-all-patients-wa');
+  if (datalist) {
+    const patients = appData.patients || [];
+    const empMap = new Map();
+    patients.forEach(p => {
+      const npk = p.nikPabrik || p.nik || '';
+      const name = p.nama || p.namaPasien || '';
+      if (name) empMap.set(`${name} (${npk})`, p);
+    });
+    datalist.innerHTML = Array.from(empMap.keys()).map(k => `<option value="${escapeHtml(k)}">`).join('');
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeModalNewWaMessage() {
+  const modal = document.getElementById('modal-new-wa-message');
+  if (modal) modal.style.display = 'none';
+}
+
+function handleNewWaPatientSelect(input) {
+  const val = (input.value || '').trim();
+  const patients = appData.patients || [];
+  const found = patients.find(p => {
+    const npk = p.nikPabrik || p.nik || '';
+    const name = p.nama || p.namaPasien || '';
+    return val === `${name} (${npk})` || val === name || val === npk;
+  });
+
+  if (found) {
+    document.getElementById('new-wa-phone-input').value = found.hp || found.noHp || found.telepon || '';
+    document.getElementById('new-wa-name-input').value = found.nama || found.namaPasien || '';
+  }
+}
+
+async function handleSendNewWaDirect(e) {
+  if (e) e.preventDefault();
+  const phone = (document.getElementById('new-wa-phone-input')?.value || '').trim();
+  const name = (document.getElementById('new-wa-name-input')?.value || '').trim();
+  const text = (document.getElementById('new-wa-text-input')?.value || '').trim();
+
+  if (!phone || !text) {
+    showToast('Nomor WhatsApp dan pesan wajib diisi!', 'warning');
+    return;
+  }
+
+  const cleanPhone = cleanWhatsAppNumber(phone);
+  const jid = `${cleanPhone}@s.whatsapp.net`;
+
+  try {
+    const res = await fetch('/api/wa/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionName: currentWaSession,
+        jid: jid,
+        message: text
+      })
+    });
+
+    if (res.ok) {
+      showToast('✅ Pesan WhatsApp berhasil dikirim!', 'success');
+      closeModalNewWaMessage();
+      await loadWaChats();
+      selectWaChat(jid);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast(`❌ Gagal mengirim pesan: ${err.error || 'Periksa nomor tujuan'}`, 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Gangguan koneksi ke WhatsApp server', 'error');
+  }
+}
+
+// Cross-Module Bridge: Membuka WA Web langsung dengan template
+function openWaChatWithPatient(phone, name, templateEncoded) {
+  if (!phone) {
+    showToast('⚠️ Nomor HP/WhatsApp pasien belum tercatat di data karyawan.', 'warning');
+    return;
+  }
+
+  const cleanPhone = cleanWhatsAppNumber(phone);
+  const jid = `${cleanPhone}@s.whatsapp.net`;
+  const templateText = templateEncoded ? decodeURIComponent(templateEncoded) : '';
+
+  const waNavBtn = document.getElementById('nav-btn-wa');
+  if (waNavBtn) {
+    waNavBtn.click();
+  } else {
+    document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
+    const target = document.getElementById('view-wa-web');
+    if (target) target.classList.add('active');
+  }
+
+  let chat = (waChats || []).find(c => c.jid === jid);
+  if (!chat) {
+    chat = {
+      jid: jid,
+      phone: cleanPhone,
+      name: name || cleanPhone,
+      unreadCount: 0,
+      lastMessage: templateText,
+      lastTimestamp: Date.now(),
+      messages: []
+    };
+    waChats.unshift(chat);
+  }
+
+  selectWaChat(jid);
+
+  const msgInput = document.getElementById('wa-message-input');
+  if (msgInput) {
+    msgInput.value = templateText;
+    msgInput.focus();
+  }
+
+  showToast(`Membuka WhatsApp untuk ${name || cleanPhone}`, 'info');
+}
+
+function openActiveChatInPoli() {
+  if (!activeWaChatJid) return;
+  const chat = (waChats || []).find(c => c.jid === activeWaChatJid);
+  if (!chat) return;
+
+  const phone = chat.phone || activeWaChatJid.split('@')[0];
+  const name = chat.name || '';
+
+  const poliNavBtn = document.querySelector('.nav-btn[data-target="view-poli"]');
+  if (poliNavBtn) poliNavBtn.click();
+
+  const searchInput = document.getElementById('poli-search-nik');
+  if (searchInput) {
+    searchInput.value = name || phone;
+    searchPatientByNIK();
+  }
+}
+
+// Helper formatting utilities
+function cleanWhatsAppNumber(phone) {
+  let cleaned = String(phone || '').replace(/[^0-9]/g, '');
+  if (cleaned.startsWith('0')) {
+    cleaned = '62' + cleaned.substring(1);
+  } else if (!cleaned.startsWith('62')) {
+    cleaned = '62' + cleaned;
+  }
+  return cleaned;
+}
+
+function formatChatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  }
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+}
+
+function formatDateIndo(dateStr) {
+  if (!dateStr || dateStr === '-') return '-';
+  try {
+    const d = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`);
+    if (isNaN(d.getTime())) return dateStr;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+// ============================================================================
+// 5. FITUR PENYELAMAT DRAFT POLI (ANTI KETIK ULANG 2x)
+// ============================================================================
+const POLI_DRAFT_KEY = 'ati_poli_form_draft';
+
+function savePoliDraft() {
+  try {
+    const keluhan = document.getElementById('poli-keluhan')?.value || '';
+    const objektif = document.getElementById('poli-objektif-detail')?.value || '';
+    const searchNik = document.getElementById('poli-search-nik')?.value || '';
+    
+    if (!keluhan && !objektif && !searchNik && !appData.currentPoliPatient) {
+      return;
+    }
+
+    const draft = {
+      patient: appData.currentPoliPatient,
+      searchNik: searchNik,
+      keluhan: keluhan,
+      objektif: objektif,
+      tanggalBerobat: document.getElementById('poli-tanggal-berobat')?.value,
+      izinSakit: document.getElementById('poli-izin-sakit')?.checked,
+      pantauan: document.getElementById('poli-pantauan')?.checked,
+      chkKontrol: document.getElementById('poli-chk-kontrol')?.checked,
+      tanggalKontrol: document.getElementById('poli-tanggal-kontrol')?.value,
+      catatanKontrol: document.getElementById('poli-catatan-kontrol')?.value,
+      savedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem(POLI_DRAFT_KEY, JSON.stringify(draft));
+    updatePoliRestoreDraftBtn();
+  } catch (e) {
+    console.warn('Draft save err:', e);
+  }
+}
+
+function clearPoliDraft() {
+  try {
+    localStorage.removeItem(POLI_DRAFT_KEY);
+    updatePoliRestoreDraftBtn();
+  } catch (e) {}
+}
+
+function updatePoliRestoreDraftBtn() {
+  const btn = document.getElementById('btn-poli-restore-draft');
+  if (!btn) return;
+  try {
+    const raw = localStorage.getItem(POLI_DRAFT_KEY);
+    if (raw) {
+      const draft = JSON.parse(raw);
+      if (draft.keluhan || draft.objektif || draft.patient) {
+        btn.style.display = 'inline-flex';
+        return;
+      }
+    }
+  } catch (e) {}
+  btn.style.display = 'none';
+}
+
+function restorePoliDraft() {
+  try {
+    const raw = localStorage.getItem(POLI_DRAFT_KEY);
+    if (!raw) {
+      showToast('Tidak ada draft input tersimpan.', 'info');
+      return;
+    }
+    const draft = JSON.parse(raw);
+
+    if (draft.patient) {
+      appData.currentPoliPatient = draft.patient;
+      const infoBox = document.getElementById('poli-patient-info-box');
+      if (infoBox) {
+        infoBox.style.display = 'block';
+        document.getElementById('poli-info-nama').textContent = draft.patient.nama || draft.patient.namaPasien || 'Pasien';
+        document.getElementById('poli-info-sub').textContent = `NIK Pabrik: ${draft.patient.nikPabrik || draft.patient.nik || '-'} | Dept: ${draft.patient.dept || '-'}`;
+      }
+      const banner = document.getElementById('poli-selected-banner');
+      if (banner) {
+        document.getElementById('poli-banner-name').textContent = draft.patient.nama || 'Pasien';
+        document.getElementById('poli-banner-sub').textContent = `NIK Pabrik: ${draft.patient.nikPabrik || draft.patient.nik || '-'} | Dept: ${draft.patient.dept || '-'}`;
+      }
+    }
+
+    if (draft.searchNik && document.getElementById('poli-search-nik')) {
+      document.getElementById('poli-search-nik').value = draft.searchNik;
+    }
+    if (draft.keluhan && document.getElementById('poli-keluhan')) {
+      document.getElementById('poli-keluhan').value = draft.keluhan;
+    }
+    if (draft.objektif && document.getElementById('poli-objektif-detail')) {
+      document.getElementById('poli-objektif-detail').value = draft.objektif;
+    }
+    if (draft.tanggalBerobat && document.getElementById('poli-tanggal-berobat')) {
+      document.getElementById('poli-tanggal-berobat').value = draft.tanggalBerobat;
+    }
+
+    if (draft.izinSakit && document.getElementById('poli-izin-sakit')) {
+      document.getElementById('poli-izin-sakit').checked = true;
+    }
+    if (draft.pantauan && document.getElementById('poli-pantauan')) {
+      document.getElementById('poli-pantauan').checked = true;
+    }
+    if (draft.chkKontrol && document.getElementById('poli-chk-kontrol')) {
+      document.getElementById('poli-chk-kontrol').checked = true;
+      togglePoliKontrolFields();
+      if (draft.tanggalKontrol && document.getElementById('poli-tanggal-kontrol')) {
+        document.getElementById('poli-tanggal-kontrol').value = draft.tanggalKontrol;
+      }
+      if (draft.catatanKontrol && document.getElementById('poli-catatan-kontrol')) {
+        document.getElementById('poli-catatan-kontrol').value = draft.catatanKontrol;
+      }
+    }
+
+    showToast('✅ Ketikan formulir sebelumnya berhasil dipulihkan!', 'success');
+  } catch (e) {
+    console.error('Error restoring draft:', e);
+    showToast('❌ Gagal memulihkan draft', 'error');
+  }
+}
+
+// Listener auto-save draft saat dokter mengetik
+let _poliDraftDebounce = null;
+window.addEventListener('load', () => {
+  const form = document.getElementById('form-poli-entry');
+  if (form) {
+    form.addEventListener('input', () => {
+      clearTimeout(_poliDraftDebounce);
+      _poliDraftDebounce = setTimeout(savePoliDraft, 600);
+    });
+  }
+  updatePoliRestoreDraftBtn();
+});
+setTimeout(updatePoliRestoreDraftBtn, 1500);
+
+// ============================================================================
+// MODUL: ONBOARDING PT BARU (EXCEL TEMPLATE, BULK IMPORT, & RESET KARYAWAN)
+// ============================================================================
+
+let _parsedImportEmployees = [];
+
+/**
+ * Unduh format template resmi Excel (.xlsx) untuk import data karyawan PT baru.
+ */
+function downloadKaryawanTemplateExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('Library SheetJS belum termuat. Cek koneksi internet Anda.', 'error');
+    return;
+  }
+
+  // Header & Contoh Data Sesuai Format Rekam Medis Nafila Medika
+  const templateData = [
+    {
+      "NPK": "1001",
+      "NAMA": "Budi Santoso",
+      "DEPARTEMEN": "PRODUKSI",
+      "JABATAN": "Operator",
+      "JENIS_KELAMIN": "L",
+      "TANGGAL_LAHIR": "1992-05-14",
+      "NO_HP": "081234567890",
+      "ALAMAT": "Jl. Industri Raya No. 10"
+    },
+    {
+      "NPK": "1002",
+      "NAMA": "Siti Rahmawati",
+      "DEPARTEMEN": "QA",
+      "JABATAN": "Staff QC",
+      "JENIS_KELAMIN": "P",
+      "TANGGAL_LAHIR": "1995-11-20",
+      "NO_HP": "089876543210",
+      "ALAMAT": "Perum Grand Cikarang Blok B2"
+    },
+    {
+      "NPK": "1003",
+      "NAMA": "Ahmad Fauzi",
+      "DEPARTEMEN": "LOGISTIK",
+      "JABATAN": "Driver Forklift",
+      "JENIS_KELAMIN": "L",
+      "TANGGAL_LAHIR": "1988-03-08",
+      "NO_HP": "081398765432",
+      "ALAMAT": "Kavling Karawang Kulon No. 45"
+    }
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(templateData);
+
+  // Lebar kolom agar mudah dibaca
+  ws['!cols'] = [
+    { wch: 14 }, // NPK
+    { wch: 26 }, // NAMA
+    { wch: 18 }, // DEPARTEMEN
+    { wch: 20 }, // JABATAN
+    { wch: 14 }, // JENIS_KELAMIN
+    { wch: 16 }, // TANGGAL_LAHIR
+    { wch: 18 }, // NO_HP
+    { wch: 36 }  // ALAMAT
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "DATA_KARYAWAN");
+  XLSX.writeFile(wb, "TEMPLATE_IMPORT_KARYAWAN_NAFILA_MEDIKA.xlsx");
+  showToast("Format Template Excel berhasil diunduh!", "success");
+}
+
+function openModalImportKaryawan() {
+  _parsedImportEmployees = [];
+  const fileInput = document.getElementById('excel-import-file-input');
+  if (fileInput) fileInput.value = '';
+  
+  const previewArea = document.getElementById('excel-import-preview-area');
+  if (previewArea) previewArea.style.display = 'none';
+
+  const tbody = document.getElementById('excel-preview-tbody');
+  if (tbody) tbody.innerHTML = '';
+
+  const btnSubmit = document.getElementById('btn-submit-excel-import');
+  if (btnSubmit) btnSubmit.disabled = true;
+
+  const modal = document.getElementById('modal-import-karyawan');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalImportKaryawan() {
+  const modal = document.getElementById('modal-import-karyawan');
+  if (modal) modal.style.display = 'none';
+}
+
+function handleExcelFileSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (typeof XLSX === 'undefined') {
+    showToast('Library XLSX belum aktif.', 'error');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+      if (!rawRows || rawRows.length === 0) {
+        showToast('File Excel kosong atau tidak ada baris data.', 'warning');
+        return;
+      }
+
+      // Normalisasi nama kolom (case insensitive)
+      _parsedImportEmployees = rawRows.map(row => {
+        const keys = Object.keys(row);
+        const findVal = (terms) => {
+          const matchKey = keys.find(k => terms.some(t => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(t)));
+          return matchKey ? String(row[matchKey]).trim() : '';
+        };
+
+        const npk = findVal(['npk', 'nik', 'idkaryawan', 'nokaryawan', 'badge']);
+        const nama = findVal(['nama', 'name', 'namakaryawan', 'namalengkap']);
+        const dept = findVal(['departemen', 'dept', 'divisi', 'bagian', 'section']) || 'UMUM';
+        const jabatan = findVal(['jabatan', 'posisi', 'role', 'pekerjaan']) || 'Karyawan';
+        let gender = findVal(['jenis_kelamin', 'jeniskelamin', 'gender', 'jk', 'sex']).toUpperCase();
+        if (gender.startsWith('L') || gender.startsWith('M') || gender.includes('PRIA')) gender = 'L';
+        else if (gender.startsWith('P') || gender.startsWith('W') || gender.startsWith('F') || gender.includes('WANITA')) gender = 'P';
+        else gender = 'L';
+
+        let tglLahir = findVal(['tanggal_lahir', 'tanggallahir', 'tgllahir', 'dob', 'birthdate']);
+        // Parse format excel date number if needed
+        if (typeof tglLahir === 'number') {
+          try {
+            const dateObj = XLSX.SSF.parse_date_code(tglLahir);
+            tglLahir = `${dateObj.y}-${String(dateObj.m).padStart(2, '0')}-${String(dateObj.d).padStart(2, '0')}`;
+          } catch(err){}
+        }
+
+        const noHp = findVal(['nohp', 'no_hp', 'telepon', 'telp', 'wa', 'whatsapp', 'phone']);
+        const alamat = findVal(['alamat', 'address', 'domisili']);
+
+        return {
+          npk: npk,
+          nikPabrik: npk,
+          nama: nama,
+          departemen: dept,
+          jabatan: jabatan,
+          jenisKelamin: gender,
+          tanggalLahir: tglLahir,
+          noHp: noHp,
+          alamat: alamat
+        };
+      }).filter(emp => emp.npk && emp.nama);
+
+      if (_parsedImportEmployees.length === 0) {
+        showToast('Tidak ada data karyawan yang valid. Kolom NPK dan NAMA wajib ada!', 'error');
+        return;
+      }
+
+      // Render Preview
+      const previewArea = document.getElementById('excel-import-preview-area');
+      const statLbl = document.getElementById('excel-preview-stat-lbl');
+      const tbody = document.getElementById('excel-preview-tbody');
+      const btnSubmit = document.getElementById('btn-submit-excel-import');
+
+      if (statLbl) statLbl.textContent = `${_parsedImportEmployees.length} baris data karyawan terdeteksi`;
+      if (tbody) {
+        tbody.innerHTML = _parsedImportEmployees.slice(0, 8).map(emp => `
+          <tr>
+            <td><strong>${emp.npk}</strong></td>
+            <td>${emp.nama}</td>
+            <td>${emp.departemen}</td>
+            <td>${emp.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</td>
+            <td>${emp.noHp || '-'}</td>
+          </tr>
+        `).join('');
+      }
+
+      if (previewArea) previewArea.style.display = 'block';
+      if (btnSubmit) btnSubmit.disabled = false;
+      showToast(`${_parsedImportEmployees.length} baris terbaca dan siap diimpor.`, 'info');
+
+    } catch (err) {
+      console.error('Error parsing excel:', err);
+      showToast('Gagal membaca file Excel. Pastikan format file benar.', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function submitExcelImport() {
+  if (!_parsedImportEmployees || _parsedImportEmployees.length === 0) {
+    showToast('Pilih file Excel yang valid terlebih dahulu.', 'warning');
+    return;
+  }
+
+  const dupModeEl = document.querySelector('input[name="import-dup-mode"]:checked');
+  const mode = dupModeEl ? dupModeEl.value : 'skip';
+
+  const btn = document.getElementById('btn-submit-excel-import');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengimpor Data...';
+  }
+
+  try {
+    const res = await fetch('/api/employees/bulk-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employees: _parsedImportEmployees,
+        mode: mode
+      })
+    });
+
+    const result = await res.json();
+    if (res.ok && result.success) {
+      if (result.employees) {
+        appData.patients = result.employees;
+      } else {
+        await loadAllAppData();
+      }
+      renderKaryawanTable();
+      renderMobileKaryawanCards();
+      closeModalImportKaryawan();
+      showToast(`Berhasil import: ${result.summary?.added || 0} baru, ${result.summary?.updated || 0} diperbarui, ${result.summary?.skipped || 0} dilewati. Total: ${result.totalEmployees} karyawan.`, 'success');
+    } else {
+      showToast(result.error || 'Gagal melakukan import data', 'error');
+    }
+  } catch (err) {
+    console.error('Import error:', err);
+    showToast('Gagal menghubungi server.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Mulai Import Data';
+    }
+  }
+}
+
+function openModalResetKaryawan() {
+  const pinInput = document.getElementById('reset-karyawan-pin');
+  if (pinInput) pinInput.value = '';
+  const modal = document.getElementById('modal-reset-karyawan');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalResetKaryawan() {
+  const modal = document.getElementById('modal-reset-karyawan');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleConfirmResetKaryawan(event) {
+  event.preventDefault();
+  const pin = document.getElementById('reset-karyawan-pin')?.value.trim();
+  if (!pin) {
+    showToast('Kunci Master PIN wajib diisi!', 'warning');
+    return;
+  }
+
+  if (!confirm('PERINGATAN: Apakah Anda benar-benar yakin ingin MENGOSONGKAN seluruh data karyawan PT sebelumnya? Tindakan ini tidak dapat dibatalkan.')) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/employees/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+
+    const result = await res.json();
+    if (res.ok && result.success) {
+      appData.patients = [];
+      renderKaryawanTable();
+      renderMobileKaryawanCards();
+      closeModalResetKaryawan();
+      showToast('Master data karyawan berhasil dikosongkan untuk PT Baru! Silakan gunakan tombol Import Excel untuk memasukkan data karyawan klien baru.', 'success');
+    } else {
+      showToast(result.error || 'PIN Master salah. Gagal reset data.', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan koneksi saat reset data.', 'error');
+  }
+}
+
+// ============================================================================
+// MODUL: SURAT SAKIT LUAR (FASKES EKSTERNAL - PERSIS SCREENSHOT 4)
+// ============================================================================
+
+let _suratLuarFotoBase64 = null;
+
+function initSuratLuarForm() {
+  const today = new Date().toISOString().split('T')[0];
+  const tglMulai = document.getElementById('surat-luar-tgl-mulai');
+  const tglSelesai = document.getElementById('surat-luar-tgl-selesai');
+  const perawatInput = document.getElementById('surat-luar-perawat');
+
+  if (tglMulai && !tglMulai.value) tglMulai.value = today;
+  if (tglSelesai && !tglSelesai.value) tglSelesai.value = today;
+
+  if (perawatInput && (!perawatInput.value || perawatInput.value.trim() === '')) {
+    perawatInput.value = appData.currentUser?.nama || 'dr. Dylan / Perawat';
+  }
+
+  hitungDurasiSuratLuar();
+}
+
+function handleSuratLuarNikInput(val) {
+  const cleanVal = (val || '').trim();
+  if (!cleanVal) {
+    const infoBox = document.getElementById('surat-luar-pasien-info');
+    if (infoBox) infoBox.style.display = 'none';
+    return;
+  }
+
+  // Cari di database karyawan
+  const p = (appData.patients || []).find(x => 
+    String(x.npk || x.nikPabrik || x.nik || '').toLowerCase() === cleanVal.toLowerCase()
+  );
+
+  if (p) {
+    const infoBox = document.getElementById('surat-luar-pasien-info');
+    const namaEl = document.getElementById('surat-luar-info-nama');
+    const metaEl = document.getElementById('surat-luar-info-meta');
+    const hiddenNama = document.getElementById('surat-luar-nama');
+    const hiddenDept = document.getElementById('surat-luar-dept');
+
+    if (namaEl) namaEl.textContent = p.nama;
+    if (metaEl) metaEl.textContent = `Dept: ${p.departemen || '-'} | Gender: ${p.jenisKelamin || '-'} | No HP: ${p.noHp || '-'}`;
+    if (hiddenNama) hiddenNama.value = p.nama;
+    if (hiddenDept) hiddenDept.value = p.departemen || '-';
+    if (infoBox) infoBox.style.display = 'block';
+  }
+}
+
+function cekNikSuratLuar() {
+  const nikVal = document.getElementById('surat-luar-nik')?.value.trim();
+  if (!nikVal) {
+    showToast('Ketik NIK karyawan terlebih dahulu!', 'warning');
+    return;
+  }
+
+  const p = (appData.patients || []).find(x => 
+    String(x.npk || x.nikPabrik || x.nik || '').toLowerCase() === nikVal.toLowerCase() ||
+    String(x.nama || '').toLowerCase().includes(nikVal.toLowerCase())
+  );
+
+  if (p) {
+    const infoBox = document.getElementById('surat-luar-pasien-info');
+    const namaEl = document.getElementById('surat-luar-info-nama');
+    const metaEl = document.getElementById('surat-luar-info-meta');
+    const hiddenNama = document.getElementById('surat-luar-nama');
+    const hiddenDept = document.getElementById('surat-luar-dept');
+
+    if (namaEl) namaEl.textContent = p.nama;
+    if (metaEl) metaEl.textContent = `Dept: ${p.departemen || '-'} | Gender: ${p.jenisKelamin || '-'} | No HP: ${p.noHp || '-'}`;
+    if (hiddenNama) hiddenNama.value = p.nama;
+    if (hiddenDept) hiddenDept.value = p.departemen || '-';
+    if (infoBox) infoBox.style.display = 'block';
+    showToast(`Data ditemukan: ${p.nama} (${p.departemen || '-'})`, 'success');
+  } else {
+    showToast(`NIK/Nama "${nikVal}" tidak terdaftar di data karyawan PT. Silakan lengkapi diagnosa & faskes.`, 'warning');
+    const hiddenNama = document.getElementById('surat-luar-nama');
+    if (hiddenNama && !hiddenNama.value) hiddenNama.value = nikVal;
+  }
+}
+
+function hitungDurasiSuratLuar() {
+  const tgl1 = document.getElementById('surat-luar-tgl-mulai')?.value;
+  const tgl2 = document.getElementById('surat-luar-tgl-selesai')?.value;
+  const durasiEl = document.getElementById('surat-luar-durasi-info');
+
+  if (!tgl1 || !tgl2) return;
+
+  const d1 = new Date(tgl1);
+  const d2 = new Date(tgl2);
+  const diffTime = d2.getTime() - d1.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 3600 * 24)) + 1;
+
+  if (diffDays < 1) {
+    if (durasiEl) durasiEl.innerHTML = '<span style="color: #ef4444;">⚠️ Tanggal selesai tidak boleh lebih awal dari tanggal mulai!</span>';
+  } else {
+    if (durasiEl) durasiEl.innerHTML = `⏱️ Total Durasi Istirahat: <strong>${diffDays} Hari</strong>`;
+  }
+}
+
+function handlePreviewFotoSuratLuar(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    _suratLuarFotoBase64 = e.target.result;
+    const container = document.getElementById('surat-luar-foto-preview-container');
+    const img = document.getElementById('surat-luar-foto-preview');
+    if (img) img.src = _suratLuarFotoBase64;
+    if (container) container.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearFotoSuratLuar() {
+  _suratLuarFotoBase64 = null;
+  const fileInput = document.getElementById('surat-luar-file');
+  if (fileInput) fileInput.value = '';
+  const container = document.getElementById('surat-luar-foto-preview-container');
+  if (container) container.style.display = 'none';
+  const img = document.getElementById('surat-luar-foto-preview');
+  if (img) img.src = '';
+}
+
+async function handleSimpanSuratLuar(event) {
+  event.preventDefault();
+  const nik = document.getElementById('surat-luar-nik')?.value.trim();
+  const diagnosa = document.getElementById('surat-luar-diagnosa')?.value.trim();
+  const tglMulai = document.getElementById('surat-luar-tgl-mulai')?.value;
+  const tglSelesai = document.getElementById('surat-luar-tgl-selesai')?.value;
+  const faskes = document.getElementById('surat-luar-faskes')?.value.trim();
+  const perawat = document.getElementById('surat-luar-perawat')?.value.trim();
+  const nama = document.getElementById('surat-luar-nama')?.value.trim() || nik;
+  const dept = document.getElementById('surat-luar-dept')?.value.trim() || '-';
+
+  if (!nik || !diagnosa || !tglMulai || !tglSelesai || !faskes || !perawat) {
+    showToast('Mohon lengkapi seluruh field wajib!', 'warning');
+    return;
+  }
+
+  const d1 = new Date(tglMulai);
+  const d2 = new Date(tglSelesai);
+  const durasi = Math.round((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24)) + 1;
+
+  if (durasi < 1) {
+    showToast('Tanggal selesai tidak valid!', 'error');
+    return;
+  }
+
+  const payload = {
+    nik: nik,
+    nama: nama,
+    departemen: dept,
+    diagnosa: diagnosa,
+    tanggalMulai: tglMulai,
+    tanggalSelesai: tglSelesai,
+    durasiHari: durasi,
+    faskesLuar: faskes,
+    namaPerawat: perawat,
+    fotoBukti: _suratLuarFotoBase64 || null
+  };
+
+  const btn = document.getElementById('btn-simpan-surat-luar');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+  }
+
+  try {
+    const res = await fetch('/api/surat-luar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+    if (res.ok && result.success) {
+      showToast('Surat Sakit Luar berhasil disimpan & terhubung ke laporan Shift!', 'success');
+      if (result.data) {
+        if (!appData.suratSakitLuar) appData.suratSakitLuar = [];
+        appData.suratSakitLuar.unshift(result.data);
+      } else {
+        await loadAllAppData();
+      }
+
+      // Reset Form
+      document.getElementById('form-surat-luar')?.reset();
+      clearFotoSuratLuar();
+      const infoBox = document.getElementById('surat-luar-pasien-info');
+      if (infoBox) infoBox.style.display = 'none';
+      initSuratLuarForm();
+      renderSuratLuarTable();
+    } else {
+      showToast(result.error || 'Gagal menyimpan surat sakit luar', 'error');
+    }
+  } catch (err) {
+    console.error('Error simpan surat luar:', err);
+    showToast('Terjadi kesalahan saat menyimpan ke database.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> SIMPAN SURAT';
+    }
+  }
+}
+
+function renderSuratLuarTable() {
+  const list = appData.suratSakitLuar || [];
+  const tbody = document.getElementById('table-surat-luar-body');
+  const badge = document.getElementById('badge-total-surat-luar');
+
+  if (badge) badge.textContent = `${list.length} Berkas Tercatat`;
+  if (!tbody) return;
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 24px;">
+          Belum ada berkas surat sakit luar yang diinput.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  const sortedList = [...list].sort((a, b) => new Date(b.createdAt || b.tanggalMulai) - new Date(a.createdAt || a.tanggalMulai));
+
+  tbody.innerHTML = sortedList.map((item, idx) => {
+    const tglTerima = item.createdAt ? item.createdAt.split('T')[0] : (item.created_at ? item.created_at.split('T')[0] : (item.tanggalMulai || '-'));
+    const nik = item.nikPabrik || item.nik || item.npk || '-';
+    const nama = item.namaPasien || item.nama || '-';
+    const dept = item.dept || item.departemen || '-';
+    const faskes = item.namaFaskes || item.faskesLuar || '-';
+    const foto = item.linkFoto || item.fotoBukti;
+
+    const fotoBtn = foto 
+      ? `<button type="button" class="btn btn-sm" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border: 1px solid #0ea5e9; padding: 3px 8px; font-size: 0.75rem; font-weight: 700;" onclick="openPreviewFotoSurat('${item.id}')" title="Lihat Foto Bukti">
+           <i class="fa-solid fa-image"></i> Lihat
+         </button>`
+      : `<span style="color: var(--text-muted); font-size: 0.75rem;">-</span>`;
+
+    return `
+      <tr>
+        <td style="text-align: center; font-weight: 700;">${idx + 1}</td>
+        <td>${tglTerima}</td>
+        <td><strong>${nik}</strong></td>
+        <td><strong>${nama}</strong></td>
+        <td>${dept}</td>
+        <td>${faskes}</td>
+        <td style="font-size: 0.8rem;">${item.tanggalMulai || '-'} s/d ${item.tanggalSelesai || '-'}</td>
+        <td style="text-align: center;"><span class="badge badge-warning">${item.durasiHari || 1} Hari</span></td>
+        <td>${item.diagnosa || '-'}</td>
+        <td style="text-align: center;">${fotoBtn}</td>
+        <td style="text-align: center;">
+          <button type="button" class="btn btn-sm btn-danger" style="padding: 3px 8px; font-size: 0.75rem;" onclick="handleDeleteSuratLuar('${item.id}')" title="Hapus Berkas">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterSuratLuarTable() {
+  const q = document.getElementById('search-surat-luar-input')?.value.toLowerCase().trim() || '';
+  const tbody = document.getElementById('table-surat-luar-body');
+  const list = appData.suratSakitLuar || [];
+
+  if (!tbody) return;
+
+  const filtered = list.filter(item => {
+    const nik = (item.nikPabrik || item.nik || item.npk || '').toLowerCase();
+    const nama = (item.namaPasien || item.nama || '').toLowerCase();
+    const dept = (item.dept || item.departemen || '').toLowerCase();
+    const faskes = (item.namaFaskes || item.faskesLuar || '').toLowerCase();
+    const diagnosa = (item.diagnosa || '').toLowerCase();
+    return nik.includes(q) || nama.includes(q) || dept.includes(q) || faskes.includes(q) || diagnosa.includes(q);
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 24px;">
+          Tidak ada data surat luar yang cocok dengan "${q}".
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((item, idx) => {
+    const tglTerima = item.createdAt ? item.createdAt.split('T')[0] : (item.created_at ? item.created_at.split('T')[0] : (item.tanggalMulai || '-'));
+    const nik = item.nikPabrik || item.nik || item.npk || '-';
+    const nama = item.namaPasien || item.nama || '-';
+    const dept = item.dept || item.departemen || '-';
+    const faskes = item.namaFaskes || item.faskesLuar || '-';
+    const foto = item.linkFoto || item.fotoBukti;
+
+    const fotoBtn = foto 
+      ? `<button type="button" class="btn btn-sm" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border: 1px solid #0ea5e9; padding: 3px 8px; font-size: 0.75rem; font-weight: 700;" onclick="openPreviewFotoSurat('${item.id}')" title="Lihat Foto Bukti">
+           <i class="fa-solid fa-image"></i> Lihat
+         </button>`
+      : `<span style="color: var(--text-muted); font-size: 0.75rem;">-</span>`;
+
+    return `
+      <tr>
+        <td style="text-align: center; font-weight: 700;">${idx + 1}</td>
+        <td>${tglTerima}</td>
+        <td><strong>${nik}</strong></td>
+        <td><strong>${nama}</strong></td>
+        <td>${dept}</td>
+        <td>${faskes}</td>
+        <td style="font-size: 0.8rem;">${item.tanggalMulai || '-'} s/d ${item.tanggalSelesai || '-'}</td>
+        <td style="text-align: center;"><span class="badge badge-warning">${item.durasiHari || 1} Hari</span></td>
+        <td>${item.diagnosa || '-'}</td>
+        <td style="text-align: center;">${fotoBtn}</td>
+        <td style="text-align: center;">
+          <button type="button" class="btn btn-sm btn-danger" style="padding: 3px 8px; font-size: 0.75rem;" onclick="handleDeleteSuratLuar('${item.id}')" title="Hapus Berkas">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openPreviewFotoSurat(suratIdOrSrc) {
+  let src = suratIdOrSrc;
+  if (!src.startsWith('data:image')) {
+    const item = (appData.suratSakitLuar || []).find(x => x.id === suratIdOrSrc);
+    if (item) {
+      src = item.linkFoto || item.fotoBukti;
+    }
+  }
+
+  const modal = document.getElementById('modal-preview-foto-surat');
+  const img = document.getElementById('modal-preview-surat-img');
+  const dl = document.getElementById('modal-preview-surat-download');
+
+  if (img) img.src = src;
+  if (dl) dl.href = src;
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalPreviewFotoSurat() {
+  const modal = document.getElementById('modal-preview-foto-surat');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleDeleteSuratLuar(id) {
+  if (!confirm('Apakah Anda yakin ingin menghapus arsip surat sakit luar ini?')) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/surat-luar/${id}`, { method: 'DELETE' });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      appData.suratSakitLuar = (appData.suratSakitLuar || []).filter(x => x.id !== id);
+      renderSuratLuarTable();
+      showToast('Berkas surat sakit luar berhasil dihapus.', 'info');
+    } else {
+      showToast(result.error || 'Gagal menghapus berkas', 'error');
+    }
+  } catch (err) {
+    showToast('Gagal terhubung ke server.', 'error');
+  }
+}
+
+// ============================================================================
+// MODUL: ADMINISTRATOR SETUP PT BARU, BRANDING & EXCEL DATA MANAGEMENT
+// ============================================================================
+
+let _uploadedLogoPtBase64 = null;
+let _parsedImportObat = [];
+let _parsedImportRekamMedis = [];
+
+function lockGSheetSync() {
+  localStorage.removeItem('gsheet_unlocked');
+  const lockedView = document.getElementById('gsheet-locked-view');
+  const unlockedView = document.getElementById('gsheet-unlocked-view');
+  if (lockedView) lockedView.style.display = 'block';
+  if (unlockedView) unlockedView.style.display = 'none';
+  showToast('Pengaturan Administrator Berhasil Dikunci Kembali', 'info');
+}
+
+function updateAdminStatBadges() {
+  const badgeK = document.getElementById('badge-admin-count-karyawan');
+  const badgeO = document.getElementById('badge-admin-count-obat');
+  const badgeR = document.getElementById('badge-admin-count-records');
+
+  if (badgeK) badgeK.textContent = `${(appData.patients || []).length} Karyawan`;
+  if (badgeO) badgeO.textContent = `${(appData.medicines || []).length} Item Obat`;
+  if (badgeR) badgeR.textContent = `${(appData.records || []).length} Berkas`;
+}
+
+function applyBranding(settings, forceInputs = false) {
+  if (!settings) return;
+  const namaPt = settings.nama_pt || 'PT ATI';
+  const logoPt = settings.logo_pt || 'ATI Logo.png';
+  const logoNafila = settings.logo_nafila || 'Salinan Logo nafila.webp';
+  const namaKlinik = settings.nama_klinik || 'Mobile Klinik System';
+  const subTitle = settings.sub_title || `Klinik Nafila Medika & ${namaPt}`;
+
+  // Update Navbar Header Elements
+  const elPtLogo = document.getElementById('navbar-pt-logo');
+  const elNafilaLogo = document.getElementById('navbar-nafila-logo');
+  const elBrandTitle = document.getElementById('navbar-brand-title');
+  const elBrandSub = document.getElementById('navbar-brand-subtitle');
+
+  if (elPtLogo) elPtLogo.src = logoPt;
+  if (elNafilaLogo) elNafilaLogo.src = logoNafila;
+  if (elBrandTitle) elBrandTitle.textContent = namaKlinik;
+  if (elBrandSub) elBrandSub.textContent = subTitle;
+
+  // Update Browser Title
+  document.title = `${namaKlinik} - ${subTitle}`;
+
+  // Preview elements
+  const prevPtLogo = document.getElementById('branding-preview-pt-logo');
+  const prevNafilaLogo = document.getElementById('branding-preview-nafila-logo');
+  const prevTitle = document.getElementById('branding-preview-title');
+  const prevSub = document.getElementById('branding-preview-subtitle');
+
+  if (prevPtLogo) prevPtLogo.src = logoPt;
+  if (prevNafilaLogo) prevNafilaLogo.src = logoNafila;
+
+  // Input elements
+  const inputNamaKlinik = document.getElementById('branding-nama-klinik');
+  const inputNamaPt = document.getElementById('branding-nama-pt');
+  const inputSubtitle = document.getElementById('branding-subtitle');
+
+  // Check if user is currently interacting with any of the branding inputs
+  const activeEl = document.activeElement;
+  const isUserFocused = (activeEl === inputNamaKlinik || activeEl === inputNamaPt || activeEl === inputSubtitle);
+
+  // If user is focused on the input, DO NOT OVERWRITE! (Prevents deleting/typing from reverting)
+  if (isUserFocused && !forceInputs) {
+    return;
+  }
+
+  // Update inputs only on forceInputs (save/reset) or if the field is not yet initialized
+  if (forceInputs || !inputNamaKlinik?.dataset.initialized) {
+    if (inputNamaKlinik) {
+      inputNamaKlinik.value = namaKlinik;
+      inputNamaKlinik.dataset.initialized = 'true';
+    }
+    if (inputNamaPt) {
+      inputNamaPt.value = namaPt;
+      inputNamaPt.dataset.initialized = 'true';
+    }
+    if (inputSubtitle) {
+      inputSubtitle.value = subTitle;
+      inputSubtitle.dataset.initialized = 'true';
+    }
+    if (prevTitle) prevTitle.textContent = namaKlinik;
+    if (prevSub) prevSub.textContent = subTitle;
+  }
+}
+
+function updateBrandingPreview() {
+  const inputNamaKlinik = document.getElementById('branding-nama-klinik');
+  const inputSubtitle = document.getElementById('branding-subtitle');
+  const prevTitle = document.getElementById('branding-preview-title');
+  const prevSub = document.getElementById('branding-preview-subtitle');
+
+  // Mark as user-interacted so background sync won't touch it
+  if (inputNamaKlinik) inputNamaKlinik.dataset.initialized = 'true';
+
+  if (prevTitle && inputNamaKlinik) {
+    prevTitle.textContent = inputNamaKlinik.value !== '' ? inputNamaKlinik.value : '(Kosong)';
+  }
+  if (prevSub && inputSubtitle) {
+    prevSub.textContent = inputSubtitle.value !== '' ? inputSubtitle.value : '(Kosong)';
+  }
+}
+
+function handlePreviewLogoPtFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    _uploadedLogoPtBase64 = e.target.result;
+    const prevPtLogo = document.getElementById('branding-preview-pt-logo');
+    if (prevPtLogo) prevPtLogo.src = _uploadedLogoPtBase64;
+    showToast('Foto Logo PT Klien baru berhasil dimuat. Klik Simpan untuk menerapkan.', 'info');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function handleSaveBranding(event) {
+  event.preventDefault();
+  const namaKlinik = document.getElementById('branding-nama-klinik')?.value.trim();
+  const subTitle = document.getElementById('branding-subtitle')?.value.trim();
+  const namaPt = document.getElementById('branding-nama-pt')?.value.trim() || 'PT Klien';
+
+  if (!namaKlinik || !subTitle) {
+    showToast('Judul Besar dan Judul Kecil wajib diisi!', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-branding');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+  }
+
+  try {
+    const payload = {
+      nama_klinik: namaKlinik,
+      sub_title: subTitle,
+      nama_pt: namaPt
+    };
+    if (_uploadedLogoPtBase64) {
+      payload.logo_pt = _uploadedLogoPtBase64;
+    }
+
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      appData.settings = data.settings || data;
+      applyBranding(appData.settings, true); // forceInputs = true
+      showToast(`Identitas & Judul berhasil disimpan dan aktif di seluruh aplikasi!`, 'success');
+    } else {
+      showToast(data.error || 'Gagal menyimpan identitas', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan koneksi', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Identitas &amp; Logo PT';
+    }
+  }
+}
+
+async function resetBrandingToDefault() {
+  if (!confirm('Kembalikan judul, identitas dan logo ke default (Mobile Klinik System & Nafila Medika)?')) return;
+  try {
+    const payload = {
+      nama_klinik: 'Mobile Klinik System',
+      sub_title: 'Klinik Nafila Medika & PT ATI',
+      nama_pt: 'PT ATI',
+      logo_pt: 'ATI Logo.png',
+      logo_nafila: 'Salinan Logo nafila.webp'
+    };
+    _uploadedLogoPtBase64 = null;
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      appData.settings = data.settings || data;
+      applyBranding(appData.settings, true); // forceInputs = true
+      showToast('Identitas & Judul dikembalikan ke default.', 'info');
+    }
+  } catch (err) {
+    showToast('Gagal reset branding', 'error');
+  }
+}
+
+// ============================================================================
+// EXPORT & TEMPLATE EXCEL FUNCTIONS (SHEETJS)
+// ============================================================================
+
+function exportKaryawanExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('Library SheetJS belum termuat.', 'error');
+    return;
+  }
+  const list = appData.patients || [];
+  if (list.length === 0) {
+    showToast('Data karyawan masih kosong untuk diexport.', 'warning');
+    return;
+  }
+
+  const rows = list.map((p, idx) => ({
+    "NO": idx + 1,
+    "NPK": p.npk || p.nikPabrik || p.nik || '',
+    "NAMA": p.nama || '',
+    "DEPARTEMEN": p.departemen || p.dept || '',
+    "JABATAN": p.jabatan || '',
+    "JENIS_KELAMIN": p.jenisKelamin || '',
+    "TANGGAL_LAHIR": p.tanggalLahir || '',
+    "NO_HP": p.noHp || '',
+    "ALAMAT": p.alamat || ''
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "DATA_KARYAWAN");
+  XLSX.writeFile(wb, `DATA_KARYAWAN_${(appData.settings?.nama_pt || 'PT').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast(`Berhasil export ${list.length} data karyawan ke Excel!`, 'success');
+}
+
+function downloadObatTemplateExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('Library SheetJS belum termuat.', 'error');
+    return;
+  }
+
+  const templateData = [
+    {
+      "NAMA_OBAT": "PARACETAMOL 500 MG",
+      "KATEGORI": "Obat Bebas",
+      "STOK": 100,
+      "SATUAN": "tablet",
+      "HARGA": 500
+    },
+    {
+      "NAMA_OBAT": "AMOXICILLIN 500 MG",
+      "KATEGORI": "Antibiotik",
+      "STOK": 50,
+      "SATUAN": "kaplet",
+      "HARGA": 1200
+    },
+    {
+      "NAMA_OBAT": "BETADINE SOL 30 ML",
+      "KATEGORI": "Antiseptik",
+      "STOK": 10,
+      "SATUAN": "botol",
+      "HARGA": 22000
+    }
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(templateData);
+  ws['!cols'] = [{ wch: 30 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 16 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "MASTER_OBAT");
+  XLSX.writeFile(wb, "TEMPLATE_MASTER_OBAT_NAFILA.xlsx");
+  showToast("Format Template Excel Obat berhasil diunduh!", "success");
+}
+
+function exportObatExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('Library SheetJS belum termuat.', 'error');
+    return;
+  }
+  const list = appData.medicines || [];
+  if (list.length === 0) {
+    showToast('Data obat masih kosong untuk diexport.', 'warning');
+    return;
+  }
+
+  const rows = list.map((m, idx) => ({
+    "NO": idx + 1,
+    "NAMA_OBAT": m.nama,
+    "KATEGORI": m.kategori || 'Obat',
+    "STOK": m.stok || 0,
+    "SATUAN": m.satuan || 'tab',
+    "HARGA": m.harga || 0
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "MASTER_OBAT");
+  XLSX.writeFile(wb, `DATA_MASTER_OBAT_${(appData.settings?.nama_pt || 'PT').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast(`Berhasil export ${list.length} data obat ke Excel!`, 'success');
+}
+
+function downloadRekamMedisTemplateExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('Library SheetJS belum termuat.', 'error');
+    return;
+  }
+
+  const templateData = [
+    {
+      "TANGGAL_BEROBAT": "2026-09-12",
+      "NPK": "1001",
+      "NAMA_PASIEN": "Budi Santoso",
+      "DEPARTEMEN": "PRODUKSI",
+      "NO_HP": "081234567890",
+      "KELUHAN_SUBJEKTIF": "Demam dan batuk kering sejak kemarin",
+      "PEMERIKSAAN_OBJEKTIF": "TD 120/80, Nadi 84, Suhu 38.2 C",
+      "DIAGNOSA": "Febris ec ISPA",
+      "TERAPI_RESEP": "Paracetamol 3x500mg, Ambroxol 3x30mg",
+      "PEMERIKSA": "dr. Dylan"
+    },
+    {
+      "TANGGAL_BEROBAT": "2026-09-12",
+      "NPK": "1002",
+      "NAMA_PASIEN": "Siti Rahmawati",
+      "DEPARTEMEN": "QA",
+      "NO_HP": "089876543210",
+      "KELUHAN_SUBJEKTIF": "Nyeri ulu hati dan mual",
+      "PEMERIKSAAN_OBJEKTIF": "Nyeri tekan epigastrium (+), TD 110/70",
+      "DIAGNOSA": "Dyspepsia Syndrome",
+      "TERAPI_RESEP": "Antasida DOEN 3x1 ac, Omeprazole 2x20mg",
+      "PEMERIKSA": "dr. Dylan"
+    }
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(templateData);
+  ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 24 }, { wch: 16 }, { wch: 16 }, { wch: 34 }, { wch: 30 }, { wch: 24 }, { wch: 36 }, { wch: 18 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "RIWAYAT_PASIEN");
+  XLSX.writeFile(wb, "TEMPLATE_RIWAYAT_REKAM_MEDIS_PASIEN.xlsx");
+  showToast("Format Template Excel Riwayat Medis berhasil diunduh!", "success");
+}
+
+function exportRekamMedisExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('Library SheetJS belum termuat.', 'error');
+    return;
+  }
+  const list = appData.records || [];
+  if (list.length === 0) {
+    showToast('Riwayat rekam medis masih kosong.', 'warning');
+    return;
+  }
+
+  const rows = list.map((r, idx) => ({
+    "NO": idx + 1,
+    "TANGGAL": r.tanggal || '',
+    "NPK": r.nikPabrik || r.nik || '',
+    "NAMA_PASIEN": r.namaPasien || '',
+    "DEPARTEMEN": r.dept || '',
+    "NO_HP": r.noHp || '',
+    "KELUHAN": r.keluhan || '',
+    "OBJEKTIF": r.objektif || '',
+    "DIAGNOSA": r.asesmen || '',
+    "TERAPI_PLAN": r.plan || '',
+    "PEMERIKSA": r.pemeriksa || '',
+    "IZIN_SAKIT": r.izinSakit ? 'YA' : 'TIDAK',
+    "PANTAUAN": r.isPantauan ? 'YA' : 'TIDAK'
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "REKAM_MEDIS");
+  XLSX.writeFile(wb, `DATA_REKAM_MEDIS_${(appData.settings?.nama_pt || 'PT').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast(`Berhasil export ${list.length} berkas rekam medis ke Excel!`, 'success');
+}
+
+// ============================================================================
+// MODAL IMPORT & RESET: MASTER OBAT
+// ============================================================================
+
+function openModalImportObat() {
+  _parsedImportObat = [];
+  const inp = document.getElementById('excel-import-obat-file-input');
+  if (inp) inp.value = '';
+  const prev = document.getElementById('excel-import-obat-preview-area');
+  if (prev) prev.style.display = 'none';
+  const tbody = document.getElementById('excel-preview-obat-tbody');
+  if (tbody) tbody.innerHTML = '';
+  const btn = document.getElementById('btn-submit-excel-obat-import');
+  if (btn) btn.disabled = true;
+
+  const modal = document.getElementById('modal-import-obat');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalImportObat() {
+  const modal = document.getElementById('modal-import-obat');
+  if (modal) modal.style.display = 'none';
+}
+
+function handleExcelObatSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      if (!rawRows || rawRows.length === 0) {
+        showToast('File Excel obat kosong.', 'warning');
+        return;
+      }
+
+      _parsedImportObat = rawRows.map(row => {
+        const keys = Object.keys(row);
+        const findVal = (terms) => {
+          const matchKey = keys.find(k => terms.some(t => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(t)));
+          return matchKey ? String(row[matchKey]).trim() : '';
+        };
+
+        const nama = findVal(['nama_obat', 'namaobat', 'nama', 'obat', 'item', 'medicine']);
+        const kategori = findVal(['kategori', 'jenis', 'golongan']) || 'Obat Bebas';
+        const stok = parseInt(findVal(['stok', 'stock', 'qty', 'jumlah'])) || 0;
+        const satuan = findVal(['satuan', 'unit']) || 'tab';
+        const harga = parseFloat(findVal(['harga', 'price', 'hargasatuan'])) || 0;
+
+        return { nama, kategori, stok, satuan, harga };
+      }).filter(o => o.nama);
+
+      if (_parsedImportObat.length === 0) {
+        showToast('Tidak ada data obat yang valid. Kolom Nama Obat wajib ada!', 'error');
+        return;
+      }
+
+      const prev = document.getElementById('excel-import-obat-preview-area');
+      const statLbl = document.getElementById('excel-preview-obat-stat-lbl');
+      const tbody = document.getElementById('excel-preview-obat-tbody');
+      const btn = document.getElementById('btn-submit-excel-obat-import');
+
+      if (statLbl) statLbl.textContent = `${_parsedImportObat.length} obat terdeteksi`;
+      if (tbody) {
+        tbody.innerHTML = _parsedImportObat.slice(0, 8).map(o => `
+          <tr>
+            <td><strong>${o.nama}</strong></td>
+            <td>${o.kategori}</td>
+            <td><strong>${o.stok}</strong></td>
+            <td>${o.satuan}</td>
+            <td>Rp ${(o.harga || 0).toLocaleString('id-ID')}</td>
+          </tr>
+        `).join('');
+      }
+
+      if (prev) prev.style.display = 'block';
+      if (btn) btn.disabled = false;
+      showToast(`${_parsedImportObat.length} data obat terbaca dan siap diimpor.`, 'info');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal membaca file Excel obat.', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function submitExcelObatImport() {
+  if (!_parsedImportObat || _parsedImportObat.length === 0) return;
+
+  const mode = document.querySelector('input[name="import-obat-dup-mode"]:checked')?.value || 'update';
+  const btn = document.getElementById('btn-submit-excel-obat-import');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengimpor Obat...';
+  }
+
+  try {
+    const res = await fetch('/api/medicines/bulk-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        medicines: _parsedImportObat,
+        mode: mode
+      })
+    });
+
+    const result = await res.json();
+    if (res.ok && result.success) {
+      if (result.medicines) appData.medicines = result.medicines;
+      else await loadAllAppData();
+
+      renderGudangTable();
+      updateAdminStatBadges();
+      closeModalImportObat();
+      showToast(result.message || 'Import obat berhasil!', 'success');
+    } else {
+      showToast(result.error || 'Gagal import obat', 'error');
+    }
+  } catch (err) {
+    showToast('Gagal menghubungi server.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Mulai Import Obat';
+    }
+  }
+}
+
+function openModalResetObat() {
+  const pinInput = document.getElementById('reset-obat-pin');
+  if (pinInput) pinInput.value = '';
+  const modal = document.getElementById('modal-reset-obat');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalResetObat() {
+  const modal = document.getElementById('modal-reset-obat');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleConfirmResetObat(event) {
+  event.preventDefault();
+  const pin = document.getElementById('reset-obat-pin')?.value.trim();
+  if (!pin) return;
+
+  if (!confirm('PERINGATAN: Apakah Anda yakin ingin MENGOSONGKAN seluruh data stok dan master obat?')) return;
+
+  try {
+    const res = await fetch('/api/medicines/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      appData.medicines = [];
+      renderGudangTable();
+      updateAdminStatBadges();
+      closeModalResetObat();
+      showToast('Seluruh master obat berhasil dikosongkan.', 'success');
+    } else {
+      showToast(result.error || 'PIN Master salah.', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan koneksi.', 'error');
+  }
+}
+
+// ============================================================================
+// MODAL IMPORT & RESET: REKAM MEDIS
+// ============================================================================
+
+function openModalImportRekamMedis() {
+  _parsedImportRekamMedis = [];
+  const inp = document.getElementById('excel-import-rm-file-input');
+  if (inp) inp.value = '';
+  const prev = document.getElementById('excel-import-rm-preview-area');
+  if (prev) prev.style.display = 'none';
+  const tbody = document.getElementById('excel-preview-rm-tbody');
+  if (tbody) tbody.innerHTML = '';
+  const btn = document.getElementById('btn-submit-excel-rm-import');
+  if (btn) btn.disabled = true;
+
+  const modal = document.getElementById('modal-import-rekam-medis');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalImportRekamMedis() {
+  const modal = document.getElementById('modal-import-rekam-medis');
+  if (modal) modal.style.display = 'none';
+}
+
+function handleExcelRekamMedisSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      if (!rawRows || rawRows.length === 0) {
+        showToast('File Excel rekam medis kosong.', 'warning');
+        return;
+      }
+
+      _parsedImportRekamMedis = rawRows.map(row => {
+        const keys = Object.keys(row);
+        const findVal = (terms) => {
+          const matchKey = keys.find(k => terms.some(t => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(t)));
+          return matchKey ? String(row[matchKey]).trim() : '';
+        };
+
+        const tanggal = findVal(['tanggal', 'tgl', 'date']) || new Date().toISOString().split('T')[0];
+        const npk = findVal(['npk', 'nik', 'badge']) || '-';
+        const nama = findVal(['nama_pasien', 'namapasien', 'nama', 'pasien']);
+        const dept = findVal(['departemen', 'dept', 'bagian']) || '-';
+        const noHp = findVal(['no_hp', 'nohp', 'telepon', 'hp', 'wa']);
+        const keluhan = findVal(['keluhan', 'subjektif', 'keluhan_subjektif', 'anamnesa']) || '-';
+        const objektif = findVal(['objektif', 'pemeriksaan', 'tensi', 'fisik']) || '-';
+        const diagnosa = findVal(['diagnosa', 'asesmen', 'diagnosis', 'penyakit']) || '-';
+        const terapi = findVal(['terapi', 'resep', 'obat', 'plan']) || '-';
+        const pemeriksa = findVal(['pemeriksa', 'dokter', 'perawat', 'nakes']) || 'Dokter Pemeriksa';
+
+        return { tanggal, npk, nama, dept, noHp, keluhan, objektif, diagnosa, terapi, pemeriksa };
+      }).filter(r => r.nama);
+
+      if (_parsedImportRekamMedis.length === 0) {
+        showToast('Tidak ada data yang valid. Kolom Nama Pasien wajib ada!', 'error');
+        return;
+      }
+
+      const prev = document.getElementById('excel-import-rm-preview-area');
+      const statLbl = document.getElementById('excel-preview-rm-stat-lbl');
+      const tbody = document.getElementById('excel-preview-rm-tbody');
+      const btn = document.getElementById('btn-submit-excel-rm-import');
+
+      if (statLbl) statLbl.textContent = `${_parsedImportRekamMedis.length} berkas terdeteksi`;
+      if (tbody) {
+        tbody.innerHTML = _parsedImportRekamMedis.slice(0, 8).map(r => `
+          <tr>
+            <td>${r.tanggal}</td>
+            <td><strong>${r.npk}</strong></td>
+            <td>${r.nama}</td>
+            <td>${r.dept}</td>
+            <td>${r.diagnosa}</td>
+          </tr>
+        `).join('');
+      }
+
+      if (prev) prev.style.display = 'block';
+      if (btn) btn.disabled = false;
+      showToast(`${_parsedImportRekamMedis.length} riwayat berobat siap diimpor.`, 'info');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal membaca file Excel rekam medis.', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function submitExcelRekamMedisImport() {
+  if (!_parsedImportRekamMedis || _parsedImportRekamMedis.length === 0) return;
+
+  const btn = document.getElementById('btn-submit-excel-rm-import');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengimpor Riwayat Pasien...';
+  }
+
+  try {
+    const res = await fetch('/api/records/bulk-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: _parsedImportRekamMedis })
+    });
+
+    const result = await res.json();
+    if (res.ok && result.success) {
+      if (result.records) appData.records = result.records;
+      else await loadAllAppData();
+
+      renderEditDataTable();
+      updateAdminStatBadges();
+      closeModalImportRekamMedis();
+      showToast(result.message || 'Riwayat rekam medis berhasil diimpor!', 'success');
+    } else {
+      showToast(result.error || 'Gagal mengimpor riwayat rekam medis', 'error');
+    }
+  } catch (err) {
+    showToast('Gagal menghubungi server.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Mulai Import Riwayat Pasien';
+    }
+  }
+}
+
+function openModalResetRekamMedis() {
+  const pinInput = document.getElementById('reset-rm-pin');
+  if (pinInput) pinInput.value = '';
+  const modal = document.getElementById('modal-reset-rekam-medis');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalResetRekamMedis() {
+  const modal = document.getElementById('modal-reset-rekam-medis');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleConfirmResetRekamMedis(event) {
+  event.preventDefault();
+  const pin = document.getElementById('reset-rm-pin')?.value.trim();
+  if (!pin) return;
+
+  if (!confirm('PERINGATAN: Apakah Anda yakin ingin MENGOSONGKAN seluruh riwayat rekam medis pasien? Tindakan ini tidak dapat dibatalkan.')) return;
+
+  try {
+    const res = await fetch('/api/records/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      appData.records = [];
+      renderEditDataTable();
+      updateAdminStatBadges();
+      closeModalResetRekamMedis();
+      showToast('Seluruh riwayat rekam medis berhasil dikosongkan untuk PT Baru.', 'success');
+    } else {
+      showToast(result.error || 'PIN Master salah.', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan koneksi.', 'error');
+  }
+}
+
+
