@@ -260,6 +260,43 @@ function readDB() {
       } catch (e) {}
     }
 
+    // Auto-enrich master 1,142 employees dataset (with rich Section, BirthPlace, GolDarah, SaldoObat, 5-digit NPK)
+    const masterEmpFile = path.join(__dirname, 'employees_master.json');
+    if (fs.existsSync(masterEmpFile)) {
+      try {
+        const masterEmps = JSON.parse(fs.readFileSync(masterEmpFile, 'utf8'));
+        if (Array.isArray(masterEmps) && masterEmps.length > 0) {
+          const empMap = new Map();
+          masterEmps.forEach(m => {
+            const k1 = String(m.nikPabrik || m.nik || '').trim().replace(/^0+/, '');
+            const k2 = String(m.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (k1) empMap.set(k1, m);
+            if (k2) empMap.set(k2, m);
+          });
+
+          if (!Array.isArray(data.employees) || data.employees.length === 0) {
+            data.employees = [...masterEmps];
+            data.patients = [...masterEmps];
+            modified = true;
+          } else {
+            data.employees.forEach(e => {
+              const k1 = String(e.nikPabrik || e.nik || '').trim().replace(/^0+/, '');
+              const k2 = String(e.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+              const m = (k1 && empMap.get(k1)) || (k2 && empMap.get(k2));
+              if (m) {
+                if (m.nikPabrik && e.nikPabrik !== m.nikPabrik) { e.nikPabrik = m.nikPabrik; e.nik = m.nikPabrik; modified = true; }
+                if (m.sectionName && e.sectionName !== m.sectionName) { e.sectionName = m.sectionName; modified = true; }
+                if (m.birthPlace && e.birthPlace !== m.birthPlace) { e.birthPlace = m.birthPlace; modified = true; }
+                if (m.golDarah && m.golDarah !== '-' && e.golDarah !== m.golDarah) { e.golDarah = m.golDarah; modified = true; }
+                if (m.saldoObat && e.saldoObat !== m.saldoObat) { e.saldoObat = m.saldoObat; modified = true; }
+                if (m.hp && e.hp !== m.hp) { e.hp = m.hp; e.no_hp = m.hp; modified = true; }
+              }
+            });
+          }
+        }
+      } catch (e) {}
+    }
+
     if (modified) {
       try { fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2)); } catch (e) {}
     }
@@ -991,13 +1028,31 @@ async function performGSheetSync(db, gsheetUrl) {
   }
 
   if (empList.length > 0) {
-    // Smart merge with existing db.employees to preserve local rich fields (sectionName, golDarah, saldoObat, birthPlace)
+    // Smart merge with existing db.employees and master file to preserve rich fields
     const existingMap = new Map();
+    const masterEmpFile = path.join(__dirname, 'employees_master.json');
+    if (fs.existsSync(masterEmpFile)) {
+      try {
+        const mList = JSON.parse(fs.readFileSync(masterEmpFile, 'utf8'));
+        mList.forEach(m => {
+          const k1 = String(m.nikPabrik || m.nik || '').trim().replace(/^0+/, '');
+          const k2 = String(m.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (k1) existingMap.set(k1, m);
+          if (k2) existingMap.set(k2, m);
+        });
+      } catch(e) {}
+    }
     (db.employees || []).forEach(e => {
       const k1 = String(e.nikPabrik || e.nik || '').trim().replace(/^0+/, '');
       const k2 = String(e.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (k1) existingMap.set(k1, e);
-      if (k2) existingMap.set(k2, e);
+      if (k1) {
+        const prev = existingMap.get(k1) || {};
+        existingMap.set(k1, { ...prev, ...e });
+      }
+      if (k2) {
+        const prev = existingMap.get(k2) || {};
+        existingMap.set(k2, { ...prev, ...e });
+      }
     });
 
     db.employees = empList.map(item => {
@@ -1006,11 +1061,12 @@ async function performGSheetSync(db, gsheetUrl) {
       const existing = (k1 && existingMap.get(k1)) || (k2 && existingMap.get(k2));
       if (!existing) return item;
 
+      const cleanNpk = (existing.nikPabrik && existing.nikPabrik.length >= (item.nikPabrik || '').length) ? existing.nikPabrik : item.nikPabrik;
       return {
         ...item,
         id: existing.id || item.id,
-        nikPabrik: existing.nikPabrik || item.nikPabrik,
-        nik: existing.nik || item.nik,
+        nikPabrik: cleanNpk,
+        nik: cleanNpk,
         nama: existing.nama || item.nama,
         sectionName: existing.sectionName || item.sectionName || '',
         birthPlace: existing.birthPlace || item.birthPlace || '',
