@@ -1,0 +1,5 @@
+﻿{
+  "mode": "auto",
+  "vps_url": "https://greatest-reverse-joke-turned.trycloudflare.com",
+  "keterangan": "Mode: 'auto' (otomatis konek VPS jika online, offline jika tanpa internet), 'vps' (selalu konek VPS), 'offline' (selalu lokal)"
+}

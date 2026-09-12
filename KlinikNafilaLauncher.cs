@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Windows.Forms;
@@ -15,7 +16,51 @@ namespace KlinikNafila
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
             Directory.SetCurrentDirectory(appDir);
 
-            // 1. Cek apakah server lokal port 3000 sudah berjalan
+            string configFile = Path.Combine(appDir, "config.json");
+            string vpsUrl = "https://greatest-reverse-joke-turned.trycloudflare.com";
+            string mode = "auto"; // "vps", "offline", or "auto"
+
+            if (File.Exists(configFile))
+            {
+                try
+                {
+                    string json = File.ReadAllText(configFile);
+                    if (json.Contains("\"mode\": \"vps\"") || json.Contains("\"mode\":\"vps\"")) mode = "vps";
+                    else if (json.Contains("\"mode\": \"offline\"") || json.Contains("\"mode\":\"offline\"")) mode = "offline";
+                    else mode = "auto";
+
+                    int vpsIdx = json.IndexOf("\"vps_url\"");
+                    if (vpsIdx >= 0)
+                    {
+                        int start = json.IndexOf("\"", vpsIdx + 9);
+                        int end = json.IndexOf("\"", start + 1);
+                        if (start > 0 && end > start)
+                        {
+                            vpsUrl = json.Substring(start + 1, end - start - 1).Trim();
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            // Cek apakah konek ke VPS
+            bool connectVps = false;
+            if (mode == "vps")
+            {
+                connectVps = true;
+            }
+            else if (mode == "auto")
+            {
+                connectVps = CheckVpsAvailable(vpsUrl);
+            }
+
+            if (connectVps && !string.IsNullOrEmpty(vpsUrl))
+            {
+                LaunchAppWindow(vpsUrl);
+                return;
+            }
+
+            // Jika mode offline atau VPS tidak terjangkau (tanpa internet di pabrik)
             bool isRunning = IsPortInUse(3000);
             if (!isRunning)
             {
@@ -56,7 +101,6 @@ namespace KlinikNafila
                     return;
                 }
 
-                // Tunggu port 3000 aktif (maksimal 15 detik)
                 for (int i = 0; i < 30; i++)
                 {
                     Thread.Sleep(500);
@@ -64,8 +108,25 @@ namespace KlinikNafila
                 }
             }
 
-            // 2. Buka jendela aplikasi desktop
             LaunchAppWindow("http://localhost:3000");
+        }
+
+        static bool CheckVpsAvailable(string url)
+        {
+            try
+            {
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                req.Timeout = 2500;
+                req.Method = "HEAD";
+                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                {
+                    return ((int)resp.StatusCode >= 200 && (int)resp.StatusCode < 400);
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         static bool IsPortInUse(int port)
