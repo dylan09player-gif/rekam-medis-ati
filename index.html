@@ -896,9 +896,6 @@
               <p style="color: var(--text-muted); font-size: 0.85rem;">Manajemen stok obat, sisa stok, &amp; cetak lembar stok opname manual PT ATI.</p>
             </div>
             <div class="gudang-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-warning" onclick="syncNowFromGSheet(this)" style="background: #f59e0b; color: #000; font-weight: 700;">
-                <i class="fa-solid fa-arrows-rotate"></i> Sync G-Sheet Sekarang
-              </button>
               <button class="btn btn-primary" onclick="openModalTambahObat()">
                 <i class="fa-solid fa-plus"></i> Tambah Obat Baru
               </button>
@@ -2074,8 +2071,8 @@
         <!-- 3. SINKRONISASI GOOGLE SHEETS & BACKUP LOKAL -->
         <!-- ============================================================ -->
         <div class="glass-card" style="margin-bottom: 20px;">
-          <h2><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> 3. Sinkronisasi Google Sheets (Integrasi Real-Time)</h2>
-          <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.85rem;">Master ICD-10, Stok Obat dan Karyawan tersinkron otomatis 24 Jam di background.</p>
+          <h2><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> 3. Sinkronisasi Google Sheets (Backup Satu Arah)</h2>
+          <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.85rem;">Pusat data tersimpan aman di VPS. Backup ke Google Sheets berjalan otomatis 1x 24 jam dan On-Click manual (satu arah: Sistem ke Google Sheet).</p>
           <div id="gsheet-last-sync" style="font-size: 0.8rem; color: var(--success); font-weight: 600; margin-top: 6px;"></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -2087,13 +2084,10 @@
               <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">Salin URL Deployment Web App dari Google Apps Script Anda.</p>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
-              <button class="btn btn-warning" onclick="pushAllMasterToGSheet()" style="width: 100%; padding: 11px; font-weight: 700; background: #f59e0b; color: #000;">
-                <i class="fa-solid fa-table-cells"></i> 1-KLIK ISI TAB & HEADERS KE GSHEET
+              <button class="btn btn-warning" onclick="pushAllMasterToGSheet(this)" style="width: 100%; padding: 12px; font-weight: 700; background: #f59e0b; color: #000; font-size: 0.92rem;">
+                <i class="fa-solid fa-table-cells"></i> 1-KLIK ISI TAB &amp; HEADERS KE GSHEET
               </button>
-              <button class="btn btn-primary" onclick="syncNowFromGSheet(this)" style="width: 100%; padding: 11px;">
-                <i class="fa-solid fa-arrows-rotate"></i> Tarik Master Data dari GSheet
-              </button>
-              <button class="btn btn-secondary" onclick="pushRecordsToGSheet()" style="width: 100%; padding: 11px;">
+              <button class="btn btn-secondary" onclick="pushRecordsToGSheet(this)" style="width: 100%; padding: 11px;">
                 <i class="fa-solid fa-cloud-arrow-up"></i> Kirim Data Rekam Medis ke GSheet
               </button>
               <button class="btn btn-secondary" onclick="exportBackupData()" style="width: 100%; padding: 11px;">
@@ -2101,7 +2095,7 @@
               </button>
             </div>
             <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 0.82rem;">
-              Ubah Master ICD-10, Obat, atau Karyawan di Google Sheet lalu klik Sinkronkan agar sistem otomatis terupdate.
+              <i class="fa-solid fa-shield-halved" style="color: var(--success); margin-right: 4px;"></i> <strong>Data Aman di VPS:</strong> Seluruh input di komputer tersimpan di VPS. Google Sheets hanya menjadi tempat arsip/backup satu arah sehingga data Anda tidak akan pernah tertimpa atau hilang.
             </div>
           </div>
           <div class="glass-card">

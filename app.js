@@ -9246,32 +9246,57 @@ async function handleSaveGSheetUrl(e) {
   }
 }
 
-async function pushAllMasterToGSheet() {
+async function pushAllMasterToGSheet(btnEl = null) {
+  let oldText = '';
+  if (btnEl) {
+    oldText = btnEl.innerHTML;
+    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menulis ke GSheet...';
+    btnEl.disabled = true;
+  }
   try {
-    showToast('Mengirim seluruh Master Data (ICD, Obat, Karyawan) ke Google Sheets...', 'info');
+    showToast('📤 Menulis seluruh data & header ke Google Sheets...', 'info');
     const res = await fetch('/api/gsheet/push-all-master', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      showToast(data.message, 'success');
+      showToast('✅ ' + data.message, 'success');
+      const lastSyncEl = document.getElementById('gsheet-last-sync');
+      if (lastSyncEl) lastSyncEl.textContent = 'Terakhir sync: ' + new Date().toLocaleString('id-ID');
     } else {
       showToast(data.error || 'Gagal kirim ke Google Sheets', 'error');
     }
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
+  } finally {
+    if (btnEl) {
+      btnEl.innerHTML = oldText;
+      btnEl.disabled = false;
+    }
   }
 }
 
-async function pushRecordsToGSheet() {
+async function pushRecordsToGSheet(btnEl = null) {
+  let oldText = '';
+  if (btnEl) {
+    oldText = btnEl.innerHTML;
+    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+    btnEl.disabled = true;
+  }
   try {
+    showToast('📤 Mengirim data kunjungan/rekam medis ke Google Sheets...', 'info');
     const res = await fetch('/api/gsheet/push-records', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      showToast('Data rekam medis berhasil dikirim ke Google Sheets!', 'success');
+      showToast('✅ ' + (data.message || 'Data rekam medis berhasil dikirim ke Google Sheets!'), 'success');
     } else {
       showToast(data.error || 'Gagal kirim ke Google Sheets', 'error');
     }
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
+  } finally {
+    if (btnEl) {
+      btnEl.innerHTML = oldText;
+      btnEl.disabled = false;
+    }
   }
 }
 

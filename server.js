@@ -1172,30 +1172,108 @@ app.post('/api/gsheet/sync', async (req, res) => {
   }
 });
 
-// Auto-Sync Background Interval (Berjalan otomatis setiap 30 detik di latar belakang)
-setInterval(async () => {
-  try {
-    const db = readDB();
-    const gsheetUrl = db.settings?.gsheet_url;
-    if (gsheetUrl) {
-      await performGSheetSync(db, gsheetUrl);
-    }
-  } catch (e) {
-    // Silent fail in background timer
-  }
-}, 30000);
+// Helper: Push seluruh data (ICD-10, Obat, Karyawan, Rekam Medis) satu arah ke Google Sheets (One-Way)
+function pushAllDataToGSheet(db, gsheetUrl) {
+  return new Promise((resolve) => {
+    if (!gsheetUrl) return resolve({ success: false, error: 'URL Google Apps Script belum diatur di tab Pengaturan' });
 
-// Auto-Sync saat server pertama kali start
-setTimeout(async () => {
+    const payload = {
+      action: 'seedMaster',
+      icd10: (db.icd10 || []).map(i => ({
+        code: i.code || '',
+        description: i.description || ''
+      })),
+      medicines: (db.medicines || []).map(m => ({
+        nama: m.nama || '',
+        stok: parseSafeInt(m.stok, 0),
+        satuan: m.satuan || 'strip',
+        harga: parseSafeInt(m.harga, 0),
+        kategori: m.kategori || 'Obat'
+      })),
+      employees: (db.employees || []).map(e => ({
+        nikPabrik: e.nik || e.nikPabrik || '',
+        nama: e.nama || '',
+        dept: e.departemen || e.dept || '',
+        gender: e.gender || '',
+        tglLahir: e.tgl_lahir || e.tglLahir || '',
+        hp: e.no_hp || e.hp || '',
+        saldoObat: e.saldoObat || '',
+        sectionName: e.sectionName || '',
+        birthPlace: e.birthPlace || ''
+      })),
+      records: (db.records || []).map(r => ({
+        id: r.id || '',
+        tanggal: r.tanggal || '',
+        nikPabrik: r.nikPabrik || '',
+        namaPasien: r.namaPasien || '',
+        dept: r.dept || '',
+        keluhan: r.keluhan || '',
+        asesmen: r.asesmen || '',
+        plan: r.plan || '',
+        pemeriksa: r.pemeriksa || '',
+        linkFoto: r.linkFoto || ''
+      }))
+    };
+
+    const postData = JSON.stringify(payload);
+    try {
+      const urlObj = new URL(gsheetUrl);
+      const pushReq = https.request({
+        hostname: urlObj.hostname,
+        path: urlObj.pathname + urlObj.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      }, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+          resolve({
+            success: true,
+            message: `Data berhasil diekspor ke Google Sheets (${payload.icd10.length} Diagnosis, ${payload.medicines.length} Obat, ${payload.employees.length} Karyawan, ${payload.records.length} Kunjungan)`
+          });
+        });
+      });
+
+      pushReq.on('error', (err) => {
+        resolve({ success: false, error: 'Gagal kirim ke Google Sheets: ' + err.message });
+      });
+
+      pushReq.write(postData);
+      pushReq.end();
+    } catch (err) {
+      resolve({ success: false, error: err.message });
+    }
+  });
+}
+
+// Backup Otomatis 1x 24 Jam ke Google Sheets (Satu Arah: Database VPS -> Google Sheets)
+async function performDailyGSheetBackup() {
   try {
     const db = readDB();
     const gsheetUrl = db.settings?.gsheet_url;
-    if (gsheetUrl) {
-      await performGSheetSync(db, gsheetUrl);
-      console.log('✅ Inisialisasi awal sinkronisasi Google Sheets selesai.');
+    if (!gsheetUrl) return;
+
+    console.log('⏰ [Backup 24 Jam] Menjalankan backup otomatis harian ke Google Sheets...');
+    const result = await pushAllDataToGSheet(db, gsheetUrl);
+    if (result.success) {
+      if (!db.settings) db.settings = {};
+      db.settings.last_sync = new Date().toISOString();
+      writeDB(db);
+      console.log('✅ [Backup 24 Jam] Berhasil:', result.message);
+    } else {
+      console.warn('⚠️ [Backup 24 Jam] Gagal:', result.error);
     }
-  } catch(e) {}
-}, 2000);
+  } catch (err) {
+    console.error('⚠️ [Backup 24 Jam] Exception:', err.message);
+  }
+}
+
+// Jalankan backup harian tepat 1x setiap 24 jam (86.400.000 milidetik)
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+setInterval(performDailyGSheetBackup, TWENTY_FOUR_HOURS);
 
 // Upload foto/dokumen rekam medis ke Google Drive via Apps Script
 app.post('/api/upload-foto', async (req, res) => {
@@ -1257,7 +1335,7 @@ app.post('/api/upload-foto', async (req, res) => {
   res.json({ success: true, fileUrl: fileData });
 });
 
-// Push all master data (ICD-10, Obat, Karyawan) to Google Sheets
+// Push all master data & records to Google Sheets (One-Click On-Demand)
 app.post('/api/gsheet/push-all-master', async (req, res) => {
   const db = readDB();
   const gsheetUrl = db.settings?.gsheet_url;
@@ -1266,41 +1344,14 @@ app.post('/api/gsheet/push-all-master', async (req, res) => {
     return res.status(400).json({ error: 'URL Google Apps Script belum diatur di tab G-SHEET SYNC' });
   }
 
-  const payload = {
-    action: 'seedMaster',
-    icd10: (db.icd10 || []).map(i => ({ code: i.code || '', description: i.description || '' })),
-    medicines: (db.medicines || []).map(m => ({ nama: m.nama || '', stok: parseSafeInt(m.stok, 0), satuan: m.satuan || 'strip', kategori: m.kategori || 'Obat' })),
-    employees: (db.employees || []).map(e => ({ nikPabrik: e.nik || e.nikPabrik || '', nama: e.nama || '', dept: e.departemen || e.dept || '', gender: e.gender || '', tglLahir: e.tgl_lahir || e.tglLahir || '', hp: e.no_hp || e.hp || '', saldoObat: e.saldoObat || '', sectionName: e.sectionName || '', birthPlace: e.birthPlace || '' }))
-  };
-
-  const postData = JSON.stringify(payload);
-
-  try {
-    const urlObj = new URL(gsheetUrl);
-    const pushReq = https.request({
-      hostname: urlObj.hostname,
-      path: urlObj.pathname + urlObj.search,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      }
-    }, (response) => {
-      let data = '';
-      response.on('data', chunk => data += chunk);
-      response.on('end', () => {
-        res.json({ success: true, message: `Master Data (${payload.icd10.length} ICD, ${payload.medicines.length} Obat, ${payload.employees.length} Karyawan) berhasil diisi ke Google Sheets!` });
-      });
-    });
-
-    pushReq.on('error', (e) => {
-      res.status(500).json({ error: 'Gagal push ke GSheet: ' + e.message });
-    });
-
-    pushReq.write(postData);
-    pushReq.end();
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  const result = await pushAllDataToGSheet(db, gsheetUrl);
+  if (result.success) {
+    if (!db.settings) db.settings = {};
+    db.settings.last_sync = new Date().toISOString();
+    writeDB(db);
+    return res.json({ success: true, message: result.message });
+  } else {
+    return res.status(500).json({ error: result.error });
   }
 });
 
@@ -1316,7 +1367,7 @@ app.post('/api/gsheet/push-records', async (req, res) => {
   const records = db.records || [];
   const postData = JSON.stringify({
     action: 'pushRecords',
-    records: records.slice(0, 100)
+    records: records
   });
   
   try {
@@ -1333,7 +1384,7 @@ app.post('/api/gsheet/push-records', async (req, res) => {
       let data = '';
       response.on('data', chunk => data += chunk);
       response.on('end', () => {
-        res.json({ success: true, message: 'Data rekam medis terkirim ke Google Sheets' });
+        res.json({ success: true, message: `Data rekam medis (${records.length} kunjungan) terkirim ke Google Sheets` });
       });
     });
     
@@ -1372,38 +1423,8 @@ app.get('/api/icd10', (req, res) => {
 
 // Helper: Auto-sync Medicines to Google Sheets
 function autoPushMedicinesToGSheet(db) {
-  const gsheetUrl = db.settings?.gsheet_url;
-  if (!gsheetUrl) return;
-
-  try {
-    const meds = [...(db.medicines || [])];
-    meds.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
-
-    const payload = JSON.stringify({
-      action: 'seedMaster',
-      medicines: meds.map(m => ({
-        nama: m.nama || '',
-        stok: parseSafeInt(m.stok, 0),
-        satuan: m.satuan || 'strip',
-        harga: parseSafeInt(m.harga, 0),
-        kategori: m.kategori || 'Obat'
-      }))
-    });
-
-    const urlObj = new URL(gsheetUrl);
-    const pushReq = https.request({
-      hostname: urlObj.hostname,
-      path: urlObj.pathname + urlObj.search,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload)
-      }
-    });
-    pushReq.on('error', () => {});
-    pushReq.write(payload);
-    pushReq.end();
-  } catch (e) {}
+  // Dinonaktifkan sesuai permintaan: sinkronisasi ke GSheet kini murni 1-arah On-Click & Backup 24 Jam
+  return;
 }
 
 app.get('/api/medicines', (req, res) => {
