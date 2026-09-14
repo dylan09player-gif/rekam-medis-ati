@@ -1395,10 +1395,10 @@ app.post('/api/medicines', (req, res) => {
 app.put('/api/medicines/:id', (req, res) => {
   const db = readDB();
   if (!db.medicines) return res.status(404).json({ error: 'Obat tidak ditemukan' });
-  const idx = db.medicines.findIndex(m => m.id === req.params.id);
+  const idx = db.medicines.findIndex(m => String(m.id) === String(req.params.id));
   if (idx !== -1) {
     const oldMed = { ...db.medicines[idx] };
-    const { nama, stok, harga, satuan, kategori, petugas, alasan } = req.body;
+    const { nama, stok, harga, satuan, kategori, petugas, alasan, sendTelegram } = req.body;
 
     const newNama = nama !== undefined ? String(nama).trim() : oldMed.nama;
     const newStok = stok !== undefined ? parseSafeInt(stok, oldMed.stok) : oldMed.stok;
@@ -1436,9 +1436,11 @@ app.put('/api/medicines/:id', (req, res) => {
     writeDB(db);
     autoPushMedicinesToGSheet(db);
 
-    // Kirim Audit Log ke Telegram Bot
-    const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-    const telegramText = 
+    // Kirim Audit Log ke Telegram Bot hanya jika diminta secara eksplisit
+    if (sendTelegram === true) {
+      try {
+        const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+        const telegramText = 
 `🔔 *[AUDIT LOG - PERUBAHAN DATA OBAT]* 🔔
 ━━━━━━━━━━━━━━━━━━━━
 📦 *Nama Obat:* ${newNama}
@@ -1454,7 +1456,11 @@ app.put('/api/medicines/:id', (req, res) => {
 ⏱ _Waktu: ${nowWIB} WIB_
 🏥 _Sistem Rekam Medis PT ATI_`;
 
-    sendTelegramNotif(telegramText);
+        sendTelegramNotif(telegramText);
+      } catch (errTele) {
+        console.error('Non-blocking telegram notif error:', errTele.message);
+      }
+    }
 
     return res.json({ success: true, medicine: db.medicines[idx] });
   }
@@ -1554,7 +1560,7 @@ app.post('/api/medicines/reset', (req, res) => {
 
 app.post('/api/medicines/transfer', (req, res) => {
   const db = readDB();
-  if (!db.medicines) return res.status(404).json({ error: 'Obat tidak ditemukan' });
+  if (!db.medicines) db.medicines = [];
 
   const { sender, receiver, items } = req.body;
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -1567,7 +1573,15 @@ app.post('/api/medicines/transfer', (req, res) => {
   const nowIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
   for (const item of items) {
-    const idx = db.medicines.findIndex(m => m.id === item.id);
+    const itemName = String(item.name || item.nama || '').trim().toLowerCase();
+    const itemId = item.id ? String(item.id).trim().toLowerCase() : '';
+
+    const idx = db.medicines.findIndex(m => {
+      const mId = String(m.id || '').trim().toLowerCase();
+      const mName = String(m.nama || '').trim().toLowerCase();
+      return (itemId && mId === itemId) || (itemName && mName === itemName);
+    });
+
     if (idx !== -1) {
       const oldMed = { ...db.medicines[idx] };
       const qtySent = parseSafeInt(item.qty, 0);
@@ -1584,7 +1598,7 @@ app.post('/api/medicines/transfer', (req, res) => {
         created_at: new Date().toISOString(),
         type: 'IN',
         namaObat: oldMed.nama,
-        satuan: oldMed.satuan || 'tab',
+        satuan: oldMed.satuan || item.satuan || 'tab',
         qty: qtySent,
         delta: +qtySent,
         stokSebelum: prevStok,
@@ -1598,14 +1612,13 @@ app.post('/api/medicines/transfer', (req, res) => {
 
       updatedMedicines.push(db.medicines[idx]);
       auditLogs.push(`• ${oldMed.nama}: *${oldMed.stok || 0}* ➔ *${newStok}* (+${qtySent} ${oldMed.satuan || 'strip'})`);
+    } else {
+      const qtySent = parseSafeInt(item.qty, 0);
+      auditLogs.push(`• ${item.name || item.nama || 'Obat'}: (+${qtySent} ${item.satuan || 'strip'})`);
     }
   }
 
-  if (updatedMedicines.length === 0) {
-    return res.status(400).json({ error: 'Tidak ada obat valid yang diperbarui' });
-  }
-
-  // Save Surat Jalan to database
+  // Save Surat Jalan to database ALWAYS
   const newSuratJalan = {
     id: 'SJ-' + Date.now(),
     noSurat: noSurat,
@@ -1614,13 +1627,24 @@ app.post('/api/medicines/transfer', (req, res) => {
     sender: sender || 'Apotek Nafila',
     receiver: receiver || 'Perawat PT ATI',
     items: items.map(item => {
-      const matched = db.medicines.find(m => m.id === item.id);
+      const itemName = String(item.name || item.nama || '').trim().toLowerCase();
+      const itemId = item.id ? String(item.id).trim().toLowerCase() : '';
+      const matched = db.medicines.find(m => {
+        const mId = String(m.id || '').trim().toLowerCase();
+        const mName = String(m.nama || '').trim().toLowerCase();
+        return (itemId && mId === itemId) || (itemName && mName === itemName);
+      });
+
+      const qty = parseSafeInt(item.qty, 0);
+      const initial = item.initial !== undefined ? parseSafeInt(item.initial, 0) : (matched ? (matched.stok - qty) : 0);
+      const final = item.final !== undefined ? parseSafeInt(item.final, 0) : (matched ? matched.stok : qty);
+
       return {
-        id: item.id,
-        name: item.name || (matched ? matched.nama : 'Obat'),
-        qty: parseSafeInt(item.qty, 0),
-        initial: item.initial !== undefined ? parseSafeInt(item.initial, 0) : (matched ? matched.stok - parseSafeInt(item.qty, 0) : 0),
-        final: item.final !== undefined ? parseSafeInt(item.final, 0) : (matched ? matched.stok : 0),
+        id: item.id || (matched ? matched.id : ('MED-TEMP-' + Date.now())),
+        name: item.name || item.nama || (matched ? matched.nama : 'Obat'),
+        qty: qty,
+        initial: initial,
+        final: final,
         satuan: item.satuan || (matched ? matched.satuan : 'strip')
       };
     })
@@ -1633,9 +1657,10 @@ app.post('/api/medicines/transfer', (req, res) => {
   autoPushMedicinesToGSheet(db);
   notifyClients();
 
-  // Kirim Audit Log ke Telegram Bot
-  const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-  const telegramText = 
+  // Kirim Audit Log ke Telegram Bot (non-blocking)
+  try {
+    const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+    const telegramText = 
 `🚚 *[SURAT JALAN - PENGIRIMAN OBAT]* 🚚
 ━━━━━━━━━━━━━━━━━━━━
 📄 *No. Surat Jalan:* \`${noSurat}\`
@@ -1648,7 +1673,10 @@ ${auditLogs.join('\n')}
 ⏱ _Waktu: ${nowWIB} WIB_
 🏥 _Sistem Rekam Medis PT ATI_`;
 
-  sendTelegramNotif(telegramText);
+    sendTelegramNotif(telegramText);
+  } catch (errTele) {
+    console.error('Non-blocking telegram notif error:', errTele.message);
+  }
 
   res.json({ success: true, updated: updatedMedicines, suratJalan: newSuratJalan });
 });

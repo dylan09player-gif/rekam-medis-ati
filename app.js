@@ -4022,51 +4022,69 @@ function calculateShipFinalStock() {
 
 function addMedToShipmentDraft() {
   const idInput = document.getElementById('ship-medicine-id');
+  const nameInput = document.getElementById('ship-medicine-input');
   const qtyInput = document.getElementById('ship-qty-input');
 
-  if (!idInput || !qtyInput) return;
+  if (!qtyInput) return;
 
-  const id = idInput.value;
   const qty = parseInt(qtyInput.value) || 0;
-
-  if (!id) {
-    showToast('Silakan pilih obat terlebih dahulu', 'error');
-    return;
-  }
   if (qty <= 0) {
     showToast('Jumlah kirim harus lebih besar dari 0', 'error');
     return;
   }
 
-  const med = appData.medicines.find(m => m.id === id);
-  if (!med) return;
+  let id = idInput ? idInput.value : '';
+  let med = null;
+
+  if (id) {
+    med = (appData.medicines || []).find(m => String(m.id) === String(id));
+  }
+
+  if (!med && nameInput && nameInput.value.trim()) {
+    const rawQuery = nameInput.value.trim().toLowerCase();
+    med = (appData.medicines || []).find(m => (m.nama || '').toLowerCase().trim() === rawQuery)
+       || (appData.medicines || []).find(m => (m.nama || '').toLowerCase().includes(rawQuery));
+    if (med) {
+      id = med.id;
+      if (idInput) idInput.value = med.id;
+    }
+  }
+
+  if (!med) {
+    showToast('Silakan pilih obat yang terdaftar di sistem', 'error');
+    return;
+  }
 
   // Check if already in draft
-  const exists = shipmentDraft.some(item => item.id === id);
+  const exists = shipmentDraft.some(item => String(item.id) === String(med.id) || (item.name && item.name.toLowerCase() === med.nama.toLowerCase()));
   if (exists) {
     showToast('Obat tersebut sudah ada di daftar kirim. Hapus item di daftar untuk mengubah.', 'warning');
     return;
   }
 
+  const initialStok = med.stok !== undefined ? (parseInt(med.stok) || 0) : 0;
+
   shipmentDraft.push({
     id: med.id,
     name: med.nama,
-    initial: med.stok !== undefined ? med.stok : 0,
+    initial: initialStok,
     qty: qty,
-    final: (med.stok !== undefined ? med.stok : 0) + qty,
+    final: initialStok + qty,
     satuan: med.satuan || 'strip'
   });
 
   renderShipmentDraftTable();
 
   // Reset medicine selector
-  idInput.value = '';
-  document.getElementById('ship-medicine-input').value = '';
+  if (idInput) idInput.value = '';
+  if (nameInput) nameInput.value = '';
   qtyInput.value = '';
-  document.getElementById('ship-initial-stock').value = '';
-  document.getElementById('ship-final-stock').value = '';
+  const initEl = document.getElementById('ship-initial-stock');
+  const finalEl = document.getElementById('ship-final-stock');
+  if (initEl) initEl.value = '';
+  if (finalEl) finalEl.value = '';
 
-  showToast('Obat ditambahkan ke daftar kirim', 'success');
+  showToast(`Obat "${med.nama}" ditambahkan ke daftar kirim`, 'success');
 }
 
 function removeMedFromShipmentDraft(idx) {
@@ -4138,15 +4156,31 @@ async function processShipmentAndPrint() {
     if (res.ok && data.success) {
       showToast('✅ Pengiriman Obat berhasil dikonfirmasi!', 'success');
 
-      // Print Delivery Order / Surat Jalan
-      printSuratJalanPDF(sender, receiver, shipmentDraft, data.suratJalan?.noSurat, data.suratJalan?.tanggal);
+      // Update local suratJalan array immediately so it is 100% available without waiting
+      if (data.suratJalan) {
+        if (!appData.suratJalan) appData.suratJalan = [];
+        if (!appData.suratJalan.some(s => s.id === data.suratJalan.id)) {
+          appData.suratJalan.unshift(data.suratJalan);
+        }
+      }
 
-      // Reload and re-render
+      // Reload all data and render
       await loadAllAppData();
+      await loadRiwayatSuratJalan();
       renderGudangTable();
+
+      // Print Delivery Order / Surat Jalan safely
+      try {
+        printSuratJalanPDF(sender, receiver, shipmentDraft, data.suratJalan?.noSurat, data.suratJalan?.tanggal);
+      } catch (printErr) {
+        console.warn('Print popup blocked or error:', printErr);
+      }
 
       // Reset form
       initShipmentView();
+
+      // Auto switch to Riwayat Surat Jalan tab so user sees it right away!
+      switchGudangSubTab('riwayat-sj');
     } else {
       showToast('Gagal memproses pengiriman: ' + (data.error || 'Terjadi kesalahan'), 'error');
     }
@@ -4181,6 +4215,10 @@ function printSuratJalanPDF(sender, receiver, items, customNoSurat, customTgl) {
   }).join('');
 
   const win = window.open('', '_blank');
+  if (!win) {
+    showToast('⚠️ Pop-up cetak diblokir browser. Anda dapat mencetak melalui tombol "Cetak Ulang" di Riwayat Surat Jalan.', 'warning');
+    return;
+  }
   win.document.write(`
     <!DOCTYPE html>
     <html lang="id">
@@ -4735,6 +4773,105 @@ function clearGudangSearch() {
   renderGudangTable();
 }
 
+let editingGudangObatId = null;
+
+function startInlineEditObat(id) {
+  editingGudangObatId = String(id);
+  renderGudangTable();
+  setTimeout(() => {
+    const inputStok = document.getElementById(`inline-obat-stok-${id}`);
+    if (inputStok) {
+      inputStok.focus();
+      inputStok.select();
+    }
+  }, 40);
+}
+
+function cancelInlineEditObat() {
+  editingGudangObatId = null;
+  renderGudangTable();
+}
+
+function handleInlineObatKey(event, id) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    saveInlineEditObat(id);
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    cancelInlineEditObat();
+  }
+}
+
+async function saveInlineEditObat(id) {
+  const namaEl = document.getElementById(`inline-obat-nama-${id}`);
+  const katEl = document.getElementById(`inline-obat-kategori-${id}`);
+  const stokEl = document.getElementById(`inline-obat-stok-${id}`);
+  const hargaEl = document.getElementById(`inline-obat-harga-${id}`);
+  const satuanEl = document.getElementById(`inline-obat-satuan-${id}`);
+
+  if (!namaEl || !stokEl) return;
+
+  const payload = {
+    nama: namaEl.value.trim(),
+    kategori: katEl ? katEl.value.trim() : 'Gudang PT ATI',
+    stok: parseInt(stokEl.value) || 0,
+    harga: parseFloat(hargaEl ? hargaEl.value : 0) || 0,
+    satuan: satuanEl ? satuanEl.value.trim() : 'strip',
+    petugas: (typeof currentUser !== 'undefined' && currentUser && currentUser.nama) ? currentUser.nama : 'Petugas Gudang',
+    alasan: 'Edit langsung di tabel obat'
+  };
+
+  if (!payload.nama) {
+    showToast('Nama obat tidak boleh kosong', 'warning');
+    return;
+  }
+
+  const saveBtn = document.getElementById(`btn-inline-save-${id}`);
+  let oldSaveHTML = '';
+  if (saveBtn) {
+    oldSaveHTML = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    saveBtn.disabled = true;
+  }
+
+  try {
+    const res = await fetch(`/api/medicines/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`✅ Data obat "${payload.nama}" berhasil disimpan!`, 'success');
+
+      // Update local cache
+      const idx = (appData.medicines || []).findIndex(m => String(m.id) === String(id));
+      if (idx !== -1) {
+        appData.medicines[idx] = {
+          ...appData.medicines[idx],
+          ...payload
+        };
+      }
+
+      editingGudangObatId = null;
+      renderGudangTable();
+    } else {
+      showToast('Gagal menyimpan: ' + (data.error || 'Terjadi kesalahan'), 'error');
+      if (saveBtn) {
+        saveBtn.innerHTML = oldSaveHTML;
+        saveBtn.disabled = false;
+      }
+    }
+  } catch (err) {
+    showToast('Gagal koneksi ke server: ' + err.message, 'error');
+    if (saveBtn) {
+      saveBtn.innerHTML = oldSaveHTML;
+      saveBtn.disabled = false;
+    }
+  }
+}
+
 function renderGudangTable(customList = null) {
   const tbody = document.getElementById('table-gudang-body');
   if (!tbody) return;
@@ -4770,6 +4907,45 @@ function renderGudangTable(customList = null) {
   }
 
   tbody.innerHTML = filteredList.map(m => {
+    const isEditing = editingGudangObatId && String(m.id) === String(editingGudangObatId);
+    
+    if (isEditing) {
+      return `
+        <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid #38bdf8;">
+          <td data-label="Kode" style="vertical-align: middle;">${escapeHtml(m.kode || '-')}</td>
+          <td data-label="Nama Obat" style="vertical-align: middle;">
+            <input type="text" id="inline-obat-nama-${m.id}" class="form-control" value="${escapeHtml(m.nama || '')}" style="font-weight: 700; min-width: 140px; padding: 5px 8px; font-size: 0.9rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+          </td>
+          <td data-label="Kategori" style="vertical-align: middle;">
+            <input type="text" id="inline-obat-kategori-${m.id}" class="form-control" value="${escapeHtml(m.kategori || 'Gudang PT ATI')}" style="min-width: 110px; padding: 5px 8px; font-size: 0.85rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+          </td>
+          <td data-label="Sisa Stok" style="vertical-align: middle;">
+            <input type="number" id="inline-obat-stok-${m.id}" class="form-control" min="0" value="${m.stok !== undefined ? m.stok : 0}" style="font-weight: 700; width: 85px; padding: 5px 8px; font-size: 0.95rem; text-align: center; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+          </td>
+          <td data-label="Harga (Rp)" style="vertical-align: middle;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Rp</span>
+              <input type="number" id="inline-obat-harga-${m.id}" class="form-control" min="0" step="any" value="${parseFloat(m.harga) || 0}" style="font-weight: 700; width: 110px; padding: 5px 8px; font-size: 0.9rem; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+            </div>
+          </td>
+          <td data-label="Satuan" style="vertical-align: middle;">
+            <input type="text" id="inline-obat-satuan-${m.id}" class="form-control" value="${escapeHtml(m.satuan || 'strip')}" style="width: 80px; padding: 5px 8px; font-size: 0.85rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+          </td>
+          <td data-label="Status" style="vertical-align: middle;">
+            <span class="badge badge-info" style="background: #0284c7; color: #fff; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Sedang Diedit</span>
+          </td>
+          <td data-label="Aksi" style="vertical-align: middle; white-space: nowrap;">
+            <button id="btn-inline-save-${m.id}" class="btn btn-sm btn-success" onclick="saveInlineEditObat('${m.id}')" title="Simpan Perubahan Langsung (Enter)" style="background: #10b981; border: none; font-weight: 700; padding: 5px 12px; margin-right: 4px;">
+              <i class="fa-solid fa-check"></i> Simpan
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="cancelInlineEditObat()" title="Batal Edit (Esc)" style="padding: 5px 10px;">
+              <i class="fa-solid fa-xmark"></i> Batal
+            </button>
+          </td>
+        </tr>
+      `;
+    }
+
     const isLow = m.stok <= 10;
     const statusBadge = isLow 
       ? `<span class="badge badge-danger">🔥 STOK MENIPIS</span>`
@@ -4777,15 +4953,15 @@ function renderGudangTable(customList = null) {
 
     return `
       <tr>
-        <td data-label="Kode">${m.kode || '-'}</td>
-        <td data-label="Nama Obat"><strong>${m.nama}</strong></td>
-        <td data-label="Kategori">${m.kategori || 'Gudang PT ATI'}</td>
+        <td data-label="Kode">${escapeHtml(m.kode || '-')}</td>
+        <td data-label="Nama Obat"><strong>${escapeHtml(m.nama)}</strong></td>
+        <td data-label="Kategori">${escapeHtml(m.kategori || 'Gudang PT ATI')}</td>
         <td data-label="Sisa Stok" style="font-weight: 700; font-size: 1.05rem; ${isLow ? 'color: var(--danger);' : ''}">${m.stok}</td>
         <td data-label="Harga (Rp)" style="font-weight: 700; color: #38bdf8;">Rp ${(parseFloat(m.harga) || 0).toLocaleString('id-ID')}</td>
-        <td data-label="Satuan">${m.satuan || 'strip'}</td>
+        <td data-label="Satuan">${escapeHtml(m.satuan || 'strip')}</td>
         <td data-label="Status">${statusBadge}</td>
-        <td data-label="Aksi">
-          <button class="btn btn-sm btn-secondary" onclick="openModalEditObat('${m.id}')" title="Edit Data &amp; Harga Obat"><i class="fa-solid fa-pen"></i> Edit</button>
+        <td data-label="Aksi" style="white-space: nowrap;">
+          <button class="btn btn-sm btn-secondary" onclick="startInlineEditObat('${m.id}')" title="Edit Langsung di Tabel"><i class="fa-solid fa-pen"></i> Edit</button>
           <button class="btn btn-sm btn-danger" onclick="deleteObatDirect('${m.id}')" title="Hapus Obat"><i class="fa-solid fa-trash"></i> Hapus</button>
         </td>
       </tr>
@@ -4828,26 +5004,12 @@ async function handleSaveTambahObat(e) {
 }
 
 function openModalEditObat(id) {
-  const med = appData.medicines.find(m => m.id === id);
-  if (!med) {
-    showToast('Data obat tidak ditemukan', 'error');
-    return;
-  }
-
-  document.getElementById('edit-obat-id').value = med.id;
-  document.getElementById('edit-obat-nama').value = med.nama || '';
-  document.getElementById('edit-obat-stok').value = med.stok !== undefined ? med.stok : 0;
-  document.getElementById('edit-obat-harga').value = parseFloat(med.harga) || 0;
-  document.getElementById('edit-obat-satuan').value = med.satuan || 'strip';
-  document.getElementById('edit-obat-kategori').value = med.kategori || 'Gudang PT ATI';
-  document.getElementById('edit-obat-petugas').value = '';
-  document.getElementById('edit-obat-alasan').value = '';
-
-  document.getElementById('modal-edit-obat').style.display = 'flex';
+  startInlineEditObat(id);
 }
 
 function closeModalEditObat() {
-  document.getElementById('modal-edit-obat').style.display = 'none';
+  const modal = document.getElementById('modal-edit-obat');
+  if (modal) modal.style.display = 'none';
 }
 
 async function handleSaveEditObat(e) {
@@ -4859,15 +5021,15 @@ async function handleSaveEditObat(e) {
     harga: parseFloat(document.getElementById('edit-obat-harga').value) || 0,
     satuan: document.getElementById('edit-obat-satuan').value.trim(),
     kategori: document.getElementById('edit-obat-kategori').value.trim() || 'Gudang PT ATI',
-    petugas: document.getElementById('edit-obat-petugas').value.trim(),
-    alasan: document.getElementById('edit-obat-alasan').value.trim()
+    petugas: document.getElementById('edit-obat-petugas')?.value.trim() || 'Petugas Gudang',
+    alasan: document.getElementById('edit-obat-alasan')?.value.trim() || 'Edit data obat'
   };
 
   const submitBtn = e.target.querySelector('button[type="submit"]');
   let origText = '';
   if (submitBtn) {
     origText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan &amp; Mengirim...';
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
     submitBtn.disabled = true;
   }
 
@@ -4879,7 +5041,7 @@ async function handleSaveEditObat(e) {
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      showToast('✅ Data obat diperbarui &amp; Laporan audit terkirim ke Telegram!', 'success');
+      showToast('✅ Data obat berhasil diperbarui!', 'success');
       closeModalEditObat();
       await loadAllAppData();
       renderGudangTable();
