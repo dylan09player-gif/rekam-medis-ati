@@ -760,7 +760,9 @@ async function loadAllAppData() {
     if (typeof updateAdminStatBadges === 'function') updateAdminStatBadges();
 
     renderEditDataTable();
-    renderGudangTable();
+    if (!editingGudangObatId) {
+      renderGudangTable();
+    }
     renderKaryawanTable();
     renderHSERekamMedisTable();
     renderHSEPasienPantauanTable();
@@ -4811,11 +4813,14 @@ async function saveInlineEditObat(id) {
 
   if (!namaEl || !stokEl) return;
 
+  const rawStok = stokEl.value.trim();
+  const rawHarga = hargaEl ? hargaEl.value.trim() : '0';
+
   const payload = {
     nama: namaEl.value.trim(),
     kategori: katEl ? katEl.value.trim() : 'Gudang PT ATI',
-    stok: parseInt(stokEl.value) || 0,
-    harga: parseFloat(hargaEl ? hargaEl.value : 0) || 0,
+    stok: rawStok === '' ? 0 : (parseInt(rawStok) || 0),
+    harga: rawHarga === '' ? 0 : (parseFloat(rawHarga) || 0),
     satuan: satuanEl ? satuanEl.value.trim() : 'strip',
     petugas: (typeof currentUser !== 'undefined' && currentUser && currentUser.nama) ? currentUser.nama : 'Petugas Gudang',
     alasan: 'Edit langsung di tabel obat'
@@ -4845,12 +4850,13 @@ async function saveInlineEditObat(id) {
     if (res.ok && data.success) {
       showToast(`✅ Data obat "${payload.nama}" berhasil disimpan!`, 'success');
 
-      // Update local cache
-      const idx = (appData.medicines || []).findIndex(m => String(m.id) === String(id));
+      // Update local cache immediately
+      const idx = (appData.medicines || []).findIndex(m => String(m.id) === String(id) || String(m.nama).toLowerCase() === payload.nama.toLowerCase());
       if (idx !== -1) {
         appData.medicines[idx] = {
           ...appData.medicines[idx],
-          ...payload
+          ...payload,
+          id: appData.medicines[idx].id || id
         };
       }
 
@@ -4875,6 +4881,28 @@ async function saveInlineEditObat(id) {
 function renderGudangTable(customList = null) {
   const tbody = document.getElementById('table-gudang-body');
   if (!tbody) return;
+
+  // Preserve active input values if user is currently typing/editing a row
+  let activeEditValues = null;
+  if (editingGudangObatId) {
+    const curNama = document.getElementById(`inline-obat-nama-${editingGudangObatId}`);
+    const curKat = document.getElementById(`inline-obat-kategori-${editingGudangObatId}`);
+    const curStok = document.getElementById(`inline-obat-stok-${editingGudangObatId}`);
+    const curHarga = document.getElementById(`inline-obat-harga-${editingGudangObatId}`);
+    const curSatuan = document.getElementById(`inline-obat-satuan-${editingGudangObatId}`);
+    if (curNama || curStok) {
+      activeEditValues = {
+        nama: curNama ? curNama.value : null,
+        kategori: curKat ? curKat.value : null,
+        stok: curStok ? curStok.value : null,
+        harga: curHarga ? curHarga.value : null,
+        satuan: curSatuan ? curSatuan.value : null,
+        focusedId: document.activeElement ? document.activeElement.id : null,
+        selectionStart: document.activeElement ? document.activeElement.selectionStart : null,
+        selectionEnd: document.activeElement ? document.activeElement.selectionEnd : null
+      };
+    }
+  }
 
   const fullList = appData.medicines || [];
   const query = (currentGudangSearchQuery || '').trim().toLowerCase();
@@ -4910,26 +4938,32 @@ function renderGudangTable(customList = null) {
     const isEditing = editingGudangObatId && String(m.id) === String(editingGudangObatId);
     
     if (isEditing) {
+      const valNama = (activeEditValues && activeEditValues.nama !== null) ? activeEditValues.nama : (m.nama || '');
+      const valKat = (activeEditValues && activeEditValues.kategori !== null) ? activeEditValues.kategori : (m.kategori || 'Gudang PT ATI');
+      const valStok = (activeEditValues && activeEditValues.stok !== null) ? activeEditValues.stok : (m.stok !== undefined ? m.stok : 0);
+      const valHarga = (activeEditValues && activeEditValues.harga !== null) ? activeEditValues.harga : (parseFloat(m.harga) || 0);
+      const valSatuan = (activeEditValues && activeEditValues.satuan !== null) ? activeEditValues.satuan : (m.satuan || 'strip');
+
       return `
         <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid #38bdf8;">
           <td data-label="Kode" style="vertical-align: middle;">${escapeHtml(m.kode || '-')}</td>
           <td data-label="Nama Obat" style="vertical-align: middle;">
-            <input type="text" id="inline-obat-nama-${m.id}" class="form-control" value="${escapeHtml(m.nama || '')}" style="font-weight: 700; min-width: 140px; padding: 5px 8px; font-size: 0.9rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+            <input type="text" id="inline-obat-nama-${m.id}" class="form-control" value="${escapeHtml(valNama)}" style="font-weight: 700; min-width: 140px; padding: 5px 8px; font-size: 0.9rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
           </td>
           <td data-label="Kategori" style="vertical-align: middle;">
-            <input type="text" id="inline-obat-kategori-${m.id}" class="form-control" value="${escapeHtml(m.kategori || 'Gudang PT ATI')}" style="min-width: 110px; padding: 5px 8px; font-size: 0.85rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+            <input type="text" id="inline-obat-kategori-${m.id}" class="form-control" value="${escapeHtml(valKat)}" style="min-width: 110px; padding: 5px 8px; font-size: 0.85rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
           </td>
           <td data-label="Sisa Stok" style="vertical-align: middle;">
-            <input type="number" id="inline-obat-stok-${m.id}" class="form-control" min="0" value="${m.stok !== undefined ? m.stok : 0}" style="font-weight: 700; width: 85px; padding: 5px 8px; font-size: 0.95rem; text-align: center; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+            <input type="number" id="inline-obat-stok-${m.id}" class="form-control" min="0" value="${valStok}" style="font-weight: 700; width: 85px; padding: 5px 8px; font-size: 0.95rem; text-align: center; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
           </td>
           <td data-label="Harga (Rp)" style="vertical-align: middle;">
             <div style="display: flex; align-items: center; gap: 4px;">
               <span style="font-size: 0.8rem; color: var(--text-muted);">Rp</span>
-              <input type="number" id="inline-obat-harga-${m.id}" class="form-control" min="0" step="any" value="${parseFloat(m.harga) || 0}" style="font-weight: 700; width: 110px; padding: 5px 8px; font-size: 0.9rem; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+              <input type="number" id="inline-obat-harga-${m.id}" class="form-control" min="0" step="any" value="${valHarga}" style="font-weight: 700; width: 110px; padding: 5px 8px; font-size: 0.9rem; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
             </div>
           </td>
           <td data-label="Satuan" style="vertical-align: middle;">
-            <input type="text" id="inline-obat-satuan-${m.id}" class="form-control" value="${escapeHtml(m.satuan || 'strip')}" style="width: 80px; padding: 5px 8px; font-size: 0.85rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+            <input type="text" id="inline-obat-satuan-${m.id}" class="form-control" value="${escapeHtml(valSatuan)}" style="width: 80px; padding: 5px 8px; font-size: 0.85rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
           </td>
           <td data-label="Status" style="vertical-align: middle;">
             <span class="badge badge-info" style="background: #0284c7; color: #fff; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Sedang Diedit</span>
@@ -4967,6 +5001,19 @@ function renderGudangTable(customList = null) {
       </tr>
     `;
   }).join('');
+
+  // Restore focus and cursor position if actively editing
+  if (activeEditValues && activeEditValues.focusedId) {
+    const el = document.getElementById(activeEditValues.focusedId);
+    if (el) {
+      el.focus();
+      try {
+        if (activeEditValues.selectionStart !== null && activeEditValues.selectionEnd !== null) {
+          el.setSelectionRange(activeEditValues.selectionStart, activeEditValues.selectionEnd);
+        }
+      } catch (e) {}
+    }
+  }
 }
 
 function openModalTambahObat() {

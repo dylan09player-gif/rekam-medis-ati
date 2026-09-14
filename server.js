@@ -915,17 +915,52 @@ async function performGSheetSync(db, gsheetUrl) {
   }
 
   if (medList.length > 0) {
-    db.medicines = medList.map((gMed, i) => {
-      const cleanName = String(gMed.nama || '').trim();
-      return {
-        id: 'MED-' + (i + 1),
-        nama: cleanName,
-        stok: parseSafeInt(gMed.stok, 0),
-        satuan: String(gMed.satuan || '-').trim(),
-        harga: parseSafeInt(gMed.harga, 0),
-        kategori: String(gMed.kategori || 'Gudang PT ATI').trim()
-      };
-    }).filter(m => m.nama !== '');
+    if (!Array.isArray(db.medicines) || db.medicines.length === 0) {
+      db.medicines = medList.map((gMed, i) => {
+        const cleanName = String(gMed.nama || '').trim();
+        return {
+          id: 'MED-' + (i + 1),
+          nama: cleanName,
+          stok: parseSafeInt(gMed.stok, 0),
+          satuan: String(gMed.satuan || '-').trim(),
+          harga: parseSafeInt(gMed.harga, 0),
+          kategori: String(gMed.kategori || 'Gudang PT ATI').trim()
+        };
+      }).filter(m => m.nama !== '');
+    } else {
+      // Local database is ALWAYS the source of truth for stock, price, category, edits!
+      // Only append new medicines from GSheet that do not exist locally
+      const existingMap = new Map();
+      db.medicines.forEach(m => {
+        const normName = String(m.nama || '').trim().toLowerCase();
+        if (normName) existingMap.set(normName, m);
+        if (m.id) existingMap.set(String(m.id).trim().toLowerCase(), m);
+      });
+
+      let nextMedNum = db.medicines.reduce((max, m) => {
+        const match = String(m.id || '').match(/^MED-(\d+)$/i);
+        return match ? Math.max(max, parseInt(match[1])) : max;
+      }, 0);
+
+      medList.forEach(gMed => {
+        const cleanName = String(gMed.nama || '').trim();
+        if (!cleanName) return;
+        const normName = cleanName.toLowerCase();
+        if (!existingMap.has(normName)) {
+          nextMedNum++;
+          const newEntry = {
+            id: 'MED-' + nextMedNum,
+            nama: cleanName,
+            stok: parseSafeInt(gMed.stok, 0),
+            satuan: String(gMed.satuan || '-').trim(),
+            harga: parseSafeInt(gMed.harga, 0),
+            kategori: String(gMed.kategori || 'Gudang PT ATI').trim()
+          };
+          db.medicines.push(newEntry);
+          existingMap.set(normName, newEntry);
+        }
+      });
+    }
     synced.medicines = db.medicines.length;
   }
 
@@ -1395,7 +1430,13 @@ app.post('/api/medicines', (req, res) => {
 app.put('/api/medicines/:id', (req, res) => {
   const db = readDB();
   if (!db.medicines) return res.status(404).json({ error: 'Obat tidak ditemukan' });
-  const idx = db.medicines.findIndex(m => String(m.id) === String(req.params.id));
+  const targetId = String(req.params.id).trim().toLowerCase();
+  let idx = db.medicines.findIndex(m => String(m.id || '').trim().toLowerCase() === targetId);
+  if (idx === -1 && req.body.nama) {
+    const targetName = String(req.body.nama).trim().toLowerCase();
+    idx = db.medicines.findIndex(m => String(m.nama || '').trim().toLowerCase() === targetName);
+  }
+
   if (idx !== -1) {
     const oldMed = { ...db.medicines[idx] };
     const { nama, stok, harga, satuan, kategori, petugas, alasan, sendTelegram } = req.body;
@@ -1427,6 +1468,7 @@ app.put('/api/medicines/:id', (req, res) => {
 
     db.medicines[idx] = {
       ...oldMed,
+      id: oldMed.id || req.params.id,
       nama: newNama,
       stok: newStok,
       harga: newHarga,
@@ -1470,10 +1512,11 @@ app.put('/api/medicines/:id', (req, res) => {
 app.delete('/api/medicines/:id', (req, res) => {
   const db = readDB();
   if (!db.medicines) return res.status(404).json({ error: 'Obat tidak ditemukan' });
-  db.medicines = db.medicines.filter(m => m.id !== req.params.id);
+  const targetId = String(req.params.id).trim().toLowerCase();
+  db.medicines = db.medicines.filter(m => String(m.id || '').trim().toLowerCase() !== targetId);
   writeDB(db);
   autoPushMedicinesToGSheet(db);
-  res.json({ success: true });
+  res.json({ success: true, message: 'Obat dihapus' });
 });
 
 // Bulk Import Master Obat (Excel/CSV)
