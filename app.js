@@ -9189,36 +9189,8 @@ function importMCUCSVFile() {
 // 11. GOOGLE SHEETS SYNC LOGIC
 // -------------------------------------------------------------
 async function syncNowFromGSheet(btnEl = null) {
-  let origText = '';
-  if (btnEl) {
-    origText = btnEl.innerHTML;
-    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyinkronkan...';
-    btnEl.disabled = true;
-  }
-
-  showToast('🔄 Menghubungkan & menarik data terbaru dari Google Sheets...', 'info');
-
-  try {
-    const res = await fetch('/api/gsheet/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showToast(`✅ Sinkronisasi Berhasil! (${data.totalRows || 0} baris diperbarui)`, 'success');
-      await loadAllAppData();
-    } else {
-      showToast(`Gagal sinkronisasi: ${data.error || 'Periksa koneksi spreadsheet'}`, 'error');
-    }
-  } catch (err) {
-    showToast('Gagal terhubung ke server untuk sinkronisasi Google Sheets', 'error');
-  } finally {
-    if (btnEl) {
-      btnEl.innerHTML = origText;
-      btnEl.disabled = false;
-    }
-  }
+  // Alias ke pushAllMasterToGSheet untuk memastikan 100% 1-Arah (VPS Database -> Google Sheets)
+  return await pushAllMasterToGSheet(btnEl);
 }
 
 async function handleSaveGSheetUrl(e) {

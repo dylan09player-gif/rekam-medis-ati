@@ -828,426 +828,262 @@ function parseCSVLine(text) {
   return result;
 }
 
-// Fetch helper from Google Sheets Apps Script or Direct CSV
-const fetchFromGSheet = (url) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const urlObj = new URL(url);
-      const options = {
-        hostname: urlObj.hostname,
-        path: urlObj.pathname + urlObj.search,
-        method: 'GET',
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RekamMedisATI/1.0' }
-      };
-      
-      const protocol = urlObj.protocol === 'https:' ? https : require('http');
-      const request = protocol.request(options, (response) => {
-        let data = '';
-        response.on('data', chunk => data += chunk);
-        response.on('end', () => {
-          if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-            resolve(fetchFromGSheet(response.headers.location));
-            return;
-          }
-          try {
-            resolve(JSON.parse(data));
-          } catch(e) {
-            resolve(data);
-          }
-        });
-      });
-      request.on('error', reject);
-      request.setTimeout(15000, () => {
-        request.destroy();
-        reject(new Error('Koneksi ke Google Sheets timeout'));
-      });
-      request.end();
-    } catch(err) {
-      reject(err);
-    }
-  });
-};
-
-// Core Synchronizer function (used by manual endpoint and background auto-sync)
-async function performGSheetSync(db, gsheetUrl) {
-  let gData = {};
-  try {
-    const syncUrl = gsheetUrl + (gsheetUrl.includes('?') ? '&' : '?') + 'action=sync';
-    const fetched = await fetchFromGSheet(syncUrl);
-    if (typeof fetched === 'object' && fetched !== null) {
-      gData = fetched;
-    }
-  } catch(e) {}
-
-  let synced = { icd10: 0, medicines: 0, employees: 0 };
-
-  // 1. Mirror ICD-10 (100% Mengikuti Data Real dari Google Sheets)
-  if (Array.isArray(gData.icd10) && gData.icd10.length > 0) {
-    db.icd10 = gData.icd10.map((item, i) => ({
-      id: item.id || ('ICD-' + i),
-      code: String(item.code || item.kode || '').trim(),
-      description: String(item.description || item.nama || item.diagnosis || '').trim()
-    })).filter(x => x.code || x.description);
-    synced.icd10 = db.icd10.length;
-  }
-
-  // 2. Mirror Medicines (100% Mengikuti Data Real dari Google Sheets: baris, nama, stok, harga, satuan)
-  let medList = Array.isArray(gData.medicines) && gData.medicines.length > 0 ? gData.medicines : [];
-  if (medList.length === 0) {
-    try {
-      const csvObat = await fetchFromGSheet('https://docs.google.com/spreadsheets/d/1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY/export?format=csv&gid=318839291');
-      if (typeof csvObat === 'string' && csvObat.includes(',')) {
-        const lines = csvObat.trim().split(/\r?\n/).filter(l => l.trim() !== '');
-        medList = [];
-        for (let i = 1; i < lines.length; i++) {
-          const cols = parseCSVLine(lines[i]);
-          if (!cols[0]) continue;
-          medList.push({
-            nama: cols[0],
-            stok: cols[1],
-            satuan: cols[2] || 'strip',
-            harga: cols[3],
-            kategori: cols[4] || 'Gudang PT ATI'
-          });
-        }
-      }
-    } catch(e) {}
-  }
-
-  if (medList.length > 0) {
-    if (!Array.isArray(db.medicines) || db.medicines.length === 0) {
-      db.medicines = medList.map((gMed, i) => {
-        const cleanName = String(gMed.nama || '').trim();
-        return {
-          id: 'MED-' + (i + 1),
-          nama: cleanName,
-          stok: parseSafeInt(gMed.stok, 0),
-          satuan: String(gMed.satuan || '-').trim(),
-          harga: parseSafeInt(gMed.harga, 0),
-          kategori: String(gMed.kategori || 'Gudang PT ATI').trim()
-        };
-      }).filter(m => m.nama !== '');
-    } else {
-      // Local database is ALWAYS the source of truth for stock, price, category, edits!
-      // Only append new medicines from GSheet that do not exist locally
-      const existingMap = new Map();
-      db.medicines.forEach(m => {
-        const normName = String(m.nama || '').trim().toLowerCase();
-        if (normName) existingMap.set(normName, m);
-        if (m.id) existingMap.set(String(m.id).trim().toLowerCase(), m);
-      });
-
-      let nextMedNum = db.medicines.reduce((max, m) => {
-        const match = String(m.id || '').match(/^MED-(\d+)$/i);
-        return match ? Math.max(max, parseInt(match[1])) : max;
-      }, 0);
-
-      medList.forEach(gMed => {
-        const cleanName = String(gMed.nama || '').trim();
-        if (!cleanName) return;
-        const normName = cleanName.toLowerCase();
-        if (!existingMap.has(normName)) {
-          nextMedNum++;
-          const newEntry = {
-            id: 'MED-' + nextMedNum,
-            nama: cleanName,
-            stok: parseSafeInt(gMed.stok, 0),
-            satuan: String(gMed.satuan || '-').trim(),
-            harga: parseSafeInt(gMed.harga, 0),
-            kategori: String(gMed.kategori || 'Gudang PT ATI').trim()
-          };
-          db.medicines.push(newEntry);
-          existingMap.set(normName, newEntry);
-        }
-      });
-    }
-    synced.medicines = db.medicines.length;
-  }
-
-  // 3. Mirror Employees (1,406 Pasien / Karyawan 100% Real dari Google Sheets)
-  let empList = [];
-  try {
-    const csvKary = await fetchFromGSheet('https://docs.google.com/spreadsheets/d/1sNDmrxb4cB1eYKO-CbBXCWOElOCuiBRdJLG6ERrJkqY/export?format=csv&gid=2005972852');
-    if (typeof csvKary === 'string' && csvKary.includes(',')) {
-      const lines = csvKary.trim().split(/\r?\n/).filter(l => l.trim() !== '');
-      if (lines.length > 1) {
-        const headerCols = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/[\s_.-]/g, ''));
-        const getIdx = (keys) => headerCols.findIndex(h => keys.some(k => h === k || h.includes(k)));
-
-        const idxNik = getIdx(['nikpabrik', 'nik', 'npk']);
-        const idxNama = getIdx(['nama', 'name', 'pasien']);
-        const idxDept = getIdx(['dept', 'departemen', 'divisi', 'bagian']);
-        const idxGender = getIdx(['gender', 'jeniskelamin', 'jk', 'sex']);
-        const idxTgl = getIdx(['tgllahir', 'tgl_lahir', 'tanggallahir', 'dob', 'birth']);
-        const idxHp = getIdx(['hp', 'nohp', 'telepon', 'whatsapp', 'wa', 'telp']);
-        const idxGol = getIdx(['goldarah', 'gol_darah', 'darah', 'gol']);
-        const idxSaldo = getIdx(['saldoobat', 'saldo', 'limit']);
-        const idxSection = getIdx(['section', 'seksi']);
-        const idxBirthPlace = getIdx(['tempatlahir', 'birthplace', 'kota']);
-
-        for (let i = 1; i < lines.length; i++) {
-          const cols = parseCSVLine(lines[i]);
-          const npk = String((idxNik >= 0 ? cols[idxNik] : cols[0]) || '').trim();
-          const nama = String((idxNama >= 0 ? cols[idxNama] : cols[1]) || '').trim();
-          if (!npk && !nama) continue;
-
-          const dept = String((idxDept >= 0 ? cols[idxDept] : cols[2]) || 'PT ATI').trim();
-          let gender = String((idxGender >= 0 ? cols[idxGender] : cols[3]) || 'Laki-laki').trim();
-          if (gender.toLowerCase().includes('wanita') || gender.toLowerCase().includes('perem')) gender = 'Perempuan';
-          else if (gender.toLowerCase().includes('pria') || gender.toLowerCase().includes('laki')) gender = 'Laki-laki';
-
-          const tglLahir = String((idxTgl >= 0 ? cols[idxTgl] : cols[4]) || '').trim();
-          let hp = String((idxHp >= 0 ? cols[idxHp] : cols[5]) || '').trim().replace(/\D/g, '');
-          if (hp && hp.startsWith('8')) hp = '0' + hp;
-
-          const golDarah = String((idxGol >= 0 ? cols[idxGol] : '') || '-').trim();
-          const saldoObat = idxSaldo >= 0 ? parseInt(String(cols[idxSaldo] || '').replace(/\./g, '')) || 0 : 0;
-          const sectionName = String((idxSection >= 0 ? cols[idxSection] : '') || '').trim();
-          const birthPlace = String((idxBirthPlace >= 0 ? cols[idxBirthPlace] : '') || '').trim();
-
-          empList.push({
-            id: 'EMP-' + i,
-            no: String(i),
-            nikPabrik: npk,
-            nik: npk,
-            nama: nama,
-            dept: dept,
-            departemen: dept,
-            gender: gender,
-            golDarah: golDarah,
-            tglLahir: tglLahir,
-            tgl_lahir: tglLahir,
-            hp: hp,
-            no_hp: hp,
-            saldoObat: saldoObat,
-            sectionName: sectionName,
-            birthPlace: birthPlace
-          });
-        }
-      }
-    }
-  } catch(e) {
-    console.error('Error fetching direct CSV employees:', e);
-  }
-
-  // Fallback to gData.employees if CSV fetch failed
-  if (empList.length === 0 && Array.isArray(gData.employees) && gData.employees.length > 0) {
-    empList = gData.employees.map((gEmp, i) => {
-      const noUrut = gEmp.no || String(i + 1);
-      const empNik = String(gEmp.nikPabrik || gEmp.nik || '').trim();
-      const empNama = String(gEmp.nama || '').trim();
-      let hp = String(gEmp.hp || gEmp.no_hp || '').trim().replace(/\D/g, '');
-      if (hp && hp.startsWith('8')) hp = '0' + hp;
-      let gender = String(gEmp.gender || 'Laki-laki').trim();
-      if (gender.toLowerCase().includes('wanita') || gender.toLowerCase().includes('perem')) gender = 'Perempuan';
-      else if (gender.toLowerCase().includes('pria') || gender.toLowerCase().includes('laki')) gender = 'Laki-laki';
-      return {
-        id: 'EMP-' + (i + 1),
-        no: noUrut,
-        nikPabrik: empNik,
-        nik: empNik,
-        nama: empNama,
-        dept: String(gEmp.dept || gEmp.departemen || 'PT ATI').trim(),
-        departemen: String(gEmp.dept || gEmp.departemen || 'PT ATI').trim(),
-        gender: gender,
-        golDarah: String(gEmp.golDarah || '-').trim(),
-        tglLahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
-        tgl_lahir: String(gEmp.tglLahir || gEmp.tgl_lahir || '').trim(),
-        hp: hp,
-        no_hp: hp,
-        saldoObat: parseInt(String(gEmp.saldoObat || gEmp.sisaLimit || '0').replace(/\./g, '')) || 0,
-        sectionName: String(gEmp.sectionName || '').trim(),
-        birthPlace: String(gEmp.birthPlace || '').trim()
-      };
-    }).filter(e => e.nikPabrik || e.nama);
-  }
-
-  if (empList.length > 0) {
-    // Smart merge with existing db.employees and master file to preserve rich fields
-    const existingMap = new Map();
-    const masterEmpFile = path.join(__dirname, 'employees_master.json');
-    if (fs.existsSync(masterEmpFile)) {
-      try {
-        const mList = JSON.parse(fs.readFileSync(masterEmpFile, 'utf8'));
-        mList.forEach(m => {
-          const k1 = String(m.nikPabrik || m.nik || '').trim().replace(/^0+/, '');
-          const k2 = String(m.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-          if (k1) existingMap.set(k1, m);
-          if (k2) existingMap.set(k2, m);
-        });
-      } catch(e) {}
-    }
-    (db.employees || []).forEach(e => {
-      const k1 = String(e.nikPabrik || e.nik || '').trim().replace(/^0+/, '');
-      const k2 = String(e.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (k1) {
-        const prev = existingMap.get(k1) || {};
-        existingMap.set(k1, { ...prev, ...e });
-      }
-      if (k2) {
-        const prev = existingMap.get(k2) || {};
-        existingMap.set(k2, { ...prev, ...e });
-      }
-    });
-
-    db.employees = empList.map(item => {
-      const k1 = String(item.nikPabrik || item.nik || '').trim().replace(/^0+/, '');
-      const k2 = String(item.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const existing = (k1 && existingMap.get(k1)) || (k2 && existingMap.get(k2));
-      if (!existing) return item;
-
-      const cleanNpk = (existing.nikPabrik && existing.nikPabrik.length >= (item.nikPabrik || '').length) ? existing.nikPabrik : item.nikPabrik;
-      return {
-        ...item,
-        id: existing.id || item.id,
-        nikPabrik: cleanNpk,
-        nik: cleanNpk,
-        nama: existing.nama || item.nama,
-        sectionName: existing.sectionName || item.sectionName || '',
-        birthPlace: existing.birthPlace || item.birthPlace || '',
-        golDarah: (existing.golDarah && existing.golDarah !== '-') ? existing.golDarah : (item.golDarah || '-'),
-        saldoObat: (existing.saldoObat !== undefined && existing.saldoObat !== null && existing.saldoObat !== 0) ? existing.saldoObat : (item.saldoObat || 0),
-        hp: existing.hp || item.hp || '',
-        no_hp: existing.no_hp || item.no_hp || '',
-        tglLahir: item.tglLahir || existing.tglLahir || '',
-        tgl_lahir: item.tgl_lahir || existing.tgl_lahir || ''
-      };
-    });
-    synced.employees = db.employees.length;
-  }
-
-  // 4. Mirror/Merge Records (Kunjungan Pasien) dari Google Sheets jika tersedia
-  if (Array.isArray(gData.records) && gData.records.length > 0) {
-    const existingRecs = db.records || [];
-    gData.records.forEach(gRec => {
-      if (!gRec.id && !gRec.namaPasien) return;
-      const recId = String(gRec.id || '').trim();
-      const existing = existingRecs.find(r => r.id === recId);
-      if (!existing) {
-        existingRecs.push({
-          id: recId || ('RM-' + Date.now() + Math.floor(Math.random() * 1000)),
-          tanggal: gRec.tanggal || new Date().toISOString().split('T')[0],
-          nikPabrik: gRec.nikPabrik || '',
-          namaPasien: gRec.namaPasien || '',
-          dept: gRec.dept || '',
-          keluhan: gRec.keluhan || '',
-          asesmen: gRec.asesmen || '',
-          plan: gRec.plan || '',
-          pemeriksa: gRec.pemeriksa || '',
-          linkFoto: gRec.linkFoto || ''
-        });
-      }
-    });
-    db.records = existingRecs;
-  }
-
-  if (!db.settings) db.settings = {};
-  db.settings.gsheet_url = gsheetUrl;
-  db.settings.last_sync = new Date().toISOString();
-  writeDB(db);
-
-  return synced;
-}
-
-// Fetch data from Google Apps Script and update local DB (Manual Endpoint)
-app.post('/api/gsheet/sync', async (req, res) => {
-  const db = readDB();
-  const gsheetUrl = req.body?.gsheetUrl || db.settings?.gsheet_url;
-  
-  if (!gsheetUrl) {
-    return res.status(400).json({ error: 'URL Google Apps Script tidak ada. Konfigurasi di tab G-Sheet Sync.' });
-  }
-
-  try {
-    const synced = await performGSheetSync(db, gsheetUrl);
-    res.json({ 
-      success: true, 
-      synced,
-      lastSync: db.settings.last_sync,
-      message: `Sinkronisasi berhasil! ICD-10: ${synced.icd10}, Obat: ${synced.medicines}, Karyawan: ${synced.employees}`
-    });
-  } catch (err) {
-    console.error('GSheet sync error:', err);
-    res.status(500).json({ error: 'Gagal sinkronisasi: ' + err.message });
-  }
-});
-
-// Helper: Push seluruh data (ICD-10, Obat, Karyawan, Rekam Medis) satu arah ke Google Sheets (One-Way)
-function pushAllDataToGSheet(db, gsheetUrl) {
+// Helper: Kirim POST JSON ke Google Apps Script dengan penanganan otomatis Redirect HTTP 302/307
+function postToGAS(targetUrl, payload) {
   return new Promise((resolve) => {
-    if (!gsheetUrl) return resolve({ success: false, error: 'URL Google Apps Script belum diatur di tab Pengaturan' });
-
-    const payload = {
-      action: 'seedMaster',
-      icd10: (db.icd10 || []).map(i => ({
-        code: i.code || '',
-        description: i.description || ''
-      })),
-      medicines: (db.medicines || []).map(m => ({
-        nama: m.nama || '',
-        stok: parseSafeInt(m.stok, 0),
-        satuan: m.satuan || 'strip',
-        harga: parseSafeInt(m.harga, 0),
-        kategori: m.kategori || 'Obat'
-      })),
-      employees: (db.employees || []).map(e => ({
-        nikPabrik: e.nik || e.nikPabrik || '',
-        nama: e.nama || '',
-        dept: e.departemen || e.dept || '',
-        gender: e.gender || '',
-        tglLahir: e.tgl_lahir || e.tglLahir || '',
-        hp: e.no_hp || e.hp || '',
-        saldoObat: e.saldoObat || '',
-        sectionName: e.sectionName || '',
-        birthPlace: e.birthPlace || ''
-      })),
-      records: (db.records || []).map(r => ({
-        id: r.id || '',
-        tanggal: r.tanggal || '',
-        nikPabrik: r.nikPabrik || '',
-        namaPasien: r.namaPasien || '',
-        dept: r.dept || '',
-        keluhan: r.keluhan || '',
-        asesmen: r.asesmen || '',
-        plan: r.plan || '',
-        pemeriksa: r.pemeriksa || '',
-        linkFoto: r.linkFoto || ''
-      }))
-    };
-
-    const postData = JSON.stringify(payload);
     try {
-      const urlObj = new URL(gsheetUrl);
-      const pushReq = https.request({
+      const postData = JSON.stringify(payload);
+      const urlObj = new URL(targetUrl);
+      
+      const options = {
         hostname: urlObj.hostname,
         path: urlObj.pathname + urlObj.search,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(postData)
+          'Content-Length': Buffer.byteLength(postData),
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RekamMedisATI/1.0'
         }
-      }, (response) => {
-        let data = '';
-        response.on('data', chunk => data += chunk);
-        response.on('end', () => {
-          resolve({
-            success: true,
-            message: `Data berhasil diekspor ke Google Sheets (${payload.icd10.length} Diagnosis, ${payload.medicines.length} Obat, ${payload.employees.length} Karyawan, ${payload.records.length} Kunjungan)`
+      };
+
+      const req = https.request(options, (res) => {
+        // Jika GAS me-redirect (302/307), ikuti lokasi redirect dengan GET
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          https.get(res.headers.location, (redirectRes) => {
+            let body = '';
+            redirectRes.on('data', chunk => body += chunk);
+            redirectRes.on('end', () => {
+              try {
+                const parsed = JSON.parse(body);
+                resolve({ success: true, data: parsed });
+              } catch(e) {
+                resolve({ success: true, raw: body });
+              }
+            });
+          }).on('error', (err) => {
+            resolve({ success: true, warning: err.message });
           });
+          return;
+        }
+
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            resolve({ success: true, data: parsed });
+          } catch(e) {
+            resolve({ success: true, raw: data });
+          }
         });
       });
 
-      pushReq.on('error', (err) => {
-        resolve({ success: false, error: 'Gagal kirim ke Google Sheets: ' + err.message });
+      req.on('error', (err) => {
+        resolve({ success: false, error: err.message });
       });
 
-      pushReq.write(postData);
-      pushReq.end();
-    } catch (err) {
+      req.setTimeout(45000, () => {
+        req.destroy();
+        resolve({ success: false, error: 'Koneksi ke Google Sheets timeout (45s)' });
+      });
+
+      req.write(postData);
+      req.end();
+    } catch(err) {
       resolve({ success: false, error: err.message });
     }
   });
 }
+
+// Helper: Push seluruh data (ICD-10, Obat, Karyawan, Tindakan, Rekam Medis, Surat Jalan, Mutasi Stok, Surat Sakit) satu arah ke Google Sheets (One-Way)
+async function pushAllDataToGSheet(db, gsheetUrl) {
+  if (!gsheetUrl) return { success: false, error: 'URL Google Apps Script belum diatur di tab Pengaturan' };
+
+  // 1. Master Diagnosis (ICD-10)
+  const icd10 = (db.icd10 || []).map(i => ({
+    code: String(i.code || '').trim(),
+    description: String(i.description || '').trim()
+  })).filter(x => x.code || x.description);
+
+  // 2. Master Obat / Farmasi
+  const medicines = (db.medicines || []).map(m => ({
+    id: String(m.id || '').trim(),
+    kode: String(m.kode || m.id || '').trim(),
+    nama: String(m.nama || '').trim(),
+    stok: parseSafeInt(m.stok, 0),
+    satuan: String(m.satuan || 'strip').trim(),
+    harga: parseSafeInt(m.harga, 0),
+    kategori: String(m.kategori || 'Obat').trim()
+  })).filter(x => x.nama);
+
+  // 3. Master Karyawan
+  const employees = (db.employees || []).map(e => ({
+    nikPabrik: String(e.nikPabrik || e.nik || '').trim(),
+    nama: String(e.nama || '').trim(),
+    dept: String(e.dept || e.departemen || '').trim(),
+    gender: String(e.gender || '').trim(),
+    golDarah: String(e.golDarah || '-').trim(),
+    tglLahir: String(e.tglLahir || e.tgl_lahir || '').trim(),
+    birthPlace: String(e.birthPlace || '').trim(),
+    hp: String(e.hp || e.no_hp || '').trim(),
+    saldoObat: e.saldoObat !== undefined ? e.saldoObat : '',
+    sectionName: String(e.sectionName || '').trim()
+  })).filter(x => x.nikPabrik || x.nama);
+
+  // 4. Master Tindakan
+  const tindakan = (db.tindakan || []).map(t => ({
+    id: String(t.id || '').trim(),
+    nama: String(t.nama || '').trim(),
+    tarif: parseSafeInt(t.tarif, 0),
+    kategori: String(t.kategori || 'Tindakan Medis').trim()
+  })).filter(x => x.nama);
+
+  // 5. Kunjungan / Rekam Medis (diinput perawat/dokter saat kunjungan pasien)
+  const records = (db.records || []).map(r => {
+    let namaTindakan = '';
+    if (Array.isArray(r.tindakan)) {
+      namaTindakan = r.tindakan.map(t => typeof t === 'object' ? (t.nama || '') : t).filter(Boolean).join(', ');
+    } else if (r.tindakan) {
+      namaTindakan = String(r.tindakan);
+    }
+    return {
+      id: String(r.id || '').trim(),
+      tanggal: String(r.tanggal || '').trim(),
+      jam: String(r.jam || '').trim(),
+      nikPabrik: String(r.nikPabrik || '').trim(),
+      namaPasien: String(r.namaPasien || '').trim(),
+      dept: String(r.dept || '').trim(),
+      noHp: String(r.noHp || '').trim(),
+      keluhan: String(r.keluhan || '').trim(),
+      objektif: String(r.objektif || '').trim(),
+      asesmen: String(r.asesmen || '').trim(),
+      tindakan: namaTindakan,
+      plan: String(r.plan || '').trim(),
+      biayaObat: parseSafeInt(r.biayaObat, 0),
+      biayaTindakan: parseSafeInt(r.biayaTindakan, 0),
+      totalBiaya: parseSafeInt(r.totalBiaya, 0),
+      pemeriksa: String(r.pemeriksa || '').trim(),
+      statusKontrol: r.isPantauan ? 'Pantauan/Kontrol' : (r.izinSakit ? 'Izin Sakit' : 'Selesai'),
+      catatanKontrol: String(r.catatanKontrol || '').trim(),
+      linkFoto: String(r.linkFoto || '').trim()
+    };
+  });
+
+  // 6. Surat Jalan (diinput apotik saat mutasi/kirim obat)
+  const suratJalan = [];
+  (db.surat_jalan || []).forEach(sj => {
+    const items = Array.isArray(sj.items) && sj.items.length > 0 ? sj.items : [null];
+    items.forEach(it => {
+      suratJalan.push({
+        noSurat: String(sj.noSurat || sj.id || '').trim(),
+        tanggal: String(sj.tanggal || '').trim(),
+        sender: String(sj.sender || '').trim(),
+        receiver: String(sj.receiver || '').trim(),
+        namaObat: it ? String(it.name || it.nama || '').trim() : '-',
+        qty: it ? parseSafeInt(it.qty, 0) : 0,
+        satuan: it ? String(it.satuan || '').trim() : '-',
+        stokAwal: it ? parseSafeInt(it.initial, 0) : 0,
+        stokAkhir: it ? parseSafeInt(it.final, 0) : 0,
+        createdAt: String(sj.created_at || '').trim()
+      });
+    });
+  });
+
+  // 7. Mutasi Stok Obat (semua riwayat obat keluar & masuk dari apotik & klinik)
+  const stockMutations = (db.stock_mutations || []).map(m => ({
+    id: String(m.id || '').trim(),
+    tanggal: String(m.tanggal || '').trim(),
+    createdAt: String(m.created_at || '').trim(),
+    type: String(m.type || '').trim(),
+    namaObat: String(m.namaObat || '').trim(),
+    qty: parseSafeInt(m.qty, 0),
+    satuan: String(m.satuan || '').trim(),
+    stokSebelum: m.stokSebelum !== undefined ? parseSafeInt(m.stokSebelum, 0) : '',
+    stokSesudah: m.stokSesudah !== undefined ? parseSafeInt(m.stokSesudah, 0) : '',
+    refDoc: String(m.refDoc || m.refType || '').trim(),
+    pasien: String(m.pasien || (m.nik ? (m.pasien + ' (' + m.nik + ')') : '')).trim(),
+    petugas: String(m.petugas || '').trim(),
+    keterangan: String(m.keterangan || '').trim()
+  }));
+
+  // 8. Surat Sakit Luar
+  const suratSakitLuar = (db.surat_sakit_luar || []).map(s => ({
+    id: String(s.id || '').trim(),
+    tanggal: String(s.tanggal || '').trim(),
+    nikPabrik: String(s.nikPabrik || '').trim(),
+    nama: String(s.nama || '').trim(),
+    dept: String(s.dept || '').trim(),
+    faskes: String(s.faskes || '').trim(),
+    dokter: String(s.dokter || '').trim(),
+    diagnosis: String(s.diagnosis || '').trim(),
+    lamaHari: parseSafeInt(s.lamaHari, 0),
+    tglMulai: String(s.tglMulai || '').trim(),
+    tglSelesai: String(s.tglSelesai || '').trim(),
+    keterangan: String(s.keterangan || '').trim(),
+    linkFoto: String(s.linkFoto || '').trim()
+  }));
+
+  const payload = {
+    action: 'seedMaster',
+    icd10,
+    medicines,
+    employees,
+    tindakan,
+    records,
+    suratJalan,
+    stockMutations,
+    suratSakitLuar
+  };
+
+  const res = await postToGAS(gsheetUrl, payload);
+  if (res.success) {
+    return {
+      success: true,
+      message: `Semua data master (${icd10.length} Diagnosis, ${medicines.length} Obat, ${employees.length} Karyawan, ${tindakan.length} Tindakan), ` +
+               `${suratJalan.length} Baris Surat Jalan, ${stockMutations.length} Mutasi Stok, ` +
+               `${records.length} Kunjungan Pasien & ${suratSakitLuar.length} Surat Sakit berhasil diekspor satu arah ke Google Sheets!`
+    };
+  } else {
+    return {
+      success: false,
+      error: res.error || 'Gagal mengirim data ke Google Sheets'
+    };
+  }
+}
+
+// Endpoint Sinkronisasi Manual: HANYA SATU ARAH (VPS Database -> Google Sheets)
+// Menjamin TIDAK PERNAH menimpa atau mengosongkan data di VPS!
+async function performGSheetSync(db, gsheetUrl) {
+  return await pushAllDataToGSheet(db, gsheetUrl);
+}
+
+app.post('/api/gsheet/sync', async (req, res) => {
+  const db = readDB();
+  const gsheetUrl = req.body?.gsheetUrl || db.settings?.gsheet_url;
+  
+  if (!gsheetUrl) {
+    return res.status(400).json({ error: 'URL Google Apps Script tidak ada. Konfigurasi di tab Pengaturan.' });
+  }
+
+  try {
+    const result = await pushAllDataToGSheet(db, gsheetUrl);
+    if (result.success) {
+      if (!db.settings) db.settings = {};
+      db.settings.last_sync = new Date().toISOString();
+      writeDB(db);
+      res.json({ 
+        success: true, 
+        message: result.message,
+        lastSync: db.settings.last_sync
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (err) {
+    console.error('GSheet sync error:', err);
+    res.status(500).json({ error: 'Gagal sinkronisasi: ' + err.message });
+  }
+});
 
 // Backup Otomatis 1x 24 Jam ke Google Sheets (Satu Arah: Database VPS -> Google Sheets)
 async function performDailyGSheetBackup() {
@@ -1256,24 +1092,56 @@ async function performDailyGSheetBackup() {
     const gsheetUrl = db.settings?.gsheet_url;
     if (!gsheetUrl) return;
 
-    console.log('⏰ [Backup 24 Jam] Menjalankan backup otomatis harian ke Google Sheets...');
+    console.log('⏰ [Backup 24 Jam - 03:00 WIB] Menjalankan backup otomatis ke Google Sheets...');
     const result = await pushAllDataToGSheet(db, gsheetUrl);
     if (result.success) {
       if (!db.settings) db.settings = {};
       db.settings.last_sync = new Date().toISOString();
       writeDB(db);
-      console.log('✅ [Backup 24 Jam] Berhasil:', result.message);
+      console.log('✅ [Backup 24 Jam - 03:00 WIB] Berhasil:', result.message);
     } else {
-      console.warn('⚠️ [Backup 24 Jam] Gagal:', result.error);
+      console.warn('⚠️ [Backup 24 Jam - 03:00 WIB] Gagal:', result.error);
     }
   } catch (err) {
-    console.error('⚠️ [Backup 24 Jam] Exception:', err.message);
+    console.error('⚠️ [Backup 24 Jam - 03:00 WIB] Exception:', err.message);
   }
 }
 
-// Jalankan backup harian tepat 1x setiap 24 jam (86.400.000 milidetik)
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-setInterval(performDailyGSheetBackup, TWENTY_FOUR_HOURS);
+// Penjadwalan Otomatis: Tepat jam 03:00 Subuh WIB (Asia/Jakarta UTC+7) setiap 24 jam sekali
+function scheduleDaily3AMBackup() {
+  function getMsUntilNext3AM() {
+    const now = new Date();
+    // Konversi waktu sekarang ke WIB (UTC+7)
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const jakartaTime = new Date(utcTime + (7 * 3600000));
+    
+    const target = new Date(jakartaTime);
+    target.setHours(3, 0, 0, 0); // 03:00:00.000 Subuh WIB
+    
+    // Jika sudah lewat jam 03:00 hari ini di Jakarta, jadwalkan besok subuh jam 03:00
+    if (jakartaTime.getTime() >= target.getTime()) {
+      target.setDate(target.getDate() + 1);
+    }
+    
+    return target.getTime() - jakartaTime.getTime();
+  }
+
+  const delayMs = getMsUntilNext3AM();
+  const hoursUntil = (delayMs / (1000 * 60 * 60)).toFixed(2);
+  console.log(`⏰ [Auto-Backup GSheet] Terjadwal pada pukul 03:00 Subuh WIB (dalam ${hoursUntil} jam lagi)`);
+
+  setTimeout(async () => {
+    try {
+      await performDailyGSheetBackup();
+    } catch (e) {
+      console.error('Error saat auto-backup 03:00 Subuh:', e);
+    }
+    // Jadwalkan untuk hari berikutnya
+    scheduleDaily3AMBackup();
+  }, delayMs);
+}
+
+scheduleDaily3AMBackup();
 
 // Upload foto/dokumen rekam medis ke Google Drive via Apps Script
 app.post('/api/upload-foto', async (req, res) => {
