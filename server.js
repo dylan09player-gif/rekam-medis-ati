@@ -331,6 +331,33 @@ function writeDB(data) {
   }
 }
 
+function findMedicineInDb(medicines, searchName, searchId) {
+  if (!Array.isArray(medicines)) return null;
+  const cleanId = String(searchId || '').trim().toLowerCase();
+  const cleanName = String(searchName || '').trim().toLowerCase();
+
+  // 1. Match by ID if provided
+  if (cleanId) {
+    const byId = medicines.find(m => String(m.id || '').trim().toLowerCase() === cleanId);
+    if (byId) return byId;
+  }
+
+  if (!cleanName) return null;
+
+  // 2. Exact match (case-insensitive & trimmed)
+  const exactMatch = medicines.find(m => String(m.nama || '').trim().toLowerCase() === cleanName);
+  if (exactMatch) return exactMatch;
+
+  // 3. Normalized match (remove non-alphanumeric differences e.g. extra spaces/dashes)
+  const normClean = cleanName.replace(/[^a-z0-9]/g, '');
+  if (normClean) {
+    const normMatch = medicines.find(m => String(m.nama || '').toLowerCase().replace(/[^a-z0-9]/g, '') === normClean);
+    if (normMatch) return normMatch;
+  }
+
+  return null;
+}
+
 function logStockMutation(db, mutation) {
   if (!Array.isArray(db.stock_mutations)) db.stock_mutations = [];
   const now = new Date();
@@ -1499,6 +1526,41 @@ app.post('/api/medicines/transfer', (req, res) => {
     return res.status(400).json({ error: 'Daftar obat kosong atau tidak valid' });
   }
 
+  // 1. Idempotency Guard: Cegah double click / spam-klik dalam rentang 2 menit
+  const nowMs = Date.now();
+  const recentDuplicateSJ = (db.surat_jalan || []).find(sj => {
+    const sjTime = sj.created_at ? new Date(sj.created_at).getTime() : 0;
+    if (!sjTime || Math.abs(nowMs - sjTime) > 2 * 60 * 1000) return false;
+
+    const sameSender = String(sj.sender || '').trim().toLowerCase() === String(sender || '').trim().toLowerCase();
+    const sameReceiver = String(sj.receiver || '').trim().toLowerCase() === String(receiver || '').trim().toLowerCase();
+    if (!sameSender || !sameReceiver) return false;
+
+    if (!Array.isArray(sj.items) || sj.items.length !== items.length) return false;
+
+    const allItemsMatch = items.every(it => {
+      const itName = String(it.name || it.nama || '').trim().toLowerCase();
+      const itQty = parseSafeInt(it.qty, 0);
+      return sj.items.some(sji => 
+        String(sji.name || sji.nama || '').trim().toLowerCase() === itName && 
+        parseSafeInt(sji.qty, 0) === itQty
+      );
+    });
+
+    return allItemsMatch;
+  });
+
+  if (recentDuplicateSJ) {
+    console.log(`⚡ [IDEMPOTENCY] Mencegah pengiriman obat ganda dari ${sender} ke ${receiver} dalam 2 menit.`);
+    return res.status(200).json({
+      success: true,
+      _isDuplicatePrevented: true,
+      message: 'Pengiriman obat sudah berhasil tersimpan sebelumnya. Penambahan stok ganda dicegah.',
+      suratJalan: recentDuplicateSJ,
+      updated: []
+    });
+  }
+
   const updatedMedicines = [];
   const auditLogs = [];
   const noSurat = `SJ-${Date.now()}`;
@@ -1622,10 +1684,72 @@ app.get('/api/surat-jalan', (req, res) => {
 
 app.delete('/api/surat-jalan/:id', (req, res) => {
   const db = readDB();
-  if (!db.surat_jalan) return res.json({ success: true });
-  db.surat_jalan = db.surat_jalan.filter(s => s.id !== req.params.id);
+  if (!db.surat_jalan) return res.json({ success: true, message: 'Tidak ada surat jalan' });
+
+  const targetId = String(req.params.id || '').trim();
+  const sjIndex = db.surat_jalan.findIndex(s => s.id === targetId || s.noSurat === targetId);
+  if (sjIndex === -1) {
+    return res.status(404).json({ success: false, error: 'Surat Jalan tidak ditemukan' });
+  }
+
+  const targetSJ = db.surat_jalan[sjIndex];
+  const nowIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const noSurat = targetSJ.noSurat || targetSJ.id;
+  const deletedBy = req.body?.petugas || req.query?.petugas || 'Petugas Apotek / Gudang';
+  const rolledBackItems = [];
+
+  // Rollback medicine stocks added by this Surat Jalan
+  if (Array.isArray(targetSJ.items) && db.medicines) {
+    targetSJ.items.forEach(item => {
+      const itemName = String(item.name || item.nama || '').trim().toLowerCase();
+      const itemId = item.id ? String(item.id).trim().toLowerCase() : '';
+      const qtySent = parseSafeInt(item.qty || item.jumlah, 0);
+
+      const medIdx = db.medicines.findIndex(m => {
+        const mId = String(m.id || '').trim().toLowerCase();
+        const mName = String(m.nama || '').trim().toLowerCase();
+        return (itemId && mId === itemId) || (itemName && mName === itemName);
+      });
+
+      if (medIdx !== -1 && qtySent > 0) {
+        const oldMed = { ...db.medicines[medIdx] };
+        const prevStok = parseSafeInt(oldMed.stok, 0);
+        const nextStok = Math.max(0, prevStok - qtySent);
+        db.medicines[medIdx].stok = nextStok;
+
+        logStockMutation(db, {
+          tanggal: nowIndo,
+          created_at: new Date().toISOString(),
+          type: 'OUT',
+          namaObat: oldMed.nama,
+          satuan: oldMed.satuan || item.satuan || 'tab',
+          qty: qtySent,
+          delta: -qtySent,
+          stokSebelum: prevStok,
+          stokSesudah: nextStok,
+          refType: 'BATAL_SURAT_JALAN',
+          refId: noSurat,
+          refDoc: noSurat,
+          petugas: deletedBy,
+          keterangan: `Pembatalan/Hapus Surat Jalan No: ${noSurat} (-${qtySent} ${oldMed.satuan || 'item'})`
+        });
+
+        rolledBackItems.push(`${oldMed.nama} (-${qtySent})`);
+      }
+    });
+  }
+
+  // Remove from database
+  db.surat_jalan.splice(sjIndex, 1);
   writeDB(db);
-  res.json({ success: true });
+  autoPushMedicinesToGSheet(db);
+  notifyClients();
+
+  res.json({ 
+    success: true, 
+    message: `Surat Jalan ${noSurat} berhasil dibatalkan dan stok dikembalikan!`,
+    rolledBack: rolledBackItems 
+  });
 });
 
 // Endpoint Riwayat & Audit Mutasi Stok Obat (In - Out - Audit Trail)
@@ -2048,7 +2172,7 @@ app.post('/api/records', (req, res) => {
       const namaObat = item.namaObat || item.obat || '';
       const qty = parseSafeInt(item.qty || item.jumlah, 1);
       if (namaObat) {
-        const med = db.medicines.find(m => m.nama && m.nama.toLowerCase() === namaObat.toLowerCase());
+        const med = findMedicineInDb(db.medicines, namaObat, item.id);
         if (med) {
           const prevStok = parseSafeInt(med.stok, 0);
           const nextStok = Math.max(0, prevStok - qty);
@@ -2302,8 +2426,7 @@ app.put('/api/records/:id', (req, res) => {
       const namaObat = (item.namaObat || item.obat || '').trim();
       const qty = parseInt(item.qty || item.jumlah) || 1;
       if (namaObat) {
-        const cleanName = namaObat.toLowerCase();
-        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
+        const med = findMedicineInDb(db.medicines, namaObat, item.id);
         if (med) {
           const prevStok = parseInt(med.stok) || 0;
           const nextStok = prevStok + qty;
@@ -2337,8 +2460,7 @@ app.put('/api/records/:id', (req, res) => {
       const name = match ? match[1].replace(/\[.*?\]/g, '').trim() : p.replace(/\[.*?\]/g, '').trim();
       const qty = match && match[2] ? parseInt(match[2]) : 1;
       if (name) {
-        const cleanName = name.toLowerCase();
-        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
+        const med = findMedicineInDb(db.medicines, name);
         if (med) {
           const prevStok = parseInt(med.stok) || 0;
           const nextStok = prevStok + qty;
@@ -2371,8 +2493,7 @@ app.put('/api/records/:id', (req, res) => {
       const namaObat = (item.namaObat || item.obat || '').trim();
       const qty = parseInt(item.qty || item.jumlah) || 1;
       if (namaObat) {
-        const cleanName = namaObat.toLowerCase();
-        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
+        const med = findMedicineInDb(db.medicines, namaObat, item.id);
         if (med) {
           const prevStok = parseInt(med.stok) || 0;
           const nextStok = Math.max(0, prevStok - qty);
@@ -2503,8 +2624,7 @@ app.delete('/api/records/:id', (req, res) => {
       const namaObat = (item.namaObat || item.obat || '').trim();
       const qty = parseInt(item.qty || item.jumlah) || 1;
       if (namaObat) {
-        const cleanName = namaObat.toLowerCase();
-        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
+        const med = findMedicineInDb(db.medicines, namaObat, item.id);
         if (med) {
           const prevStok = parseInt(med.stok) || 0;
           const nextStok = prevStok + qty;
@@ -2538,8 +2658,7 @@ app.delete('/api/records/:id', (req, res) => {
       const name = match ? match[1].replace(/\[.*?\]/g, '').trim() : p.replace(/\[.*?\]/g, '').trim();
       const qty = match && match[2] ? parseInt(match[2]) : 1;
       if (name) {
-        const cleanName = name.toLowerCase();
-        const med = db.medicines.find(m => m.nama && (m.nama.trim().toLowerCase() === cleanName || m.nama.trim().toLowerCase().includes(cleanName) || cleanName.includes(m.nama.trim().toLowerCase())));
+        const med = findMedicineInDb(db.medicines, name);
         if (med) {
           const prevStok = parseInt(med.stok) || 0;
           const nextStok = prevStok + qty;
@@ -3004,7 +3123,7 @@ app.post('/api/records/offline-sync', (req, res) => {
         const namaObat = item.namaObat || item.obat || '';
         const qty = parseSafeInt(item.qty || item.jumlah, 1);
         if (namaObat) {
-          const med = db.medicines.find(m => m.nama && m.nama.toLowerCase() === namaObat.toLowerCase());
+          const med = findMedicineInDb(db.medicines, namaObat, item.id);
           if (med) {
             const prevStok = parseSafeInt(med.stok, 0);
             const nextStok = Math.max(0, prevStok - qty);

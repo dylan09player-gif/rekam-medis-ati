@@ -4119,7 +4119,11 @@ function renderShipmentDraftTable() {
   `).join('');
 }
 
+let _isProcessingShipment = false;
+
 async function processShipmentAndPrint() {
+  if (_isProcessingShipment) return;
+
   const sender = document.getElementById('ship-sender').value.trim();
   const receiver = document.getElementById('ship-receiver').value.trim();
 
@@ -4135,6 +4139,16 @@ async function processShipmentAndPrint() {
     showToast('Daftar obat kirim kosong', 'error');
     return;
   }
+
+  const confirmBtn = document.getElementById('btn-confirm-shipment') || document.querySelector('button[onclick*="processShipmentAndPrint"]');
+  const originalBtnHTML = confirmBtn ? confirmBtn.innerHTML : '';
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = '0.65';
+    confirmBtn.style.cursor = 'not-allowed';
+    confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Pengiriman & Mengunci Stok...';
+  }
+  _isProcessingShipment = true;
 
   try {
     const res = await fetch('/api/medicines/transfer', {
@@ -4156,7 +4170,11 @@ async function processShipmentAndPrint() {
 
     const data = await res.json();
     if (res.ok && data.success) {
-      showToast('✅ Pengiriman Obat berhasil dikonfirmasi!', 'success');
+      if (data._isDuplicatePrevented) {
+        showToast('ℹ️ Pengiriman obat sudah tercatat sebelumnya (klik ganda dicegah).', 'info', 5000);
+      } else {
+        showToast('✅ Pengiriman Obat berhasil dikonfirmasi!', 'success');
+      }
 
       // Update local suratJalan array immediately so it is 100% available without waiting
       if (data.suratJalan) {
@@ -4188,6 +4206,14 @@ async function processShipmentAndPrint() {
     }
   } catch (err) {
     showToast('Gagal koneksi ke server: ' + err.message, 'error');
+  } finally {
+    _isProcessingShipment = false;
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.style.opacity = '1';
+      confirmBtn.style.cursor = 'pointer';
+      confirmBtn.innerHTML = originalBtnHTML;
+    }
   }
 }
 
@@ -4592,14 +4618,46 @@ function renderRiwayatSuratJalanTable(list = null) {
         <td style="font-weight: 600; color: var(--text-main);"><i class="fa-solid fa-user-tag" style="color:#ec4899;"></i> ${sj.sender || '-'}</td>
         <td style="font-weight: 600; color: var(--text-main);"><i class="fa-solid fa-user-nurse" style="color:#38bdf8;"></i> ${sj.receiver || '-'}</td>
         <td style="max-width: 320px; line-height: 1.4;">${itemsSummary || '-'}</td>
-        <td style="text-align: center;">
-          <button class="btn btn-primary btn-sm" onclick="reprintSuratJalanById('${sj.id}')" title="Cetak Ulang Surat Jalan" style="background: #8b5cf6; border: none; font-weight: 700; padding: 5px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px;">
-            <i class="fa-solid fa-print"></i> Cetak Ulang
-          </button>
+        <td style="text-align: center; white-space: nowrap;">
+          <div style="display: flex; gap: 6px; justify-content: center;">
+            <button class="btn btn-primary btn-sm" onclick="reprintSuratJalanById('${sj.id}')" title="Cetak Ulang Surat Jalan" style="background: #8b5cf6; border: none; font-weight: 700; padding: 5px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-print"></i> Cetak
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="cancelSuratJalanById('${sj.id}', '${sj.noSurat || sj.id}')" title="Batalkan Surat Jalan & Rollback Stok" style="background: #ef4444; border: none; font-weight: 700; padding: 5px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-trash-can"></i> Batal
+            </button>
+          </div>
         </td>
       </tr>
     `;
   }).join('');
+}
+
+async function cancelSuratJalanById(id, noSurat) {
+  const confirmCancel = confirm(`⚠️ PERINGATAN PEMBATALAN SURAT JALAN:\n\nApakah Anda yakin ingin membatalkan Surat Jalan:\n"${noSurat}"?\n\nSemua obat yang tercatat pada surat jalan ini akan OTOMATIS DIKURANGI KEMBALI dari stok klinik secara presisi.`);
+  if (!confirmCancel) return;
+
+  try {
+    const res = await fetch(`/api/surat-jalan/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        petugas: (appData.currentUser?.name || appData.currentUser?.nama || 'Petugas Apotek / Klinik')
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`✅ Surat Jalan ${noSurat} berhasil dibatalkan dan stok dikembalikan!`, 'success', 5000);
+      await loadAllAppData();
+      await loadRiwayatSuratJalan();
+      renderGudangTable();
+    } else {
+      showToast('Gagal membatalkan surat jalan: ' + (data.error || 'Terjadi kesalahan'), 'error');
+    }
+  } catch (err) {
+    showToast('Koneksi server error: ' + err.message, 'error');
+  }
 }
 
 function filterRiwayatSuratJalanTable() {
