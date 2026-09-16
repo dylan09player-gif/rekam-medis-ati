@@ -1819,29 +1819,35 @@ app.post('/api/patients', (req, res) => {
 app.put('/api/patients/:id', (req, res) => {
   const db = readDB();
   if (!db.employees) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
-  const param = decodeURIComponent(req.params.id);
+  const rawParam = req.params.id ? String(req.params.id) : '';
+  const param = decodeURIComponent(rawParam).trim();
   const idx = db.employees.findIndex(e => 
-    String(e.id) === String(param) || 
-    String(e.nikPabrik) === String(param) || 
-    String(e.nik) === String(param) ||
-    (e.nama && e.nama.toLowerCase() === param.toLowerCase())
+    String(e.id || '').trim() === param || 
+    String(e.nikPabrik || '').trim() === param || 
+    String(e.nik || '').trim() === param ||
+    (e.nama && String(e.nama).trim().toLowerCase() === param.toLowerCase())
   );
   if (idx !== -1) {
+    const rawSaldo = req.body.saldoObat;
+    const cleanSaldo = rawSaldo !== undefined && rawSaldo !== null
+      ? parseInt(String(rawSaldo).replace(/[^\d-]/g, '')) || 0
+      : (parseInt(String(db.employees[idx].saldoObat || db.employees[idx].sisaLimit || '0').replace(/[^\d-]/g, '')) || 0);
+
     db.employees[idx] = {
       ...db.employees[idx],
       ...req.body,
-      nikPabrik: req.body.nikPabrik || db.employees[idx].nikPabrik,
-      nik: req.body.nikPabrik || db.employees[idx].nikPabrik,
-      nama: req.body.nama || db.employees[idx].nama,
-      dept: req.body.dept !== undefined ? req.body.dept : db.employees[idx].dept,
-      departemen: req.body.dept !== undefined ? req.body.dept : db.employees[idx].dept,
+      nikPabrik: req.body.nikPabrik !== undefined ? String(req.body.nikPabrik).trim() : db.employees[idx].nikPabrik,
+      nik: req.body.nikPabrik !== undefined ? String(req.body.nikPabrik).trim() : (db.employees[idx].nik || db.employees[idx].nikPabrik),
+      nama: req.body.nama !== undefined ? String(req.body.nama).trim() : db.employees[idx].nama,
+      dept: req.body.dept !== undefined ? String(req.body.dept).trim() : db.employees[idx].dept,
+      departemen: req.body.dept !== undefined ? String(req.body.dept).trim() : (db.employees[idx].departemen || db.employees[idx].dept),
       gender: req.body.gender || db.employees[idx].gender,
       golDarah: req.body.golDarah || db.employees[idx].golDarah || '-',
-      tglLahir: req.body.tglLahir || db.employees[idx].tglLahir,
-      tgl_lahir: req.body.tglLahir || db.employees[idx].tglLahir,
-      hp: req.body.hp !== undefined ? req.body.hp : (db.employees[idx].hp || ''),
-      no_hp: req.body.hp !== undefined ? req.body.hp : (db.employees[idx].hp || ''),
-      saldoObat: req.body.saldoObat !== undefined ? parseInt(String(req.body.saldoObat).replace(/\./g, '')) || 0 : (parseInt(String(db.employees[idx].saldoObat || db.employees[idx].sisaLimit || '0').replace(/\./g, '')) || 0),
+      tglLahir: req.body.tglLahir !== undefined ? String(req.body.tglLahir).trim() : db.employees[idx].tglLahir,
+      tgl_lahir: req.body.tglLahir !== undefined ? String(req.body.tglLahir).trim() : (db.employees[idx].tgl_lahir || db.employees[idx].tglLahir),
+      hp: req.body.hp !== undefined ? String(req.body.hp).trim() : (db.employees[idx].hp || ''),
+      no_hp: req.body.hp !== undefined ? String(req.body.hp).trim() : (db.employees[idx].no_hp || db.employees[idx].hp || ''),
+      saldoObat: cleanSaldo,
       sectionName: req.body.sectionName !== undefined ? req.body.sectionName : (db.employees[idx].sectionName || ''),
       birthPlace: req.body.birthPlace !== undefined ? req.body.birthPlace : (db.employees[idx].birthPlace || '')
     };
@@ -1854,9 +1860,20 @@ app.put('/api/patients/:id', (req, res) => {
 app.delete('/api/patients/:id', (req, res) => {
   const db = readDB();
   if (!db.employees) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
-  db.employees = db.employees.filter(e => e.id !== req.params.id && e.nikPabrik !== req.params.id);
+  const rawParam = req.params.id ? String(req.params.id) : '';
+  const param = decodeURIComponent(rawParam).trim();
+  const initialLen = db.employees.length;
+  db.employees = db.employees.filter(e => 
+    String(e.id || '').trim() !== param && 
+    String(e.nikPabrik || '').trim() !== param && 
+    String(e.nik || '').trim() !== param &&
+    (e.nama ? String(e.nama).trim().toLowerCase() !== param.toLowerCase() : true)
+  );
+  if (db.employees.length === initialLen) {
+    return res.status(404).json({ error: 'Data pasien tidak ditemukan untuk dihapus' });
+  }
   writeDB(db);
-  res.json({ success: true });
+  res.json({ success: true, deleted: param });
 });
 
 app.get('/api/employees', (req, res) => {

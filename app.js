@@ -5677,26 +5677,44 @@ function closeModalTambahKaryawan() {
 
 function openModalEditKaryawan(idOrNpk) {
   if (!idOrNpk) return;
+  const target = String(idOrNpk).trim().toLowerCase();
   const p = appData.patients.find(x => 
-    String(x.id) === String(idOrNpk) || 
-    String(x.nikPabrik) === String(idOrNpk) || 
-    String(x.nik) === String(idOrNpk) ||
-    String(x.nama) === String(idOrNpk)
+    String(x.id || '').trim().toLowerCase() === target || 
+    String(x.nikPabrik || '').trim().toLowerCase() === target || 
+    String(x.nik || '').trim().toLowerCase() === target ||
+    String(x.nama || '').trim().toLowerCase() === target
   );
   if (!p) {
-    showToast('Data karyawan tidak ditemukan', 'error');
+    showToast('Data karyawan/pasien tidak ditemukan', 'error');
     return;
   }
 
-  document.getElementById('edit-karyawan-id').value = p.id || p.nikPabrik || p.nik || '';
+  const editId = p.id || p.nikPabrik || p.nik || p.nama || '';
+  document.getElementById('edit-karyawan-id').value = editId;
   document.getElementById('edit-karyawan-nik').value = p.nikPabrik || p.nik || '';
   document.getElementById('edit-karyawan-nama').value = p.nama || '';
   document.getElementById('edit-karyawan-dept').value = p.dept || p.departemen || 'PT ATI';
-  document.getElementById('edit-karyawan-gender').value = p.gender || 'Laki-laki';
-  document.getElementById('edit-karyawan-goldarah').value = p.golDarah || '-';
+  
+  // Normalize Gender
+  const gVal = String(p.gender || '').toLowerCase();
+  const genderSelect = document.getElementById('edit-karyawan-gender');
+  if (genderSelect) {
+    genderSelect.value = (gVal.includes('perem') || gVal.includes('wanita') || gVal === 'p' || gVal === 'f') ? 'Perempuan' : 'Laki-laki';
+  }
+
+  // Normalize Blood Type
+  const gdSelect = document.getElementById('edit-karyawan-goldarah');
+  if (gdSelect) {
+    const rawGd = String(p.golDarah || '-').trim().toUpperCase();
+    gdSelect.value = ['A', 'B', 'AB', 'O'].includes(rawGd) ? rawGd : '-';
+  }
+
   document.getElementById('edit-karyawan-tgllahir').value = p.tglLahir || p.tgl_lahir || '';
-  document.getElementById('edit-karyawan-hp').value = p.hp || p.no_hp || '';
-  document.getElementById('edit-karyawan-saldo-obat').value = p.saldoObat || 0;
+  document.getElementById('edit-karyawan-hp').value = p.hp || p.no_hp || p.noHp || '';
+  
+  const rawSaldo = p.saldoObat !== undefined ? p.saldoObat : (p.sisaLimit !== undefined ? p.sisaLimit : 0);
+  const cleanSaldo = parseInt(String(rawSaldo).replace(/[^\d-]/g, '')) || 0;
+  document.getElementById('edit-karyawan-saldo-obat').value = cleanSaldo;
 
   const modal = document.getElementById('modal-edit-karyawan');
   if (modal) {
@@ -5705,37 +5723,131 @@ function openModalEditKaryawan(idOrNpk) {
 }
 
 function closeModalEditKaryawan() {
-  document.getElementById('modal-edit-karyawan').style.display = 'none';
+  const modal = document.getElementById('modal-edit-karyawan');
+  if (modal) modal.style.display = 'none';
 }
 
 async function handleSaveEditKaryawan(e) {
-  e.preventDefault();
-  const id = document.getElementById('edit-karyawan-id').value;
+  if (e && e.preventDefault) e.preventDefault();
+  const id = document.getElementById('edit-karyawan-id').value.trim();
+  const nikPabrik = document.getElementById('edit-karyawan-nik').value.trim();
+  const nama = document.getElementById('edit-karyawan-nama').value.trim();
+  const dept = document.getElementById('edit-karyawan-dept').value.trim();
+  const gender = document.getElementById('edit-karyawan-gender').value;
+  const golDarah = document.getElementById('edit-karyawan-goldarah').value;
+  const tglLahir = document.getElementById('edit-karyawan-tgllahir').value.trim();
+  const hp = document.getElementById('edit-karyawan-hp').value.trim();
+  const rawSaldo = document.getElementById('edit-karyawan-saldo-obat').value;
+  const saldoObat = parseInt(String(rawSaldo).replace(/[^\d-]/g, '')) || 0;
+
+  const targetId = id || nikPabrik || nama;
+  if (!targetId) {
+    showToast('Gagal: ID pasien tidak valid', 'error');
+    return;
+  }
+
   const updatedData = {
-    nikPabrik: document.getElementById('edit-karyawan-nik').value.trim(),
-    nama: document.getElementById('edit-karyawan-nama').value.trim(),
-    dept: document.getElementById('edit-karyawan-dept').value.trim(),
-    gender: document.getElementById('edit-karyawan-gender').value,
-    golDarah: document.getElementById('edit-karyawan-goldarah').value,
-    tglLahir: document.getElementById('edit-karyawan-tgllahir').value.trim(),
-    hp: document.getElementById('edit-karyawan-hp').value.trim(),
-    saldoObat: parseInt(document.getElementById('edit-karyawan-saldo-obat').value) || 0
+    nikPabrik,
+    nama,
+    dept,
+    gender,
+    golDarah,
+    tglLahir,
+    hp,
+    saldoObat
   };
 
+  const btnSave = document.getElementById('btn-save-edit-karyawan') || (e.target && e.target.querySelector ? e.target.querySelector('button[type="submit"]') : null);
+  const oldBtnHtml = btnSave ? btnSave.innerHTML : '';
+  if (btnSave) {
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+  }
+
   try {
-    const res = await fetch(`/api/patients/${encodeURIComponent(id)}`, {
+    const res = await fetch(`/api/patients/${encodeURIComponent(targetId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedData)
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      showToast('✅ Data pasien & No WhatsApp berhasil diperbarui!', 'success');
+      // Update local in-memory patient immediately
+      const pIdx = (appData.patients || []).findIndex(p => 
+        String(p.id || '').trim().toLowerCase() === targetId.toLowerCase() || 
+        String(p.nikPabrik || '').trim().toLowerCase() === targetId.toLowerCase() || 
+        String(p.nik || '').trim().toLowerCase() === targetId.toLowerCase() || 
+        String(p.nama || '').trim().toLowerCase() === targetId.toLowerCase()
+      );
+      if (pIdx !== -1) {
+        appData.patients[pIdx] = { 
+          ...appData.patients[pIdx], 
+          ...updatedData, 
+          no_hp: hp, 
+          nik: nikPabrik, 
+          departemen: dept 
+        };
+      }
+
+      showToast(`✅ Data pasien ${nama} berhasil diperbarui!`, 'success');
       closeModalEditKaryawan();
       await loadAllAppData();
       renderKaryawanTable();
+      renderMobileKaryawanCards();
+      renderKaryawanStats();
     } else {
-      showToast('Gagal menyimpan: ' + (data.error || 'Terjadi kesalahan'), 'error');
+      showToast('Gagal menyimpan: ' + (data.error || 'Terjadi kesalahan di server'), 'error');
+    }
+  } catch(err) {
+    showToast('Gagal koneksi server: ' + err.message, 'error');
+  } finally {
+    if (btnSave) {
+      btnSave.disabled = false;
+      btnSave.innerHTML = oldBtnHtml;
+    }
+  }
+}
+
+async function handleDeleteKaryawanFromModal() {
+  const id = (document.getElementById('edit-karyawan-id')?.value || '').trim();
+  const nama = (document.getElementById('edit-karyawan-nama')?.value || '').trim();
+  const npk = (document.getElementById('edit-karyawan-nik')?.value || '').trim();
+
+  const targetId = id || npk || nama;
+  if (!targetId) {
+    showToast('Identitas pasien tidak ditemukan', 'error');
+    return;
+  }
+
+  const confirmMsg = `Apakah Anda yakin ingin MENGHAPUS data pasien/karyawan ini?\n\n` +
+    `• Nama Pasien: ${nama || '-'}\n` +
+    `• NPK Pabrik: ${npk || '-'}\n\n` +
+    `Perhatian: Data ini akan dihapus secara permanen dari daftar master karyawan Klinik. Lanjutkan?`;
+
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await fetch(`/api/patients/${encodeURIComponent(targetId)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      // Remove from memory immediately
+      appData.patients = (appData.patients || []).filter(p => 
+        String(p.id || '').trim().toLowerCase() !== targetId.toLowerCase() && 
+        String(p.nikPabrik || '').trim().toLowerCase() !== targetId.toLowerCase() && 
+        String(p.nik || '').trim().toLowerCase() !== targetId.toLowerCase() && 
+        String(p.nama || '').trim().toLowerCase() !== targetId.toLowerCase()
+      );
+
+      showToast(`✅ Data pasien ${nama || npk} berhasil dihapus dari sistem!`, 'success');
+      closeModalEditKaryawan();
+      await loadAllAppData();
+      renderKaryawanTable();
+      renderMobileKaryawanCards();
+      renderKaryawanStats();
+    } else {
+      showToast('Gagal menghapus: ' + (data.error || 'Terjadi kesalahan di server'), 'error');
     }
   } catch(err) {
     showToast('Gagal koneksi server: ' + err.message, 'error');
@@ -6954,18 +7066,7 @@ function renderHSERekamMedisTable(isButtonClick = false) {
     statObat.textContent = `${totalObatQty} Butir`;
   }
 
-  if (!isButtonClick) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="11" style="text-align: center; color: var(--text-muted); font-weight: 500; padding: 30px; background: rgba(2, 132, 199, 0.03);">
-          <i class="fa-solid fa-circle-info" style="color: #0284c7; margin-right: 8px; font-size: 1.1rem;"></i>
-          Silakan tentukan rentang tanggal di atas, lalu klik tombol <strong style="color: #0284c7;"><i class="fa-solid fa-magnifying-glass"></i> Tampil</strong> untuk memuat data tabel rekam medis.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
+  // Auto-render filtered records immediately
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 25px;">Tidak ada data rekam medis pada rentang tanggal/filter ini</td></tr>`;
     return;
