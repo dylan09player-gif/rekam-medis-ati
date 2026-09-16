@@ -101,7 +101,12 @@ class WhatsAppService {
       const sock = makeWASocket({
         auth: state,
         logger: pino({ level: 'silent' }),
-        printQRInTerminal: false
+        printQRInTerminal: false,
+        syncFullHistory: false,
+        shouldSyncHistoryMessage: () => false,
+        markOnlineOnConnect: false,
+        generateHighQualityLinkPreview: false,
+        browser: Browsers ? Browsers.ubuntu('Chrome') : ['Klinik PT ATI', 'Chrome', '120.0.0']
       });
 
       this.sessions[sessionType].sock = sock;
