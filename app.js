@@ -11858,7 +11858,168 @@ async function disconnectWaSession() {
   }
 }
 
-// Chat List & Conversation
+// ============================================================
+// WHATSAPP RINGTONE & NOTIFICATION SOUND ENGINE (Web Audio API)
+// ============================================================
+function getWaSoundSettings() {
+  return {
+    enabled: localStorage.getItem('wa_sound_enabled') !== 'false',
+    tone: localStorage.getItem('wa_sound_tone') || 'dingdong',
+    volume: parseFloat(localStorage.getItem('wa_sound_volume') || '0.8')
+  };
+}
+
+function playWaRingtone(overrideTone = null, overrideVolume = null) {
+  const cfg = getWaSoundSettings();
+  if (!cfg.enabled && !overrideTone) return;
+
+  const tone = overrideTone || cfg.tone;
+  const vol = overrideVolume !== null ? overrideVolume : cfg.volume;
+
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+    const gainNode = ctx.createGain();
+    gainNode.connect(ctx.destination);
+
+    if (tone === 'ting') {
+      // 1. Ting-Ting Bawaan (Dua Nada Lembut: 880Hz -> 1760Hz)
+      const osc1 = ctx.createOscillator();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(880, now);
+      osc1.connect(gainNode);
+      gainNode.gain.setValueAtTime(vol * 0.35, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc1.start(now);
+      osc1.stop(now + 0.28);
+
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1760, now + 0.12);
+      osc2.connect(gainNode);
+      gainNode.gain.setValueAtTime(vol * 0.35, now + 0.12);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.6);
+    } else if (tone === 'dingdong') {
+      // 2. Bel Klinik Ding-Dong (587Hz D5 -> 440Hz A4)
+      const osc1 = ctx.createOscillator();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, now);
+      osc1.connect(gainNode);
+      gainNode.gain.setValueAtTime(vol * 0.4, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(440, now + 0.26);
+      osc2.connect(gainNode);
+      gainNode.gain.setValueAtTime(vol * 0.4, now + 0.26);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+      osc2.start(now + 0.26);
+      osc2.stop(now + 0.95);
+    } else if (tone === 'pop') {
+      // 3. Pop Water Drop (Sapuan Cepat 400Hz -> 950Hz)
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(950, now + 0.08);
+      osc.connect(gainNode);
+      gainNode.gain.setValueAtTime(vol * 0.45, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.start(now);
+      osc.stop(now + 0.18);
+    } else if (tone === 'marimba') {
+      // 4. Melodi Marimba 3 Nada (C6 - E6 - G6)
+      const notes = [1046.5, 1318.5, 1568];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+        osc.connect(gainNode);
+        gainNode.gain.setValueAtTime(vol * 0.35, now + idx * 0.11);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.11) + 0.28);
+        osc.start(now + idx * 0.11);
+        osc.stop(now + (idx * 0.11) + 0.28);
+      });
+    } else if (tone === 'alert') {
+      // 5. Dual Alert Beep (Perhatian Khusus)
+      [0, 0.18].forEach(startTime => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, now + startTime);
+        osc.connect(gainNode);
+        gainNode.gain.setValueAtTime(vol * 0.4, now + startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + startTime + 0.12);
+        osc.start(now + startTime);
+        osc.stop(now + startTime + 0.12);
+      });
+    }
+  } catch (e) {
+    console.warn('Web Audio error:', e);
+  }
+}
+
+function openModalWaSoundSettings() {
+  const modal = document.getElementById('modal-wa-sound-settings');
+  if (!modal) return;
+  const cfg = getWaSoundSettings();
+  const toggleEl = document.getElementById('wa-sound-toggle');
+  const toneEl = document.getElementById('wa-sound-tone');
+  const volEl = document.getElementById('wa-sound-volume');
+  const volValEl = document.getElementById('wa-sound-volume-val');
+
+  if (toggleEl) toggleEl.checked = cfg.enabled;
+  if (toneEl) toneEl.value = cfg.tone;
+  if (volEl) volEl.value = Math.round(cfg.volume * 100);
+  if (volValEl) volValEl.textContent = `${Math.round(cfg.volume * 100)}%`;
+
+  modal.style.display = 'flex';
+}
+
+function closeModalWaSoundSettings() {
+  const modal = document.getElementById('modal-wa-sound-settings');
+  if (modal) modal.style.display = 'none';
+}
+
+function testWaSoundPreview() {
+  const toneEl = document.getElementById('wa-sound-tone');
+  const volEl = document.getElementById('wa-sound-volume');
+  const tone = toneEl ? toneEl.value : 'dingdong';
+  const vol = volEl ? (parseInt(volEl.value, 10) / 100) : 0.8;
+  playWaRingtone(tone, vol);
+}
+
+function saveWaSoundSettings() {
+  const toggleEl = document.getElementById('wa-sound-toggle');
+  const toneEl = document.getElementById('wa-sound-tone');
+  const volEl = document.getElementById('wa-sound-volume');
+
+  const enabled = toggleEl ? toggleEl.checked : true;
+  const tone = toneEl ? toneEl.value : 'dingdong';
+  const volume = volEl ? (parseInt(volEl.value, 10) / 100) : 0.8;
+
+  localStorage.setItem('wa_sound_enabled', enabled ? 'true' : 'false');
+  localStorage.setItem('wa_sound_tone', tone);
+  localStorage.setItem('wa_sound_volume', volume.toString());
+
+  closeModalWaSoundSettings();
+  showToast('🔔 Pengaturan nada dering WhatsApp berhasil disimpan!', 'success');
+}
+
+// ============================================================
+// CHAT LIST & CONVERSATION (PROFESSIONAL UNREAD & NORMAL STATE)
+// ============================================================
+let _prevTotalUnreadWa = -1;
+
 async function loadWaChats() {
   try {
     const res = await fetch(`/api/wa/chats?sessionName=${currentWaSession}`, { cache: 'no-store' });
@@ -11872,10 +12033,56 @@ async function loadWaChats() {
     waChats = [];
   }
 
+  // Bunyikan nada dering jika ada chat belum dibaca yang baru
+  const totalUnread = (waChats || []).reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  if (_prevTotalUnreadWa !== -1 && totalUnread > _prevTotalUnreadWa) {
+    playWaRingtone();
+  }
+  _prevTotalUnreadWa = totalUnread;
+
   renderWaChatList();
   if (activeWaChatJid) {
     renderWaMessages();
   }
+}
+
+function getWaChatDisplayName(chat) {
+  if (!chat) return 'Pasien';
+  let name = (chat.name || '').trim();
+  const phone = (chat.phone || '').trim();
+  const jid = (chat.jid || '').trim();
+
+  if (name && !name.toLowerCase().startsWith('petugas') && !name.startsWith('Pasien Baru')) {
+    return name;
+  }
+
+  // Cari dari master pasien / master karyawan / rekam medis
+  const cleanNum = phone.replace(/\D/g, '');
+  const suffix8 = cleanNum.length >= 8 ? cleanNum.slice(-8) : cleanNum;
+
+  if (suffix8 && suffix8.length >= 6) {
+    const list = [...(appData.patients || []), ...(appData.employees || [])];
+    const found = list.find(p => {
+      const pNum = (p.hp || p.noHp || p.telepon || p.no_hp || '').replace(/\D/g, '');
+      return pNum && (pNum.endsWith(suffix8) || suffix8.endsWith(pNum));
+    });
+    if (found && (found.nama || found.namaPasien)) {
+      return found.nama || found.namaPasien;
+    }
+
+    const rec = (appData.records || []).find(r => {
+      const rNum = (r.noHp || r.telepon || '').replace(/\D/g, '');
+      return rNum && (rNum.endsWith(suffix8) || suffix8.endsWith(rNum));
+    });
+    if (rec && rec.namaPasien) {
+      return rec.namaPasien;
+    }
+  }
+
+  // Fallback nama pasien (bukan kata 'Petugas')
+  if (phone) return `Pasien (${phone})`;
+  if (jid) return `Pasien (${jid.split('@')[0]})`;
+  return 'Pasien';
 }
 
 function renderWaChatList() {
@@ -11904,75 +12111,51 @@ function renderWaChatList() {
     return;
   }
 
-function getWaChatDisplayName(chat) {
-  if (!chat) return 'Pasien';
-  let name = (chat.name || '').trim();
-  const phone = (chat.phone || '').trim();
-  const jid = (chat.jid || '').trim();
-
-  if (name && !name.toLowerCase().startsWith('petugas') && !name.startsWith('Pasien Baru')) {
-    return name;
-  }
-
-  // Cari dari appData.patients / appData.employees / appData.records
-  const cleanNum = phone.replace(/\D/g, '');
-  const suffix8 = cleanNum.length >= 8 ? cleanNum.slice(-8) : cleanNum;
-
-  if (suffix8 && suffix8.length >= 6) {
-    const list = [...(appData.patients || []), ...(appData.employees || [])];
-    const found = list.find(p => {
-      const pNum = (p.hp || p.noHp || p.telepon || p.no_hp || '').replace(/\D/g, '');
-      return pNum && (pNum.endsWith(suffix8) || suffix8.endsWith(pNum));
-    });
-    if (found && (found.nama || found.namaPasien)) {
-      return found.nama || found.namaPasien;
-    }
-
-    const rec = (appData.records || []).find(r => {
-      const rNum = (r.noHp || r.telepon || '').replace(/\D/g, '');
-      return rNum && (rNum.endsWith(suffix8) || suffix8.endsWith(rNum));
-    });
-    if (rec && rec.namaPasien) {
-      return rec.namaPasien;
-    }
-  }
-
-  // Jangan pernah tampilkan 'Petugas' sebagai nama pasien
-  if (phone) return `Pasien (${phone})`;
-  if (jid) return `Pasien (${jid.split('@')[0]})`;
-  return 'Pasien';
-}
-
   container.innerHTML = filtered.map(chat => {
     const isActive = chat.jid === activeWaChatJid;
+    const isUnread = (chat.unreadCount || 0) > 0;
     const displayName = getWaChatDisplayName(chat);
     const initial = (displayName[0] || 'P').toUpperCase();
     const lastTime = chat.lastTimestamp ? formatChatTime(chat.lastTimestamp) : '';
-    const unreadBadge = chat.unreadCount > 0 ? `
-      <span style="background: #22c55e; color: #000; font-weight: 800; font-size: 0.72rem; border-radius: 10px; padding: 1px 6px; min-width: 18px; text-align: center;">
-        ${chat.unreadCount}
+
+    // Indikator Badge Merah Profesional untuk pesan belum dibaca
+    const unreadBadgeHtml = isUnread ? `
+      <span style="background: #ef4444; color: #ffffff; font-weight: 800; font-size: 0.72rem; border-radius: 12px; padding: 2px 7px; min-width: 20px; text-align: center; box-shadow: 0 0 8px rgba(239, 68, 68, 0.7); display: inline-flex; align-items: center; justify-content: center; gap: 3px; animation: pulseRed 2s infinite;">
+        ${chat.unreadCount} BARU
       </span>
     ` : '';
 
+    // Styling baris: Belum dilihat = Aksen Merah + Soft Red Tint. Sudah dibaca / Aktif = Normal / Sky Blue
+    let rowStyle = 'background: transparent; border-left: 4px solid transparent;';
+    if (isActive) {
+      rowStyle = 'background: rgba(56, 189, 248, 0.12); border-left: 4px solid #38bdf8;';
+    } else if (isUnread) {
+      rowStyle = 'background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444;';
+    }
+
     return `
-      <div onclick="selectWaChat('${chat.jid}')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); cursor: pointer; transition: background 0.15s; ${isActive ? 'background: rgba(56, 189, 248, 0.12); border-left: 3px solid #38bdf8;' : 'background: transparent;'}" onmouseover="if(!${isActive}) this.style.background='var(--surface-2)'" onmouseout="if(!${isActive}) this.style.background='transparent'">
+      <div onclick="selectWaChat('${chat.jid}')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); cursor: pointer; transition: all 0.18s; ${rowStyle}" onmouseover="if(!${isActive} && !${isUnread}) this.style.background='var(--surface-2)'" onmouseout="if(!${isActive} && !${isUnread}) this.style.background='transparent'">
         
-        <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; flex-shrink: 0;">
-          ${initial}
+        <!-- Avatar dengan indikator merah jika belum dibaca -->
+        <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
+          <div style="width: 42px; height: 42px; border-radius: 50%; background: ${isUnread ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #0284c7, #0369a1)'}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; box-shadow: ${isUnread ? '0 0 10px rgba(239,68,68,0.5)' : 'none'};">
+            ${initial}
+          </div>
+          ${isUnread ? '<span style="position: absolute; top: -1px; right: -1px; width: 11px; height: 11px; border-radius: 50%; background: #ef4444; border: 2px solid var(--surface-1); box-shadow: 0 0 6px #ef4444;"></span>' : ''}
         </div>
 
         <div style="flex: 1; min-width: 0;">
           <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
-            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">
-              ${escapeHtml(displayName)}
+            <span style="font-weight: ${isUnread ? '800' : '600'}; font-size: 0.88rem; color: ${isUnread ? '#fff' : 'var(--text-main)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">
+              ${isUnread ? '<i class="fa-solid fa-circle" style="color: #ef4444; font-size: 0.5rem; vertical-align: middle; margin-right: 4px;"></i>' : ''}${escapeHtml(displayName)}
             </span>
-            <span style="font-size: 0.7rem; color: var(--text-faint);">${lastTime}</span>
+            <span style="font-size: 0.7rem; color: ${isUnread ? '#f87171' : 'var(--text-faint)'}; font-weight: ${isUnread ? '700' : '400'};">${lastTime}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+            <span style="font-size: 0.78rem; color: ${isUnread ? '#fca5a5' : 'var(--text-muted)'}; font-weight: ${isUnread ? '700' : '400'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">
               ${escapeHtml(chat.lastMessage || 'Lampiran media')}
             </span>
-            ${unreadBadge}
+            ${unreadBadgeHtml}
           </div>
         </div>
 
@@ -11987,11 +12170,15 @@ function handleSearchWaChats() {
 
 async function selectWaChat(jid) {
   activeWaChatJid = jid;
-  renderWaChatList();
 
+  // 1. Langsung bersihkan status unread di memori & kembalikan tampilan ke normal seketika
   const chat = (waChats || []).find(c => c.jid === jid);
   if (chat) {
     chat.unreadCount = 0;
+  }
+  renderWaChatList();
+
+  if (chat) {
     const nameEl = document.getElementById('wa-active-name');
     const subEl = document.getElementById('wa-active-sub');
     const avatarEl = document.getElementById('wa-active-avatar');
@@ -11999,7 +12186,7 @@ async function selectWaChat(jid) {
 
     const displayName = getWaChatDisplayName(chat);
     if (nameEl) nameEl.textContent = displayName;
-    if (subEl) subEl.textContent = `${chat.phone || jid.split('@')[0]} &bull; Riwayat obrolan sinkron`;
+    if (subEl) subEl.textContent = `${chat.phone || jid.split('@')[0]} • Riwayat obrolan sinkron`;
     if (avatarEl) avatarEl.textContent = (displayName[0] || 'P').toUpperCase();
 
     if (btnPoli) {
@@ -12007,10 +12194,11 @@ async function selectWaChat(jid) {
     }
   }
 
+  // 2. Kirim update ke server agar tersimpan permanen
   fetch('/api/wa/read', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionName: currentWaSession, jid })
+    body: JSON.stringify({ sessionName: currentWaSession, jid, chatId: chat ? chat.id : null })
   }).catch(() => {});
 
   renderWaMessages();
@@ -12077,11 +12265,20 @@ function renderWaMessages() {
 }
 
 function handleWaNewMessageReceived(data) {
+  // Bunyikan nada dering notifikasi jika pesan masuk dari pasien
+  if (data && data.message && !data.message.fromMe && data.message.sender === 'patient') {
+    playWaRingtone();
+    const sender = data.chatSession?.patientName || 'Pasien';
+    showToast(`💬 Pesan Baru dari ${sender}: "${(data.message.text || 'Lampiran file').slice(0, 35)}..."`, 'info');
+  }
   loadWaChats();
 }
 
 function markCurrentChatRead() {
-  if (!activeWaChatJid) return;
+  if (!activeWaChatJid) {
+    markAllWaChatsRead();
+    return;
+  }
   fetch('/api/wa/read', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -12092,6 +12289,45 @@ function markCurrentChatRead() {
     renderWaChatList();
     showToast('Obrolan ditandai sudah dibaca.', 'info');
   }).catch(() => {});
+}
+
+async function markAllWaChatsRead() {
+  if (!waChats || waChats.length === 0) return;
+  waChats.forEach(c => { c.unreadCount = 0; });
+  renderWaChatList();
+  try {
+    await fetch('/api/wa/read-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionName: currentWaSession })
+    });
+    showToast('Seluruh obrolan pasien ditandai sudah dibaca.', 'success');
+  } catch (e) {
+    console.warn('Error marking all as read:', e);
+  }
+}
+
+async function testSendWaToDoctor() {
+  showToast('🔄 Memeriksa koneksi WhatsApp dan mencoba kirim pesan tes...', 'info');
+  try {
+    const res = await fetch('/api/wa/test-send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: '081291868456' })
+    });
+    const data = await res.json();
+    if (data.isConnected && data.success) {
+      showToast('✅ ' + data.message, 'success');
+      playWaRingtone('ting');
+      await loadWaChats();
+    } else {
+      alert(data.message || 'WhatsApp belum tertaut barcode. Silakan scan barcode terlebih dahulu.');
+      openModalWaQr();
+    }
+  } catch (err) {
+    console.error('Error test sending WA:', err);
+    showToast('❌ Gagal menghubungi WhatsApp server: ' + err.message, 'error');
+  }
 }
 
 // Sending messages

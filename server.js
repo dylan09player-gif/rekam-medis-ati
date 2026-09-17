@@ -3472,7 +3472,7 @@ app.post('/api/records/offline-sync', (req, res) => {
 // WHATSAPP WEB ENGINE ENDPOINTS (BAILEYS MULTI-DEVICE)
 // ============================================================
 
-app.get('/api/wa/sessions', (req, res) => {
+app.get(['/api/wa/sessions', '/api/wa/status'], (req, res) => {
   const result = {};
   Object.keys(whatsappService.sessions).forEach(k => {
     const s = whatsappService.sessions[k];
@@ -3758,6 +3758,43 @@ app.post('/api/wa/read', (req, res) => {
     saveChatSessions(chatSessions);
   }
   res.json({ success: true });
+});
+
+app.post('/api/wa/read-all', (req, res) => {
+  chatSessions.forEach(s => {
+    s.unreadCount = 0;
+  });
+  saveChatSessions(chatSessions);
+  res.json({ success: true, message: 'Semua obrolan ditandai sudah dibaca' });
+});
+
+app.post('/api/wa/test-send', async (req, res) => {
+  const targetPhone = req.body.phone || '081291868456';
+  const session = whatsappService.sessions?.klinik;
+  const isConnected = session && session.sock && session.status === 'CONNECTED';
+
+  if (!isConnected) {
+    return res.json({
+      success: false,
+      isConnected: false,
+      message: 'WhatsApp HP Klinik belum tertaut barcode. Silakan klik tombol "Tautkan HP" dan scan barcode QR terlebih dahulu untuk mengaktifkan koneksi.'
+    });
+  }
+
+  const customText = req.body.message || `Halo dr. Dylan Fadhilah,\n\nIni adalah pesan pengujian otomatis dari Sistem Rekam Medis PT ATI & Klinik Nafila Medika.\n\nStatus Sesi: 🟢 TERHUBUNG (ONLINE)\nDomain Resmi: https://nafilamedika.my.id\nWaktu Kirim: ${new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB\n\nSistem WhatsApp siap digunakan untuk melayani pasien dan karyawan PT ATI.`;
+
+  try {
+    const result = await whatsappService.sendWhatsAppMessage('klinik', targetPhone, customText);
+    return res.json({
+      success: result.success,
+      isConnected: true,
+      realSent: result.realSent,
+      target: targetPhone,
+      message: result.success ? `Pesan tes berhasil dikirim ke ${targetPhone}!` : `Gagal mengirim pesan: ${result.error}`
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ============================================================
