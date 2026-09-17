@@ -13,6 +13,9 @@ services:
     volumes:
       - ./data:/app/data
       - ./uploads:/app/uploads
+    networks:
+      - default
+      - coolify
 
   tunnel:
     image: cloudflare/cloudflared:latest
@@ -21,4 +24,11 @@ services:
     command: tunnel --url http://rekam-medis-ati:3000
     depends_on:
       - rekam-medis-ati
+    networks:
+      - default
+
+networks:
+  default:
+  coolify:
+    external: true
 
