@@ -17,7 +17,7 @@ namespace KlinikNafila
             Directory.SetCurrentDirectory(appDir);
 
             string configFile = Path.Combine(appDir, "config.json");
-            string vpsUrl = "https://planet-enforcement-lan-newspaper.trycloudflare.com";
+            string vpsUrl = "https://nafilamedika.my.id";
             string mode = "auto"; // "vps", "offline", or "auto"
 
             if (File.Exists(configFile))

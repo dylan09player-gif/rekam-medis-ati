@@ -4023,7 +4023,7 @@ function buildPantauanWaMessage(r) {
 // INTEGRASI VPS CLOUDFLARE & AUTO-REMINDER WA H-1 JADWAL KONTROL
 // ============================================================
 let VPS_CONFIG = {
-  vps_url: "https://planet-enforcement-lan-newspaper.trycloudflare.com",
+  vps_url: "https://nafilamedika.my.id",
   mode: "auto"
 };
 
