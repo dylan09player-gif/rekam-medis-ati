@@ -409,15 +409,15 @@ function initSSE() {
   }
 }
 
-// Background Auto-Sync Fallback & Tab Visibility Sync (Selalu up-to-date setiap 4 detik)
+// Background Auto-Sync Fallback (Passive 60s fallback jika SSE terputus)
 setInterval(() => {
-  if (document.visibilityState === 'visible') {
+  if (document.visibilityState === 'visible' && (!sseInstance || sseInstance.readyState !== EventSource.OPEN)) {
     loadAllAppData();
   }
-}, 4000);
+}, 60000);
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
+  if (document.visibilityState === 'visible' && (!sseInstance || sseInstance.readyState !== EventSource.OPEN)) {
     loadAllAppData();
   }
 });
@@ -758,50 +758,12 @@ async function loadAllAppData() {
     } catch {}
 
     if (typeof updateAdminStatBadges === 'function') updateAdminStatBadges();
-
-    renderEditDataTable();
-    if (!editingGudangObatId) {
-      renderGudangTable();
-    }
-    renderKaryawanTable();
-    renderHSERekamMedisTable();
-    renderHSEPasienPantauanTable();
-    renderHSESurkesTable();
-    renderSuratLuarTable();
-    renderMasterTindakanTable();
-    renderUsersTable();
-    renderRiwayatSuratJalanTable();
-    renderAbsenDirekturTable();
-    renderNakesSuggestions();
-    renderMobileKaryawanCards();
-    renderWAContactsTable();
-    renderWATargetSelectOptions();
-    renderReqMedicineCatalog();
     autoFillPemeriksa();
-    initShiftView();
     autoFillShipmentOfficers();
+    renderNakesSuggestions();
 
-    // Auto-refresh Direktur billing table if visible
-    const billingTbody = document.getElementById('table-billing-body');
-    if (billingTbody && billingTbody.children.length > 0 && typeof renderBillingPTTable === 'function') {
-      renderBillingPTTable();
-    }
-
-    // Auto-refresh active patient timeline in Poli or today live visits
-    if (typeof updatePoliTimelineView === 'function') {
-      if (appData.currentPoliPatient) {
-        const p = appData.currentPoliPatient;
-        const refPatient = (appData.patients || []).find(pt => 
-          (pt.id && pt.id === p.id) ||
-          (pt.nikPabrik && pt.nikPabrik === p.nikPabrik) ||
-          (pt.nik && pt.nik === p.nik)
-        );
-        if (refPatient) {
-          appData.currentPoliPatient = refPatient;
-        }
-      }
-      updatePoliTimelineView();
-    }
+    // Lazy Render: Hanya render view yang sedang aktif agar browser tetap super cepat dan ringan
+    renderActiveViewOnly();
 
     // Auto-refresh HSE stock mutation modal if currently opened
     const modalHSEObat = document.getElementById('modal-hse-obat-terpakai');
@@ -914,6 +876,61 @@ function renderObjektifBadges(objStr) {
   </div>`;
 }
 
+// ============================================================================
+// LAZY RENDERING ENGINE (Performa Tinggi - Hanya render tab yang sedang dibuka)
+// ============================================================================
+function renderActiveViewOnly(forcedViewId) {
+  const activeView = document.querySelector('.page-view.active');
+  const activeId = forcedViewId || (activeView ? activeView.id : 'view-poli');
+
+  if (activeId === 'view-poli') {
+    if (typeof updatePoliTimelineView === 'function') {
+      if (appData.currentPoliPatient) {
+        const p = appData.currentPoliPatient;
+        const refPatient = (appData.patients || []).find(pt => 
+          (pt.id && pt.id === p.id) ||
+          (pt.nikPabrik && pt.nikPabrik === p.nikPabrik) ||
+          (pt.nik && pt.nik === p.nik)
+        );
+        if (refPatient) appData.currentPoliPatient = refPatient;
+      }
+      updatePoliTimelineView();
+    }
+  } else if (activeId === 'view-edit-data') {
+    renderEditDataTable();
+  } else if (activeId === 'view-gudang') {
+    if (!editingGudangObatId) renderGudangTable();
+  } else if (activeId === 'view-karyawan') {
+    renderKaryawanTable();
+    renderMobileKaryawanCards();
+  } else if (activeId === 'view-hse') {
+    renderHSERekamMedisTable();
+    renderHSEPasienPantauanTable();
+    renderHSESurkesTable();
+  } else if (activeId === 'view-surat-luar') {
+    if (typeof renderSuratLuarTable === 'function') renderSuratLuarTable();
+    if (typeof initSuratLuarForm === 'function') initSuratLuarForm();
+  } else if (activeId === 'view-master-tindakan') {
+    renderMasterTindakanTable();
+  } else if (activeId === 'view-master-users') {
+    renderUsersTable();
+  } else if (activeId === 'view-surat-jalan') {
+    renderRiwayatSuratJalanTable();
+  } else if (activeId === 'view-absen-dokter') {
+    renderAbsenDirekturTable();
+  } else if (activeId === 'view-obat-req') {
+    renderReqMedicineCatalog();
+  } else if (activeId === 'view-jadwal-kontrol') {
+    loadKontrolData();
+  } else if (activeId === 'view-wa-web') {
+    if (typeof initWaWeb === 'function') initWaWeb();
+  } else if (activeId === 'view-shift') {
+    if (typeof initShiftView === 'function') initShiftView();
+  } else if (activeId === 'view-billing') {
+    if (typeof renderBillingPTTable === 'function') renderBillingPTTable();
+  }
+}
+
 // Navigation Wiring
 function toggleNavMoreDropdown(e) {
   if (e) e.stopPropagation();
@@ -940,22 +957,7 @@ function handleNavDropdownClick(targetId, el) {
   const targetView = document.getElementById(targetId);
   if (targetView) targetView.classList.add('active');
 
-  if (targetId === 'view-obat-req') {
-    renderReqMedicineCatalog();
-  }
-  if (targetId === 'view-jadwal-kontrol') {
-    loadKontrolData();
-  }
-  if (targetId === 'view-gudang') {
-    renderGudangTable();
-  }
-  if (targetId === 'view-surat-luar') {
-    if (typeof renderSuratLuarTable === 'function') renderSuratLuarTable();
-    if (typeof initSuratLuarForm === 'function') initSuratLuarForm();
-  }
-  if (targetId === 'view-shift') {
-    if (typeof initShiftView === 'function') initShiftView();
-  }
+  renderActiveViewOnly(targetId);
 }
 
 function initNavigation() {
@@ -978,15 +980,7 @@ function initNavigation() {
       const targetView = document.getElementById(targetId);
       if (targetView) targetView.classList.add('active');
 
-      if (targetId === 'view-obat-req') {
-        renderReqMedicineCatalog();
-      }
-      if (targetId === 'view-jadwal-kontrol') {
-        loadKontrolData();
-      }
-      if (targetId === 'view-wa-web') {
-        initWaWeb();
-      }
+      renderActiveViewOnly(targetId);
     });
   });
 
@@ -1803,8 +1797,25 @@ function searchPatientByNIK() {
   }
   calculateResepGrandTotal();
 
+  // Auto-detect apakah pasien ini masuk dalam daftar Pasien Pantauan Rutin (K3 / Prolanis)
+  const isExistingPantauan = (_longTermPantauanRecords || []).some(r => 
+    (r.nikPabrik && r.nikPabrik.toLowerCase() === (p.nikPabrik || p.nik || '').toLowerCase()) ||
+    (r.namaPasien && r.namaPasien.toLowerCase() === (p.nama || '').toLowerCase())
+  ) || (appData.records || []).some(r => 
+    r.isPantauan && (
+      (r.nikPabrik && r.nikPabrik.toLowerCase() === (p.nikPabrik || p.nik || '').toLowerCase()) ||
+      (r.namaPasien && r.namaPasien.toLowerCase() === (p.nama || '').toLowerCase())
+    )
+  );
+
+  const chkPantauan = document.getElementById('poli-pantauan');
+  if (chkPantauan) {
+    chkPantauan.checked = !!isExistingPantauan;
+    handlePoliCheckboxChange();
+  }
+
   renderPatientHistoryTimeline(p);
-  showToast(`Pasien ${p.nama} dipilih`, 'info');
+  showToast(`Pasien ${p.nama} dipilih${isExistingPantauan ? ' (Status: Pasien Pantauan Rutin K3)' : ''}`, 'info');
 }
 
 let _poliTimelineTab = 'auto'; // 'patient' | 'today' | 'auto'
@@ -2446,6 +2457,7 @@ async function handleSavePoli(e) {
       pemeriksa,
       izinSakit: isIzinSakit,
       isPantauan,
+      tipePantauan: isPantauan ? (document.querySelector('input[name="poli-tipe-pantauan"]:checked')?.value || 'mingguan') : '',
       tanggalKontrol: tglKontrolVal,
       catatanKontrol: catatanKontrolVal,
       linkFoto
@@ -5489,6 +5501,14 @@ function getPatientWABtnHTML(nikPabrik, text = 'WA') {
   return `<button type="button" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; padding: 5px 8px; font-weight: 700;" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(p.nama || '')}')" title="Chat WA Pasien di Dasbor"><i class="fa-brands fa-whatsapp"></i> ${text}</button>`;
 }
 
+let _karyawanDisplayLimit = 60;
+
+function loadMoreKaryawan() {
+  _karyawanDisplayLimit += 60;
+  renderKaryawanTable();
+  renderMobileKaryawanCards();
+}
+
 function renderKaryawanTable() {
   const tbody = document.getElementById('table-karyawan-body');
   if (!tbody) return;
@@ -5510,7 +5530,19 @@ function renderKaryawanTable() {
     return;
   }
 
-  tbody.innerHTML = filtered.map((k, idx) => {
+  // Pre-calculate RM counts with O(1) Map lookup
+  const rmCountMap = new Map();
+  (appData.records || []).forEach(r => {
+    const k1 = String(r.nikPabrik || r.nik || '').trim();
+    const k2 = String(r.namaPasien || r.nama || '').toLowerCase().trim();
+    if (k1) rmCountMap.set(k1, (rmCountMap.get(k1) || 0) + 1);
+    if (k2) rmCountMap.set(k2, (rmCountMap.get(k2) || 0) + 1);
+  });
+
+  const displayLimit = query ? 100 : (_karyawanDisplayLimit || 60);
+  const itemsToRender = filtered.slice(0, displayLimit);
+
+  const rowsHtml = itemsToRender.map((k, idx) => {
     const no = k.no || String(idx + 1);
     const npk = k.nikPabrik || k.nik || '-';
     const nama = k.nama || '-';
@@ -5524,11 +5556,7 @@ function renderKaryawanTable() {
     const rawHp = k.hp || k.no_hp || '';
     const saldoObat = parseInt(k.saldoObat) || 0;
 
-    // Hitung jumlah riwayat rekam medis karyawan ini
-    const jumlahRM = (appData.records || []).filter(r =>
-      String(r.nikPabrik || r.nik || '').trim() === String(npk).trim() ||
-      String(r.namaPasien || r.nama || '').toLowerCase().trim() === String(nama).toLowerCase().trim()
-    ).length;
+    const jumlahRM = (npk !== '-' && rmCountMap.get(String(npk).trim())) || (nama && rmCountMap.get(String(nama).toLowerCase().trim())) || 0;
 
     // Badge riwayat medis
     const rmBadgeColor = jumlahRM === 0 ? 'rgba(100,100,100,0.15)' : jumlahRM < 3 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
@@ -5588,6 +5616,18 @@ function renderKaryawanTable() {
       </tr>
     `;
   }).join('');
+
+  let loadMoreRow = '';
+  if (filtered.length > displayLimit) {
+    loadMoreRow = `<tr><td colspan="12" style="text-align:center; padding: 14px; background: rgba(56,189,248,0.06); font-size: 0.85rem;">
+      Menampilkan <strong>${itemsToRender.length}</strong> dari <strong>${filtered.length}</strong> karyawan.
+      <button type="button" class="btn btn-sm btn-primary" onclick="loadMoreKaryawan()" style="margin-left: 12px; font-weight: 700; padding: 4px 14px;">
+        <i class="fa-solid fa-angles-down"></i> Tampilkan Lebih Banyak (+60)
+      </button>
+    </td></tr>`;
+  }
+
+  tbody.innerHTML = rowsHtml + loadMoreRow;
   renderKaryawanStats();
 }
 
@@ -5600,24 +5640,30 @@ function filterKaryawanTable() {
 function renderKaryawanStats() {
   const bar = document.getElementById('karyawan-stat-bar');
   if (!bar) return;
-  const total = appData.patients.length;
-  const laki = appData.patients.filter(k => {
+  const list = appData.patients || [];
+  const total = list.length;
+
+  const rmSet = new Set();
+  (appData.records || []).forEach(r => {
+    const k1 = String(r.nikPabrik || r.nik || '').trim();
+    const k2 = String(r.namaPasien || r.nama || '').toLowerCase().trim();
+    if (k1) rmSet.add(k1);
+    if (k2) rmSet.add(k2);
+  });
+
+  let laki = 0, wanita = 0, punyaWa = 0, punyaRM = 0;
+  for (let i = 0; i < total; i++) {
+    const k = list[i];
     const g = String(k.gender || '').toLowerCase();
-    return g.includes('laki') || g.includes('pria') || g === 'l' || g === 'm';
-  }).length;
-  const wanita = appData.patients.filter(k => {
-    const g = String(k.gender || '').toLowerCase();
-    return g.includes('perem') || g.includes('wanita') || g === 'p' || g === 'f';
-  }).length;
-  const punyaWa = appData.patients.filter(k => !!(k.hp || k.no_hp)).length;
-  const punyaRM = appData.patients.filter(k => {
+    if (g.includes('laki') || g.includes('pria') || g === 'l' || g === 'm') laki++;
+    else if (g.includes('perem') || g.includes('wanita') || g === 'p' || g === 'f') wanita++;
+
+    if (k.hp || k.no_hp) punyaWa++;
+
     const npk = String(k.nikPabrik || k.nik || '').trim();
     const nama = String(k.nama || '').toLowerCase().trim();
-    return (appData.records || []).some(r =>
-      String(r.nikPabrik || r.nik || '').trim() === npk ||
-      String(r.namaPasien || r.nama || '').toLowerCase().trim() === nama
-    );
-  }).length;
+    if ((npk && rmSet.has(npk)) || (nama && rmSet.has(nama))) punyaRM++;
+  }
 
   const stats = [
     { icon: 'fa-users', label: 'Total Karyawan', value: total, color: '#818cf8', bg: 'rgba(129,140,248,0.1)' },
@@ -7235,7 +7281,7 @@ function addCustomLabTestRow(name = '', result = '', unit = '', ref = '') {
   container.insertAdjacentHTML('beforeend', rowHtml);
 }
 
-function openModalInputPantauan(patientIdentifier) {
+function openModalInputPantauan(patientIdentifier, patientName, patientDept, patientHp, isLocked = false) {
   const modal = document.getElementById('modal-input-pemantauan-hse');
   if (!modal) return;
 
@@ -7250,7 +7296,7 @@ function openModalInputPantauan(patientIdentifier) {
     }).join('');
   }
 
-  // Set default dates
+  // Set default dates (+7 hari, +30 hari, +90 hari)
   const now = new Date();
   const dWeekly = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const dMonthly = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -7276,20 +7322,119 @@ function openModalInputPantauan(patientIdentifier) {
     labContainer.innerHTML = '';
   }
 
+  // Pastikan checkbox kirim WA instan tidak dicentang (karena WA dikirim H-1 sebelum kontrol)
+  const chkWa = document.getElementById('chk-pantauan-send-wa');
+  if (chkWa) chkWa.checked = false;
+
   // Auto-fill examiner
   const currUser = appData.currentUser ? (appData.currentUser.nama || appData.currentUser.username) : 'dr. Dylan Fadhilah';
   const examEl = document.getElementById('inp-pantauan-pemeriksa');
   if (examEl) examEl.value = currUser;
 
-  // If patient identifier passed, select patient
-  if (patientIdentifier) {
-    handleSelectPantauanPatient(patientIdentifier);
-    const searchInput = document.getElementById('inp-pantauan-pasien-search');
-    if (searchInput) searchInput.value = patientIdentifier;
+  // Penanganan Pasien & Penguncian Otomatis (seperti Pa Koko Rosadi)
+  let npk = patientIdentifier || '';
+  let nm = patientName || '';
+  let dept = patientDept || '';
+  let hp = patientHp || '';
+
+  const pool = [...(appData.patients || []), ...(appData.employees || [])];
+  const found = pool.find(p => {
+    const pNpk = (p.nikPabrik || p.nik || '').toLowerCase();
+    const pNm = (p.nama || p.namaPasien || '').toLowerCase();
+    const target = (patientIdentifier || '').trim().toLowerCase();
+    return (target && (pNpk === target || pNm === target || target.includes(pNpk))) ||
+           (npk && pNpk === npk.toLowerCase()) ||
+           (nm && pNm === nm.toLowerCase());
+  });
+
+  if (found) {
+    npk = found.nikPabrik || found.nik || npk;
+    nm = found.nama || found.namaPasien || nm;
+    dept = found.dept || found.departemen || dept;
+    hp = found.hp || found.noHp || found.no_hp || found.telepon || hp;
+  }
+
+  const nikEl = document.getElementById('inp-pantauan-nik');
+  const namaEl = document.getElementById('inp-pantauan-nama');
+  const deptEl = document.getElementById('inp-pantauan-dept');
+  const nohpEl = document.getElementById('inp-pantauan-nohp');
+  const searchEl = document.getElementById('inp-pantauan-pasien-search');
+  const lockBadge = document.getElementById('pantauan-patient-locked-badge');
+  const boxInputs = document.getElementById('box-pantauan-patient-inputs');
+
+  if (patientIdentifier || patientName) {
+    if (nikEl) nikEl.value = npk;
+    if (namaEl) namaEl.value = nm;
+    if (deptEl) deptEl.value = dept || '-';
+    if (nohpEl) nohpEl.value = hp || '';
+    if (searchEl) searchEl.value = nm ? `${nm} (${npk})` : npk;
+
+    // Tampilkan Kunci Pasien
+    if (lockBadge) {
+      lockBadge.style.display = 'flex';
+      const nameTxt = document.getElementById('txt-pantauan-locked-name');
+      const nikTxt = document.getElementById('txt-pantauan-locked-nik');
+      const deptTxt = document.getElementById('txt-pantauan-locked-dept');
+      if (nameTxt) nameTxt.textContent = nm || npk;
+      if (nikTxt) nikTxt.textContent = npk || '-';
+      if (deptTxt) deptTxt.textContent = dept || '-';
+    }
+    if (boxInputs) {
+      boxInputs.style.display = 'none'; // Sembunyikan form pencarian agar terkunci aman
+    }
+
+    // Tampilkan Baseline Evaluasi Terakhir Pasien Ini
+    const key = (npk || nm).toLowerCase();
+    const recs = (appData.records || []).filter(r => (r.nikPabrik && r.nikPabrik.toLowerCase() === key) || (r.namaPasien && r.namaPasien.toLowerCase() === key));
+    recs.sort((a, b) => (getRecordTimestamp(b) || 0) - (getRecordTimestamp(a) || 0));
+    const latestRec = recs[0];
+    const pntRec = (_longTermPantauanRecords || []).find(r => (r.nikPabrik && r.nikPabrik.toLowerCase() === key) || (r.namaPasien && r.namaPasien.toLowerCase() === key));
+
+    const baseBox = document.getElementById('pantauan-baseline-box');
+    const baseTxt = document.getElementById('pantauan-baseline-text');
+    if (baseBox && baseTxt) {
+      if (pntRec || latestRec) {
+        baseBox.style.display = 'block';
+        const tgl = pntRec?.tanggal || latestRec?.tanggal || '-';
+        const m = pntRec?.mingguan || {};
+        let parts = [];
+        if (m.tensiSistol) parts.push(`<strong>TD:</strong> ${m.tensiSistol}/${m.tensiDiastol} mmHg (${m.statusTensi})`);
+        else if (latestRec?.objektif) parts.push(`<strong>Fisik/Vital:</strong> ${latestRec.objektif}`);
+        if (m.gulaDarah) parts.push(`<strong>Gula:</strong> ${m.gulaDarah} mg/dL`);
+        if (m.asamUrat) parts.push(`<strong>Asam Urat:</strong> ${m.asamUrat} mg/dL`);
+        if (m.kolesterol) parts.push(`<strong>Kolesterol:</strong> ${m.kolesterol} mg/dL`);
+        if (latestRec?.asesmen) parts.push(`<strong>Diagnosis:</strong> ${latestRec.asesmen}`);
+        baseTxt.innerHTML = `<span style="color: var(--text-muted); margin-right: 6px;">[${tgl}]</span> ` + (parts.join(' &bull; ') || 'Belum ada data fisik spesifik.');
+      } else {
+        baseBox.style.display = 'none';
+      }
+    }
+  } else {
+    // Mode pencarian bebas / buka kunci
+    if (lockBadge) lockBadge.style.display = 'none';
+    if (boxInputs) boxInputs.style.display = 'grid';
+    const baseBox = document.getElementById('pantauan-baseline-box');
+    if (baseBox) baseBox.style.display = 'none';
+    if (searchEl) {
+      searchEl.value = '';
+      searchEl.readOnly = false;
+    }
   }
 
   switchInputPantauanTab('mingguan');
   modal.style.display = 'flex';
+}
+
+function unlockPantauanPatient() {
+  const lockBadge = document.getElementById('pantauan-patient-locked-badge');
+  const boxInputs = document.getElementById('box-pantauan-patient-inputs');
+  const searchEl = document.getElementById('inp-pantauan-pasien-search');
+  if (lockBadge) lockBadge.style.display = 'none';
+  if (boxInputs) boxInputs.style.display = 'grid';
+  if (searchEl) {
+    searchEl.value = '';
+    searchEl.focus();
+  }
 }
 
 function closeModalInputPantauan() {
@@ -7300,8 +7445,8 @@ function closeModalInputPantauan() {
 function handleSelectPantauanPatient(val) {
   if (!val) return;
   const cleanVal = val.trim().toLowerCase();
-  const patients = appData.patients || [];
-  const found = patients.find(p => {
+  const pool = [...(appData.patients || []), ...(appData.employees || [])];
+  const found = pool.find(p => {
     const npk = (p.nikPabrik || p.nik || '').toLowerCase();
     const nm = (p.nama || p.namaPasien || '').toLowerCase();
     return cleanVal === `${nm} (${npk})` || cleanVal === nm || cleanVal === npk || (cleanVal.includes(npk) && npk.length > 2);
@@ -7609,6 +7754,20 @@ function renderHSEPasienPantauanTable() {
     }
   });
 
+function extractBPValues(str) {
+  if (!str) return null;
+  const m = String(str).match(/(?:TD|Tensi|BP)?[\s:]*(\d{2,3})\s*[\/]\s*(\d{2,3})/i);
+  if (m) return { sis: parseInt(m[1]), dia: parseInt(m[2]) };
+  return null;
+}
+
+function extractGDSValue(str) {
+  if (!str) return null;
+  const m = String(str).match(/(?:GDS|GDP|Gula)[\s:]*(\d{2,3})/i);
+  if (m) return parseInt(m[1]);
+  return null;
+}
+
   const uniqueEmployees = Object.values(employeeMap);
 
   const badgeTotal = document.getElementById('badge-hse-total-pantauan');
@@ -7619,7 +7778,7 @@ function renderHSEPasienPantauanTable() {
     return;
   }
 
-  container.innerHTML = uniqueEmployees.map(emp => {
+  const renderedCards = uniqueEmployees.map(emp => {
     // Sort records descending by date
     const sortedRecs = emp.records.slice().sort((a, b) => {
       const dA = getRecordTimestamp(a) || (parseRecordDate(a) ? parseRecordDate(a).getTime() : 0);
@@ -7636,7 +7795,111 @@ function renderHSEPasienPantauanTable() {
       return (r.nikPabrik && r.nikPabrik.toLowerCase() === k) || (r.namaPasien && r.namaPasien.toLowerCase() === k);
     });
 
-    // Filter kategori tab
+    // 1. Tentukan Jadwal Kontrol & Status Kontrol Pasien (Udah Kontrol atau Belum)
+    const nextSchedule = matchedLongTerm?.mingguan?.jadwalBerikutnya ||
+                         matchedLongTerm?.obatBulanan?.jadwalAmbilBerikutnya ||
+                         matchedLongTerm?.lab3Bulan?.jadwalLabBerikutnya ||
+                         latestRec.tanggalKontrol || '';
+
+    let statusKontrol = 'none'; // 'completed' | 'overdue' | 'today' | 'upcoming' | 'none'
+    let kontrolBadgeHtml = '';
+
+    if (nextSchedule) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const schedDate = new Date(nextSchedule);
+      schedDate.setHours(0, 0, 0, 0);
+
+      const diffTime = schedDate - now;
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      const lastVisitDate = parseRecordDate(latestRec);
+      if (lastVisitDate && lastVisitDate >= schedDate) {
+        statusKontrol = 'completed';
+        kontrolBadgeHtml = `<span class="badge" style="background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.4); font-weight: 700; font-size: 0.76rem;"><i class="fa-solid fa-circle-check"></i> Sudah Kontrol (${latestRec.tanggal})</span>`;
+      } else if (diffDays < 0) {
+        statusKontrol = 'overdue';
+        kontrolBadgeHtml = `<span class="badge" style="background: rgba(239,68,68,0.22); color: #f87171; border: 1.5px solid #ef4444; font-weight: 800; font-size: 0.76rem;"><i class="fa-solid fa-triangle-exclamation"></i> Belum Kontrol (Lewat ${Math.abs(diffDays)} Hari)</span>`;
+      } else if (diffDays === 0) {
+        statusKontrol = 'today';
+        kontrolBadgeHtml = `<span class="badge" style="background: rgba(234,179,8,0.22); color: #facc15; border: 1.5px solid #eab308; font-weight: 800; font-size: 0.76rem;"><i class="fa-solid fa-bell"></i> Jadwal Kontrol Hari Ini!</span>`;
+      } else {
+        statusKontrol = 'upcoming';
+        kontrolBadgeHtml = `<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-weight: 700; font-size: 0.76rem;"><i class="fa-regular fa-calendar-check"></i> Kontrol ${diffDays} Hari Lagi (${nextSchedule})</span>`;
+      }
+    } else {
+      kontrolBadgeHtml = `<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted); font-size: 0.74rem;"><i class="fa-solid fa-notes-medical"></i> Pemantauan Terbuka</span>`;
+    }
+
+    // 2. Tentukan Indikator Progres Kesehatan (Bagus / Membaik vs Makin Jelek)
+    let progressCategory = 'stable'; // 'improving' | 'worsening' | 'stable' | 'baseline'
+    let progressBadgeHtml = '';
+    const progressNotes = [];
+
+    const curSis = matchedLongTerm?.mingguan?.tensiSistol || (extractBPValues(latestRec.objektif)?.sis || null);
+    const curDia = matchedLongTerm?.mingguan?.tensiDiastol || (extractBPValues(latestRec.objektif)?.dia || null);
+
+    const prevRec = sortedRecs[1];
+    const prevSis = prevRec ? (extractBPValues(prevRec.objektif)?.sis || null) : null;
+    const prevDia = prevRec ? (extractBPValues(prevRec.objektif)?.dia || null) : null;
+
+    if (curSis && prevSis) {
+      const dSis = curSis - prevSis;
+      const dDia = (curDia && prevDia) ? (curDia - prevDia) : 0;
+      if (dSis <= -10 || (curSis <= 130 && prevSis >= 140)) {
+        progressCategory = 'improving';
+        progressNotes.push(`TD turun ${Math.abs(dSis)} mmHg (${prevSis}/${prevDia || 80} ➔ ${curSis}/${curDia || 80}) 👍 Terkontrol`);
+      } else if (dSis >= 15 || curSis >= 150) {
+        progressCategory = 'worsening';
+        progressNotes.push(`TD naik +${dSis} mmHg (${prevSis}/${prevDia || 80} ➔ ${curSis}/${curDia || 80}) ⚠️ Perlu Perhatian`);
+      } else {
+        progressNotes.push(`TD stabil (${curSis}/${curDia || 80} mmHg)`);
+      }
+    } else if (curSis) {
+      if (curSis <= 125) progressNotes.push(`TD Normal (${curSis}/${curDia || 80} mmHg)`);
+      else if (curSis >= 150) {
+        progressCategory = 'worsening';
+        progressNotes.push(`TD Tinggi (${curSis}/${curDia || 80} mmHg) ⚠️ Waspada`);
+      } else {
+        progressNotes.push(`TD Terpantau (${curSis}/${curDia || 80} mmHg)`);
+      }
+    }
+
+    const curGDS = matchedLongTerm?.mingguan?.gulaDarah || (extractGDSValue(latestRec.objektif) || null);
+    const prevGDS = prevRec ? extractGDSValue(prevRec.objektif) : null;
+    if (curGDS && prevGDS) {
+      const dGDS = curGDS - prevGDS;
+      if (dGDS <= -20 || (curGDS <= 140 && prevGDS > 180)) {
+        if (progressCategory !== 'worsening') progressCategory = 'improving';
+        progressNotes.push(`GDS turun ${Math.abs(dGDS)} mg/dL (${prevGDS} ➔ ${curGDS})`);
+      } else if (dGDS >= 30 || curGDS >= 200) {
+        progressCategory = 'worsening';
+        progressNotes.push(`GDS melonjak +${dGDS} mg/dL (${prevGDS} ➔ ${curGDS}) ⚠️ Gula Darah Tinggi`);
+      }
+    } else if (curGDS) {
+      if (curGDS <= 140) progressNotes.push(`Gula Darah Normal (${curGDS} mg/dL)`);
+      else if (curGDS >= 200) {
+        progressCategory = 'worsening';
+        progressNotes.push(`GDS Tinggi (${curGDS} mg/dL) ⚠️ Waspada`);
+      }
+    }
+
+    if (visitCount <= 1 && !prevRec) {
+      progressCategory = 'baseline';
+      progressBadgeHtml = `<span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-muted); border: 1px solid var(--border-color); font-size: 0.74rem;"><i class="fa-solid fa-flag"></i> Data Perdana (Baseline)</span>`;
+    } else if (progressCategory === 'improving') {
+      progressBadgeHtml = `<span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; border: 1.5px solid rgba(16,185,129,0.5); font-weight: 800; font-size: 0.74rem;"><i class="fa-solid fa-arrow-trend-down"></i> PROGRES MEMBAIK / TERKONTROL</span>`;
+    } else if (progressCategory === 'worsening') {
+      progressBadgeHtml = `<span class="badge" style="background: rgba(239,68,68,0.22); color: #f87171; border: 1.5px solid rgba(239,68,68,0.5); font-weight: 800; font-size: 0.74rem;"><i class="fa-solid fa-arrow-trend-up"></i> PERLU PERHATIAN / MEMBURUK</span>`;
+    } else {
+      progressBadgeHtml = `<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.74rem;"><i class="fa-solid fa-equals"></i> STABIL TERPANTAU</span>`;
+    }
+
+    // 3. Filter Kategori Tab HSE
+    if (_currentHSEPantauanCategory === 'overdue' && statusKontrol !== 'overdue' && statusKontrol !== 'today') return '';
+    if (_currentHSEPantauanCategory === 'controlled' && statusKontrol !== 'completed') return '';
+    if (_currentHSEPantauanCategory === 'improving' && progressCategory !== 'improving') return '';
+    if (_currentHSEPantauanCategory === 'worsening' && progressCategory !== 'worsening') return '';
     if (_currentHSEPantauanCategory === 'weekly' && !matchedLongTerm?.mingguan?.tensiSistol && !latestRec.objektif) return '';
     if (_currentHSEPantauanCategory === 'monthly' && !matchedLongTerm?.obatBulanan?.ambilObat) return '';
     if (_currentHSEPantauanCategory === 'quarterly' && !matchedLongTerm?.lab3Bulan?.adaCekLab) return '';
@@ -7652,9 +7915,8 @@ function renderHSEPasienPantauanTable() {
 
     const patient = (appData.patients || []).find(p => (p.nikPabrik || p.nik) === emp.nikPabrik || (p.nama || '').toLowerCase() === (emp.namaPasien || '').toLowerCase()) || {};
     const rawHp = patient.hp || patient.noHp || patient.no_hp || patient.telepon || emp.noHp || latestRec.noHp || matchedLongTerm?.noHp || '';
-    const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
     
-    const tplPantauan = encodeURIComponent(`Halo rekan ${emp.namaPasien || ''} (${emp.nikPabrik || ''}), ini dari Tim Medis PT ATI mengenai evaluasi pemantauan kesehatan Anda.`);
+    const tplPantauan = encodeURIComponent(`Halo rekan ${emp.namaPasien || ''} (${emp.nikPabrik || ''}), ini dari Tim Medis & HSE PT ATI mengenai evaluasi jadwal pemantauan kesehatan Anda.`);
     const waBtn = rawHp 
       ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem;" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(emp.namaPasien || '')}', '${tplPantauan}')" title="Kirim Pesan WhatsApp di Dasbor"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
       : '';
@@ -7663,11 +7925,17 @@ function renderHSEPasienPantauanTable() {
       ? `<button type="button" class="btn btn-sm" style="background: #0284c7; color: #fff; border: none; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem;" onclick="event.stopPropagation(); openPhotoViewer('${latestRec.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
       : '';
 
+    // Siapkan parameter penguncian ke modal input catatan
+    const cleanNik = String(emp.nikPabrik || '').replace(/'/g, "\\'");
+    const cleanNama = String(emp.namaPasien || '').replace(/'/g, "\\'");
+    const cleanDept = String(emp.dept || '').replace(/'/g, "\\'");
+    const cleanHp = String(rawHp || '').replace(/'/g, "\\'");
+
     return `
-    <div class="hse-patient-card pantauan-card" ondblclick="openModalRiwayatPantauan('${emp.nikPabrik || emp.namaPasien}')" title="Dobel-klik untuk riwayat pemantauan jangka panjang">
+    <div class="hse-patient-card pantauan-card" ondblclick="openModalRiwayatPantauan('${cleanNik || cleanNama}')" title="Dobel-klik untuk riwayat pemantauan jangka panjang">
       <div class="hse-card-header">
         <div>
-          <div class="hse-card-patient-name" onclick="event.stopPropagation(); openModalRiwayatPantauan('${emp.nikPabrik || emp.namaPasien}')" title="Klik untuk membuka riwayat pemantauan">
+          <div class="hse-card-patient-name" onclick="event.stopPropagation(); openModalRiwayatPantauan('${cleanNik || cleanNama}')" title="Klik untuk membuka riwayat pemantauan">
             ${emp.namaPasien}
           </div>
           <div class="hse-card-tags">
@@ -7677,13 +7945,22 @@ function renderHSEPasienPantauanTable() {
           </div>
         </div>
         <div class="hse-card-meta">
-          <div class="hse-card-date"><i class="fa-regular fa-calendar" style="color: var(--danger);"></i> ${matchedLongTerm?.tanggal || latestRec.tanggal || '-'}</div>
+          <div class="hse-card-date"><i class="fa-regular fa-calendar" style="color: var(--danger);"></i> Terakhir: ${matchedLongTerm?.tanggal || latestRec.tanggal || '-'}</div>
           <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-            ${visitCount > 1 ? `<span class="badge badge-info" style="font-size: 0.74rem;"><i class="fa-solid fa-repeat"></i> ${visitCount}x Kunjungan</span>` : ''}
-            <span class="badge-status-pantauan">
-              🔴 Dalam Pemantauan
-            </span>
+            ${kontrolBadgeHtml}
+            ${progressBadgeHtml}
           </div>
+        </div>
+      </div>
+
+      <!-- Kotak Indikator Progres & Evaluasi HSE -->
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; margin: 8px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="font-size: 0.78rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+          <strong style="color: #38bdf8;"><i class="fa-solid fa-chart-line"></i> Evaluasi Klinis HSE:</strong>
+          <span>${progressNotes.length > 0 ? progressNotes.join(' &bull; ') : 'Data awal kunjungan tercatat.'}</span>
+        </div>
+        <div style="font-size: 0.74rem; color: var(--text-muted);">
+          Total: <strong>${visitCount}x</strong> Kunjungan Berobat
         </div>
       </div>
 
@@ -7691,7 +7968,7 @@ function renderHSEPasienPantauanTable() {
       ${matchedLongTerm ? `
       <div style="background: rgba(2,132,199,0.06); border: 1px solid rgba(2,132,199,0.2); border-radius: 8px; padding: 10px 12px; margin: 10px 0;">
         <div style="font-weight: 700; font-size: 0.78rem; color: #38bdf8; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-          <span><i class="fa-solid fa-stethoscope"></i> Evaluasi Berkala Terakhir:</span>
+          <span><i class="fa-solid fa-stethoscope"></i> Evaluasi Terakhir Pasien:</span>
           <span style="font-size: 0.72rem; color: var(--text-muted);">${matchedLongTerm.tanggal}</span>
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.76rem;">
@@ -7729,13 +8006,13 @@ function renderHSEPasienPantauanTable() {
       <div class="hse-card-footer">
         <span class="hse-card-hint"><i class="fa-solid fa-circle-info"></i> Dobel-klik card untuk histori lengkap</span>
         <div class="hse-card-actions">
-          <button type="button" class="btn btn-sm" style="background: #10b981; color: #fff; font-weight: 800; border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; border: none; display: inline-flex; align-items: center; gap: 6px;" onclick="event.stopPropagation(); openModalInputPantauan('${emp.nikPabrik || emp.namaPasien}')" title="Catat Evaluasi Mingguan / Obat / Lab">
-            <i class="fa-solid fa-circle-plus"></i> + Catat Pantauan
+          <button type="button" class="btn btn-sm" style="background: #10b981; color: #fff; font-weight: 800; border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; border: none; display: inline-flex; align-items: center; gap: 6px;" onclick="event.stopPropagation(); openModalInputPantauan('${cleanNik}', '${cleanNama}', '${cleanDept}', '${cleanHp}', true)" title="Catat Evaluasi Mingguan / Obat / Lab Terkunci untuk Pasien Ini">
+            <i class="fa-solid fa-lock"></i> + Catat Pantauan
           </button>
-          <button type="button" class="btn btn-sm" style="background: #0284c7; color: #fff; font-weight: 800; border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; border: none;" onclick="event.stopPropagation(); openModalRiwayatPantauan('${emp.nikPabrik || emp.namaPasien}')" title="Buka Riwayat Pemantauan Jangka Panjang">
+          <button type="button" class="btn btn-sm" style="background: #0284c7; color: #fff; font-weight: 800; border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; border: none;" onclick="event.stopPropagation(); openModalRiwayatPantauan('${cleanNik || cleanNama}')" title="Buka Riwayat Pemantauan Jangka Panjang">
             <i class="fa-solid fa-chart-line"></i> Riwayat Pantauan
           </button>
-          <button type="button" class="btn btn-sm btn-secondary" style="padding: 6px 12px; font-weight: 700; border-radius: 6px; font-size: 0.78rem;" onclick="event.stopPropagation(); openModalRiwayatPasien('${emp.nikPabrik || emp.namaPasien}')" title="Buka Riwayat Rekam Medis Lengkap">
+          <button type="button" class="btn btn-sm btn-secondary" style="padding: 6px 12px; font-weight: 700; border-radius: 6px; font-size: 0.78rem;" onclick="event.stopPropagation(); openModalRiwayatPasien('${cleanNik || cleanNama}')" title="Buka Riwayat Rekam Medis Lengkap">
             <i class="fa-solid fa-clock-rotate-left"></i> Rekam Medis
           </button>
           ${waBtn}
@@ -7743,7 +8020,13 @@ function renderHSEPasienPantauanTable() {
         </div>
       </div>
     </div>`;
-  }).join('');
+  }).filter(c => c !== '');
+
+  if (renderedCards.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Tidak ada data pasien yang sesuai dengan filter kategori ini</div>`;
+  } else {
+    container.innerHTML = renderedCards.join('');
+  }
 }
 
 function renderHSESurkesTable() {
@@ -10036,16 +10319,7 @@ function switchMobileNav(viewId, mobileBtn, fromMore = false) {
   // Close more menu
   if (fromMore) closeMobileMore();
 
-  if (viewId === 'view-obat-req') {
-    renderReqMedicineCatalog();
-  }
-  if (viewId === 'view-surat-luar') {
-    if (typeof renderSuratLuarTable === 'function') renderSuratLuarTable();
-    if (typeof initSuratLuarForm === 'function') initSuratLuarForm();
-  }
-  if (viewId === 'view-shift') {
-    if (typeof initShiftView === 'function') initShiftView();
-  }
+  renderActiveViewOnly(viewId);
 }
 
 function syncMobileNavHighlight(viewId, explicitBtn) {
@@ -10114,7 +10388,10 @@ function renderMobileKaryawanCards() {
     return;
   }
 
-  container.innerHTML = filtered.map((k, idx) => {
+  const displayLimit = query ? 60 : (_karyawanDisplayLimit || 40);
+  const itemsToRender = filtered.slice(0, displayLimit);
+
+  const cardsHtml = itemsToRender.map((k, idx) => {
     const no = k.no || String(idx + 1);
     const npk = k.nikPabrik || k.nik || '-';
     const nama = k.nama || '-';
@@ -10186,6 +10463,18 @@ function renderMobileKaryawanCards() {
         </div>
       </div>`;
   }).join('');
+
+  let loadMoreHtml = '';
+  if (filtered.length > displayLimit) {
+    loadMoreHtml = `
+      <div style="text-align:center; padding: 14px 6px; margin-top: 10px;">
+        <button type="button" class="btn btn-primary btn-block" onclick="loadMoreKaryawan()" style="font-weight: 700; padding: 10px; border-radius: 8px;">
+          <i class="fa-solid fa-angles-down"></i> Tampilkan Lebih Banyak (${itemsToRender.length}/${filtered.length})
+        </button>
+      </div>`;
+  }
+
+  container.innerHTML = cardsHtml + loadMoreHtml;
 }
 
 // =============================================================
@@ -10565,22 +10854,134 @@ setInterval(() => {
   }
 }, 30000);
 
+// ============================================================================
+// CLOUD VPS SYNCHRONIZATION (Integrasi VPS Cloudflare)
+// ============================================================================
+async function checkVpsCloudStatus() {
+  const btn = document.getElementById('btn-vps-cloud-sync');
+  const txt = document.getElementById('txt-vps-status');
+  const icon = document.getElementById('icon-vps-status');
+  if (!btn || !txt) return;
+
+  try {
+    const res = await fetch('/api/vps/status', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.online) {
+        btn.style.background = 'rgba(56,189,248,0.12)';
+        btn.style.borderColor = 'rgba(56,189,248,0.35)';
+        btn.style.color = '#38bdf8';
+        if (icon) { icon.className = 'fa-solid fa-cloud'; icon.style.color = '#38bdf8'; }
+        txt.textContent = `VPS Online (${data.latencyMs}ms)`;
+      } else {
+        btn.style.background = 'rgba(234,179,8,0.12)';
+        btn.style.borderColor = 'rgba(234,179,8,0.35)';
+        btn.style.color = '#facc15';
+        if (icon) { icon.className = 'fa-solid fa-cloud'; icon.style.color = '#facc15'; }
+        txt.textContent = 'VPS Standby';
+      }
+    }
+  } catch (e) {
+    btn.style.background = 'rgba(255,255,255,0.06)';
+    btn.style.borderColor = 'var(--border-color)';
+    btn.style.color = 'var(--text-muted)';
+    if (icon) { icon.className = 'fa-solid fa-laptop-code'; icon.style.color = 'var(--text-muted)'; }
+    txt.textContent = 'Mode Offline';
+  }
+}
+
+async function triggerManualVpsSync() {
+  const btn = document.getElementById('btn-vps-cloud-sync');
+  const txt = document.getElementById('txt-vps-status');
+  const icon = document.getElementById('icon-vps-status');
+
+  if (btn) btn.disabled = true;
+  if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+  if (txt) txt.textContent = 'Sinkronisasi...';
+
+  try {
+    showToast('☁️ Menghubungi Cloud VPS PT ATI...', 'info');
+    const res = await fetch('/api/vps/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`✅ Sinkronisasi VPS Berhasil! (Kirim: ${data.pushedCount || 0}, Terima: ${data.pulledCount || 0})`, 'success');
+      await loadAllAppData().catch(() => {});
+    } else {
+      showToast(`⚠️ Sinkronisasi VPS: ${data.error || 'Tidak dapat terhubung ke server VPS'}`, 'warning');
+    }
+  } catch (err) {
+    showToast('❌ Gagal sinkronisasi VPS. Pastikan koneksi internet aktif.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+    checkVpsCloudStatus();
+  }
+}
+
+// Check VPS status on load and periodically every 60s
+setTimeout(checkVpsCloudStatus, 3000);
+setInterval(checkVpsCloudStatus, 60000);
 
 // ============================================================================
-// 2. FORM POLI KONTROL AUTO-TOGGLE
+// 2. FORM POLI KONTROL AUTO-TOGGLE & SUB-OPSI PANTAUAN
 // ============================================================================
-function handlePoliCheckboxChange() {
-  const chkIzin = document.getElementById('poli-izin-sakit');
-  const chkPantauan = document.getElementById('poli-pantauan');
+function selectPoliPantauanTipe(tipe) {
   const chkKontrol = document.getElementById('poli-chk-kontrol');
   const fields = document.getElementById('poli-kontrol-fields');
   const hint = document.getElementById('badge-kontrol-auto-hint');
   const tglInput = document.getElementById('poli-tanggal-kontrol');
   const notesInput = document.getElementById('poli-catatan-kontrol');
 
+  if (chkKontrol) chkKontrol.checked = true;
+  if (fields) fields.style.display = 'grid';
+
+  const baseDate = new Date(document.getElementById('poli-tanggal-berobat')?.value || new Date());
+  let days = 7;
+  let label = '1 Minggu (Cek Vital & Gula)';
+  let notes = 'Kontrol rutin 1 minggu: evaluasi vital / tensi / gula darah';
+
+  if (tipe === 'obat') {
+    days = 30;
+    label = '1 Bulan (Ambil Obat Rutin)';
+    notes = 'Kontrol rutin 1 bulan: evaluasi & ambil obat rutin';
+  } else if (tipe === 'lab') {
+    days = 90;
+    label = '3 Bulan (Cek Lab Berkala)';
+    notes = 'Kontrol berkala 3 bulan: evaluasi & cek laboratorium';
+  }
+
+  baseDate.setDate(baseDate.getDate() + days);
+  const yyyy = baseDate.getFullYear();
+  const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(baseDate.getDate()).padStart(2, '0');
+  if (tglInput) tglInput.value = `${yyyy}-${mm}-${dd}`;
+  if (notesInput) notesInput.value = notes;
+  if (hint) hint.textContent = `Otomatis aktif: Pantauan ${label}`;
+}
+
+function handlePoliCheckboxChange() {
+  const chkIzin = document.getElementById('poli-izin-sakit');
+  const chkPantauan = document.getElementById('poli-pantauan');
+  const subOpts = document.getElementById('poli-pantauan-sub-options');
+  const chkKontrol = document.getElementById('poli-chk-kontrol');
+  const fields = document.getElementById('poli-kontrol-fields');
+  const hint = document.getElementById('badge-kontrol-auto-hint');
+  const tglInput = document.getElementById('poli-tanggal-kontrol');
+  const notesInput = document.getElementById('poli-catatan-kontrol');
+
+  if (subOpts) {
+    subOpts.style.display = (chkPantauan && chkPantauan.checked) ? 'block' : 'none';
+  }
+
   if (!chkKontrol || !fields) return;
 
-  if (chkIzin && chkIzin.checked) {
+  if (chkPantauan && chkPantauan.checked) {
+    const checkedRadio = document.querySelector('input[name="poli-tipe-pantauan"]:checked');
+    const selectedTipe = checkedRadio ? checkedRadio.value : 'mingguan';
+    selectPoliPantauanTipe(selectedTipe);
+  } else if (chkIzin && chkIzin.checked) {
     chkKontrol.checked = true;
     fields.style.display = 'grid';
     if (hint) hint.textContent = 'Otomatis aktif (Izin Sakit / Surkes)';
@@ -10593,20 +10994,6 @@ function handlePoliCheckboxChange() {
     if (tglInput) tglInput.value = `${yyyy}-${mm}-${dd}`;
     if (notesInput && !notesInput.value) {
       notesInput.value = 'Evaluasi kelayakan kerja pasca istirahat sakit';
-    }
-  } else if (chkPantauan && chkPantauan.checked) {
-    chkKontrol.checked = true;
-    fields.style.display = 'grid';
-    if (hint) hint.textContent = 'Otomatis aktif (Pasien Pantauan K3)';
-
-    const baseDate = new Date(document.getElementById('poli-tanggal-berobat')?.value || new Date());
-    baseDate.setDate(baseDate.getDate() + 7);
-    const yyyy = baseDate.getFullYear();
-    const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(baseDate.getDate()).padStart(2, '0');
-    if (tglInput) tglInput.value = `${yyyy}-${mm}-${dd}`;
-    if (notesInput && !notesInput.value) {
-      notesInput.value = 'Pemeriksaan berkala pasien pantauan K3 / DHSE';
     }
   }
 }
@@ -11517,9 +11904,48 @@ function renderWaChatList() {
     return;
   }
 
+function getWaChatDisplayName(chat) {
+  if (!chat) return 'Pasien';
+  let name = (chat.name || '').trim();
+  const phone = (chat.phone || '').trim();
+  const jid = (chat.jid || '').trim();
+
+  if (name && !name.toLowerCase().startsWith('petugas') && !name.startsWith('Pasien Baru')) {
+    return name;
+  }
+
+  // Cari dari appData.patients / appData.employees / appData.records
+  const cleanNum = phone.replace(/\D/g, '');
+  const suffix8 = cleanNum.length >= 8 ? cleanNum.slice(-8) : cleanNum;
+
+  if (suffix8 && suffix8.length >= 6) {
+    const list = [...(appData.patients || []), ...(appData.employees || [])];
+    const found = list.find(p => {
+      const pNum = (p.hp || p.noHp || p.telepon || p.no_hp || '').replace(/\D/g, '');
+      return pNum && (pNum.endsWith(suffix8) || suffix8.endsWith(pNum));
+    });
+    if (found && (found.nama || found.namaPasien)) {
+      return found.nama || found.namaPasien;
+    }
+
+    const rec = (appData.records || []).find(r => {
+      const rNum = (r.noHp || r.telepon || '').replace(/\D/g, '');
+      return rNum && (rNum.endsWith(suffix8) || suffix8.endsWith(rNum));
+    });
+    if (rec && rec.namaPasien) {
+      return rec.namaPasien;
+    }
+  }
+
+  // Jangan pernah tampilkan 'Petugas' sebagai nama pasien
+  if (phone) return `Pasien (${phone})`;
+  if (jid) return `Pasien (${jid.split('@')[0]})`;
+  return 'Pasien';
+}
+
   container.innerHTML = filtered.map(chat => {
     const isActive = chat.jid === activeWaChatJid;
-    const displayName = chat.name || chat.phone || chat.jid.split('@')[0];
+    const displayName = getWaChatDisplayName(chat);
     const initial = (displayName[0] || 'P').toUpperCase();
     const lastTime = chat.lastTimestamp ? formatChatTime(chat.lastTimestamp) : '';
     const unreadBadge = chat.unreadCount > 0 ? `
@@ -11571,7 +11997,7 @@ async function selectWaChat(jid) {
     const avatarEl = document.getElementById('wa-active-avatar');
     const btnPoli = document.getElementById('btn-wa-open-poli');
 
-    const displayName = chat.name || chat.phone || jid.split('@')[0];
+    const displayName = getWaChatDisplayName(chat);
     if (nameEl) nameEl.textContent = displayName;
     if (subEl) subEl.textContent = `${chat.phone || jid.split('@')[0]} &bull; Riwayat obrolan sinkron`;
     if (avatarEl) avatarEl.textContent = (displayName[0] || 'P').toUpperCase();
@@ -11934,7 +12360,15 @@ function cleanWhatsAppNumber(phone) {
 
 function formatChatTime(ts) {
   if (!ts) return '';
+  if (typeof ts === 'string') {
+    const s = ts.trim();
+    if (/^\d{1,2}[:.]\d{2}$/.test(s)) return s;
+    if (/^\d{1,2}\/\d{1,2}/.test(s)) return s;
+  }
   const d = new Date(ts);
+  if (isNaN(d.getTime())) {
+    return String(ts);
+  }
   const now = new Date();
   if (d.toDateString() === now.toDateString()) {
     return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });

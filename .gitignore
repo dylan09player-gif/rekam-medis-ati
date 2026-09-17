@@ -4,3 +4,7 @@ node_modules/
 data/
 node.exe
 *.zip
+*backup*.json
+merged_db.json
+pure_vps_clean.json
+fix_stat.py

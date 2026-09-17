@@ -188,7 +188,7 @@ class WhatsAppService {
           const messageId = m.key.id;
 
           let senderPhone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
-          let senderName = isFromMe ? 'Petugas' : (m.pushName || ('Pasien ' + senderPhone.slice(-4)));
+          let senderName = (!isFromMe && m.pushName) ? m.pushName : (m.pushName || '');
 
           const actualMsg = m.message.ephemeralMessage?.message ||
                             m.message.viewOnceMessage?.message ||

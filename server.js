@@ -101,6 +101,80 @@ function saveKontrolPasien(list) {
   }
 }
 
+// Helper ekstraksi dan pencocokan nama asli pasien WhatsApp
+function resolvePatientInfo(phone, rawJid, text, fallbackName) {
+  let db = {};
+  try { db = readDB(); } catch (e) {}
+  const pool = [...(db.employees || []), ...(db.patients || [])];
+  const allRecords = db.records || [];
+
+  const cleanDigits = (phone || '').replace(/\D/g, '');
+  const suffix8 = cleanDigits.length >= 8 ? cleanDigits.slice(-8) : cleanDigits;
+
+  // 1. Cek kecocokan nomor HP di data master karyawan / pasien
+  if (suffix8 && suffix8.length >= 6) {
+    const found = pool.find(p => {
+      const pDigits = (p.hp || p.noHp || p.telepon || p.no_hp || '').replace(/\D/g, '');
+      return pDigits && (pDigits.endsWith(suffix8) || suffix8.endsWith(pDigits));
+    });
+    if (found && found.nama) {
+      return {
+        nama: found.nama,
+        nikPabrik: found.nikPabrik || found.nik || '',
+        dept: found.dept || found.departemen || '-'
+      };
+    }
+
+    // Cek di riwayat rekam medis
+    const recFound = allRecords.find(r => {
+      const rDigits = (r.noHp || r.telepon || '').replace(/\D/g, '');
+      return rDigits && (rDigits.endsWith(suffix8) || suffix8.endsWith(rDigits));
+    });
+    if (recFound && recFound.namaPasien) {
+      return {
+        nama: recFound.namaPasien,
+        nikPabrik: recFound.nikPabrik || '',
+        dept: recFound.dept || '-'
+      };
+    }
+  }
+
+  // 2. Ekstraksi dari teks jika ada sapaan/nama dalam pesan
+  if (text && typeof text === 'string') {
+    const mGreeting = text.match(/(?:Halo rekan|Halo sdr\/i|Halo sdr|Halo pak\/bu|Halo)\s+([A-Za-z0-9\s.]+?)(?:\s*\(|,|\.|\n|$)/i);
+    if (mGreeting && mGreeting[1] && mGreeting[1].trim().length >= 3 && !mGreeting[1].toLowerCase().includes('petugas')) {
+      return {
+        nama: mGreeting[1].trim(),
+        nikPabrik: '',
+        dept: '-'
+      };
+    }
+    const cleanTextUpper = text.trim().toUpperCase();
+    if (cleanTextUpper.length >= 3 && cleanTextUpper.length <= 35) {
+      const matchEmp = pool.find(p => (p.nama || '').trim().toUpperCase() === cleanTextUpper);
+      if (matchEmp) {
+        return {
+          nama: matchEmp.nama,
+          nikPabrik: matchEmp.nikPabrik || matchEmp.nik || '',
+          dept: matchEmp.dept || matchEmp.departemen || '-'
+        };
+      }
+    }
+  }
+
+  // 3. Gunakan fallback name hanya jika bukan 'Petugas'
+  if (fallbackName && !fallbackName.toLowerCase().startsWith('petugas') && !fallbackName.startsWith('Pasien Baru')) {
+    return { nama: fallbackName, nikPabrik: '', dept: '-' };
+  }
+
+  const displayPhone = phone ? (phone.startsWith('62') ? '0' + phone.slice(2) : phone) : '';
+  return {
+    nama: displayPhone ? `Pasien (${displayPhone})` : 'Pasien',
+    nikPabrik: '',
+    dept: '-'
+  };
+}
+
 // Hubungkan WhatsApp Service ke Socket.io
 whatsappService.setSocketIO(io);
 
@@ -125,22 +199,16 @@ whatsappService.setOnMessageReceived(async (sessionType, msgData) => {
     return false;
   });
 
-  const db = readDB();
-  const allPatients = db.employees || db.patients || [];
+  const resolved = resolvePatientInfo(formattedPhone || senderPhone, rawJid, text, (!isFromMe && senderName) ? senderName : '');
 
   if (!session) {
-    const regPatient = allPatients.find(p => {
-      const pDigits = (p.hp || p.noHp || p.telepon || '').replace(/\D/g, '');
-      return (suffix8 && pDigits.endsWith(suffix8)) || (p.nama && p.nama.toLowerCase() === senderName.toLowerCase());
-    });
-
     session = {
       id: 'CHAT-' + Date.now(),
-      patientId: regPatient ? (regPatient.nikPabrik || regPatient.nik || regPatient.id) : ('PAS-' + Date.now().toString().slice(-4)),
-      patientName: regPatient ? regPatient.nama : senderName,
+      patientId: resolved.nikPabrik || ('PAS-' + Date.now().toString().slice(-4)),
+      patientName: resolved.nama,
       patientPhone: formattedPhone || senderPhone,
-      nikPabrik: regPatient ? (regPatient.nikPabrik || regPatient.nik || '') : '',
-      dept: regPatient ? (regPatient.dept || regPatient.departemen || '') : '',
+      nikPabrik: resolved.nikPabrik || '',
+      dept: resolved.dept || '',
       rawJid: rawJid,
       sessionType: sessionType,
       updatedAt: Date.now(),
@@ -152,8 +220,13 @@ whatsappService.setOnMessageReceived(async (sessionType, msgData) => {
     if (rawJid && (!session.rawJid || session.rawJid.includes('@lid'))) {
       session.rawJid = rawJid;
     }
-    if (!isFromMe && senderName && session.patientName.startsWith('Pasien ')) {
-      session.patientName = senderName;
+    // Perbaiki nama jika sebelumnya 'Petugas' atau default
+    if (!session.patientName || session.patientName.toLowerCase().startsWith('petugas') || session.patientName.startsWith('Pasien ')) {
+      if (resolved.nama && !resolved.nama.toLowerCase().startsWith('petugas')) {
+        session.patientName = resolved.nama;
+        if (resolved.nikPabrik) session.nikPabrik = resolved.nikPabrik;
+        if (resolved.dept) session.dept = resolved.dept;
+      }
     }
     if (!isFromMe) {
       session.unreadCount = (session.unreadCount || 0) + 1;
@@ -215,109 +288,130 @@ const DEFAULT_TINDAKAN = [
   { id: 'TND-10', nama: 'Ekstraksi Benda Asing / Korpus Alienum', tarif: 50000, kategori: 'Tindakan Medis' }
 ];
 
+let _dbCache = null;
+let _dbLastMtime = 0;
+
+function initDBOnce(data) {
+  let modified = false;
+  if (!Array.isArray(data.users) || data.users.length === 0) {
+    data.users = [...DEFAULT_USERS];
+    modified = true;
+  } else {
+    data.users.forEach(u => {
+      if (!u.noWa) {
+        if (u.username === 'dr.dylan') u.noWa = '081291868456';
+        else if (u.username === 'dr.medika') u.noWa = '081234567890';
+        else if (u.username === 'perawat') u.noWa = '089651512933';
+        else u.noWa = '';
+        modified = true;
+      }
+    });
+  }
+  if (!Array.isArray(data.tindakan) || data.tindakan.length === 0) {
+    data.tindakan = [...DEFAULT_TINDAKAN];
+    modified = true;
+  }
+  if (!Array.isArray(data.surat_sakit_luar)) {
+    data.surat_sakit_luar = [];
+    modified = true;
+  }
+
+  // Auto-enrich master WHO ICD-10 dataset
+  const masterIcdFile = path.join(__dirname, 'icd10_master.json');
+  if (fs.existsSync(masterIcdFile)) {
+    try {
+      const masterList = JSON.parse(fs.readFileSync(masterIcdFile, 'utf8'));
+      if (Array.isArray(masterList) && masterList.length > 0) {
+        if (!Array.isArray(data.icd10) || data.icd10.length < masterList.length) {
+          const currentCodes = new Set((data.icd10 || []).map(i => (i.code || i.kode || '').trim().toUpperCase()));
+          data.icd10 = data.icd10 || [];
+          let addedCount = 0;
+          masterList.forEach(m => {
+            const code = (m.code || '').trim().toUpperCase();
+            if (code && !currentCodes.has(code)) {
+              data.icd10.push({ id: `ICD-${data.icd10.length}`, code: m.code, description: m.description });
+              currentCodes.add(code);
+              addedCount++;
+            }
+          });
+          if (addedCount > 0) modified = true;
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Auto-enrich master 1,142 employees dataset
+  const masterEmpFile = path.join(__dirname, 'employees_master.json');
+  if (fs.existsSync(masterEmpFile)) {
+    try {
+      const masterEmps = JSON.parse(fs.readFileSync(masterEmpFile, 'utf8'));
+      if (Array.isArray(masterEmps) && masterEmps.length > 0) {
+        if (!Array.isArray(data.employees) || data.employees.length === 0) {
+          data.employees = [...masterEmps];
+          data.patients = [...masterEmps];
+          modified = true;
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Optimize DB: Migrate embedded base64 images in records to physical files in uploads/
+  if (Array.isArray(data.records)) {
+    data.records.forEach((r, idx) => {
+      if (r.linkFoto && typeof r.linkFoto === 'string' && r.linkFoto.startsWith('data:image')) {
+        try {
+          const matches = r.linkFoto.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+          if (matches) {
+            const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+            const buffer = Buffer.from(matches[2], 'base64');
+            const fileName = `foto_rm_${r.id || idx}_${Date.now()}.${ext}`;
+            fs.writeFileSync(path.join(UPLOADS_DIR, fileName), buffer);
+            r.linkFoto = `/uploads/${fileName}`;
+            modified = true;
+            console.log(`📦 [DB Optimization] Migrated record ${r.id} base64 image to /uploads/${fileName}`);
+          }
+        } catch (imgErr) {
+          console.warn('[DB Optimization] Failed to migrate image:', imgErr.message);
+        }
+      }
+    });
+  }
+
+  return modified;
+}
+
 function readDB() {
   try {
     if (!fs.existsSync(DB_FILE)) return {};
+    const stat = fs.statSync(DB_FILE);
+
+    // Fast-path: return in-memory cache if valid and file hasn't changed on disk
+    if (_dbCache && stat.mtimeMs <= _dbLastMtime) {
+      return _dbCache;
+    }
+
     const content = fs.readFileSync(DB_FILE, 'utf8');
     const data = JSON.parse(content);
-    let modified = false;
-    if (!Array.isArray(data.users) || data.users.length === 0) {
-      data.users = [...DEFAULT_USERS];
-      modified = true;
+
+    // Initial load / startup enrichment
+    if (!_dbCache) {
+      const wasModified = initDBOnce(data);
+      if (wasModified) {
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+        const newStat = fs.statSync(DB_FILE);
+        _dbLastMtime = newStat.mtimeMs;
+      } else {
+        _dbLastMtime = stat.mtimeMs;
+      }
     } else {
-      data.users.forEach(u => {
-        if (!u.noWa) {
-          if (u.username === 'dr.dylan') u.noWa = '081291868456';
-          else if (u.username === 'dr.medika') u.noWa = '081234567890';
-          else if (u.username === 'perawat') u.noWa = '089651512933';
-          else u.noWa = '';
-          modified = true;
-        }
-      });
-    }
-    if (!Array.isArray(data.tindakan) || data.tindakan.length === 0) {
-      data.tindakan = [...DEFAULT_TINDAKAN];
-      modified = true;
-    }
-    if (!Array.isArray(data.surat_sakit_luar)) {
-      data.surat_sakit_luar = [];
-      modified = true;
-    }
-    
-    // Auto-enrich / seed master WHO ICD-10 dataset
-    const masterIcdFile = path.join(__dirname, 'icd10_master.json');
-    if (fs.existsSync(masterIcdFile)) {
-      try {
-        const masterList = JSON.parse(fs.readFileSync(masterIcdFile, 'utf8'));
-        if (Array.isArray(masterList) && masterList.length > 0) {
-          if (!Array.isArray(data.icd10) || data.icd10.length < masterList.length) {
-            const currentCodes = new Set((data.icd10 || []).map(i => (i.code || i.kode || '').trim().toUpperCase()));
-            let addedCount = 0;
-            data.icd10 = data.icd10 || [];
-            masterList.forEach(m => {
-              const code = (m.code || '').trim().toUpperCase();
-              if (code && !currentCodes.has(code)) {
-                data.icd10.push({
-                  id: `ICD-${data.icd10.length}`,
-                  code: m.code,
-                  description: m.description
-                });
-                currentCodes.add(code);
-                addedCount++;
-              }
-            });
-            if (addedCount > 0 || data.icd10.length === masterList.length) {
-              modified = true;
-            }
-          }
-        }
-      } catch (e) {}
+      _dbLastMtime = stat.mtimeMs;
     }
 
-    // Auto-enrich master 1,142 employees dataset (with rich Section, BirthPlace, GolDarah, SaldoObat, 5-digit NPK)
-    const masterEmpFile = path.join(__dirname, 'employees_master.json');
-    if (fs.existsSync(masterEmpFile)) {
-      try {
-        const masterEmps = JSON.parse(fs.readFileSync(masterEmpFile, 'utf8'));
-        if (Array.isArray(masterEmps) && masterEmps.length > 0) {
-          const empMap = new Map();
-          masterEmps.forEach(m => {
-            const k1 = String(m.nikPabrik || m.nik || '').trim().replace(/^0+/, '');
-            const k2 = String(m.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (k1) empMap.set(k1, m);
-            if (k2) empMap.set(k2, m);
-          });
-
-          if (!Array.isArray(data.employees) || data.employees.length === 0) {
-            data.employees = [...masterEmps];
-            data.patients = [...masterEmps];
-            modified = true;
-          } else {
-            data.employees.forEach(e => {
-              const k1 = String(e.nikPabrik || e.nik || '').trim().replace(/^0+/, '');
-              const k2 = String(e.nama || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-              const m = (k1 && empMap.get(k1)) || (k2 && empMap.get(k2));
-              if (m) {
-                if (m.nikPabrik && e.nikPabrik !== m.nikPabrik) { e.nikPabrik = m.nikPabrik; e.nik = m.nikPabrik; modified = true; }
-                if (m.sectionName && e.sectionName !== m.sectionName) { e.sectionName = m.sectionName; modified = true; }
-                if (m.birthPlace && e.birthPlace !== m.birthPlace) { e.birthPlace = m.birthPlace; modified = true; }
-                if (m.golDarah && m.golDarah !== '-' && e.golDarah !== m.golDarah) { e.golDarah = m.golDarah; modified = true; }
-                if (m.saldoObat && e.saldoObat !== m.saldoObat) { e.saldoObat = m.saldoObat; modified = true; }
-                if (m.hp && e.hp !== m.hp) { e.hp = m.hp; e.no_hp = m.hp; modified = true; }
-              }
-            });
-          }
-        }
-      } catch (e) {}
-    }
-
-    if (modified) {
-      try { fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2)); } catch (e) {}
-    }
-    return data;
+    _dbCache = data;
+    return _dbCache;
   } catch (err) {
     console.error('Error reading DB:', err);
-    return {};
+    return _dbCache || {};
   }
 }
 
@@ -338,7 +432,10 @@ function notifyClients() {
 
 function writeDB(data) {
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    _dbCache = data;
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+    const stat = fs.statSync(DB_FILE);
+    _dbLastMtime = stat.mtimeMs;
     notifyClients();
   } catch (err) {
     console.error('Error writing DB:', err);
@@ -1184,7 +1281,7 @@ function scheduleDaily3AMBackup() {
 
 scheduleDaily3AMBackup();
 
-// Upload foto/dokumen rekam medis ke Google Drive via Apps Script
+// Upload foto/dokumen rekam medis ke Google Drive via Apps Script atau penyimpanan disk lokal
 app.post('/api/upload-foto', async (req, res) => {
   const db = readDB();
   const gsheetUrl = db.settings?.gsheet_url;
@@ -1194,7 +1291,23 @@ app.post('/api/upload-foto', async (req, res) => {
     return res.status(400).json({ error: 'Data file tidak valid' });
   }
 
-  // Jika ada Google Apps Script URL, kirim file ke Google Drive!
+  // Helper untuk menyimpan base64 ke folder uploads/ lokal agar db.json tidak membengkak
+  const saveToLocalUploads = () => {
+    try {
+      const matches = String(fileData).match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+      const ext = matches ? (matches[1] === 'jpeg' ? 'jpg' : matches[1]) : (path.extname(fileName || '') || '.jpg').replace('.', '');
+      const rawData = matches ? matches[2] : fileData;
+      const buffer = Buffer.from(rawData, 'base64');
+      const safeName = `foto_rm_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
+      fs.writeFileSync(path.join(UPLOADS_DIR, safeName), buffer);
+      return `/uploads/${safeName}`;
+    } catch (e) {
+      console.error('Error saving uploaded file locally:', e);
+      return fileData;
+    }
+  };
+
+  // Jika ada Google Apps Script URL, coba kirim ke Google Drive terlebih dahulu
   if (gsheetUrl) {
     try {
       const payload = JSON.stringify({
@@ -1223,13 +1336,13 @@ app.post('/api/upload-foto', async (req, res) => {
               return res.json({ success: true, fileUrl: parsed.fileUrl });
             }
           } catch(e) {}
-          // Fallback return base64
-          res.json({ success: true, fileUrl: fileData });
+          // Fallback lokal disk
+          res.json({ success: true, fileUrl: saveToLocalUploads() });
         });
       });
 
       pushReq.on('error', (e) => {
-        res.json({ success: true, fileUrl: fileData });
+        res.json({ success: true, fileUrl: saveToLocalUploads() });
       });
 
       pushReq.write(payload);
@@ -1240,8 +1353,8 @@ app.post('/api/upload-foto', async (req, res) => {
     }
   }
 
-  // Fallback if no GSheet URL set
-  res.json({ success: true, fileUrl: fileData });
+  // Fallback lokal jika GSheet tidak diatur
+  res.json({ success: true, fileUrl: saveToLocalUploads() });
 });
 
 // Push all master data & records to Google Sheets (One-Click On-Demand)
@@ -1794,7 +1907,9 @@ app.get('/api/stock-mutations', (req, res) => {
     mutations = mutations.filter(m => m.type === type);
   }
 
-  res.json(mutations);
+  // Default limit 200 items to prevent massive 600+ KB payloads on regular loads
+  const limit = req.query.limit ? (req.query.limit === 'all' ? mutations.length : parseInt(req.query.limit)) : 200;
+  res.json(mutations.slice(0, limit));
 });
 
 // ============================================================
@@ -2246,13 +2361,79 @@ app.post('/api/records', (req, res) => {
     }
   }
 
-  // 4. Mark as pantauan if flagged (Deduplicate per employee)
+  // 4. Mark as pantauan if flagged (Deduplicate per employee & record to db.pantauan_records)
   if (newRecord.isPantauan) {
     if (!db.pantauan) db.pantauan = [];
+    if (!db.pantauan_records) db.pantauan_records = [];
+
     const existIdx = db.pantauan.findIndex(p => 
       (p.nikPabrik && p.nikPabrik === newRecord.nikPabrik) || 
       (p.namaPasien && p.namaPasien.toLowerCase() === newRecord.namaPasien.toLowerCase())
     );
+
+    const bpMatch = String(newRecord.objektif || '').match(/(?:TD|Tensi|BP)?[\s:]*(\d{2,3})\s*[\/]\s*(\d{2,3})/i);
+    const gdsMatch = String(newRecord.objektif || '').match(/(?:GDS|GDP|Gula)[\s:]*(\d{2,3})/i);
+    const auMatch = String(newRecord.objektif || '').match(/(?:AU|Asam\s*Urat)[\s:]*([\d\.]+)/i);
+    const kolMatch = String(newRecord.objektif || '').match(/(?:Kol|Kolesterol)[\s:]*(\d{2,3})/i);
+
+    const curSis = bpMatch ? parseInt(bpMatch[1]) : null;
+    const curDia = bpMatch ? parseInt(bpMatch[2]) : null;
+    const curGds = gdsMatch ? parseInt(gdsMatch[1]) : null;
+    const curAu = auMatch ? parseFloat(auMatch[1]) : null;
+    const curKol = kolMatch ? parseInt(kolMatch[1]) : null;
+
+    let statusTensi = 'Normal';
+    if (curSis >= 160 || curDia >= 100) statusTensi = 'Hipertensi Tk 2';
+    else if (curSis >= 140 || curDia >= 90) statusTensi = 'Hipertensi Tk 1';
+    else if (curSis >= 130 || curDia >= 85) statusTensi = 'Pre-Hipertensi';
+    else if (curSis && curSis < 90) statusTensi = 'Hipotensi';
+
+    const tipeP = newRecord.tipePantauan || 'mingguan';
+    const tglKontrol = newRecord.tanggalKontrol || '';
+
+    const pntRecord = {
+      id: 'PNT-' + Date.now(),
+      nikPabrik: newRecord.nikPabrik || '',
+      namaPasien: newRecord.namaPasien,
+      dept: newRecord.dept || '-',
+      noHp: newRecord.noHp || '',
+      tanggal: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
+      jam: newRecord.jam || new Date().toLocaleTimeString('id-ID'),
+      rawTime: Date.now(),
+      pemeriksa: newRecord.pemeriksa || 'Dokter Poli',
+      keluhan: newRecord.keluhan || '-',
+      mingguan: {
+        tensiSistol: curSis,
+        tensiDiastol: curDia,
+        statusTensi,
+        gulaDarah: curGds,
+        tipeGula: 'GDS',
+        asamUrat: curAu,
+        kolesterol: curKol,
+        jadwalBerikutnya: (tipeP === 'mingguan' ? tglKontrol : null)
+      },
+      obatBulanan: {
+        ambilObat: (tipeP === 'obat') || (Array.isArray(newRecord.resep) && newRecord.resep.length > 0),
+        daftarObat: Array.isArray(newRecord.resep) ? newRecord.resep.map(r => ({
+          nama: r.namaObat || r.obat,
+          jumlah: r.qty || 1,
+          aturan: r.aturan || 'Sesuai resep'
+        })) : [],
+        catatanObat: tipeP === 'obat' ? (newRecord.catatanKontrol || 'Pengambilan obat rutin poli') : '',
+        jadwalAmbilBerikutnya: (tipeP === 'obat' ? tglKontrol : null)
+      },
+      lab3Bulan: {
+        adaCekLab: (tipeP === 'lab'),
+        tanggalLab: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
+        jadwalLabBerikutnya: (tipeP === 'lab' ? tglKontrol : null)
+      },
+      catatanDokter: newRecord.catatanKontrol || newRecord.plan || '',
+      waSent: false,
+      waSentAt: null
+    };
+
+    db.pantauan_records.unshift(pntRecord);
+
     const pantauanItem = {
       id: existIdx !== -1 ? db.pantauan[existIdx].id : ('PP-' + Date.now()),
       nikPabrik: newRecord.nikPabrik,
@@ -2261,7 +2442,12 @@ app.post('/api/records', (req, res) => {
       keluhan: newRecord.keluhan,
       asesmen: newRecord.asesmen,
       status: 'AKTIF',
-      tanggal: newRecord.tanggal || new Date().toLocaleDateString('id-ID')
+      tanggal: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
+      noHp: newRecord.noHp || (existIdx !== -1 ? db.pantauan[existIdx].noHp : ''),
+      lastCheck: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
+      jadwalMingguan: (tipeP === 'mingguan' && tglKontrol) ? tglKontrol : (existIdx !== -1 ? db.pantauan[existIdx].jadwalMingguan : null),
+      jadwalObatBulanan: (tipeP === 'obat' && tglKontrol) ? tglKontrol : (existIdx !== -1 ? db.pantauan[existIdx].jadwalObatBulanan : null),
+      jadwalLab3Bulan: (tipeP === 'lab' && tglKontrol) ? tglKontrol : (existIdx !== -1 ? db.pantauan[existIdx].jadwalLab3Bulan : null)
     };
     if (existIdx !== -1) {
       db.pantauan[existIdx] = pantauanItem;
@@ -3377,6 +3563,8 @@ app.post('/api/wa/qr', async (req, res) => {
 app.get('/api/wa/chats', (req, res) => {
   const sessionType = req.query.sessionType || req.query.sessionName || 'klinik';
   const chats = chatSessions.filter(c => !sessionType || c.sessionType === sessionType);
+  let hasChanges = false;
+
   const formatted = chats.map(c => {
     const lastMsg = (c.messages && c.messages.length > 0) ? c.messages[c.messages.length - 1] : null;
     const phone = c.patientPhone || '';
@@ -3384,11 +3572,28 @@ app.get('/api/wa/chats', (req, res) => {
     const cleanPhoneForWA = cleanNum.startsWith('0') ? ('62' + cleanNum.slice(1)) : cleanNum;
     const jid = c.rawJid || (cleanPhoneForWA ? `${cleanPhoneForWA}@s.whatsapp.net` : `chat_${c.id}@s.whatsapp.net`);
 
+    // Perbaiki jika nama masih 'Petugas' atau default
+    if (!c.patientName || c.patientName.toLowerCase().startsWith('petugas') || c.patientName.startsWith('Pasien ')) {
+      const allText = (c.messages || []).map(m => m.text || '').join(' ');
+      const resolved = resolvePatientInfo(phone, c.rawJid, allText, c.patientName);
+      if (resolved && resolved.nama && !resolved.nama.toLowerCase().startsWith('petugas')) {
+        c.patientName = resolved.nama;
+        if (resolved.nikPabrik && !c.nikPabrik) c.nikPabrik = resolved.nikPabrik;
+        if (resolved.dept && (!c.dept || c.dept === '-')) c.dept = resolved.dept;
+        hasChanges = true;
+      }
+    }
+
+    let finalDisplayName = c.patientName;
+    if (!finalDisplayName || finalDisplayName.toLowerCase().startsWith('petugas')) {
+      finalDisplayName = phone ? `Pasien (${phone})` : (jid ? jid.split('@')[0] : 'Pasien');
+    }
+
     return {
       ...c,
       id: c.id,
       jid: jid,
-      name: c.patientName || `Pasien ${phone.slice(-4)}`,
+      name: finalDisplayName,
       phone: phone,
       lastMessage: lastMsg ? (lastMsg.text || (lastMsg.mediaType === 'image' ? '[Foto]' : '[Berkas Dokumen]')) : '',
       lastTimestamp: c.updatedAt || (lastMsg ? lastMsg.rawTime : Date.now()),
@@ -3399,6 +3604,11 @@ app.get('/api/wa/chats', (req, res) => {
       }))
     };
   });
+
+  if (hasChanges) {
+    try { saveChatSessions(chatSessions); } catch (e) {}
+  }
+
   res.json(formatted);
 });
 
@@ -3475,11 +3685,14 @@ app.post('/api/wa/send', waUpload.single('file'), async (req, res) => {
   const rawJid = targetDest.includes('@') ? targetDest : `${cleanDigits.replace(/^0/, '62')}@s.whatsapp.net`;
 
   if (!session) {
+    const resolved = resolvePatientInfo(cleanDigits || targetDest, rawJid, text, req.body.patientName);
     session = {
       id: 'CHAT-' + Date.now(),
-      patientId: 'PAS-' + Date.now().toString().slice(-4),
-      patientName: req.body.patientName || ('Pasien ' + (cleanDigits ? cleanDigits.slice(-4) : 'Baru')),
+      patientId: resolved.nikPabrik || ('PAS-' + Date.now().toString().slice(-4)),
+      patientName: req.body.patientName || resolved.nama,
       patientPhone: cleanDigits || targetDest,
+      nikPabrik: resolved.nikPabrik || '',
+      dept: resolved.dept || '',
       rawJid: rawJid,
       sessionType: sessionType,
       updatedAt: Date.now(),
@@ -3490,6 +3703,14 @@ app.post('/api/wa/send', waUpload.single('file'), async (req, res) => {
   } else {
     if (!session.rawJid || session.rawJid.includes('@lid')) {
       session.rawJid = rawJid;
+    }
+    if (req.body.patientName) {
+      session.patientName = req.body.patientName;
+    } else if (!session.patientName || session.patientName.toLowerCase().startsWith('petugas')) {
+      const resolved = resolvePatientInfo(cleanDigits || targetDest, rawJid, text, session.patientName);
+      if (resolved && resolved.nama && !resolved.nama.toLowerCase().startsWith('petugas')) {
+        session.patientName = resolved.nama;
+      }
     }
     session.updatedAt = Date.now();
     session.messages.push(newMsg);
@@ -3798,51 +4019,229 @@ function buildPantauanWaMessage(r) {
   return text;
 }
 
-// Background Cron Scheduler: Pengingat Otomatis WhatsApp Pasien Pantauan
-// Mengecek jadwal kontrol/evaluasi yang jatuh tempo (H-1 / H-2) dan mengirim WA secara mandiri
-let lastAutoReminderDay = '';
+// ============================================================
+// INTEGRASI VPS CLOUDFLARE & AUTO-REMINDER WA H-1 JADWAL KONTROL
+// ============================================================
+let VPS_CONFIG = {
+  vps_url: "https://planet-enforcement-lan-newspaper.trycloudflare.com",
+  mode: "auto"
+};
+
+function getVpsConfig() {
+  try {
+    const cfgPath = path.join(__dirname, 'config.json');
+    if (fs.existsSync(cfgPath)) {
+      const parsed = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+      if (parsed.vps_url) VPS_CONFIG.vps_url = parsed.vps_url.replace(/\/+$/, '');
+      if (parsed.mode) VPS_CONFIG.mode = parsed.mode;
+    }
+  } catch (e) {}
+  return VPS_CONFIG;
+}
+
+// Background Cron Scheduler: Pengingat Otomatis WhatsApp Pasien Kontrol & Pantauan
+// Strictly sent 1 day before control (H-1) or day-of if morning (Jam 08:00 - 10:00 WIB)
+let lastAutoReminderCheckTime = 0;
 setInterval(async () => {
   try {
     const now = new Date();
+    if (Date.now() - lastAutoReminderCheckTime < 15 * 60 * 1000) return;
+    lastAutoReminderCheckTime = Date.now();
+
     const todayStr = now.toISOString().slice(0, 10);
-    const hour = now.getHours();
+    const besokDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const besokStr = besokDate.toISOString().slice(0, 10);
 
-    // Jalankan satu kali sehari di pagi hari jam 08:00 - 09:00 WIB
-    if (hour >= 8 && hour <= 10 && lastAutoReminderDay !== todayStr) {
-      lastAutoReminderDay = todayStr;
-      const db = readDB();
-      const pantauan = db.pantauan || [];
+    const db = readDB();
+    const empList = db.employees || db.patients || [];
+    let kontrolList = loadKontrolPasien();
+    let kontrolUpdated = false;
 
-      for (const p of pantauan) {
-        if (p.status !== 'AKTIF' || !p.noHp) continue;
+    // 1. Cek Jadwal Kontrol dari Pasien Poli & Surkes & Pantauan (kontrol_pasien.json)
+    for (const k of kontrolList) {
+      if (k.status !== 'MENUNGGU' || k.waReminderSent) continue;
+      const tgl = String(k.tanggalKontrol || '').trim();
+      if (!tgl) continue;
 
-        // Cek jika ada jadwal mingguan besok (H-1)
-        const besok = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        if (p.jadwalMingguan === besok || p.jadwalMingguan === todayStr) {
-          const reminderMsg = `🔔 *PENGINGAT CEK KESEHATAN MINGGUAN KLINIK PT ATI*\n\nHalo Rekan *${p.namaPasien}*,\nMengingatkan jadwal pemeriksaan tensi darah dan evaluasi rutin mingguan Anda di Klinik PT ATI pada *${p.jadwalMingguan}*.\n\nMohon luangkan waktu untuk singgah ke klinik. Terima kasih!\n_Tim Medis & HSE PT ATI_`;
-          await whatsappService.sendWhatsAppMessage('klinik', p.noHp, reminderMsg);
-          await new Promise(r => setTimeout(r, 2000));
+      const isHMinus1 = (tgl === besokStr);
+      const isToday = (tgl === todayStr);
+
+      if (isHMinus1 || isToday) {
+        let destHp = k.noHp || k.noHpPasien || '';
+        if (!destHp && Array.isArray(empList)) {
+          const emp = empList.find(e => 
+            (e.nikPabrik && k.nikPabrik && String(e.nikPabrik).toLowerCase() === String(k.nikPabrik).toLowerCase()) ||
+            (e.nama && k.namaPasien && e.nama.toLowerCase() === k.namaPasien.toLowerCase())
+          );
+          if (emp) destHp = emp.hp || emp.noHp || emp.telepon || '';
         }
 
-        // Cek jika jadwal obat jatuh tempo
-        if (p.jadwalObatBulanan === besok || p.jadwalObatBulanan === todayStr) {
-          const medMsg = `💊 *PENGINGAT AMBIL OBAT RUTIN KLINIK PT ATI*\n\nHalo Rekan *${p.namaPasien}*,\nJadwal pengambilan obat rutin bulanan Anda jatuh tempo pada *${p.jadwalObatBulanan}*.\n\nSilakan ambil resep obat rutin Anda di Klinik PT ATI agar terapi tetap berkesinambungan.\n_Tim Medis & HSE PT ATI_`;
-          await whatsappService.sendWhatsAppMessage('klinik', p.noHp, medMsg);
-          await new Promise(r => setTimeout(r, 2000));
-        }
+        if (destHp) {
+          const waktuKet = isHMinus1 ? 'Besok' : 'Hari Ini';
+          let reminderMsg = '';
+          if (k.isIzinSakit) {
+            reminderMsg = `🔔 *PENGINGAT KONTROL EVALUASI KERJA KLINIK PT ATI*\n\nHalo Rekan *${k.namaPasien}* (${k.nikPabrik || '-'}),\n\nMengingatkan jadwal kontrol evaluasi pasca istirahat sakit Anda di Klinik PT ATI adalah *${waktuKet}* (*${k.tanggalKontrol}*).\n📋 Catatan: ${k.catatanKontrol || 'Evaluasi kebugaran kerja'}\n\nSilakan datang ke klinik untuk pemeriksaan Fit to Work. Terima kasih!\n_Tim Medis & HSE PT ATI_`;
+          } else if (k.isPantauan) {
+            reminderMsg = `🔔 *PENGINGAT PEMANTAUAN KESEHATAN (K3) KLINIK PT ATI*\n\nHalo Rekan *${k.namaPasien}* (${k.nikPabrik || '-'}),\n\nMengingatkan jadwal pemeriksaan & pemantauan kesehatan rutin Anda di Klinik PT ATI adalah *${waktuKet}* (*${k.tanggalKontrol}*).\n📋 Evaluasi: ${k.catatanKontrol || 'Pemeriksaan tensi & evaluasi berkala'}\n\nMohon luangkan waktu singgah ke klinik. Terima kasih!\n_Tim Medis & HSE PT ATI_`;
+          } else {
+            reminderMsg = `🔔 *PENGINGAT JADWAL KONTROL BEROBAT KLINIK PT ATI*\n\nHalo Rekan *${k.namaPasien}* (${k.nikPabrik || '-'}),\n\nMengingatkan jadwal kontrol pengobatan Anda di Klinik PT ATI adalah *${waktuKet}* (*${k.tanggalKontrol}*).\n📋 Catatan: ${k.catatanKontrol || 'Evaluasi lanjutan pengobatan'}\n\nMohon hadir sesuai jadwal. Terima kasih!\n_Tim Medis & HSE PT ATI_`;
+          }
 
-        // Cek jika jadwal lab 3 bulanan
-        if (p.jadwalLab3Bulan === besok || p.jadwalLab3Bulan === todayStr) {
-          const labMsg = `🧪 *PENGINGAT EVALUASI LAB 3 BULANAN KLINIK PT ATI*\n\nHalo Rekan *${p.namaPasien}*,\nMengingatkan jadwal cek laboratorium berkala 3 bulanan Anda (HbA1c / Fungsi Ginjal / Elektrolit) pada *${p.jadwalLab3Bulan}*.\n\nSilakan koordinasikan dengan Tim Medis Klinik PT ATI. Terima kasih!\n_Tim Medis & HSE PT ATI_`;
-          await whatsappService.sendWhatsAppMessage('klinik', p.noHp, labMsg);
+          console.log(`📲 [Auto WA H-1] Mengirim pengingat kontrol ke ${k.namaPasien} (${destHp}) untuk tgl ${k.tanggalKontrol}...`);
+          try {
+            const sendRes = await whatsappService.sendWhatsAppMessage('klinik', destHp, reminderMsg);
+            if (sendRes && (sendRes.success || sendRes.realSent)) {
+              k.waReminderSent = true;
+              k.waReminderSentAt = new Date().toISOString();
+              kontrolUpdated = true;
+            }
+          } catch (waErr) {
+            console.warn('[Auto WA H-1] Error sending:', waErr.message);
+          }
           await new Promise(r => setTimeout(r, 2000));
         }
       }
     }
+
+    if (kontrolUpdated) {
+      saveKontrolPasien(kontrolList);
+    }
+
+    // 2. Cek Jadwal dari db.pantauan (Mingguan / Obat / Lab)
+    const pantauan = db.pantauan || [];
+    let pantauanUpdated = false;
+    for (const p of pantauan) {
+      if (p.status !== 'AKTIF' || !p.noHp) continue;
+
+      if ((p.jadwalMingguan === besokStr || p.jadwalMingguan === todayStr) && p.lastWaMingguanSent !== p.jadwalMingguan) {
+        const reminderMsg = `🔔 *PENGINGAT CEK KESEHATAN MINGGUAN KLINIK PT ATI*\n\nHalo Rekan *${p.namaPasien}*,\nMengingatkan bahwa jadwal pemeriksaan tensi darah dan evaluasi rutin mingguan Anda di Klinik PT ATI adalah pada *${p.jadwalMingguan}*.\n\nMohon luangkan waktu untuk singgah ke klinik. Terima kasih!\n_Tim Medis & HSE PT ATI_`;
+        const res = await whatsappService.sendWhatsAppMessage('klinik', p.noHp, reminderMsg);
+        if (res && (res.success || res.realSent)) {
+          p.lastWaMingguanSent = p.jadwalMingguan;
+          pantauanUpdated = true;
+        }
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
+      if ((p.jadwalObatBulanan === besokStr || p.jadwalObatBulanan === todayStr) && p.lastWaObatSent !== p.jadwalObatBulanan) {
+        const medMsg = `💊 *PENGINGAT AMBIL OBAT RUTIN KLINIK PT ATI*\n\nHalo Rekan *${p.namaPasien}*,\nJadwal pengambilan obat rutin bulanan Anda jatuh tempo pada *${p.jadwalObatBulanan}*.\n\nSilakan ambil resep obat rutin Anda di Klinik PT ATI agar terapi tetap berkesinambungan.\n_Tim Medis & HSE PT ATI_`;
+        const res = await whatsappService.sendWhatsAppMessage('klinik', p.noHp, medMsg);
+        if (res && (res.success || res.realSent)) {
+          p.lastWaObatSent = p.jadwalObatBulanan;
+          pantauanUpdated = true;
+        }
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
+      if ((p.jadwalLab3Bulan === besokStr || p.jadwalLab3Bulan === todayStr) && p.lastWaLabSent !== p.jadwalLab3Bulan) {
+        const labMsg = `🧪 *PENGINGAT EVALUASI LAB 3 BULANAN KLINIK PT ATI*\n\nHalo Rekan *${p.namaPasien}*,\nMengingatkan jadwal cek laboratorium berkala 3 bulanan Anda (HbA1c / Fungsi Ginjal / Elektrolit) pada *${p.jadwalLab3Bulan}*.\n\nSilakan koordinasikan dengan Tim Medis Klinik PT ATI. Terima kasih!\n_Tim Medis & HSE PT ATI_`;
+        const res = await whatsappService.sendWhatsAppMessage('klinik', p.noHp, labMsg);
+        if (res && (res.success || res.realSent)) {
+          p.lastWaLabSent = p.jadwalLab3Bulan;
+          pantauanUpdated = true;
+        }
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+
+    if (pantauanUpdated) {
+      writeDB(db);
+    }
   } catch (autoErr) {
     console.warn('[Auto Reminder WA] Error in scheduler:', autoErr.message);
   }
-}, 30 * 60 * 1000); // Check every 30 minutes
+}, 15 * 60 * 1000); // Check every 15 minutes
+
+// ============================================================
+// VPS CLOUDFLARE SYNC ENDPOINTS
+// ============================================================
+app.get('/api/vps/status', async (req, res) => {
+  const cfg = getVpsConfig();
+  let vpsOnline = false;
+  let latencyMs = 0;
+  try {
+    const t0 = Date.now();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const resp = await fetch(`${cfg.vps_url}/api/kontrol`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (resp.ok) {
+      vpsOnline = true;
+      latencyMs = Date.now() - t0;
+    }
+  } catch (e) {
+    vpsOnline = false;
+  }
+  res.json({
+    configuredUrl: cfg.vps_url,
+    mode: cfg.mode,
+    online: vpsOnline,
+    latencyMs
+  });
+});
+
+app.post('/api/vps/sync', async (req, res) => {
+  const cfg = getVpsConfig();
+  const db = readDB();
+  const localRecords = db.records || [];
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    
+    // 1. Push local records ke VPS
+    const pushRes = await fetch(`${cfg.vps_url}/api/records/offline-sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: localRecords.slice(0, 100) }),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    let pushData = {};
+    if (pushRes.ok) {
+      pushData = await pushRes.json();
+    }
+
+    // 2. Tarik master data terbaru dari VPS jika perlu
+    let pulledCount = 0;
+    try {
+      const getRes = await fetch(`${cfg.vps_url}/api/records?limit=100`, { cache: 'no-store' });
+      if (getRes.ok) {
+        const vpsRecords = await getRes.json();
+        const vpsList = Array.isArray(vpsRecords) ? vpsRecords : (vpsRecords.records || []);
+        vpsList.forEach(vr => {
+          if (!vr || !vr.id) return;
+          const exist = db.records.find(lr => lr.id === vr.id);
+          if (!exist) {
+            db.records.push(vr);
+            pulledCount++;
+          }
+        });
+        if (pulledCount > 0) {
+          writeDB(db);
+        }
+      }
+    } catch (pullErr) {
+      console.warn('[VPS Sync] Pull warning:', pullErr.message);
+    }
+
+    res.json({
+      success: true,
+      vpsUrl: cfg.vps_url,
+      pushedCount: pushData.savedCount || 0,
+      pulledCount,
+      message: 'Sinkronisasi offline dengan Cloud VPS berhasil'
+    });
+  } catch (syncErr) {
+    console.warn('[VPS Sync] Error:', syncErr.message);
+    res.status(502).json({
+      success: false,
+      error: 'Tidak dapat terhubung ke VPS: ' + syncErr.message,
+      vpsUrl: cfg.vps_url
+    });
+  }
+});
 
 // ============================================================
 // JADWAL KONTROL PASIEN ENDPOINTS (TERINTEGRASI POLI & DHSE)

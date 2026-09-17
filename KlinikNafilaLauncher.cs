@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -17,7 +17,7 @@ namespace KlinikNafila
             Directory.SetCurrentDirectory(appDir);
 
             string configFile = Path.Combine(appDir, "config.json");
-            string vpsUrl = "https://greatest-reverse-joke-turned.trycloudflare.com";
+            string vpsUrl = "https://planet-enforcement-lan-newspaper.trycloudflare.com";
             string mode = "auto"; // "vps", "offline", or "auto"
 
             if (File.Exists(configFile))

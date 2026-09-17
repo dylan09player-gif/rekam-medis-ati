@@ -196,6 +196,12 @@
         <span id="sse-label" style="display: none;">LIVE</span>
       </div>
 
+      <!-- Cloud VPS Integration Badge & Manual Sync -->
+      <button type="button" id="btn-vps-cloud-sync" onclick="triggerManualVpsSync()" style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); font-size: 0.74rem; font-weight: 700; color: #38bdf8; cursor: pointer; transition: all 0.2s;" title="Terintegrasi VPS Cloudflare Tunnel (planet-enforcement-lan-newspaper.trycloudflare.com). Klik untuk sinkronkan.">
+        <i class="fa-solid fa-cloud" id="icon-vps-status" style="color: #38bdf8;"></i>
+        <span id="txt-vps-status">VPS Online</span>
+      </button>
+
       <button class="theme-toggle-btn" id="btn-toggle-theme" title="Ubah Tema" style="width: 32px; height: 32px;">
         <i class="fa-solid fa-moon"></i>
       </button>
@@ -483,11 +489,37 @@
                 </div>
 
                 <!-- Pantauan (Merah) -->
-                <div style="border: 1.5px dashed #ef4444; background: rgba(239, 68, 68, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; align-items: center; gap: 12px;">
-                  <input type="checkbox" id="poli-pantauan" onchange="handlePoliCheckboxChange()" style="width: 20px; height: 20px; cursor: pointer;">
-                  <label for="poli-pantauan" style="color: #b91c1c; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; width: 100%;">
-                    <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
-                  </label>
+                <div style="border: 1.5px dashed #ef4444; background: rgba(239, 68, 68, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <label for="poli-pantauan" style="color: #b91c1c; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0;">
+                      <input type="checkbox" id="poli-pantauan" onchange="handlePoliCheckboxChange()" style="width: 20px; height: 20px; cursor: pointer;">
+                      <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
+                    </label>
+                    <span style="font-size: 0.75rem; color: #ef4444; background: rgba(239,68,68,0.15); padding: 2px 8px; border-radius: 8px; font-weight: 700;">
+                      Terintegrasi HSE &amp; Pemantauan Rutin
+                    </span>
+                  </div>
+
+                  <!-- Sub-opsi Rutinitas Pemantauan (Muncul saat dicentang) -->
+                  <div id="poli-pantauan-sub-options" style="display: none; padding-top: 8px; border-top: 1px dashed rgba(239,68,68,0.3);">
+                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
+                      Pilih Jenis Kunjungan Pemantauan Rutin (Auto-sinkron ke Dasbor HSE):
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(2,132,199,0.12); border: 1px solid rgba(2,132,199,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; color: #38bdf8; cursor: pointer;">
+                        <input type="radio" name="poli-tipe-pantauan" value="mingguan" checked onchange="selectPoliPantauanTipe('mingguan')">
+                        <i class="fa-solid fa-heart-pulse"></i> 1 Minggu (Cek Vital / Gula)
+                      </label>
+                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; color: #34d399; cursor: pointer;">
+                        <input type="radio" name="poli-tipe-pantauan" value="obat" onchange="selectPoliPantauanTipe('obat')">
+                        <i class="fa-solid fa-pills"></i> 1 Bulan (Ambil Obat Rutin)
+                      </label>
+                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; color: #c084fc; cursor: pointer;">
+                        <input type="radio" name="poli-tipe-pantauan" value="lab" onchange="selectPoliPantauanTipe('lab')">
+                        <i class="fa-solid fa-flask-vial"></i> 3 Bulan (Cek Lab Berkala)
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Jadwal Kontrol Terintegrasi (Otomatis Aktif jika Izin Sakit / Pantauan, atau Manual) -->
@@ -2760,17 +2792,29 @@
         <!-- Filter Tabs Kategori Pemantauan HSE -->
         <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button type="button" class="btn btn-sm btn-hse-filter active" id="filter-btn-pantauan-all" onclick="filterHSEPantauanCategory('all')" style="background: #0284c7; color: #fff; border-radius: 20px; font-weight: 700; padding: 5px 14px; border: none; font-size: 0.8rem;">
+            <button type="button" class="btn btn-sm btn-hse-filter active" id="filter-btn-pantauan-all" onclick="filterHSEPantauanCategory('all')" style="background: #0284c7; color: #fff; border-radius: 20px; font-weight: 700; padding: 5px 12px; border: none; font-size: 0.78rem;">
               <i class="fa-solid fa-users"></i> Semua Pasien
             </button>
-            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-weekly" onclick="filterHSEPantauanCategory('weekly')" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border-radius: 20px; font-weight: 600; padding: 5px 14px; border: 1px solid var(--border-color); font-size: 0.8rem;">
-              <i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Cek Mingguan (Vital/Gula)
+            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-overdue" onclick="filterHSEPantauanCategory('overdue')" style="background: rgba(239,68,68,0.12); color: #f87171; border-radius: 20px; font-weight: 700; padding: 5px 12px; border: 1px solid rgba(239,68,68,0.3); font-size: 0.78rem;">
+              <i class="fa-solid fa-triangle-exclamation"></i> Belum Kontrol / Jatuh Tempo
             </button>
-            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-monthly" onclick="filterHSEPantauanCategory('monthly')" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border-radius: 20px; font-weight: 600; padding: 5px 14px; border: 1px solid var(--border-color); font-size: 0.8rem;">
-              <i class="fa-solid fa-pills" style="color: #3b82f6;"></i> Ambil Obat Rutin
+            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-controlled" onclick="filterHSEPantauanCategory('controlled')" style="background: rgba(16,185,129,0.12); color: #34d399; border-radius: 20px; font-weight: 700; padding: 5px 12px; border: 1px solid rgba(16,185,129,0.3); font-size: 0.78rem;">
+              <i class="fa-solid fa-circle-check"></i> Sudah Kontrol
             </button>
-            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-quarterly" onclick="filterHSEPantauanCategory('quarterly')" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border-radius: 20px; font-weight: 600; padding: 5px 14px; border: 1px solid var(--border-color); font-size: 0.8rem;">
-              <i class="fa-solid fa-flask-vial" style="color: #8b5cf6;"></i> Cek Lab 3 Bulan
+            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-improving" onclick="filterHSEPantauanCategory('improving')" style="background: rgba(56,189,248,0.12); color: #38bdf8; border-radius: 20px; font-weight: 700; padding: 5px 12px; border: 1px solid rgba(56,189,248,0.3); font-size: 0.78rem;">
+              <i class="fa-solid fa-arrow-trend-down"></i> Progres Membaik
+            </button>
+            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-worsening" onclick="filterHSEPantauanCategory('worsening')" style="background: rgba(234,179,8,0.12); color: #facc15; border-radius: 20px; font-weight: 700; padding: 5px 12px; border: 1px solid rgba(234,179,8,0.3); font-size: 0.78rem;">
+              <i class="fa-solid fa-arrow-trend-up"></i> Perlu Perhatian
+            </button>
+            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-weekly" onclick="filterHSEPantauanCategory('weekly')" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border-radius: 20px; font-weight: 600; padding: 5px 12px; border: 1px solid var(--border-color); font-size: 0.78rem;">
+              <i class="fa-solid fa-heart-pulse"></i> Cek Mingguan
+            </button>
+            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-monthly" onclick="filterHSEPantauanCategory('monthly')" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border-radius: 20px; font-weight: 600; padding: 5px 12px; border: 1px solid var(--border-color); font-size: 0.78rem;">
+              <i class="fa-solid fa-pills"></i> Ambil Obat
+            </button>
+            <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-quarterly" onclick="filterHSEPantauanCategory('quarterly')" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border-radius: 20px; font-weight: 600; padding: 5px 12px; border: 1px solid var(--border-color); font-size: 0.78rem;">
+              <i class="fa-solid fa-flask-vial"></i> Lab 3 Bulan
             </button>
           </div>
           <div style="font-size: 0.78rem; color: var(--text-muted);">
@@ -2806,8 +2850,25 @@
 
       <div class="modal-body" style="padding: 16px 20px; flex: 1; overflow-y: auto;">
         
+        <!-- Baris Identitas Pasien Terkunci & Riwayat Sebelumnya -->
+        <div id="pantauan-patient-locked-badge" style="display: none; background: rgba(16,185,129,0.15); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; align-items: center; justify-content: space-between;">
+          <div style="font-size: 0.9rem; font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-lock"></i> Pasien Terkunci: <span id="txt-pantauan-locked-name" style="color: #38bdf8;">-</span> (<span id="txt-pantauan-locked-nik" style="color: #facc15;">-</span>) &bull; <span id="txt-pantauan-locked-dept" style="color: var(--text-muted);">-</span>
+          </div>
+          <button type="button" class="btn btn-sm" onclick="unlockPantauanPatient()" style="background: rgba(255,255,255,0.1); color: var(--text-main); font-size: 0.74rem; font-weight: 700; padding: 4px 10px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+            <i class="fa-solid fa-lock-open"></i> Ganti Pasien
+          </button>
+        </div>
+
+        <div id="pantauan-baseline-box" style="display: none; background: rgba(56,189,248,0.08); border: 1px dashed rgba(56,189,248,0.4); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 0.8rem;">
+          <div style="color: #38bdf8; font-weight: 800; margin-bottom: 3px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-clock-rotate-left"></i> Catatan &amp; Evaluasi Terakhir Pasien Ini:
+          </div>
+          <div id="pantauan-baseline-text" style="color: var(--text-main); line-height: 1.4;">-</div>
+        </div>
+
         <!-- Baris Identitas Pasien -->
-        <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+        <div id="box-pantauan-patient-inputs" style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
           <div>
             <label class="form-label" style="font-size: 0.78rem; font-weight: 700;">Cari / Pilih Pasien Pantauan *</label>
             <input type="text" id="inp-pantauan-pasien-search" list="list-pantauan-pasien-opts" class="form-control form-control-sm" placeholder="Ketik Nama Pasien / NPK..." onchange="handleSelectPantauanPatient(this.value)" autocomplete="off">
@@ -3013,12 +3074,16 @@
             <label class="form-label" style="font-size: 0.78rem; font-weight: 700;">💡 Saran / Edukasi Tim Medis &amp; HSE untuk Pasien:</label>
             <textarea id="inp-pantauan-catatan-dokter" class="form-control form-control-sm" rows="2" placeholder="Contoh: Pertahankan pola makan rendah garam, jalan kaki 30 menit sehari, dan obat diminum rutin."></textarea>
           </div>
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 6px;">
             <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.82rem; color: #34d399; cursor: pointer; margin: 0;">
-              <input type="checkbox" id="chk-pantauan-send-wa" checked style="width: 16px; height: 16px;">
-              <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Kirim Rangkuman Evaluasi ke WhatsApp Pasien Sekarang
+              <input type="checkbox" id="chk-pantauan-send-wa" style="width: 16px; height: 16px;">
+              <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Kirim Rangkuman Evaluasi ke WhatsApp Pasien Sekarang (Opsional)
             </label>
-            <span style="font-size: 0.74rem; color: var(--text-muted);">Terkirim via nomor resmi WhatsApp HP Klinik PT ATI</span>
+            <span style="font-size: 0.74rem; color: var(--text-muted);">Terkirim via WhatsApp Klinik PT ATI</span>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span><strong>Pengingat Kontrol Otomatis:</strong> Jadwal kontrol berikutnya akan otomatis dikirimkan via WhatsApp ke nomor pasien pada <strong>H-1 (1 hari sebelum jadwal)</strong>.</span>
           </div>
         </div>
 
