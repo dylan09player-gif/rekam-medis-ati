@@ -1768,7 +1768,8 @@ app.post('/api/medicines/transfer', (req, res) => {
         qty: qty,
         initial: initial,
         final: final,
-        satuan: item.satuan || (matched ? matched.satuan : 'strip')
+        satuan: item.satuan || (matched ? matched.satuan : 'strip'),
+        expDate: item.expDate || item.expiredDate || item.tglKadaluarsa || '-'
       };
     })
   };

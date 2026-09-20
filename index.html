@@ -1084,6 +1084,14 @@
                   </div>
                 </div>
 
+                <div class="form-group" style="margin-top: 12px; margin-bottom: 14px;">
+                  <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-calendar-day" style="color: #f43f5e;"></i> Tanggal Kadaluarsa (Expired Date)</span>
+                    <small style="color: var(--text-muted); font-weight: normal;">Format: DD/MM/YYYY</small>
+                  </label>
+                  <input type="date" id="ship-exp-date" class="form-control" style="font-weight: 700;">
+                </div>
+
                 <button class="btn btn-primary" onclick="addMedToShipmentDraft()" style="background: #ec4899; border: none; font-weight: 700; width: 100%;">
                   <i class="fa-solid fa-plus"></i> Tambah Ke Daftar Kirim
                 </button>
@@ -1098,6 +1106,7 @@
                     <thead>
                       <tr>
                         <th style="padding: 4px;">Obat</th>
+                        <th style="text-align: center; padding: 4px; color: #f43f5e;">Exp Date</th>
                         <th style="text-align: center; padding: 4px;">Awal</th>
                         <th style="text-align: center; padding: 4px;">Kirim</th>
                         <th style="text-align: center; padding: 4px;">Akhir</th>
@@ -1268,18 +1277,88 @@
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width: 3%; text-align: center;">NO</th>
-                <th style="width: 7%;">NPK PABRIK</th>
-                <th style="width: 16%;">NAMA KARYAWAN / PASIEN</th>
-                <th style="width: 10%;">DEPARTEMEN</th>
-                <th style="width: 8%;">TGL LAHIR</th>
-                <th style="width: 5%;">USIA</th>
-                <th style="width: 5%; text-align: center;">GENDER</th>
-                <th style="width: 5%; text-align: center;">GOL.</th>
-                <th style="width: 13%;">NO. WHATSAPP</th>
-                <th style="width: 8%;">SALDO OBAT</th>
-                <th style="width: 7%; text-align: center;">RIWAYAT</th>
-                <th style="width: 11%; text-align: center;">AKSI</th>
+                <th style="width: 3%; text-align: center; vertical-align: top; padding-top: 14px;">NO</th>
+                <th style="width: 9%; vertical-align: top;">
+                  <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div class="karyawan-head-title" onclick="toggleKaryawanSort('nik')" title="Klik untuk mengurutkan NIK (0-9 / 9-0)">
+                      <span>NPK PABRIK</span>
+                      <i id="sort-icon-nik" class="fa-solid fa-sort" style="opacity: 0.5; font-size: 0.75rem;"></i>
+                    </div>
+                    <select id="filter-karyawan-nik" onchange="onKaryawanNikChange(this.value)" onclick="event.stopPropagation();" class="karyawan-head-select" title="Urutan Nomor Urut NPK">
+                      <option value="">No. Urut</option>
+                      <option value="asc">0 → 9 (Terkecil)</option>
+                      <option value="desc">9 → 0 (Terbesar)</option>
+                    </select>
+                  </div>
+                </th>
+                <th style="width: 15%; vertical-align: top;">
+                  <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div class="karyawan-head-title" onclick="toggleKaryawanSort('nama')" title="Klik untuk mengurutkan Nama (A-Z / Z-A)">
+                      <span>NAMA KARYAWAN</span>
+                      <i id="sort-icon-nama" class="fa-solid fa-sort" style="opacity: 0.5; font-size: 0.75rem;"></i>
+                    </div>
+                    <select id="filter-karyawan-nama" onchange="onKaryawanNamaChange(this.value)" onclick="event.stopPropagation();" class="karyawan-head-select" title="Urutan Nama Abjad">
+                      <option value="">Nama A-Z</option>
+                      <option value="asc">A → Z (Abjad)</option>
+                      <option value="desc">Z → A (Z-A)</option>
+                    </select>
+                  </div>
+                </th>
+                <th style="width: 13%; vertical-align: top;">
+                  <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div class="karyawan-head-title" onclick="toggleKaryawanSort('dept')" title="Klik untuk mengurutkan Departemen">
+                      <span>DEPARTEMEN</span>
+                      <i id="sort-icon-dept" class="fa-solid fa-sort" style="opacity: 0.5; font-size: 0.75rem;"></i>
+                    </div>
+                    <select id="filter-karyawan-dept" onchange="onKaryawanDeptChange(this.value)" onclick="event.stopPropagation();" class="karyawan-head-select" title="Filter Berdasarkan Departemen">
+                      <option value="">Semua Dept</option>
+                    </select>
+                  </div>
+                </th>
+                <th style="width: 7%; vertical-align: top; padding-top: 14px;">TGL LAHIR</th>
+                <th style="width: 5%; vertical-align: top; padding-top: 14px;">USIA</th>
+                <th style="width: 5%; text-align: center; vertical-align: top; padding-top: 14px;">GENDER</th>
+                <th style="width: 4%; text-align: center; vertical-align: top; padding-top: 14px;">GOL.</th>
+                <th style="width: 11%; vertical-align: top; padding-top: 14px;">NO. WHATSAPP</th>
+                <th style="width: 11%; vertical-align: top;">
+                  <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div class="karyawan-head-title" onclick="toggleKaryawanSort('saldo')" title="Klik untuk urutan Saldo (Tertinggi / Terendah)">
+                      <span>SALDO OBAT</span>
+                      <i id="sort-icon-saldo" class="fa-solid fa-sort" style="opacity: 0.5; font-size: 0.75rem;"></i>
+                    </div>
+                    <select id="filter-karyawan-saldo" onchange="onKaryawanSaldoChange(this.value)" onclick="event.stopPropagation();" class="karyawan-head-select" title="Filter & Urutan Saldo Obat">
+                      <option value="">Urutan Saldo</option>
+                      <option value="desc">Tertinggi ↓</option>
+                      <option value="asc">Terendah ↑</option>
+                      <option value="positive">Ada Saldo (>0)</option>
+                      <option value="zero">Saldo Nol (Rp 0)</option>
+                      <option value="minus">Minus (&lt;0)</option>
+                    </select>
+                  </div>
+                </th>
+                <th style="width: 9%; text-align: center; vertical-align: top;">
+                  <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div class="karyawan-head-title" onclick="toggleKaryawanSort('riwayat')" title="Klik untuk urutan Riwayat (Terbanyak / Tersedikit)">
+                      <span>RIWAYAT</span>
+                      <i id="sort-icon-riwayat" class="fa-solid fa-sort" style="opacity: 0.5; font-size: 0.75rem;"></i>
+                    </div>
+                    <select id="filter-karyawan-riwayat" onchange="onKaryawanRiwayatChange(this.value)" onclick="event.stopPropagation();" class="karyawan-head-select" title="Filter & Urutan Riwayat Rekam Medis">
+                      <option value="all">Semua</option>
+                      <option value="has_rm">Ada RM (≥1x)</option>
+                      <option value="no_rm">Tanpa RM (0x)</option>
+                      <option value="sort_desc">Terbanyak ↓</option>
+                      <option value="sort_asc">Tersedikit ↑</option>
+                    </select>
+                  </div>
+                </th>
+                <th style="width: 8%; text-align: center; vertical-align: top;">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <span style="padding-top: 2px;">AKSI</span>
+                    <button type="button" id="btn-reset-karyawan-filters" onclick="resetKaryawanHeaderFilters()" class="btn btn-xs" style="display: none; font-size: 0.68rem; padding: 2px 7px; border-radius: 5px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer; white-space: nowrap; font-weight: 700;" title="Reset Semua Filter & Urutan">
+                      <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody id="table-karyawan-body">
@@ -1627,9 +1706,14 @@
               <i class="fa-solid fa-capsules"></i> 💊 REKAP OBAT TERPAKAI
             </button>
           </div>
-          <button class="btn btn-primary" onclick="printHSEOfficialReport()" style="background: #0284c7; border: none; font-weight: 700;">
-            <i class="fa-solid fa-print"></i> 🖨️ CETAK LAPORAN K3 / HSE (PDF)
-          </button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="printHSEOfficialReport()" style="background: #0284c7; border: none; font-weight: 700;">
+              <i class="fa-solid fa-print"></i> 🖨️ CETAK LAPORAN K3 / HSE (PDF)
+            </button>
+            <button class="btn btn-success" onclick="exportHSEOfficialReportExcel()" style="background: #16a34a; border: none; font-weight: 700;">
+              <i class="fa-solid fa-file-excel"></i> 📊 UNDUH LAPORAN K3 / HSE (EXCEL)
+            </button>
+          </div>
         </div>
 
         <!-- SUB-TAB 1: REKAM MEDIS PASIEN -->
@@ -1704,9 +1788,14 @@
               <button class="btn btn-secondary" id="mj-nav-users" onclick="switchManajemenTab('users')">👥 Akun Petugas</button>
               <button class="btn btn-warning" id="mj-nav-kontak" onclick="switchManajemenTab('kontak')">📲 Kontak WA</button>
             </div>
-            <button class="btn btn-primary" onclick="printExecutiveReport()" style="background: #10b981; border: none; font-weight: 700;">
-              <i class="fa-solid fa-print"></i> 🖨️ CETAK LAPORAN DIREKSI &amp; FINANSIAL (PDF)
-            </button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="printExecutiveReport()" style="background: #10b981; border: none; font-weight: 700;">
+                <i class="fa-solid fa-print"></i> 🖨️ CETAK LAPORAN DIREKSI &amp; FINANSIAL (PDF)
+              </button>
+              <button class="btn btn-success" onclick="exportExecutiveReportExcel()" style="background: #059669; border: none; font-weight: 700;">
+                <i class="fa-solid fa-file-excel"></i> 📊 UNDUH LAPORAN MANAJERIAL (EXCEL)
+              </button>
+            </div>
           </div>
 
           <!-- 1. BILLING PT -->
@@ -2643,6 +2732,12 @@
           </button>
           <button id="chart-tab-section-btn" class="btn btn-sm btn-secondary" onclick="switchHSEChartTab('section')" style="font-weight: 700;">
             <i class="fa-solid fa-layer-group"></i> Section Terbanyak
+          </button>
+          <button type="button" class="btn btn-sm btn-success" onclick="printHSECharts('selected')" title="Cetak grafik terpilih ke kertas A4 (PDF)" style="background: #10b981; border: none; font-weight: 700;">
+            <i class="fa-solid fa-print"></i> Cetak PDF Grafik (A4)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="printHSECharts('all')" title="Cetak seluruh grafik laporan K3 ke PDF A4" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; font-weight: 700;">
+            <i class="fa-solid fa-file-pdf"></i> Cetak Semua Grafik (A4)
           </button>
           <button type="button" class="btn btn-secondary btn-sm" onclick="closeHSEChartModal()"><i class="fa-solid fa-xmark"></i> Tutup</button>
         </div>

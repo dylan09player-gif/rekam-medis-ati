@@ -4077,6 +4077,14 @@ function addMedToShipmentDraft() {
   }
 
   const initialStok = med.stok !== undefined ? (parseInt(med.stok) || 0) : 0;
+  const expInput = document.getElementById('ship-exp-date');
+  let expDate = expInput ? expInput.value.trim() : '';
+  if (expDate && expDate.includes('-')) {
+    const parts = expDate.split('-');
+    if (parts.length === 3) {
+      expDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+  }
 
   shipmentDraft.push({
     id: med.id,
@@ -4084,14 +4092,16 @@ function addMedToShipmentDraft() {
     initial: initialStok,
     qty: qty,
     final: initialStok + qty,
-    satuan: med.satuan || 'strip'
+    satuan: med.satuan || 'strip',
+    expDate: expDate || '-'
   });
 
   renderShipmentDraftTable();
 
-  // Reset medicine selector
+  // Reset medicine selector & exp date
   if (idInput) idInput.value = '';
   if (nameInput) nameInput.value = '';
+  if (expInput) expInput.value = '';
   qtyInput.value = '';
   const initEl = document.getElementById('ship-initial-stock');
   const finalEl = document.getElementById('ship-final-stock');
@@ -4112,13 +4122,14 @@ function renderShipmentDraftTable() {
   if (!tbody) return;
 
   if (shipmentDraft.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 12px;">Belum ada obat dalam daftar</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 12px;">Belum ada obat dalam daftar</td></tr>`;
     return;
   }
 
   tbody.innerHTML = shipmentDraft.map((item, idx) => `
     <tr>
       <td style="font-weight: 600; text-transform: uppercase;">${item.name}</td>
+      <td style="text-align: center;"><span style="color: #f43f5e; font-weight: 700; background: rgba(244, 63, 94, 0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.78rem;">${item.expDate || '-'}</span></td>
       <td style="text-align: center;">${item.initial}</td>
       <td style="text-align: center; font-weight: bold; color: #ec4899;">${item.qty} ${item.satuan}</td>
       <td style="text-align: center; font-weight: bold; color: #4ade80;">${item.final}</td>
@@ -4175,7 +4186,8 @@ async function processShipmentAndPrint() {
           qty: item.qty,
           initial: item.initial,
           final: item.final,
-          satuan: item.satuan
+          satuan: item.satuan,
+          expDate: item.expDate || '-'
         }))
       })
     });
@@ -4241,15 +4253,17 @@ function printSuratJalanPDF(sender, receiver, items, customNoSurat, customTgl) {
     const stokAwal = item.initial !== undefined ? item.initial : (item.stokAwal !== undefined ? item.stokAwal : '-');
     const jumlahKirim = item.qty || item.jumlah || 0;
     const stokAkhir = item.final !== undefined ? item.final : (item.stokAkhir !== undefined ? item.stokAkhir : '-');
+    const expDate = item.expDate || item.expiredDate || item.kadaluarsa || '-';
 
     return `
       <tr>
-        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 600; font-size: 8pt; width: 5%;">${idx + 1}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 600; font-size: 8pt; width: 4%;">${idx + 1}</td>
         <td style="border: 1px solid #334155; padding: 4px 8px; text-transform: uppercase; font-weight: 600; font-size: 8pt; color: #0f172a;">${namaObat}</td>
-        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt; color: #475569; width: 10%;">${satuan}</td>
-        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt; color: #64748b; width: 14%;">${stokAwal} ${satuan}</td>
-        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 700; font-size: 8.5pt; color: #0f172a; background: #f0fdf4; width: 15%;">+${jumlahKirim} ${satuan}</td>
-        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 700; font-size: 8.5pt; color: #166534; background: #f0fdf4; width: 15%;">${stokAkhir} ${satuan}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt; font-weight: 700; color: #b91c1c; background: #fff1f2; width: 14%;">${expDate}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt; color: #475569; width: 8%;">${satuan}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-size: 8pt; color: #64748b; width: 12%;">${stokAwal} ${satuan}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 700; font-size: 8.5pt; color: #0f172a; background: #f0fdf4; width: 14%;">+${jumlahKirim} ${satuan}</td>
+        <td style="text-align: center; border: 1px solid #334155; padding: 4px 6px; font-weight: 700; font-size: 8.5pt; color: #166534; background: #f0fdf4; width: 14%;">${stokAkhir} ${satuan}</td>
       </tr>
     `;
   }).join('');
@@ -4515,18 +4529,19 @@ function printSuratJalanPDF(sender, receiver, items, customNoSurat, customTgl) {
       <table class="sj-table">
         <thead>
           <tr>
-            <th style="width: 5%;">NO</th>
-            <th style="text-align: left; width: 41%;">NAMA ITEM OBAT / ALAT KESEHATAN</th>
-            <th style="width: 10%;">SATUAN</th>
-            <th style="width: 14%;">STOK AWAL</th>
-            <th style="width: 15%;">JUMLAH KIRIM</th>
-            <th style="width: 15%;">STOK AKHIR</th>
+            <th style="width: 4%;">NO</th>
+            <th style="text-align: left; width: 34%;">NAMA ITEM OBAT / ALAT KESEHATAN</th>
+            <th style="text-align: center; width: 14%;">TANGGAL KADALUARSA (EXP)</th>
+            <th style="text-align: center; width: 8%;">SATUAN</th>
+            <th style="text-align: center; width: 12%;">STOK AWAL</th>
+            <th style="text-align: center; width: 14%;">JUMLAH KIRIM</th>
+            <th style="text-align: center; width: 14%;">STOK AKHIR</th>
           </tr>
         </thead>
         <tbody>
           ${rowsHTML}
           <tr class="summary-row">
-            <td colspan="4" style="text-align: right; text-transform: uppercase;">Total Mutasi Item Pengiriman:</td>
+            <td colspan="5" style="text-align: right; text-transform: uppercase;">Total Mutasi Item Pengiriman:</td>
             <td style="text-align: center; background: #dcfce7; color: #166534; font-size: 8.5pt;">+${totalQty} Unit</td>
             <td style="text-align: center; color: #475569; font-size: 7.5pt;">(${totalKinds} Item Obat)</td>
           </tr>
@@ -4613,9 +4628,10 @@ function renderRiwayatSuratJalanTable(list = null) {
   }
 
   tbody.innerHTML = dataList.map((sj, idx) => {
-    const itemsSummary = (sj.items || []).map(item => 
-      `<span style="display: inline-block; background: rgba(139, 92, 246, 0.12); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 0.76rem; font-weight: 600; margin: 2px;">${item.name || item.nama} <b>(+${item.qty} ${item.satuan || ''})</b></span>`
-    ).join(' ');
+    const itemsSummary = (sj.items || []).map(item => {
+      const expBadge = item.expDate && item.expDate !== '-' ? `<span style="color: #f43f5e; font-size: 0.72rem; margin-left: 2px;">(Exp: ${item.expDate})</span>` : '';
+      return `<span style="display: inline-block; background: rgba(139, 92, 246, 0.12); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 0.76rem; font-weight: 600; margin: 2px;">${item.name || item.nama} <b>(+${item.qty} ${item.satuan || ''})</b>${expBadge}</span>`;
+    }).join(' ');
 
     const timeStr = sj.created_at ? new Date(sj.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
     const dateFormatted = `${sj.tanggal || '-'} ${timeStr ? `<small style="color: var(--text-muted);">(${timeStr} WIB)</small>` : ''}`;
@@ -5509,41 +5525,344 @@ function loadMoreKaryawan() {
   renderMobileKaryawanCards();
 }
 
-function renderKaryawanTable() {
-  const tbody = document.getElementById('table-karyawan-body');
-  if (!tbody) return;
+// Filter & Sort State for Karyawan Table Header Row 1
+let karyawanTableFilters = {
+  sortCol: null,      // 'nik', 'nama', 'dept', 'saldo', 'riwayat'
+  sortDir: 'asc',     // 'asc', 'desc'
+  dept: '',           // department filter string
+  saldoCondition: '', // '', 'desc', 'asc', 'positive', 'zero', 'minus'
+  riwayat: 'all'      // 'all', 'has_rm', 'no_rm', 'sort_desc', 'sort_asc'
+};
 
-  const query = document.getElementById('search-karyawan-input')?.value.toLowerCase().trim() || '';
-
-  const filtered = appData.patients.filter(k => {
-    const nikP = String(k.nikPabrik || k.nik || '').toLowerCase();
-    const nama = String(k.nama || '').toLowerCase();
-    const dept = String(k.dept || k.departemen || '').toLowerCase();
-    const sec = String(k.sectionName || '').toLowerCase();
-    const kota = String(k.birthPlace || '').toLowerCase();
-    const hp = String(k.hp || k.no_hp || '').toLowerCase();
-    return !query || nikP.includes(query) || nama.includes(query) || dept.includes(query) || sec.includes(query) || kota.includes(query) || hp.includes(query);
-  });
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--text-muted);">Tidak ada data karyawan yang cocok dengan pencarian '${query}'</td></tr>`;
-    return;
-  }
-
-  // Pre-calculate RM counts with O(1) Map lookup
+function getKaryawanRMCountMap() {
   const rmCountMap = new Map();
   (appData.records || []).forEach(r => {
     const k1 = String(r.nikPabrik || r.nik || '').trim();
     const k2 = String(r.namaPasien || r.nama || '').toLowerCase().trim();
-    if (k1) rmCountMap.set(k1, (rmCountMap.get(k1) || 0) + 1);
+    if (k1 && k1 !== '-') rmCountMap.set(k1, (rmCountMap.get(k1) || 0) + 1);
     if (k2) rmCountMap.set(k2, (rmCountMap.get(k2) || 0) + 1);
   });
+  return rmCountMap;
+}
 
+function getPatientRMCount(k, rmCountMap) {
+  if (!k) return 0;
+  const npk = String(k.nikPabrik || k.nik || '').trim();
+  const nama = String(k.nama || '').toLowerCase().trim();
+  if (npk && npk !== '-' && rmCountMap && rmCountMap.has(npk)) {
+    return rmCountMap.get(npk) || 0;
+  }
+  if (nama && rmCountMap && rmCountMap.has(nama)) {
+    return rmCountMap.get(nama) || 0;
+  }
+  return 0;
+}
+
+function populateKaryawanDeptFilter() {
+  const select = document.getElementById('filter-karyawan-dept');
+  if (!select) return;
+  const currentVal = karyawanTableFilters.dept || select.value || '';
+  const deptsSet = new Set();
+  (appData.patients || []).forEach(p => {
+    const d = String(p.dept || p.departemen || '').trim();
+    if (d && d !== '-') deptsSet.add(d);
+  });
+  const sortedDepts = Array.from(deptsSet).sort((a, b) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
+
+  const optionsHtml = '<option value="">Semua Dept (' + sortedDepts.length + ')</option>' +
+    sortedDepts.map(d => `<option value="${escapeHtml(d)}" ${d === currentVal ? 'selected' : ''}>${escapeHtml(d)}</option>`).join('');
+
+  if (select.getAttribute('data-loaded-count') !== String(sortedDepts.length) || select.options.length <= 1) {
+    select.innerHTML = optionsHtml;
+    select.setAttribute('data-loaded-count', String(sortedDepts.length));
+  }
+  select.value = currentVal;
+}
+
+function updateKaryawanFilterUI() {
+  // 1. Sort indicators
+  const cols = [
+    { col: 'nik', iconId: 'sort-icon-nik', ascIcon: 'fa-arrow-down-1-9', descIcon: 'fa-arrow-up-9-1' },
+    { col: 'nama', iconId: 'sort-icon-nama', ascIcon: 'fa-arrow-down-a-z', descIcon: 'fa-arrow-up-z-a' },
+    { col: 'dept', iconId: 'sort-icon-dept', ascIcon: 'fa-arrow-down-a-z', descIcon: 'fa-arrow-up-z-a' },
+    { col: 'saldo', iconId: 'sort-icon-saldo', ascIcon: 'fa-arrow-up-wide-short', descIcon: 'fa-arrow-down-wide-short' },
+    { col: 'riwayat', iconId: 'sort-icon-riwayat', ascIcon: 'fa-arrow-up-1-9', descIcon: 'fa-arrow-down-9-1' }
+  ];
+
+  cols.forEach(item => {
+    const el = document.getElementById(item.iconId);
+    if (!el) return;
+    if (karyawanTableFilters.sortCol === item.col) {
+      el.className = `fa-solid ${karyawanTableFilters.sortDir === 'asc' ? item.ascIcon : item.descIcon}`;
+      el.style.color = '#38bdf8';
+      el.style.opacity = '1';
+    } else {
+      el.className = 'fa-solid fa-sort';
+      el.style.color = 'var(--text-muted)';
+      el.style.opacity = '0.5';
+    }
+  });
+
+  // 2. Sync select values & active-filter classes
+  const elNik = document.getElementById('filter-karyawan-nik');
+  if (elNik) {
+    elNik.value = (karyawanTableFilters.sortCol === 'nik' ? karyawanTableFilters.sortDir : '');
+    elNik.classList.toggle('active-filter', Boolean(elNik.value));
+  }
+
+  const elNama = document.getElementById('filter-karyawan-nama');
+  if (elNama) {
+    elNama.value = (karyawanTableFilters.sortCol === 'nama' ? karyawanTableFilters.sortDir : '');
+    elNama.classList.toggle('active-filter', Boolean(elNama.value));
+  }
+
+  const elDept = document.getElementById('filter-karyawan-dept');
+  if (elDept) {
+    elDept.value = karyawanTableFilters.dept || '';
+    elDept.classList.toggle('active-filter', Boolean(elDept.value));
+  }
+
+  const elSaldo = document.getElementById('filter-karyawan-saldo');
+  if (elSaldo) {
+    elSaldo.value = karyawanTableFilters.saldoCondition || (karyawanTableFilters.sortCol === 'saldo' ? karyawanTableFilters.sortDir : '');
+    elSaldo.classList.toggle('active-filter', Boolean(elSaldo.value));
+  }
+
+  const elRiwayat = document.getElementById('filter-karyawan-riwayat');
+  if (elRiwayat) {
+    if (karyawanTableFilters.sortCol === 'riwayat') {
+      elRiwayat.value = karyawanTableFilters.sortDir === 'desc' ? 'sort_desc' : 'sort_asc';
+    } else {
+      elRiwayat.value = karyawanTableFilters.riwayat || 'all';
+    }
+    elRiwayat.classList.toggle('active-filter', elRiwayat.value !== 'all');
+  }
+
+  // 3. Reset button visibility
+  const resetBtn = document.getElementById('btn-reset-karyawan-filters');
+  if (resetBtn) {
+    const hasFilter = Boolean(
+      karyawanTableFilters.sortCol ||
+      karyawanTableFilters.dept ||
+      karyawanTableFilters.saldoCondition ||
+      karyawanTableFilters.riwayat !== 'all' ||
+      document.getElementById('search-karyawan-input')?.value.trim()
+    );
+    resetBtn.style.display = hasFilter ? 'inline-flex' : 'none';
+  }
+}
+
+function getFilteredAndSortedKaryawan(rmCountMap) {
+  const query = document.getElementById('search-karyawan-input')?.value.toLowerCase().trim() || '';
+  const deptFilter = (karyawanTableFilters.dept || '').toLowerCase().trim();
+  const saldoCond = karyawanTableFilters.saldoCondition;
+  const riwayatFilter = karyawanTableFilters.riwayat;
+
+  let result = (appData.patients || []).filter(k => {
+    // 1. Text search
+    if (query) {
+      const nikP = String(k.nikPabrik || k.nik || '').toLowerCase();
+      const nama = String(k.nama || '').toLowerCase();
+      const dept = String(k.dept || k.departemen || '').toLowerCase();
+      const sec = String(k.sectionName || '').toLowerCase();
+      const kota = String(k.birthPlace || '').toLowerCase();
+      const hp = String(k.hp || k.no_hp || '').toLowerCase();
+      const match = nikP.includes(query) || nama.includes(query) || dept.includes(query) || sec.includes(query) || kota.includes(query) || hp.includes(query);
+      if (!match) return false;
+    }
+
+    // 2. Department filter
+    if (deptFilter) {
+      const pDept = String(k.dept || k.departemen || '').toLowerCase().trim();
+      if (pDept !== deptFilter) return false;
+    }
+
+    // 3. Saldo condition filter
+    if (saldoCond) {
+      const saldo = parseInt(k.saldoObat) || 0;
+      if (saldoCond === 'positive' && saldo <= 0) return false;
+      if (saldoCond === 'zero' && saldo !== 0) return false;
+      if (saldoCond === 'minus' && saldo >= 0) return false;
+    }
+
+    // 4. Riwayat filter
+    if (riwayatFilter === 'has_rm') {
+      const count = getPatientRMCount(k, rmCountMap);
+      if (count <= 0) return false;
+    } else if (riwayatFilter === 'no_rm') {
+      const count = getPatientRMCount(k, rmCountMap);
+      if (count > 0) return false;
+    }
+
+    return true;
+  });
+
+  // Sorting
+  const sortCol = karyawanTableFilters.sortCol;
+  const sortDir = karyawanTableFilters.sortDir;
+
+  if (sortCol) {
+    result.sort((a, b) => {
+      if (sortCol === 'nik') {
+        const nikA = String(a.nikPabrik || a.nik || '').trim();
+        const nikB = String(b.nikPabrik || b.nik || '').trim();
+        const cmp = nikA.localeCompare(nikB, undefined, { numeric: true, sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      if (sortCol === 'nama') {
+        const namaA = String(a.nama || '').trim();
+        const namaB = String(b.nama || '').trim();
+        const cmp = namaA.localeCompare(namaB, 'id', { sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      if (sortCol === 'dept') {
+        const deptA = String(a.dept || a.departemen || '').trim();
+        const deptB = String(b.dept || b.departemen || '').trim();
+        const cmp = deptA.localeCompare(deptB, 'id', { sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      if (sortCol === 'saldo') {
+        const saldoA = parseInt(a.saldoObat) || 0;
+        const saldoB = parseInt(b.saldoObat) || 0;
+        return sortDir === 'asc' ? (saldoA - saldoB) : (saldoB - saldoA);
+      }
+      if (sortCol === 'riwayat') {
+        const countA = getPatientRMCount(a, rmCountMap);
+        const countB = getPatientRMCount(b, rmCountMap);
+        return sortDir === 'asc' ? (countA - countB) : (countB - countA);
+      }
+      return 0;
+    });
+  }
+
+  return result;
+}
+
+function toggleKaryawanSort(col) {
+  if (karyawanTableFilters.sortCol === col) {
+    if (karyawanTableFilters.sortDir === 'asc') {
+      karyawanTableFilters.sortDir = 'desc';
+    } else {
+      karyawanTableFilters.sortCol = null;
+      karyawanTableFilters.sortDir = 'asc';
+    }
+  } else {
+    karyawanTableFilters.sortCol = col;
+    karyawanTableFilters.sortDir = (col === 'saldo' || col === 'riwayat') ? 'desc' : 'asc';
+  }
+
+  if (col !== 'saldo') karyawanTableFilters.saldoCondition = '';
+  if (col !== 'riwayat') karyawanTableFilters.riwayat = 'all';
+
+  renderKaryawanTable();
+  renderMobileKaryawanCards();
+}
+
+function onKaryawanNikChange(val) {
+  if (val === 'asc' || val === 'desc') {
+    karyawanTableFilters.sortCol = 'nik';
+    karyawanTableFilters.sortDir = val;
+  } else {
+    if (karyawanTableFilters.sortCol === 'nik') karyawanTableFilters.sortCol = null;
+  }
+  renderKaryawanTable();
+  renderMobileKaryawanCards();
+}
+
+function onKaryawanNamaChange(val) {
+  if (val === 'asc' || val === 'desc') {
+    karyawanTableFilters.sortCol = 'nama';
+    karyawanTableFilters.sortDir = val;
+  } else {
+    if (karyawanTableFilters.sortCol === 'nama') karyawanTableFilters.sortCol = null;
+  }
+  renderKaryawanTable();
+  renderMobileKaryawanCards();
+}
+
+function onKaryawanDeptChange(val) {
+  karyawanTableFilters.dept = val || '';
+  renderKaryawanTable();
+  renderMobileKaryawanCards();
+}
+
+function onKaryawanSaldoChange(val) {
+  if (val === 'desc' || val === 'asc') {
+    karyawanTableFilters.sortCol = 'saldo';
+    karyawanTableFilters.sortDir = val;
+    karyawanTableFilters.saldoCondition = '';
+  } else if (val === 'positive' || val === 'zero' || val === 'minus') {
+    karyawanTableFilters.saldoCondition = val;
+    if (karyawanTableFilters.sortCol === 'saldo') karyawanTableFilters.sortCol = null;
+  } else {
+    karyawanTableFilters.saldoCondition = '';
+    if (karyawanTableFilters.sortCol === 'saldo') karyawanTableFilters.sortCol = null;
+  }
+  renderKaryawanTable();
+  renderMobileKaryawanCards();
+}
+
+function onKaryawanRiwayatChange(val) {
+  if (val === 'sort_desc') {
+    karyawanTableFilters.sortCol = 'riwayat';
+    karyawanTableFilters.sortDir = 'desc';
+    karyawanTableFilters.riwayat = 'all';
+  } else if (val === 'sort_asc') {
+    karyawanTableFilters.sortCol = 'riwayat';
+    karyawanTableFilters.sortDir = 'asc';
+    karyawanTableFilters.riwayat = 'all';
+  } else if (val === 'has_rm' || val === 'no_rm') {
+    karyawanTableFilters.riwayat = val;
+    if (karyawanTableFilters.sortCol === 'riwayat') karyawanTableFilters.sortCol = null;
+  } else {
+    karyawanTableFilters.riwayat = 'all';
+    if (karyawanTableFilters.sortCol === 'riwayat') karyawanTableFilters.sortCol = null;
+  }
+  renderKaryawanTable();
+  renderMobileKaryawanCards();
+}
+
+function resetKaryawanHeaderFilters() {
+  karyawanTableFilters = {
+    sortCol: null,
+    sortDir: 'asc',
+    dept: '',
+    saldoCondition: '',
+    riwayat: 'all'
+  };
+  const searchInput = document.getElementById('search-karyawan-input');
+  if (searchInput) searchInput.value = '';
+
+  renderKaryawanTable();
+  renderMobileKaryawanCards();
+}
+
+function renderKaryawanTable() {
+  const tbody = document.getElementById('table-karyawan-body');
+  if (!tbody) return;
+
+  populateKaryawanDeptFilter();
+  updateKaryawanFilterUI();
+
+  const rmCountMap = getKaryawanRMCountMap();
+  const filtered = getFilteredAndSortedKaryawan(rmCountMap);
+  const query = document.getElementById('search-karyawan-input')?.value.toLowerCase().trim() || '';
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 28px 14px; color: var(--text-muted);">
+      <i class="fa-solid fa-filter-circle-xmark" style="font-size: 1.8rem; margin-bottom: 8px; opacity: 0.4; display: block;"></i>
+      Tidak ada data karyawan yang cocok dengan kriteria filter / pencarian '${escapeHtml(query)}'
+    </td></tr>`;
+    renderKaryawanStats();
+    return;
+  }
+
+  const isSortedOrFiltered = Boolean(karyawanTableFilters.sortCol || karyawanTableFilters.dept || karyawanTableFilters.saldoCondition || karyawanTableFilters.riwayat !== 'all' || query);
   const displayLimit = query ? 100 : (_karyawanDisplayLimit || 60);
   const itemsToRender = filtered.slice(0, displayLimit);
 
   const rowsHtml = itemsToRender.map((k, idx) => {
-    const no = k.no || String(idx + 1);
+    const no = isSortedOrFiltered ? String(idx + 1) : (k.no || String(idx + 1));
     const npk = k.nikPabrik || k.nik || '-';
     const nama = k.nama || '-';
     const dept = k.dept || k.departemen || '-';
@@ -5556,7 +5875,7 @@ function renderKaryawanTable() {
     const rawHp = k.hp || k.no_hp || '';
     const saldoObat = parseInt(k.saldoObat) || 0;
 
-    const jumlahRM = (npk !== '-' && rmCountMap.get(String(npk).trim())) || (nama && rmCountMap.get(String(nama).toLowerCase().trim())) || 0;
+    const jumlahRM = getPatientRMCount(k, rmCountMap);
 
     // Badge riwayat medis
     const rmBadgeColor = jumlahRM === 0 ? 'rgba(100,100,100,0.15)' : jumlahRM < 3 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
@@ -8696,9 +9015,43 @@ function printHSEOfficialReport() {
           text-align: center;
           font-size: 9.5pt;
         }
+        .no-print {
+          position: sticky;
+          top: 0;
+          background: #0f172a;
+          color: #fff;
+          padding: 10px 18px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 9999;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+          border-bottom: 2px solid #0284c7;
+        }
+        @media print {
+          .no-print { display: none !important; }
+        }
       </style>
     </head>
     <body>
+
+      <!-- TOOLBAR NAVIGASI (TIDAK TERCETAK) -->
+      <div class="no-print">
+        <div style="font-weight: 700; font-size: 13px;">
+          📋 Laporan Rekap K3 &amp; HSE Klinik PT ATI — ${currPeriodTitle}
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="window.print()" style="background: #0284c7; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-weight: 700; cursor: pointer;">
+            🖨️ Cetak / Simpan PDF (A4)
+          </button>
+          <button onclick="if(window.opener && window.opener.exportHSEOfficialReportExcel){ window.opener.exportHSEOfficialReportExcel(); } else { alert('Gunakan tombol di halaman utama untuk unduh Excel'); }" style="background: #16a34a; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-weight: 700; cursor: pointer;">
+            📊 Unduh Format Excel (.xlsx)
+          </button>
+          <button onclick="window.close()" style="background: #475569; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+            Tutup
+          </button>
+        </div>
+      </div>
 
       <!-- LEMBAR 1: REKAPITULASI PENYAKIT -->
       <div class="page">
@@ -8896,6 +9249,230 @@ function printHSEOfficialReport() {
     </html>
   `);
   win.document.close();
+}
+
+function exportHSEOfficialReportExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('Pustaka SheetJS belum dimuat. Silakan refresh halaman.', 'error');
+    return;
+  }
+
+  const recordsToPrint = getHSERecordsFiltered();
+  const startVal = document.getElementById('hse-rm-start')?.value;
+  const endVal = document.getElementById('hse-rm-end')?.value;
+  const monthNames = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+
+  let currDate = new Date();
+  if (startVal) {
+    const parsed = new Date(`${startVal}T00:00:00`);
+    if (!isNaN(parsed.getTime())) currDate = parsed;
+  }
+
+  const currYear = currDate.getFullYear();
+  const currMonth = currDate.getMonth();
+  const prevYear = currMonth === 0 ? currYear - 1 : currYear;
+  const prevMonth = currMonth === 0 ? 11 : currMonth - 1;
+  const currMonthName = monthNames[currMonth];
+  const prevMonthName = monthNames[prevMonth];
+  const currPeriodTitle = `${currMonthName} - ${currYear}`;
+
+  const currRecords = appData.records.filter(r => {
+    const d = parseRecordDate(r);
+    return d && d.getFullYear() === currYear && d.getMonth() === currMonth;
+  });
+
+  const prevRecords = appData.records.filter(r => {
+    const d = parseRecordDate(r);
+    return d && d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  });
+
+  // 1. Penyakit
+  const penyakitMap = {};
+  currRecords.forEach(r => {
+    let diagStr = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
+    diagStr = diagStr.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
+    if (!diagStr) diagStr = 'Lainnya';
+    const diags = diagStr.split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
+    if (diags.length === 0) diags.push('Lainnya');
+    diags.forEach(d => {
+      if (!penyakitMap[d]) penyakitMap[d] = { name: d, curr: 0, prev: 0 };
+      penyakitMap[d].curr += 1;
+    });
+  });
+  prevRecords.forEach(r => {
+    let diagStr = r.asesmen && r.asesmen.trim() !== '' ? r.asesmen.trim() : (r.keluhan || 'Lainnya');
+    diagStr = diagStr.replace(/undefined\s*-\s*undefined/gi, 'Lainnya').trim();
+    if (!diagStr) diagStr = 'Lainnya';
+    const diags = diagStr.split(';').map(d => d.trim()).filter(d => d && d !== 'undefined - undefined');
+    if (diags.length === 0) diags.push('Lainnya');
+    diags.forEach(d => {
+      if (!penyakitMap[d]) penyakitMap[d] = { name: d, curr: 0, prev: 0 };
+      penyakitMap[d].prev += 1;
+    });
+  });
+  const penyakitList = Object.values(penyakitMap).sort((a, b) => b.curr - a.curr || b.prev - a.prev);
+  penyakitList.forEach(item => {
+    item.selisih = item.curr - item.prev;
+    if (item.prev === 0 && item.curr > 0) item.pct = 100;
+    else if (item.prev === 0 && item.curr === 0) item.pct = 0;
+    else item.pct = Math.round(((item.curr - item.prev) / item.prev) * 100);
+    item.status = item.selisih > 0 ? 'NAIK (↑)' : (item.selisih < 0 ? 'TURUN (↓)' : 'TETAP (=)');
+  });
+
+  // 2. Department
+  const deptMap = {};
+  currRecords.forEach(r => {
+    let d = r.dept && r.dept.trim() !== '' ? r.dept.trim() : 'Lainnya';
+    if (!deptMap[d]) deptMap[d] = { name: d, curr: 0, prev: 0 };
+    deptMap[d].curr += 1;
+  });
+  prevRecords.forEach(r => {
+    let d = r.dept && r.dept.trim() !== '' ? r.dept.trim() : 'Lainnya';
+    if (!deptMap[d]) deptMap[d] = { name: d, curr: 0, prev: 0 };
+    deptMap[d].prev += 1;
+  });
+  const deptList = Object.values(deptMap).sort((a, b) => b.curr - a.curr || b.prev - a.prev);
+  deptList.forEach(item => {
+    item.selisih = item.curr - item.prev;
+    if (item.prev === 0 && item.curr > 0) item.pct = 100;
+    else if (item.prev === 0 && item.curr === 0) item.pct = 0;
+    else item.pct = Math.round(((item.curr - item.prev) / item.prev) * 100);
+    item.status = item.selisih > 0 ? 'NAIK (↑)' : (item.selisih < 0 ? 'TURUN (↓)' : 'TETAP (=)');
+  });
+
+  // 3. Pasien
+  const patientMap = {};
+  currRecords.forEach(r => {
+    if (r.namaPasien) {
+      const key = `${r.namaPasien.trim()}||${r.nikPabrik ? r.nikPabrik.trim() : '-'}`;
+      if (!patientMap[key]) {
+        patientMap[key] = {
+          name: r.namaPasien.trim(),
+          nik: r.nikPabrik ? r.nikPabrik.trim() : '-',
+          dept: r.dept ? r.dept.trim() : '-',
+          curr: 0,
+          prev: 0
+        };
+      }
+      patientMap[key].curr += 1;
+    }
+  });
+  prevRecords.forEach(r => {
+    if (r.namaPasien) {
+      const key = `${r.namaPasien.trim()}||${r.nikPabrik ? r.nikPabrik.trim() : '-'}`;
+      if (!patientMap[key]) {
+        patientMap[key] = {
+          name: r.namaPasien.trim(),
+          nik: r.nikPabrik ? r.nikPabrik.trim() : '-',
+          dept: r.dept ? r.dept.trim() : '-',
+          curr: 0,
+          prev: 0
+        };
+      }
+      patientMap[key].prev += 1;
+    }
+  });
+  const patientList = Object.values(patientMap).sort((a, b) => b.curr - a.curr || b.prev - a.prev);
+  patientList.forEach(item => {
+    item.selisih = item.curr - item.prev;
+    if (item.prev === 0 && item.curr > 0) item.pct = 100;
+    else if (item.prev === 0 && item.curr === 0) item.pct = 0;
+    else item.pct = Math.round(((item.curr - item.prev) / item.prev) * 100);
+    item.status = item.selisih > 0 ? 'NAIK (↑)' : (item.selisih < 0 ? 'TURUN (↓)' : 'TETAP (=)');
+  });
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Penyakit
+  const wsPenyakitData = [
+    ['REKAP DATA KUNJUNGAN KARYAWAN PT ATI DI IN-HOUSE KLINIK NAFILA'],
+    ['REKAPITULASI DATA PENYAKIT KARYAWAN'],
+    [`PERIODE: ${currPeriodTitle}`],
+    [],
+    ['URUTAN', 'NAMA PENYAKIT', `JML BLN ${currMonthName}`, `JML BLN ${prevMonthName}`, 'STATUS', 'SELISIH', 'PERSENTASE (%)']
+  ];
+  penyakitList.forEach((item, idx) => {
+    wsPenyakitData.push([idx + 1, item.name, item.curr, item.prev, item.status, item.selisih, `${item.pct}%`]);
+  });
+  wsPenyakitData.push([]);
+  wsPenyakitData.push(['Disiapkan Oleh,', '', '', '', 'Mengetahui,']);
+  wsPenyakitData.push(['Officer K3 / HSE Klinik', '', '', '', 'Dokter Penanggung Jawab Klinik']);
+  wsPenyakitData.push([]);
+  wsPenyakitData.push(['( ______________________ )', '', '', '', 'dr. Dylan Fadhilah / dr. Isda Laily']);
+  const wsPenyakit = XLSX.utils.aoa_to_sheet(wsPenyakitData);
+  wsPenyakit['!cols'] = [{ wch: 8 }, { wch: 45 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }];
+  XLSX.utils.book_append_sheet(wb, wsPenyakit, 'Rekap Penyakit');
+
+  // Sheet 2: Department
+  const wsDeptData = [
+    ['REKAP DATA KUNJUNGAN KARYAWAN PT ATI DI IN-HOUSE KLINIK NAFILA'],
+    ['KUNJUNGAN DEPARTMENT TERBANYAK'],
+    [`PERIODE: ${currPeriodTitle}`],
+    [],
+    ['URUTAN', 'DEPARTMENT', `JML BLN ${currMonthName}`, `JML BLN ${prevMonthName}`, 'STATUS', 'SELISIH', 'PERSENTASE (%)']
+  ];
+  deptList.forEach((item, idx) => {
+    wsDeptData.push([idx + 1, item.name, item.curr, item.prev, item.status, item.selisih, `${item.pct}%`]);
+  });
+  wsDeptData.push([]);
+  wsDeptData.push(['Disiapkan Oleh,', '', '', '', 'Mengetahui,']);
+  wsDeptData.push(['Officer K3 / HSE Klinik', '', '', '', 'Dokter Penanggung Jawab Klinik']);
+  wsDeptData.push([]);
+  wsDeptData.push(['( ______________________ )', '', '', '', 'dr. Dylan Fadhilah / dr. Isda Laily']);
+  const wsDept = XLSX.utils.aoa_to_sheet(wsDeptData);
+  wsDept['!cols'] = [{ wch: 8 }, { wch: 35 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }];
+  XLSX.utils.book_append_sheet(wb, wsDept, 'Rekap Department');
+
+  // Sheet 3: Pasien
+  const wsPasienData = [
+    ['REKAP DATA KUNJUNGAN KARYAWAN PT ATI DI IN-HOUSE KLINIK NAFILA'],
+    ['REKAPITULASI KUNJUNGAN PASIEN / KARYAWAN'],
+    [`PERIODE: ${currPeriodTitle}`],
+    [],
+    ['URUTAN', 'NAMA KARYAWAN / PASIEN', 'NPK / NIK PABRIK', 'DEPARTMENT', `JML BLN ${currMonthName}`, `JML BLN ${prevMonthName}`, 'STATUS', 'SELISIH', 'PERSENTASE (%)']
+  ];
+  patientList.forEach((item, idx) => {
+    wsPasienData.push([idx + 1, item.name, item.nik, item.dept, item.curr, item.prev, item.status, item.selisih, `${item.pct}%`]);
+  });
+  wsPasienData.push([]);
+  wsPasienData.push(['Disiapkan Oleh,', '', '', '', '', '', 'Mengetahui,']);
+  wsPasienData.push(['Officer K3 / HSE Klinik', '', '', '', '', '', 'Dokter Penanggung Jawab Klinik']);
+  wsPasienData.push([]);
+  wsPasienData.push(['( ______________________ )', '', '', '', '', '', 'dr. Dylan Fadhilah / dr. Isda Laily']);
+  const wsPasien = XLSX.utils.aoa_to_sheet(wsPasienData);
+  wsPasien['!cols'] = [{ wch: 8 }, { wch: 32 }, { wch: 16 }, { wch: 25 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }];
+  XLSX.utils.book_append_sheet(wb, wsPasien, 'Rekap Pasien');
+
+  // Sheet 4: Detail Rawat Jalan
+  const wsDetailData = [
+    ['DETAIL REKAM MEDIS KUNJUNGAN KARYAWAN RAWAT JALAN'],
+    ['KLINIK NAFILA MEDIKA — PT ATI MEDIKA'],
+    [`PERIODE: ${currPeriodTitle}`],
+    [],
+    ['NO', 'TANGGAL', 'NPK / NIK', 'NAMA PASIEN', 'DEPARTEMEN', 'KELUHAN (S)', 'DIAGNOSIS ICD-10 (A)', 'HASIL PEMERIKSAAN (O)', 'RESEP & TERAPI (P)', 'STATUS K3', 'DOKTER / PEMERIKSA']
+  ];
+  recordsToPrint.forEach((r, idx) => {
+    const resepStr = Array.isArray(r.resep) ? r.resep.map(m => `${m.namaObat || m.obat || 'Obat'} (${m.qty || 1} ${m.satuan || ''})`).join('; ') : '-';
+    wsDetailData.push([
+      idx + 1,
+      r.tanggal || '-',
+      r.nikPabrik || '-',
+      r.namaPasien || '-',
+      r.dept || '-',
+      r.keluhan || '-',
+      r.asesmen || '-',
+      r.objektif || '-',
+      resepStr,
+      getStatusKelaikanText(r),
+      r.dokterPemeriksa || '-'
+    ]);
+  });
+  const wsDetail = XLSX.utils.aoa_to_sheet(wsDetailData);
+  wsDetail['!cols'] = [{ wch: 6 }, { wch: 14 }, { wch: 14 }, { wch: 28 }, { wch: 20 }, { wch: 32 }, { wch: 32 }, { wch: 25 }, { wch: 35 }, { wch: 18 }, { wch: 22 }];
+  XLSX.utils.book_append_sheet(wb, wsDetail, 'Detail Rekam Medis');
+
+  XLSX.writeFile(wb, `Laporan_Rekap_K3_HSE_Klinik_Nafila_${currPeriodTitle.replace(/\s+/g, '_')}.xlsx`);
+  showToast(`File Excel Laporan K3/HSE (${currPeriodTitle}) berhasil diunduh!`, 'success');
 }
 
 // -------------------------------------------------------------
@@ -9940,10 +10517,45 @@ function printExecutiveReport() {
         th, td { border: 1px solid #94a3b8; padding: 7px; }
         th { background: #e2e8f0; text-transform: uppercase; font-size: 9pt; text-align: left; }
         .ttd-box { display: flex; justify-content: space-between; margin-top: 45px; text-align: center; font-size: 10.5pt; }
-        @media print { @page { size: A4 portrait; margin: 1.5cm; } }
+        .no-print {
+          position: sticky;
+          top: 0;
+          background: #064e3b;
+          color: #fff;
+          padding: 12px 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 9999;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+          border-bottom: 3px solid #10b981;
+          margin: -25px -25px 20px -25px;
+        }
+        @media print {
+          @page { size: A4 portrait; margin: 1.5cm; }
+          .no-print { display: none !important; }
+        }
       </style>
     </head>
     <body>
+      <!-- TOOLBAR NAVIGASI (TIDAK TERCETAK) -->
+      <div class="no-print">
+        <div style="font-weight: 700; font-size: 13px;">
+          🧾 Laporan Manajerial &amp; Biaya Medik Klinik — Tanggal: ${tglIndo}
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button onclick="window.print()" style="background: #10b981; color: #fff; border: none; padding: 7px 16px; border-radius: 5px; font-weight: 700; cursor: pointer;">
+            🖨️ Cetak / Simpan PDF (A4)
+          </button>
+          <button onclick="if(window.opener && window.opener.exportExecutiveReportExcel){ window.opener.exportExecutiveReportExcel(); } else { alert('Gunakan tombol di halaman utama untuk unduh Excel'); }" style="background: #047857; color: #fff; border: 1px solid #34d399; padding: 7px 16px; border-radius: 5px; font-weight: 700; cursor: pointer;">
+            📊 Unduh Format Excel (.xlsx) Bisa Diedit
+          </button>
+          <button onclick="window.close()" style="background: #334155; color: #fff; border: none; padding: 7px 14px; border-radius: 5px; font-weight: 600; cursor: pointer;">
+            Tutup
+          </button>
+        </div>
+      </div>
+
       <div class="header">
         <h2>LAPORAN MANAJERIAL & BIAYA MEDIK KLINIK</h2>
         <h4>KLINIK NAFILA MEDIKA — PT ATI MEDIKA</h4>
@@ -9995,6 +10607,77 @@ function printExecutiveReport() {
     </html>
   `);
   win.document.close();
+}
+
+function exportExecutiveReportExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('Pustaka SheetJS belum dimuat. Silakan refresh halaman.', 'error');
+    return;
+  }
+
+  const filtered = getFilteredBillingRecords();
+  const totalVisits = filtered.length;
+  const totalBilling = filtered.reduce((sum, r) => sum + (r.totalBiaya || 0), 0);
+  const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const startVal = document.getElementById('billing-start')?.value || '';
+  const endVal = document.getElementById('billing-end')?.value || '';
+  let periodeStr = 'Semua Periode';
+  if (startVal && endVal) {
+    periodeStr = `${startVal} s/d ${endVal}`;
+  }
+
+  const aoa = [
+    ['LAPORAN MANAJERIAL & BIAYA MEDIK KLINIK'],
+    ['KLINIK NAFILA MEDIKA — PT ATI MEDIKA'],
+    [`Tanggal Laporan: ${tglIndo} | Periode Filter: ${periodeStr}`],
+    [],
+    ['RINGKASAN EKSEKUTIF'],
+    ['Total Kunjungan Rawat Jalan', `${totalVisits} Pasien`],
+    ['Total Rekap Biaya Billing', totalBilling],
+    [],
+    ['RINCIAN TAGIHAN LAYANAN KESEHATAN PASIEN RAWAT JALAN:'],
+    ['NO', 'TANGGAL', 'NPK / NIK', 'NAMA PASIEN', 'DEPARTEMEN / BAGIAN', 'DIAGNOSIS UTAMA (A)', 'TARIF BILLING (RP)']
+  ];
+
+  filtered.forEach((r, i) => {
+    aoa.push([
+      i + 1,
+      r.tanggal || '-',
+      r.nikPabrik || '-',
+      r.namaPasien || '-',
+      r.dept || '-',
+      r.asesmen || '-',
+      r.totalBiaya || 0
+    ]);
+  });
+
+  // Grand Total row
+  aoa.push([]);
+  aoa.push(['', '', '', '', '', 'TOTAL BIAYA BILLING (RP):', totalBilling]);
+  aoa.push([]);
+  aoa.push(['Disiapkan Oleh,', '', '', '', 'Menyetujui,']);
+  aoa.push(['Manajer Keuangan / Operasional', '', '', '', 'Koordinator Pelayanan Medis']);
+  aoa.push([]);
+  aoa.push([]);
+  aoa.push(['( ______________________ )', '', '', '', 'drg. Nafila Alam Islami, MARS']);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [
+    { wch: 6 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 28 },
+    { wch: 22 },
+    { wch: 32 },
+    { wch: 20 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Billing Manajerial');
+
+  const dateStr = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Laporan_Manajerial_Billing_PT_ATI_${dateStr}.xlsx`);
+  showToast(`File Excel Laporan Manajerial (${totalVisits} pasien) berhasil diunduh!`, 'success');
 }
 
 function renderAbsenDirekturTable() {
@@ -10368,31 +11051,26 @@ function renderMobileKaryawanCards() {
   const container = document.getElementById('mobile-karyawan-cards');
   if (!container) return;
 
+  const rmCountMap = getKaryawanRMCountMap();
+  const filtered = getFilteredAndSortedKaryawan(rmCountMap);
   const query = document.getElementById('search-karyawan-input')?.value.toLowerCase().trim() || '';
-
-  const filtered = appData.patients.filter(k => {
-    const nikP = String(k.nikPabrik || k.nik || '').toLowerCase();
-    const nama = String(k.nama || '').toLowerCase();
-    const dept = String(k.dept || k.departemen || '').toLowerCase();
-    const hp = String(k.hp || k.no_hp || '').toLowerCase();
-    return !query || nikP.includes(query) || nama.includes(query) || dept.includes(query) || hp.includes(query);
-  });
 
   if (filtered.length === 0) {
     container.innerHTML = `
       <div style="text-align:center; padding: 32px 16px; color: var(--text-muted);">
         <i class="fa-solid fa-user-slash" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i>
         <div style="font-weight: 700;">Tidak ada pasien ditemukan</div>
-        <div style="font-size: 0.8rem; margin-top: 4px;">"${query}"</div>
+        <div style="font-size: 0.8rem; margin-top: 4px;">"${query || 'Filter aktif'}"</div>
       </div>`;
     return;
   }
 
+  const isSortedOrFiltered = Boolean(karyawanTableFilters.sortCol || karyawanTableFilters.dept || karyawanTableFilters.saldoCondition || karyawanTableFilters.riwayat !== 'all' || query);
   const displayLimit = query ? 60 : (_karyawanDisplayLimit || 40);
   const itemsToRender = filtered.slice(0, displayLimit);
 
   const cardsHtml = itemsToRender.map((k, idx) => {
-    const no = k.no || String(idx + 1);
+    const no = isSortedOrFiltered ? String(idx + 1) : (k.no || String(idx + 1));
     const npk = k.nikPabrik || k.nik || '-';
     const nama = k.nama || '-';
     const dept = k.dept || k.departemen || 'PT ATI';
@@ -10481,6 +11159,8 @@ function renderMobileKaryawanCards() {
 // GRAFIK ANALISIS HSE (10 PENYAKIT & 10 DEPARTMENT TERBANYAK)
 // =============================================================
 let hseChartInstances = {};
+let currentHSEChartTab = 'penyakit';
+let _lastHSEChartData = null;
 
 function openHSEChartModal(targetTab = 'penyakit') {
   const modal = document.getElementById('modal-hse-charts');
@@ -10490,6 +11170,7 @@ function openHSEChartModal(targetTab = 'penyakit') {
 }
 
 function switchHSEChartTab(tab) {
+  currentHSEChartTab = tab || 'penyakit';
   const secPenyakit = document.getElementById('section-chart-penyakit');
   const secDept = document.getElementById('section-chart-dept');
   const secPasien = document.getElementById('section-chart-pasien');
@@ -10654,6 +11335,400 @@ function renderHSEComparisonCharts() {
   renderBarChart('chartPasienPrev', topPasienPrev.map(d => d[0]), topPasienPrev.map(d => d[1]), '#f59e0b');
   renderBarChart('chartSectionCurrent', topSectionCurr.map(d => d[0]), topSectionCurr.map(d => d[1]), '#a855f7');
   renderBarChart('chartSectionPrev', topSectionPrev.map(d => d[0]), topSectionPrev.map(d => d[1]), '#a855f7');
+
+  _lastHSEChartData = {
+    currMonthLabel,
+    prevMonthLabel,
+    topPenyakitCurr,
+    topPenyakitPrev,
+    topDeptCurr,
+    topDeptPrev,
+    topPasienCurr,
+    topPasienPrev,
+    topSectionCurr,
+    topSectionPrev
+  };
+}
+
+function printHSECharts(mode = 'selected') {
+  if (!_lastHSEChartData) {
+    renderHSEComparisonCharts();
+  }
+  if (!_lastHSEChartData) {
+    showToast('Data grafik belum siap dicetak.', 'warning');
+    return;
+  }
+
+  // Force all sections to be visible temporarily so canvases have non-zero layout dimensions
+  const sections = ['penyakit', 'dept', 'pasien', 'section'];
+  const originalDisplays = {};
+  sections.forEach(s => {
+    const el = document.getElementById(`section-chart-${s}`);
+    if (el) {
+      originalDisplays[s] = el.style.display;
+      el.style.display = 'block';
+    }
+  });
+
+  // Re-render / trigger resize so Chart.js computes full pixel dimensions
+  Object.values(hseChartInstances).forEach(chart => {
+    if (chart) chart.resize();
+  });
+
+  const getCanvasImg = (id) => {
+    const c = document.getElementById(id);
+    if (!c) return '';
+    try {
+      return c.toDataURL('image/png');
+    } catch (e) {
+      console.warn('Canvas export failed for ' + id, e);
+      return '';
+    }
+  };
+
+  const chartMeta = {
+    penyakit: {
+      name: '10 PENYAKIT TERBANYAK',
+      color: '#00cbd5',
+      currImg: getCanvasImg('chartPenyakitCurrent'),
+      prevImg: getCanvasImg('chartPenyakitPrev'),
+      currList: _lastHSEChartData.topPenyakitCurr || [],
+      prevList: _lastHSEChartData.topPenyakitPrev || []
+    },
+    dept: {
+      name: '10 DEPARTMENT TERBANYAK',
+      color: '#84cc16',
+      currImg: getCanvasImg('chartDeptCurrent'),
+      prevImg: getCanvasImg('chartDeptPrev'),
+      currList: _lastHSEChartData.topDeptCurr || [],
+      prevList: _lastHSEChartData.topDeptPrev || []
+    },
+    pasien: {
+      name: '10 PASIEN TERBANYAK KUNJUNGAN',
+      color: '#f59e0b',
+      currImg: getCanvasImg('chartPasienCurrent'),
+      prevImg: getCanvasImg('chartPasienPrev'),
+      currList: _lastHSEChartData.topPasienCurr || [],
+      prevList: _lastHSEChartData.topPasienPrev || []
+    },
+    section: {
+      name: 'SECTION TERBANYAK KUNJUNGAN',
+      color: '#a855f7',
+      currImg: getCanvasImg('chartSectionCurrent'),
+      prevImg: getCanvasImg('chartSectionPrev'),
+      currList: _lastHSEChartData.topSectionCurr || [],
+      prevList: _lastHSEChartData.topSectionPrev || []
+    }
+  };
+
+  // Restore DOM display
+  sections.forEach(s => {
+    const el = document.getElementById(`section-chart-${s}`);
+    if (el) el.style.display = originalDisplays[s];
+  });
+
+  const tabsToPrint = mode === 'all' ? ['penyakit', 'dept', 'pasien', 'section'] : [currentHSEChartTab || 'penyakit'];
+
+  const pagesHTML = tabsToPrint.map((tabKey, pageIdx) => {
+    const meta = chartMeta[tabKey];
+    if (!meta) return '';
+
+    // Build comparison table rows
+    const prevMap = {};
+    meta.prevList.forEach(item => {
+      prevMap[item[0]] = item[1];
+    });
+
+    const tableRows = meta.currList.map((item, idx) => {
+      const name = item[0];
+      const currVal = item[1];
+      const prevVal = prevMap[name] || 0;
+      const selisih = currVal - prevVal;
+      let pct = 0;
+      if (prevVal === 0 && currVal > 0) pct = 100;
+      else if (prevVal > 0) pct = Math.round(((currVal - prevVal) / prevVal) * 100);
+
+      let statusBadge = '<span style="color: #64748b; font-weight: 700;">TETAP (=)</span>';
+      if (selisih > 0) {
+        statusBadge = `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">NAIK (↑ +${selisih})</span>`;
+      } else if (selisih < 0) {
+        statusBadge = `<span style="color: #166534; font-weight: 700; background: #dcfce7; padding: 2px 6px; border-radius: 4px;">TURUN (↓ ${selisih})</span>`;
+      }
+
+      return `
+        <tr>
+          <td style="text-align: center; border: 1px solid #cbd5e1; padding: 5px; font-weight: 700; font-size: 8.5pt;">${idx + 1}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 600; font-size: 8.5pt; text-transform: uppercase;">${name}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1; padding: 5px; font-weight: 700; font-size: 8.5pt; color: #0284c7;">${currVal}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1; padding: 5px; font-weight: 700; font-size: 8.5pt; color: #64748b;">${prevVal}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1; padding: 5px; font-size: 8pt;">${statusBadge}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1; padding: 5px; font-weight: 700; font-size: 8.5pt;">${selisih > 0 ? `+${selisih}` : selisih}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1; padding: 5px; font-weight: 700; font-size: 8.5pt;">${pct}%</td>
+        </tr>
+      `;
+    }).join('');
+
+    const pageBreakStyle = pageIdx < tabsToPrint.length - 1 ? 'page-break-after: always;' : '';
+
+    return `
+      <div class="print-page" style="${pageBreakStyle} padding: 10px 0;">
+        <!-- KOP SURAT RESMI -->
+        <div class="kop-container">
+          <div class="kop-logo-box">
+            <img src="Salinan%20Logo%20nafila.webp" alt="Logo Nafila" class="kop-logo-img" onerror="this.onerror=null; this.src='Salinan Logo nafila.webp';">
+          </div>
+          <div class="kop-text-box">
+            <h1 class="kop-company-name">KLINIK NAFILA MEDIKA — IN-HOUSE PT ATI</h1>
+            <div class="kop-subtitle">LAPORAN GRAFIK ANALISIS KESEHATAN KERJA &amp; K3 (HSE)</div>
+            <div class="kop-address">Kawasan Industri Marunda Center, Bekasi &bull; Telp: 0812-8800-9921 &bull; Email: klinik.nafilamedika@gmail.com</div>
+          </div>
+          <div class="kop-logo-box" style="text-align: right;">
+            <img src="ATI%20Logo.png" alt="Logo PT ATI" class="kop-logo-img" onerror="this.style.display='none';">
+          </div>
+        </div>
+        <div class="kop-divider"></div>
+
+        <!-- JUDUL LAPORAN -->
+        <div class="doc-title-box">
+          <h2 class="doc-title">${meta.name}</h2>
+          <div class="doc-period">PERBANDINGAN: ${_lastHSEChartData.currMonthLabel} VS ${_lastHSEChartData.prevMonthLabel}</div>
+        </div>
+
+        <!-- GAMBAR GRAFIK BERDAMPINGAN -->
+        <div class="charts-row">
+          <div class="chart-col">
+            <div class="chart-header-badge" style="border-left: 4px solid ${meta.color};">
+              BULAN INI (${_lastHSEChartData.currMonthLabel})
+            </div>
+            <div class="chart-canvas-box">
+              ${meta.currImg ? `<img src="${meta.currImg}" class="chart-render-img">` : '<div style="padding:40px; color:#94a3b8;">Grafik tidak tersedia</div>'}
+            </div>
+          </div>
+          <div class="chart-col">
+            <div class="chart-header-badge" style="border-left: 4px solid #64748b;">
+              BULAN KEMARIN (${_lastHSEChartData.prevMonthLabel})
+            </div>
+            <div class="chart-canvas-box">
+              ${meta.prevImg ? `<img src="${meta.prevImg}" class="chart-render-img">` : '<div style="padding:40px; color:#94a3b8;">Grafik tidak tersedia</div>'}
+            </div>
+          </div>
+        </div>
+
+        <!-- TABEL RANGKUMAN PERBANDINGAN ANGKA -->
+        <div style="margin-top: 14px;">
+          <div style="font-weight: 800; font-size: 9pt; color: #0f172a; margin-bottom: 6px; text-transform: uppercase;">
+            📊 Rincian &amp; Evaluasi Angka Perbandingan:
+          </div>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+            <thead>
+              <tr style="background: #f1f5f9;">
+                <th style="width: 5%; border: 1px solid #94a3b8; padding: 5px; font-size: 8pt; text-align: center;">URUTAN</th>
+                <th style="width: 41%; border: 1px solid #94a3b8; padding: 5px 8px; font-size: 8pt; text-align: left;">NAMA / KATEGORI</th>
+                <th style="width: 12%; border: 1px solid #94a3b8; padding: 5px; font-size: 8pt; text-align: center;">${_lastHSEChartData.currMonthLabel}</th>
+                <th style="width: 12%; border: 1px solid #94a3b8; padding: 5px; font-size: 8pt; text-align: center;">${_lastHSEChartData.prevMonthLabel}</th>
+                <th style="width: 14%; border: 1px solid #94a3b8; padding: 5px; font-size: 8pt; text-align: center;">STATUS</th>
+                <th style="width: 8%; border: 1px solid #94a3b8; padding: 5px; font-size: 8pt; text-align: center;">SELISIH</th>
+                <th style="width: 8%; border: 1px solid #94a3b8; padding: 5px; font-size: 8pt; text-align: center;">%</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows || '<tr><td colspan="7" style="text-align:center; padding: 8px;">Belum ada data</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TANDA TANGAN -->
+        <div class="ttd-grid">
+          <div>
+            Disiapkan Oleh,<br><strong>Officer K3 / HSE In-House Klinik</strong><br><br><br><br>
+            ( ______________________ )
+          </div>
+          <div>
+            Mengetahui,<br><strong>Dokter Penanggung Jawab Klinik PT ATI</strong><br><br><br><br>
+            <strong>dr. Dylan Fadhilah / dr. Isda Laily</strong>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    showToast('⚠️ Pop-up cetak diblokir browser. Izinkan pop-up untuk mencetak.', 'warning');
+    return;
+  }
+
+  win.document.write(`
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <meta charset="UTF-8">
+      <title>Laporan Grafik Analisis K3 &amp; HSE - PT ATI &amp; Nafila Medika</title>
+      <style>
+        @page {
+          size: A4 portrait;
+          margin: 8mm 12mm 8mm 12mm;
+        }
+        * {
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        body {
+          font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+          color: #0f172a;
+          background: #ffffff;
+          margin: 0;
+          padding: 0;
+          font-size: 8.5pt;
+          line-height: 1.3;
+        }
+        .no-print {
+          position: sticky;
+          top: 0;
+          background: #0f172a;
+          color: #fff;
+          padding: 10px 16px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 9999;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+          border-bottom: 2px solid #0284c7;
+        }
+        .kop-container {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 4px;
+          gap: 12px;
+        }
+        .kop-logo-box {
+          flex-shrink: 0;
+          width: 70px;
+          text-align: center;
+        }
+        .kop-logo-img {
+          max-width: 68px;
+          max-height: 55px;
+          object-fit: contain;
+        }
+        .kop-text-box {
+          flex: 1;
+          text-align: center;
+        }
+        .kop-company-name {
+          font-size: 12pt;
+          font-weight: 800;
+          letter-spacing: 0.03em;
+          color: #0f172a;
+          margin: 0;
+        }
+        .kop-subtitle {
+          font-size: 8pt;
+          font-weight: 700;
+          color: #0369a1;
+          margin: 1px 0;
+        }
+        .kop-address {
+          font-size: 7pt;
+          color: #475569;
+        }
+        .kop-divider {
+          border-top: 2px solid #0f172a;
+          border-bottom: 1px solid #0f172a;
+          height: 2px;
+          margin: 3px 0 8px 0;
+        }
+        .doc-title-box {
+          text-align: center;
+          margin-bottom: 10px;
+        }
+        .doc-title {
+          font-size: 11pt;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0;
+          text-transform: uppercase;
+        }
+        .doc-period {
+          font-size: 8pt;
+          font-weight: 700;
+          color: #0284c7;
+          margin-top: 2px;
+        }
+        .charts-row {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 8px;
+        }
+        .chart-col {
+          flex: 1;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          background: #0f172a;
+          padding: 8px;
+        }
+        .chart-header-badge {
+          color: #f8fafc;
+          font-weight: 800;
+          font-size: 7.5pt;
+          text-transform: uppercase;
+          padding-left: 6px;
+          margin-bottom: 6px;
+        }
+        .chart-canvas-box {
+          text-align: center;
+          height: 210px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .chart-render-img {
+          max-width: 100%;
+          max-height: 200px;
+          object-fit: contain;
+        }
+        .ttd-grid {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 25px;
+          text-align: center;
+          font-size: 8.5pt;
+        }
+        @media print {
+          .no-print { display: none !important; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="no-print">
+        <div style="font-weight: 700; font-size: 13px;">
+          📊 Pratinjau Cetak Grafik Laporan K3 &amp; HSE (Kertas A4)
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="window.print()" style="background: #0284c7; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-weight: 700; cursor: pointer;">
+            🖨️ Cetak / Simpan PDF (A4)
+          </button>
+          <button onclick="window.close()" style="background: #475569; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+            Tutup
+          </button>
+        </div>
+      </div>
+
+      ${pagesHTML}
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 350);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  win.document.close();
 }
 
 function renderBarChart(canvasId, labels, dataValues, barColor) {
