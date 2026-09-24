@@ -502,21 +502,205 @@
                   <!-- Sub-opsi Rutinitas Pemantauan (Muncul saat dicentang) -->
                   <div id="poli-pantauan-sub-options" style="display: none; padding-top: 8px; border-top: 1px dashed rgba(239,68,68,0.3);">
                     <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
-                      Pilih Jenis Kunjungan Pemantauan Rutin (Auto-sinkron ke Dasbor HSE):
+                      Pilih Jenis Kunjungan Pemantauan Rutin (Bisa dipilih 1, 2, atau ketiganya):
                     </div>
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(2,132,199,0.12); border: 1px solid rgba(2,132,199,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; color: #38bdf8; cursor: pointer;">
-                        <input type="radio" name="poli-tipe-pantauan" value="mingguan" checked onchange="selectPoliPantauanTipe('mingguan')">
+                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(2,132,199,0.12); border: 1.5px solid rgba(2,132,199,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; color: #38bdf8; cursor: pointer;">
+                        <input type="checkbox" id="poli-pantauan-chk-mingguan" value="mingguan" checked onchange="togglePoliPantauanSection('mingguan')" style="width: 16px; height: 16px; accent-color: #0284c7; cursor: pointer;">
                         <i class="fa-solid fa-heart-pulse"></i> 1 Minggu (Cek Vital / Gula)
                       </label>
-                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; color: #34d399; cursor: pointer;">
-                        <input type="radio" name="poli-tipe-pantauan" value="obat" onchange="selectPoliPantauanTipe('obat')">
+                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.12); border: 1.5px solid rgba(16,185,129,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; color: #34d399; cursor: pointer;">
+                        <input type="checkbox" id="poli-pantauan-chk-obat" value="obat" onchange="togglePoliPantauanSection('obat')" style="width: 16px; height: 16px; accent-color: #10b981; cursor: pointer;">
                         <i class="fa-solid fa-pills"></i> 1 Bulan (Ambil Obat Rutin)
                       </label>
-                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; color: #c084fc; cursor: pointer;">
-                        <input type="radio" name="poli-tipe-pantauan" value="lab" onchange="selectPoliPantauanTipe('lab')">
+                      <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(168,85,247,0.12); border: 1.5px solid rgba(168,85,247,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; color: #c084fc; cursor: pointer;">
+                        <input type="checkbox" id="poli-pantauan-chk-lab" value="lab" onchange="togglePoliPantauanSection('lab')" style="width: 16px; height: 16px; accent-color: #8b5cf6; cursor: pointer;">
                         <i class="fa-solid fa-flask-vial"></i> 3 Bulan (Cek Lab Berkala)
                       </label>
+                    </div>
+
+                    <!-- 1. FORM INPUT CEK RUTIN MINGGUAN (SS 1) -->
+                    <div id="poli-pantauan-sec-mingguan" style="display: block; background: var(--surface-1); border: 1px solid rgba(2,132,199,0.3); border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(2,132,199,0.2); padding-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                        <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                          <i class="fa-solid fa-heart-pulse"></i> 1. Cek Rutin Mingguan (Vital, Gula, Asam Urat, Kolesterol, BB/TB)
+                        </strong>
+                        <button type="button" class="btn btn-sm" onclick="syncPoliObjektifToPantauan()" style="background: rgba(56,189,248,0.15); color: #38bdf8; font-size: 0.74rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.3); font-weight: 700;" title="Salin otomatis jika TD / Vital sudah diketik di kolom Objektif">
+                          <i class="fa-solid fa-wand-magic-sparkles"></i> Ambil dari TTV Objektif
+                        </button>
+                      </div>
+                      
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Tekanan Darah (Sistolik / Diastolik)</label>
+                          <div style="display: flex; gap: 4px; align-items: center;">
+                            <input type="number" id="poli-pantauan-td-sis" class="form-control form-control-sm" placeholder="120" style="text-align: center; font-weight: 700;" oninput="updatePoliPantauanBPStatus()">
+                            <span>/</span>
+                            <input type="number" id="poli-pantauan-td-dia" class="form-control form-control-sm" placeholder="80" style="text-align: center; font-weight: 700;" oninput="updatePoliPantauanBPStatus()">
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">mmHg</span>
+                          </div>
+                          <div id="poli-pantauan-bp-status" style="margin-top: 4px; font-size: 0.72rem; font-weight: 700; color: #10b981;">Status: Normal (&lt;120/80)</div>
+                        </div>
+
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Denyut Nadi</label>
+                          <div style="display: flex; gap: 4px; align-items: center;">
+                            <input type="number" id="poli-pantauan-nadi" class="form-control form-control-sm" placeholder="80" style="text-align: center;">
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">bpm</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Gula Darah (mg/dL)</label>
+                          <div style="display: flex; gap: 4px; align-items: center;">
+                            <select id="poli-pantauan-tipe-gula" class="form-control form-control-sm" style="width: 75px; font-size: 0.78rem;">
+                              <option value="GDS">GDS</option>
+                              <option value="GDP">GDP</option>
+                              <option value="GD2PP">GD2PP</option>
+                            </select>
+                            <input type="number" id="poli-pantauan-gula" class="form-control form-control-sm" placeholder="110" style="text-align: center; font-weight: 700;">
+                          </div>
+                        </div>
+
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Asam Urat (mg/dL)</label>
+                          <input type="number" step="0.1" id="poli-pantauan-asam-urat" class="form-control form-control-sm" placeholder="Contoh: 6.2">
+                        </div>
+
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Kolesterol Total (mg/dL)</label>
+                          <input type="number" id="poli-pantauan-kolesterol" class="form-control form-control-sm" placeholder="Contoh: 190">
+                        </div>
+
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Berat Badan &amp; Tinggi</label>
+                          <div style="display: flex; gap: 4px; align-items: center;">
+                            <input type="number" step="0.5" id="poli-pantauan-bb" class="form-control form-control-sm" placeholder="BB (kg)" oninput="calcPoliPantauanBMI()">
+                            <input type="number" id="poli-pantauan-tb" class="form-control form-control-sm" placeholder="TB (cm)" oninput="calcPoliPantauanBMI()">
+                          </div>
+                          <div id="poli-pantauan-bmi" style="margin-top: 4px; font-size: 0.72rem; color: var(--text-muted);">BMI: -</div>
+                        </div>
+
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Lingkar Perut (cm)</label>
+                          <input type="number" id="poli-pantauan-lingkar-perut" class="form-control form-control-sm" placeholder="Contoh: 85">
+                        </div>
+
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700; color: #38bdf8;">Jadwal Cek Mingguan Berikutnya</label>
+                          <input type="date" id="poli-pantauan-jadwal-mingguan" class="form-control form-control-sm" onchange="updatePoliKontrolFromPantauan()">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 2. FORM INPUT OBAT RUTIN BULANAN (SS 2) -->
+                    <div id="poli-pantauan-sec-obat" style="display: none; background: var(--surface-1); border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(16,185,129,0.2); padding-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; color: #34d399; margin: 0; cursor: pointer;">
+                          <input type="checkbox" id="poli-pantauan-chk-ambil-obat" checked style="width: 16px; height: 16px; accent-color: #10b981;">
+                          <i class="fa-solid fa-pills"></i> 2. Ada Pengambilan Obat Rutin Bulan Ini
+                        </label>
+                        <div style="display: flex; gap: 6px;">
+                          <button type="button" class="btn btn-sm" onclick="syncPoliResepToPantauan()" style="background: rgba(56,189,248,0.15); color: #38bdf8; font-size: 0.74rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.3); font-weight: 700;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Salin Resep Poli
+                          </button>
+                          <button type="button" class="btn btn-sm btn-primary" onclick="addPoliPantauanMedRow()" style="background: #0284c7; color: #fff; font-size: 0.74rem; padding: 3px 10px; border-radius: 4px; border: none; font-weight: 700;">
+                            <i class="fa-solid fa-plus"></i> + Tambah Obat
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- List Baris Obat -->
+                      <div id="poli-pantauan-obat-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                        <!-- Dynamic medicine rows -->
+                      </div>
+
+                      <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px;">
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Catatan Obat / Kepatuhan Minum</label>
+                          <input type="text" id="poli-pantauan-catatan-obat" class="form-control form-control-sm" placeholder="Contoh: Diminum teratur, sisa obat sebelumnya habis">
+                        </div>
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700; color: #34d399;">Jadwal Ambil Obat Bulan Depan</label>
+                          <input type="date" id="poli-pantauan-jadwal-obat" class="form-control form-control-sm" onchange="updatePoliKontrolFromPantauan()">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 3. FORM INPUT CEK LAB 3 BULANAN (SS 3) -->
+                    <div id="poli-pantauan-sec-lab" style="display: none; background: var(--surface-1); border: 1px solid rgba(168,85,247,0.3); border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(168,85,247,0.2); padding-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; color: #c084fc; margin: 0; cursor: pointer;">
+                          <input type="checkbox" id="poli-pantauan-chk-ada-lab" checked style="width: 16px; height: 16px; accent-color: #8b5cf6;">
+                          <i class="fa-solid fa-flask-vial"></i> 3. Ada Pemeriksaan Laboratorium (Triwulanan)
+                        </label>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="addPoliPantauanCustomLabRow()" style="background: #8b5cf6; color: #fff; font-size: 0.74rem; padding: 3px 10px; border-radius: 4px; border: none; font-weight: 700;">
+                          <i class="fa-solid fa-plus-circle"></i> + Tambah Pemeriksaan Lab Bebas
+                        </button>
+                      </div>
+
+                      <!-- Parameter Lab Standar -->
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; background: rgba(168,85,247,0.06); padding: 10px; border-radius: 6px; border: 1px solid rgba(168,85,247,0.15);">
+                        <div>
+                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">HbA1c (%)</label>
+                          <input type="number" step="0.1" id="poli-pantauan-lab-hba1c" class="form-control form-control-sm" placeholder="Contoh: 6.5">
+                          <span style="font-size: 0.68rem; color: var(--text-muted);">&lt; 5.7% (Normal)</span>
+                        </div>
+                        <div>
+                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Ureum (mg/dL)</label>
+                          <input type="number" id="poli-pantauan-lab-ureum" class="form-control form-control-sm" placeholder="Contoh: 28">
+                          <span style="font-size: 0.68rem; color: var(--text-muted);">Ref: 15-45</span>
+                        </div>
+                        <div>
+                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Creatinin (mg/dL)</label>
+                          <input type="number" step="0.1" id="poli-pantauan-lab-creatinin" class="form-control form-control-sm" placeholder="Contoh: 0.9">
+                          <span style="font-size: 0.68rem; color: var(--text-muted);">Ref: 0.6-1.2</span>
+                        </div>
+                        <div>
+                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Natrium (Na)</label>
+                          <input type="number" id="poli-pantauan-lab-na" class="form-control form-control-sm" placeholder="140 mmol/L">
+                        </div>
+                        <div>
+                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Kalium (K)</label>
+                          <input type="number" step="0.1" id="poli-pantauan-lab-k" class="form-control form-control-sm" placeholder="4.2 mmol/L">
+                        </div>
+                        <div>
+                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Klorida (Cl)</label>
+                          <input type="number" id="poli-pantauan-lab-cl" class="form-control form-control-sm" placeholder="102 mmol/L">
+                        </div>
+                      </div>
+
+                      <!-- Baris Lab Bebas / Kustom -->
+                      <div id="poli-pantauan-custom-lab-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                        <!-- Dynamic custom lab rows -->
+                      </div>
+
+                      <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px;">
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Catatan Evaluasi Hasil Lab</label>
+                          <input type="text" id="poli-pantauan-lab-catatan" class="form-control form-control-sm" placeholder="Contoh: Fungsi ginjal baik, HbA1c stabil">
+                        </div>
+                        <div>
+                          <label class="form-label" style="font-size: 0.76rem; font-weight: 700; color: #c084fc;">Jadwal Cek Lab Berikutnya (3 Bulan)</label>
+                          <input type="date" id="poli-pantauan-jadwal-lab" class="form-control form-control-sm" onchange="updatePoliKontrolFromPantauan()">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- FOOTER UMUM: SARAN/EDUKASI & WHATSAPP -->
+                    <div id="poli-pantauan-common-footer" style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
+                      <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #f59e0b; margin-bottom: 4px;">
+                        <i class="fa-solid fa-lightbulb"></i> Saran / Edukasi Tim Medis &amp; HSE untuk Pasien:
+                      </label>
+                      <textarea id="poli-pantauan-catatan-dokter" class="form-control form-control-sm" rows="2" placeholder="Contoh: Pertahankan pola makan rendah garam, jalan kaki 30 menit sehari, dan obat diminum rutin." style="font-size: 0.82rem; margin-bottom: 8px;"></textarea>
+
+                      <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; color: #22c55e; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="poli-pantauan-send-wa" style="width: 16px; height: 16px; accent-color: #22c55e;">
+                        <i class="fa-brands fa-whatsapp"></i> Kirim Rangkuman Evaluasi ke WhatsApp Pasien Sekarang (Opsional)
+                      </label>
+                      <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; margin-left: 24px;">
+                        Pengingat Kontrol Otomatis: Jadwal kontrol berikutnya akan otomatis dikirimkan via WhatsApp ke nomor pasien pada H-1 (1 hari sebelum jadwal).
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -2457,11 +2457,127 @@ async function handleSavePoli(e) {
       pemeriksa,
       izinSakit: isIzinSakit,
       isPantauan,
-      tipePantauan: isPantauan ? (document.querySelector('input[name="poli-tipe-pantauan"]:checked')?.value || 'mingguan') : '',
+      tipePantauan: '',
+      pantauanData: null,
       tanggalKontrol: tglKontrolVal,
       catatanKontrol: catatanKontrolVal,
       linkFoto
     };
+
+    let pantauanPayload = null;
+    if (isPantauan) {
+      const chkMingguan = document.getElementById('poli-pantauan-chk-mingguan')?.checked;
+      const chkObat = document.getElementById('poli-pantauan-chk-obat')?.checked;
+      const chkLab = document.getElementById('poli-pantauan-chk-lab')?.checked;
+
+      const selectedTipePantauan = [];
+      if (chkMingguan) selectedTipePantauan.push('mingguan');
+      if (chkObat) selectedTipePantauan.push('obat');
+      if (chkLab) selectedTipePantauan.push('lab');
+      newRecord.tipePantauan = selectedTipePantauan.length ? selectedTipePantauan.join(', ') : 'mingguan';
+
+      const sis = document.getElementById('poli-pantauan-td-sis')?.value || '';
+      const dia = document.getElementById('poli-pantauan-td-dia')?.value || '';
+      const nadi = document.getElementById('poli-pantauan-nadi')?.value || '';
+      const gulaDarah = document.getElementById('poli-pantauan-gula')?.value || '';
+      const tipeGula = document.getElementById('poli-pantauan-tipe-gula')?.value || 'GDS';
+      const asamUrat = document.getElementById('poli-pantauan-asam-urat')?.value || '';
+      const kolesterol = document.getElementById('poli-pantauan-kolesterol')?.value || '';
+      const bb = document.getElementById('poli-pantauan-bb')?.value || '';
+      const tb = document.getElementById('poli-pantauan-tb')?.value || '';
+      const lingkarPerut = document.getElementById('poli-pantauan-lingkar-perut')?.value || '';
+      const jadwalMingguan = document.getElementById('poli-pantauan-jadwal-mingguan')?.value || '';
+
+      let bmi = null;
+      if (bb && tb && Number(tb) > 0) bmi = (Number(bb) / ((Number(tb) / 100) ** 2)).toFixed(1);
+
+      let statusTensi = 'Normal';
+      if (Number(sis) >= 160 || Number(dia) >= 100) statusTensi = 'Hipertensi Tk 2';
+      else if (Number(sis) >= 140 || Number(dia) >= 90) statusTensi = 'Hipertensi Tk 1';
+      else if (Number(sis) >= 120 || Number(dia) >= 80) statusTensi = 'Pre-Hipertensi';
+
+      const ambilObat = document.getElementById('poli-pantauan-chk-ambil-obat')?.checked !== false;
+      const catatanObat = document.getElementById('poli-pantauan-catatan-obat')?.value || '';
+      const jadwalObat = document.getElementById('poli-pantauan-jadwal-obat')?.value || '';
+      const daftarObat = [];
+      document.querySelectorAll('#poli-pantauan-obat-list > div').forEach(row => {
+        const medName = row.querySelector('.poli-pantauan-med-name')?.value?.trim();
+        const medQty = row.querySelector('.poli-pantauan-med-qty')?.value;
+        const medRule = row.querySelector('.poli-pantauan-med-rule')?.value?.trim();
+        if (medName) {
+          daftarObat.push({ nama: medName, jumlah: Number(medQty) || 30, aturan: medRule || '1x1' });
+        }
+      });
+
+      const adaLab = document.getElementById('poli-pantauan-chk-ada-lab')?.checked !== false;
+      const hba1c = document.getElementById('poli-pantauan-lab-hba1c')?.value || '';
+      const ureum = document.getElementById('poli-pantauan-lab-ureum')?.value || '';
+      const creatinin = document.getElementById('poli-pantauan-lab-creatinin')?.value || '';
+      const na = document.getElementById('poli-pantauan-lab-na')?.value || '';
+      const k = document.getElementById('poli-pantauan-lab-k')?.value || '';
+      const cl = document.getElementById('poli-pantauan-lab-cl')?.value || '';
+      const catatanLab = document.getElementById('poli-pantauan-lab-catatan')?.value || '';
+      const jadwalLab = document.getElementById('poli-pantauan-jadwal-lab')?.value || '';
+
+      const customLabs = [];
+      document.querySelectorAll('#poli-pantauan-custom-lab-list > div').forEach(row => {
+        const cName = row.querySelector('.poli-custom-lab-name')?.value?.trim();
+        const cResult = row.querySelector('.poli-custom-lab-result')?.value?.trim();
+        const cUnit = row.querySelector('.poli-custom-lab-unit')?.value?.trim();
+        const cRef = row.querySelector('.poli-custom-lab-ref')?.value?.trim();
+        if (cName && cResult) {
+          customLabs.push({ namaTes: cName, hasil: cResult, satuan: cUnit, rujukan: cRef });
+        }
+      });
+
+      const catatanDokter = document.getElementById('poli-pantauan-catatan-dokter')?.value || '';
+      const sendWa = Boolean(document.getElementById('poli-pantauan-send-wa')?.checked);
+
+      pantauanPayload = {
+        nikPabrik: appData.currentPoliPatient?.nikPabrik || '',
+        namaPasien: appData.currentPoliPatient?.nama || '',
+        dept: appData.currentPoliPatient?.dept || '-',
+        noHp: appData.currentPoliPatient?.hp || appData.currentPoliPatient?.noHp || appData.currentPoliPatient?.telepon || '',
+        pemeriksa: pemeriksa,
+        keluhan: keluhan,
+        tipeList: selectedTipePantauan,
+        mingguan: {
+          tensiSistol: sis,
+          tensiDiastol: dia,
+          statusTensi: statusTensi,
+          nadi: nadi,
+          gulaDarah: gulaDarah,
+          tipeGula: tipeGula,
+          asamUrat: asamUrat,
+          kolesterol: kolesterol,
+          beratBadan: bb,
+          tinggiBadan: tb,
+          bmi: bmi,
+          lingkarPerut: lingkarPerut,
+          jadwalBerikutnya: jadwalMingguan
+        },
+        obatBulanan: {
+          ambilObat: ambilObat,
+          daftarObat: daftarObat,
+          catatanObat: catatanObat,
+          jadwalAmbilBerikutnya: jadwalObat
+        },
+        lab3Bulan: {
+          adaCekLab: adaLab,
+          hba1c: hba1c,
+          ureum: ureum,
+          creatinin: creatinin,
+          elektrolit: { natrium: na, kalium: k, klorida: cl },
+          customLabs: customLabs,
+          catatanLab: catatanLab,
+          jadwalLabBerikutnya: jadwalLab
+        },
+        catatanDokter: catatanDokter,
+        sendWa: sendWa
+      };
+
+      newRecord.pantauanData = pantauanPayload;
+    }
 
     // 3. FETCH DENGAN TIMEOUT 12 DETIK (Solusi Jaringan Sinyal Flaky)
     window._lastLocalMutationTime = Date.now(); // Suppress false-alarm toast on this client
@@ -2485,6 +2601,11 @@ async function handleSavePoli(e) {
     if (res.ok) {
       window._lastLocalMutationTime = Date.now();
       const resData = await res.json().catch(() => newRecord);
+
+      // Otomatis sinkron ke Dasbor Pemantauan HSE Pasien
+      if (pantauanPayload) {
+        await loadLongTermPantauanData().catch(() => {});
+      }
 
       // Feedback khusus jika dicegah akibat duplikasi klik cepat
       if (resData && resData._isDuplicatePrevented) {
@@ -2645,6 +2766,22 @@ async function handleSavePoli(e) {
 
 function resetFormPoli() {
   document.getElementById('form-poli-entry').reset();
+  const subOpts = document.getElementById('poli-pantauan-sub-options');
+  if (subOpts) subOpts.style.display = 'none';
+  const secMingguan = document.getElementById('poli-pantauan-sec-mingguan');
+  if (secMingguan) secMingguan.style.display = 'block';
+  const secObat = document.getElementById('poli-pantauan-sec-obat');
+  if (secObat) secObat.style.display = 'none';
+  const secLab = document.getElementById('poli-pantauan-sec-lab');
+  if (secLab) secLab.style.display = 'none';
+  const commonFooter = document.getElementById('poli-pantauan-common-footer');
+  if (commonFooter) commonFooter.style.display = 'none';
+
+  const obatList = document.getElementById('poli-pantauan-obat-list');
+  if (obatList) obatList.innerHTML = '';
+  const labList = document.getElementById('poli-pantauan-custom-lab-list');
+  if (labList) labList.innerHTML = '';
+
   initPoliForm();
   autoFillPemeriksa(true);
 }
@@ -12408,7 +12545,67 @@ setInterval(checkVpsCloudStatus, 60000);
 // ============================================================================
 // 2. FORM POLI KONTROL AUTO-TOGGLE & SUB-OPSI PANTAUAN
 // ============================================================================
-function selectPoliPantauanTipe(tipe) {
+function initPoliPantauanDates() {
+  const baseDate = new Date(document.getElementById('poli-tanggal-berobat')?.value || new Date());
+  
+  const dWeekly = new Date(baseDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const dMonthly = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const dQuarterly = new Date(baseDate.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+  const fmt = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const inpWeekly = document.getElementById('poli-pantauan-jadwal-mingguan');
+  const inpMonthly = document.getElementById('poli-pantauan-jadwal-obat');
+  const inpQuarterly = document.getElementById('poli-pantauan-jadwal-lab');
+
+  if (inpWeekly && !inpWeekly.value) inpWeekly.value = fmt(dWeekly);
+  if (inpMonthly && !inpMonthly.value) inpMonthly.value = fmt(dMonthly);
+  if (inpQuarterly && !inpQuarterly.value) inpQuarterly.value = fmt(dQuarterly);
+}
+
+function togglePoliPantauanSection(type) {
+  const chkMingguan = document.getElementById('poli-pantauan-chk-mingguan')?.checked;
+  const chkObat = document.getElementById('poli-pantauan-chk-obat')?.checked;
+  const chkLab = document.getElementById('poli-pantauan-chk-lab')?.checked;
+
+  const secMingguan = document.getElementById('poli-pantauan-sec-mingguan');
+  const secObat = document.getElementById('poli-pantauan-sec-obat');
+  const secLab = document.getElementById('poli-pantauan-sec-lab');
+  const commonFooter = document.getElementById('poli-pantauan-common-footer');
+
+  if (secMingguan) secMingguan.style.display = chkMingguan ? 'block' : 'none';
+  if (secObat) {
+    secObat.style.display = chkObat ? 'block' : 'none';
+    if (chkObat) {
+      const obatList = document.getElementById('poli-pantauan-obat-list');
+      if (obatList && obatList.children.length === 0) {
+        syncPoliResepToPantauan();
+      }
+    }
+  }
+  if (secLab) secLab.style.display = chkLab ? 'block' : 'none';
+
+  if (commonFooter) {
+    commonFooter.style.display = (chkMingguan || chkObat || chkLab) ? 'block' : 'none';
+  }
+
+  initPoliPantauanDates();
+  updatePoliKontrolFromPantauan();
+}
+
+function updatePoliKontrolFromPantauan() {
+  const chkPantauan = document.getElementById('poli-pantauan');
+  if (!chkPantauan || !chkPantauan.checked) return;
+
+  const chkMingguan = document.getElementById('poli-pantauan-chk-mingguan')?.checked;
+  const chkObat = document.getElementById('poli-pantauan-chk-obat')?.checked;
+  const chkLab = document.getElementById('poli-pantauan-chk-lab')?.checked;
+
   const chkKontrol = document.getElementById('poli-chk-kontrol');
   const fields = document.getElementById('poli-kontrol-fields');
   const hint = document.getElementById('badge-kontrol-auto-hint');
@@ -12418,28 +12615,200 @@ function selectPoliPantauanTipe(tipe) {
   if (chkKontrol) chkKontrol.checked = true;
   if (fields) fields.style.display = 'grid';
 
-  const baseDate = new Date(document.getElementById('poli-tanggal-berobat')?.value || new Date());
-  let days = 7;
-  let label = '1 Minggu (Cek Vital & Gula)';
-  let notes = 'Kontrol rutin 1 minggu: evaluasi vital / tensi / gula darah';
+  const labels = [];
+  let earliestDate = '';
 
-  if (tipe === 'obat') {
-    days = 30;
-    label = '1 Bulan (Ambil Obat Rutin)';
-    notes = 'Kontrol rutin 1 bulan: evaluasi & ambil obat rutin';
-  } else if (tipe === 'lab') {
-    days = 90;
-    label = '3 Bulan (Cek Lab Berkala)';
-    notes = 'Kontrol berkala 3 bulan: evaluasi & cek laboratorium';
+  if (chkMingguan) {
+    labels.push('1 Minggu');
+    const wVal = document.getElementById('poli-pantauan-jadwal-mingguan')?.value;
+    if (wVal) earliestDate = wVal;
+  }
+  if (chkObat) {
+    labels.push('1 Bulan');
+    const mVal = document.getElementById('poli-pantauan-jadwal-obat')?.value;
+    if (!earliestDate && mVal) earliestDate = mVal;
+  }
+  if (chkLab) {
+    labels.push('3 Bulan');
+    const lVal = document.getElementById('poli-pantauan-jadwal-lab')?.value;
+    if (!earliestDate && lVal) earliestDate = lVal;
   }
 
-  baseDate.setDate(baseDate.getDate() + days);
-  const yyyy = baseDate.getFullYear();
-  const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
-  const dd = String(baseDate.getDate()).padStart(2, '0');
-  if (tglInput) tglInput.value = `${yyyy}-${mm}-${dd}`;
-  if (notesInput) notesInput.value = notes;
-  if (hint) hint.textContent = `Otomatis aktif: Pantauan ${label}`;
+  if (labels.length > 0) {
+    if (hint) hint.textContent = `Otomatis aktif: Pantauan (${labels.join(', ')})`;
+    if (tglInput && earliestDate) tglInput.value = earliestDate;
+    if (notesInput) {
+      notesInput.value = `Kontrol rutin evaluasi pantauan: ${labels.join(', ')}`;
+    }
+  }
+}
+
+function updatePoliPantauanBPStatus() {
+  const sis = document.getElementById('poli-pantauan-td-sis')?.value;
+  const dia = document.getElementById('poli-pantauan-td-dia')?.value;
+  const badge = document.getElementById('poli-pantauan-bp-status');
+  if (!badge) return;
+
+  if (!sis && !dia) {
+    badge.textContent = 'Status: -';
+    badge.style.color = 'var(--text-muted)';
+    return;
+  }
+
+  const s = Number(sis) || 0;
+  const d = Number(dia) || 0;
+  if (s >= 160 || d >= 100) {
+    badge.textContent = 'Status: Hipertensi Tk 2 (≥160/100)';
+    badge.style.color = '#ef4444';
+  } else if (s >= 140 || d >= 90) {
+    badge.textContent = 'Status: Hipertensi Tk 1 (140-159/90-99)';
+    badge.style.color = '#f59e0b';
+  } else if (s >= 120 || d >= 80) {
+    badge.textContent = 'Status: Pre-Hipertensi (120-139/80-89)';
+    badge.style.color = '#38bdf8';
+  } else {
+    badge.textContent = 'Status: Normal (<120/80)';
+    badge.style.color = '#10b981';
+  }
+}
+
+function calcPoliPantauanBMI() {
+  const bb = document.getElementById('poli-pantauan-bb')?.value;
+  const tb = document.getElementById('poli-pantauan-tb')?.value;
+  const el = document.getElementById('poli-pantauan-bmi');
+  if (!el) return;
+
+  if (bb && tb && Number(tb) > 0) {
+    const bmi = (Number(bb) / ((Number(tb) / 100) ** 2)).toFixed(1);
+    let cat = 'Normal';
+    if (bmi < 18.5) cat = 'Kurus';
+    else if (bmi >= 25 && bmi < 30) cat = 'Overweight';
+    else if (bmi >= 30) cat = 'Obesitas';
+    el.textContent = `BMI: ${bmi} (${cat})`;
+  } else {
+    el.textContent = 'BMI: -';
+  }
+}
+
+function addPoliPantauanMedRow(name = '', qty = 30, aturan = '1x1 pagi') {
+  const container = document.getElementById('poli-pantauan-obat-list');
+  if (!container) return;
+  const rowId = 'poli_med_row_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+  const rowHtml = `
+    <div id="${rowId}" style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
+      <input type="text" class="form-control form-control-sm poli-pantauan-med-name" placeholder="Nama Obat (misal: Amlodipine 5mg)" value="${escapeHtml(name)}" style="flex: 2; font-size: 0.82rem; padding: 4px 8px;">
+      <input type="number" class="form-control form-control-sm poli-pantauan-med-qty" placeholder="Jumlah" value="${qty}" style="width: 75px; text-align: center; font-size: 0.82rem; padding: 4px 6px;">
+      <input type="text" class="form-control form-control-sm poli-pantauan-med-rule" placeholder="Aturan Pakai" value="${escapeHtml(aturan)}" style="flex: 1.5; font-size: 0.82rem; padding: 4px 8px;">
+      <button type="button" class="btn btn-sm btn-danger" onclick="document.getElementById('${rowId}').remove()" style="padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', rowHtml);
+}
+
+function syncPoliResepToPantauan() {
+  const container = document.getElementById('poli-pantauan-obat-list');
+  if (!container) return;
+
+  const resepRows = document.querySelectorAll('#poli-resep-body tr');
+  let added = 0;
+  resepRows.forEach(tr => {
+    const medSel = tr.querySelector('.select-medicine')?.value.trim();
+    const qty = tr.querySelector('.med-qty')?.value || '30';
+    const aturan = tr.querySelector('.med-signa')?.value || '1x1';
+    if (medSel) {
+      addPoliPantauanMedRow(medSel, qty, aturan);
+      added++;
+    }
+  });
+
+  if (added === 0 && container.children.length === 0) {
+    addPoliPantauanMedRow('Amlodipine 5mg', 30, '1x1 pagi');
+  }
+}
+
+function addPoliPantauanCustomLabRow(name = '', result = '', unit = '', ref = '') {
+  const container = document.getElementById('poli-pantauan-custom-lab-list');
+  if (!container) return;
+  const rowId = 'poli_lab_row_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+  const rowHtml = `
+    <div id="${rowId}" style="display: flex; gap: 6px; align-items: center; background: var(--surface-2); padding: 5px 8px; border-radius: 6px; border: 1px dashed var(--border-card); margin-bottom: 6px;">
+      <input type="text" class="form-control form-control-sm poli-custom-lab-name" placeholder="Nama Tes (misal: SGPT)" value="${escapeHtml(name)}" style="flex: 2; font-size: 0.82rem; padding: 4px 8px;">
+      <input type="text" class="form-control form-control-sm poli-custom-lab-result" placeholder="Hasil" value="${escapeHtml(result)}" style="width: 80px; text-align: center; font-weight: 700; font-size: 0.82rem; padding: 4px 6px;">
+      <input type="text" class="form-control form-control-sm poli-custom-lab-unit" placeholder="Satuan (U/L)" value="${escapeHtml(unit)}" style="width: 80px; text-align: center; font-size: 0.82rem; padding: 4px 6px;">
+      <input type="text" class="form-control form-control-sm poli-custom-lab-ref" placeholder="Rujukan (< 41)" value="${escapeHtml(ref)}" style="flex: 1.2; font-size: 0.82rem; padding: 4px 8px;">
+      <button type="button" class="btn btn-sm btn-danger" onclick="document.getElementById('${rowId}').remove()" style="padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', rowHtml);
+}
+
+function syncPoliObjektifToPantauan() {
+  const text = document.getElementById('poli-objektif-detail')?.value || '';
+  if (!text) {
+    showToast('Kolom Objektif TTV masih kosong', 'info');
+    return;
+  }
+
+  // TD (Sistol / Diastol)
+  const bpMatch = text.match(/(?:TD|Tensi|BP)?[\s:]*(\d{2,3})\s*[\/]\s*(\d{2,3})/i);
+  if (bpMatch) {
+    const sisEl = document.getElementById('poli-pantauan-td-sis');
+    const diaEl = document.getElementById('poli-pantauan-td-dia');
+    if (sisEl) sisEl.value = bpMatch[1];
+    if (diaEl) diaEl.value = bpMatch[2];
+    updatePoliPantauanBPStatus();
+  }
+
+  // Nadi
+  const hrMatch = text.match(/(?:Nadi|HR|Pulse)[\s:]*(\d{2,3})/i);
+  if (hrMatch) {
+    const nadiEl = document.getElementById('poli-pantauan-nadi');
+    if (nadiEl) nadiEl.value = hrMatch[1];
+  }
+
+  // Gula Darah
+  const gdsMatch = text.match(/(?:GDS|GDP|Gula)[\s:]*(\d{2,3})/i);
+  if (gdsMatch) {
+    const gulaEl = document.getElementById('poli-pantauan-gula');
+    if (gulaEl) gulaEl.value = gdsMatch[1];
+  }
+
+  // Asam Urat
+  const auMatch = text.match(/(?:AU|Asam\s*Urat)[\s:]*([\d\.]+)/i);
+  if (auMatch) {
+    const auEl = document.getElementById('poli-pantauan-asam-urat');
+    if (auEl) auEl.value = auMatch[1];
+  }
+
+  // Kolesterol
+  const kolMatch = text.match(/(?:Kol|Kolesterol)[\s:]*(\d{2,3})/i);
+  if (kolMatch) {
+    const kolEl = document.getElementById('poli-pantauan-kolesterol');
+    if (kolEl) kolEl.value = kolMatch[1];
+  }
+
+  // BB & TB
+  const bbMatch = text.match(/(?:BB|Berat)[\s:]*([\d\.]+)/i);
+  if (bbMatch) {
+    const bbEl = document.getElementById('poli-pantauan-bb');
+    if (bbEl) bbEl.value = bbMatch[1];
+  }
+  const tbMatch = text.match(/(?:TB|Tinggi)[\s:]*([\d\.]+)/i);
+  if (tbMatch) {
+    const tbEl = document.getElementById('poli-pantauan-tb');
+    if (tbEl) tbEl.value = tbMatch[1];
+  }
+  calcPoliPantauanBMI();
+
+  showToast('✅ Berhasil menyalin data TTV dari kolom Objektif!', 'success');
+}
+
+function selectPoliPantauanTipe(tipe) {
+  const chk = document.getElementById(`poli-pantauan-chk-${tipe}`);
+  if (chk) chk.checked = true;
+  togglePoliPantauanSection(tipe);
 }
 
 function handlePoliCheckboxChange() {
@@ -12456,15 +12825,22 @@ function handlePoliCheckboxChange() {
     subOpts.style.display = (chkPantauan && chkPantauan.checked) ? 'block' : 'none';
   }
 
-  if (!chkKontrol || !fields) return;
-
   if (chkPantauan && chkPantauan.checked) {
-    const checkedRadio = document.querySelector('input[name="poli-tipe-pantauan"]:checked');
-    const selectedTipe = checkedRadio ? checkedRadio.value : 'mingguan';
-    selectPoliPantauanTipe(selectedTipe);
+    const chkMingguan = document.getElementById('poli-pantauan-chk-mingguan');
+    const chkObat = document.getElementById('poli-pantauan-chk-obat');
+    const chkLab = document.getElementById('poli-pantauan-chk-lab');
+
+    // Default to Mingguan checked if none checked
+    if (chkMingguan && !chkMingguan.checked && (!chkObat || !chkObat.checked) && (!chkLab || !chkLab.checked)) {
+      chkMingguan.checked = true;
+    }
+
+    togglePoliPantauanSection();
+    initPoliPantauanDates();
+    updatePoliKontrolFromPantauan();
   } else if (chkIzin && chkIzin.checked) {
-    chkKontrol.checked = true;
-    fields.style.display = 'grid';
+    if (chkKontrol) chkKontrol.checked = true;
+    if (fields) fields.style.display = 'grid';
     if (hint) hint.textContent = 'Otomatis aktif (Izin Sakit / Surkes)';
     
     const baseDate = new Date(document.getElementById('poli-tanggal-berobat')?.value || new Date());

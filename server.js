@@ -2475,7 +2475,7 @@ app.post('/api/records/reset', (req, res) => {
   res.json({ success: true, message: 'Seluruh riwayat rekam medis berhasil dikosongkan!' });
 });
 
-app.post('/api/records', (req, res) => {
+app.post('/api/records', async (req, res) => {
   const db = readDB();
   const newRecord = req.body;
   if (!newRecord || !newRecord.namaPasien) {
@@ -2591,19 +2591,26 @@ app.post('/api/records', (req, res) => {
     const auMatch = String(newRecord.objektif || '').match(/(?:AU|Asam\s*Urat)[\s:]*([\d\.]+)/i);
     const kolMatch = String(newRecord.objektif || '').match(/(?:Kol|Kolesterol)[\s:]*(\d{2,3})/i);
 
-    const curSis = bpMatch ? parseInt(bpMatch[1]) : null;
-    const curDia = bpMatch ? parseInt(bpMatch[2]) : null;
-    const curGds = gdsMatch ? parseInt(gdsMatch[1]) : null;
-    const curAu = auMatch ? parseFloat(auMatch[1]) : null;
-    const curKol = kolMatch ? parseInt(kolMatch[1]) : null;
+    const pd = newRecord.pantauanData || {};
+    const pdMingguan = pd.mingguan || {};
+    const pdObat = pd.obatBulanan || {};
+    const pdLab = pd.lab3Bulan || {};
 
-    let statusTensi = 'Normal';
-    if (curSis >= 160 || curDia >= 100) statusTensi = 'Hipertensi Tk 2';
-    else if (curSis >= 140 || curDia >= 90) statusTensi = 'Hipertensi Tk 1';
-    else if (curSis >= 130 || curDia >= 85) statusTensi = 'Pre-Hipertensi';
-    else if (curSis && curSis < 90) statusTensi = 'Hipotensi';
+    const curSis = (pdMingguan.tensiSistol != null && pdMingguan.tensiSistol !== '') ? parseInt(pdMingguan.tensiSistol) : (bpMatch ? parseInt(bpMatch[1]) : null);
+    const curDia = (pdMingguan.tensiDiastol != null && pdMingguan.tensiDiastol !== '') ? parseInt(pdMingguan.tensiDiastol) : (bpMatch ? parseInt(bpMatch[2]) : null);
+    const curGds = (pdMingguan.gulaDarah != null && pdMingguan.gulaDarah !== '') ? parseInt(pdMingguan.gulaDarah) : (gdsMatch ? parseInt(gdsMatch[1]) : null);
+    const curAu = (pdMingguan.asamUrat != null && pdMingguan.asamUrat !== '') ? parseFloat(pdMingguan.asamUrat) : (auMatch ? parseFloat(auMatch[1]) : null);
+    const curKol = (pdMingguan.kolesterol != null && pdMingguan.kolesterol !== '') ? parseInt(pdMingguan.kolesterol) : (kolMatch ? parseInt(kolMatch[1]) : null);
 
-    const tipeP = newRecord.tipePantauan || 'mingguan';
+    let statusTensi = pdMingguan.statusTensi || 'Normal';
+    if (!pdMingguan.statusTensi) {
+      if (curSis >= 160 || curDia >= 100) statusTensi = 'Hipertensi Tk 2';
+      else if (curSis >= 140 || curDia >= 90) statusTensi = 'Hipertensi Tk 1';
+      else if (curSis >= 120 || curDia >= 80) statusTensi = 'Pre-Hipertensi';
+      else if (curSis && curSis < 90) statusTensi = 'Hipotensi';
+    }
+
+    const tipeP = String(newRecord.tipePantauan || 'mingguan').toLowerCase();
     const tglKontrol = newRecord.tanggalKontrol || '';
 
     const pntRecord = {
@@ -2611,7 +2618,7 @@ app.post('/api/records', (req, res) => {
       nikPabrik: newRecord.nikPabrik || '',
       namaPasien: newRecord.namaPasien,
       dept: newRecord.dept || '-',
-      noHp: newRecord.noHp || '',
+      noHp: newRecord.noHp || (existIdx !== -1 ? db.pantauan[existIdx].noHp : ''),
       tanggal: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
       jam: newRecord.jam || new Date().toLocaleTimeString('id-ID'),
       rawTime: Date.now(),
@@ -2621,28 +2628,43 @@ app.post('/api/records', (req, res) => {
         tensiSistol: curSis,
         tensiDiastol: curDia,
         statusTensi,
+        nadi: (pdMingguan.nadi != null && pdMingguan.nadi !== '') ? parseInt(pdMingguan.nadi) : null,
         gulaDarah: curGds,
-        tipeGula: 'GDS',
+        tipeGula: pdMingguan.tipeGula || 'GDS',
         asamUrat: curAu,
         kolesterol: curKol,
-        jadwalBerikutnya: (tipeP === 'mingguan' ? tglKontrol : null)
+        beratBadan: (pdMingguan.beratBadan != null && pdMingguan.beratBadan !== '') ? parseFloat(pdMingguan.beratBadan) : null,
+        tinggiBadan: (pdMingguan.tinggiBadan != null && pdMingguan.tinggiBadan !== '') ? parseFloat(pdMingguan.tinggiBadan) : null,
+        bmi: pdMingguan.bmi || null,
+        lingkarPerut: (pdMingguan.lingkarPerut != null && pdMingguan.lingkarPerut !== '') ? parseFloat(pdMingguan.lingkarPerut) : null,
+        jadwalBerikutnya: pdMingguan.jadwalBerikutnya || (tipeP.includes('mingguan') ? tglKontrol : null)
       },
       obatBulanan: {
-        ambilObat: (tipeP === 'obat') || (Array.isArray(newRecord.resep) && newRecord.resep.length > 0),
-        daftarObat: Array.isArray(newRecord.resep) ? newRecord.resep.map(r => ({
+        ambilObat: (pdObat.ambilObat !== undefined) ? Boolean(pdObat.ambilObat) : (tipeP.includes('obat') || (Array.isArray(newRecord.resep) && newRecord.resep.length > 0)),
+        daftarObat: (Array.isArray(pdObat.daftarObat) && pdObat.daftarObat.length > 0) ? pdObat.daftarObat : (Array.isArray(newRecord.resep) ? newRecord.resep.map(r => ({
           nama: r.namaObat || r.obat,
           jumlah: r.qty || 1,
           aturan: r.aturan || 'Sesuai resep'
-        })) : [],
-        catatanObat: tipeP === 'obat' ? (newRecord.catatanKontrol || 'Pengambilan obat rutin poli') : '',
-        jadwalAmbilBerikutnya: (tipeP === 'obat' ? tglKontrol : null)
+        })) : []),
+        catatanObat: pdObat.catatanObat || (tipeP.includes('obat') ? (newRecord.catatanKontrol || 'Pengambilan obat rutin poli') : ''),
+        jadwalAmbilBerikutnya: pdObat.jadwalAmbilBerikutnya || (tipeP.includes('obat') ? tglKontrol : null)
       },
       lab3Bulan: {
-        adaCekLab: (tipeP === 'lab'),
+        adaCekLab: (pdLab.adaCekLab !== undefined) ? Boolean(pdLab.adaCekLab) : tipeP.includes('lab'),
         tanggalLab: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
-        jadwalLabBerikutnya: (tipeP === 'lab' ? tglKontrol : null)
+        hba1c: (pdLab.hba1c != null && pdLab.hba1c !== '') ? parseFloat(pdLab.hba1c) : null,
+        ureum: (pdLab.ureum != null && pdLab.ureum !== '') ? parseFloat(pdLab.ureum) : null,
+        creatinin: (pdLab.creatinin != null && pdLab.creatinin !== '') ? parseFloat(pdLab.creatinin) : null,
+        elektrolit: {
+          natrium: (pdLab.elektrolit && pdLab.elektrolit.natrium != null && pdLab.elektrolit.natrium !== '') ? parseFloat(pdLab.elektrolit.natrium) : null,
+          kalium: (pdLab.elektrolit && pdLab.elektrolit.kalium != null && pdLab.elektrolit.kalium !== '') ? parseFloat(pdLab.elektrolit.kalium) : null,
+          klorida: (pdLab.elektrolit && pdLab.elektrolit.klorida != null && pdLab.elektrolit.klorida !== '') ? parseFloat(pdLab.elektrolit.klorida) : null
+        },
+        customLabs: Array.isArray(pdLab.customLabs) ? pdLab.customLabs : [],
+        catatanLab: pdLab.catatanLab || '',
+        jadwalLabBerikutnya: pdLab.jadwalLabBerikutnya || (tipeP.includes('lab') ? tglKontrol : null)
       },
-      catatanDokter: newRecord.catatanKontrol || newRecord.plan || '',
+      catatanDokter: pd.catatanDokter || newRecord.catatanKontrol || newRecord.plan || '',
       waSent: false,
       waSentAt: null
     };
@@ -2660,14 +2682,28 @@ app.post('/api/records', (req, res) => {
       tanggal: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
       noHp: newRecord.noHp || (existIdx !== -1 ? db.pantauan[existIdx].noHp : ''),
       lastCheck: newRecord.tanggal || new Date().toLocaleDateString('id-ID'),
-      jadwalMingguan: (tipeP === 'mingguan' && tglKontrol) ? tglKontrol : (existIdx !== -1 ? db.pantauan[existIdx].jadwalMingguan : null),
-      jadwalObatBulanan: (tipeP === 'obat' && tglKontrol) ? tglKontrol : (existIdx !== -1 ? db.pantauan[existIdx].jadwalObatBulanan : null),
-      jadwalLab3Bulan: (tipeP === 'lab' && tglKontrol) ? tglKontrol : (existIdx !== -1 ? db.pantauan[existIdx].jadwalLab3Bulan : null)
+      jadwalMingguan: pntRecord.mingguan.jadwalBerikutnya || (existIdx !== -1 ? db.pantauan[existIdx].jadwalMingguan : null),
+      jadwalObatBulanan: pntRecord.obatBulanan.jadwalAmbilBerikutnya || (existIdx !== -1 ? db.pantauan[existIdx].jadwalObatBulanan : null),
+      jadwalLab3Bulan: pntRecord.lab3Bulan.jadwalLabBerikutnya || (existIdx !== -1 ? db.pantauan[existIdx].jadwalLab3Bulan : null)
     };
     if (existIdx !== -1) {
       db.pantauan[existIdx] = pantauanItem;
     } else {
       db.pantauan.unshift(pantauanItem);
+    }
+
+    if (pd.sendWa && pntRecord.noHp) {
+      const destHp = pntRecord.noHp;
+      const waMsg = buildPantauanWaMessage(pntRecord);
+      whatsappService.sendWhatsAppMessage('klinik', destHp, waMsg)
+        .then(waRes => {
+          if (waRes && (waRes.success || waRes.realSent)) {
+            pntRecord.waSent = true;
+            pntRecord.waSentAt = new Date().toLocaleString('id-ID');
+            writeDB(db);
+          }
+        })
+        .catch(wErr => console.warn('Pantauan WA send error:', wErr));
     }
   }
 
