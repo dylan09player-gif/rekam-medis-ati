@@ -1463,7 +1463,10 @@ app.post('/api/medicines', (req, res) => {
   const newMed = req.body;
   if (!newMed.id) newMed.id = 'MED-' + Date.now();
   newMed.stok = parseSafeInt(newMed.stok, 0);
-  newMed.harga = parseSafeInt(newMed.harga, 0);
+  const rawJual = newMed.hargaJual !== undefined ? newMed.hargaJual : newMed.harga;
+  newMed.harga = parseSafeInt(rawJual, 0);
+  newMed.hargaJual = newMed.harga;
+  newMed.hargaModal = parseSafeInt(newMed.hargaModal, 0);
   if (!db.medicines) db.medicines = [];
   db.medicines.unshift(newMed);
   db.medicines.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
@@ -1484,11 +1487,13 @@ app.put('/api/medicines/:id', (req, res) => {
 
   if (idx !== -1) {
     const oldMed = { ...db.medicines[idx] };
-    const { nama, stok, harga, satuan, kategori, petugas, alasan, sendTelegram } = req.body;
+    const { nama, stok, harga, hargaJual, hargaModal, satuan, kategori, petugas, alasan, sendTelegram } = req.body;
 
     const newNama = nama !== undefined ? String(nama).trim() : oldMed.nama;
     const newStok = stok !== undefined ? parseSafeInt(stok, oldMed.stok) : oldMed.stok;
-    const newHarga = harga !== undefined ? parseSafeInt(harga, oldMed.harga) : oldMed.harga;
+    const rawHargaJual = hargaJual !== undefined ? hargaJual : harga;
+    const newHarga = rawHargaJual !== undefined ? parseSafeInt(rawHargaJual, oldMed.harga) : oldMed.harga;
+    const newHargaModal = hargaModal !== undefined ? parseSafeInt(hargaModal, oldMed.hargaModal || 0) : parseSafeInt(oldMed.hargaModal, 0);
     const newSatuan = satuan !== undefined ? String(satuan).trim() : oldMed.satuan;
     const newKategori = kategori !== undefined ? String(kategori).trim() : oldMed.kategori;
     const namaPetugas = petugas || 'Petugas Gudang / Apoteker';
@@ -1517,6 +1522,8 @@ app.put('/api/medicines/:id', (req, res) => {
       nama: newNama,
       stok: newStok,
       harga: newHarga,
+      hargaJual: newHarga,
+      hargaModal: newHargaModal,
       satuan: newSatuan,
       kategori: newKategori
     };
@@ -1536,7 +1543,8 @@ app.put('/api/medicines/:id', (req, res) => {
 ━━━━━━━━━━━━━━━━━━━━
 📊 *Rincian Perubahan:*
 • Sisa Stok: *${oldMed.stok}* ➔ *${newStok}* ${newSatuan}
-• Harga Satuan: *Rp ${(parseInt(oldMed.harga)||0).toLocaleString('id-ID')}* ➔ *Rp ${(parseInt(newHarga)||0).toLocaleString('id-ID')}*
+• Harga Modal: *Rp ${(parseInt(oldMed.hargaModal)||0).toLocaleString('id-ID')}* ➔ *Rp ${(parseInt(newHargaModal)||0).toLocaleString('id-ID')}*
+• Harga Jual: *Rp ${(parseInt(oldMed.harga)||0).toLocaleString('id-ID')}* ➔ *Rp ${(parseInt(newHarga)||0).toLocaleString('id-ID')}*
 • Satuan: *${oldMed.satuan || '-'}* ➔ *${newSatuan}*
 • Kategori: *${oldMed.kategori || '-'}* ➔ *${newKategori}*
 
@@ -1762,6 +1770,8 @@ app.post('/api/medicines/transfer', (req, res) => {
       const initial = item.initial !== undefined ? parseSafeInt(item.initial, 0) : (matched ? (matched.stok - qty) : 0);
       const final = item.final !== undefined ? parseSafeInt(item.final, 0) : (matched ? matched.stok : qty);
 
+      const hModal = item.hargaModal !== undefined ? parseSafeInt(item.hargaModal, 0) : (matched ? parseSafeInt(matched.hargaModal, 0) : 0);
+
       return {
         id: item.id || (matched ? matched.id : ('MED-TEMP-' + Date.now())),
         name: item.name || item.nama || (matched ? matched.nama : 'Obat'),
@@ -1769,7 +1779,8 @@ app.post('/api/medicines/transfer', (req, res) => {
         initial: initial,
         final: final,
         satuan: item.satuan || (matched ? matched.satuan : 'strip'),
-        expDate: item.expDate || item.expiredDate || item.tglKadaluarsa || '-'
+        expDate: item.expDate || item.expiredDate || item.tglKadaluarsa || '-',
+        hargaModal: hModal
       };
     })
   };
@@ -1957,6 +1968,8 @@ app.put('/api/surat-jalan/:id', (req, res) => {
 
     const final = initial + qty;
 
+    const hModal = it.hargaModal !== undefined ? parseSafeInt(it.hargaModal, 0) : (matched ? parseSafeInt(matched.hargaModal, 0) : 0);
+
     return {
       id: it.id || (matched ? matched.id : ('MED-TEMP-' + Date.now())),
       name: it.name || it.nama || (matched ? matched.nama : 'Obat'),
@@ -1964,7 +1977,8 @@ app.put('/api/surat-jalan/:id', (req, res) => {
       initial: initial,
       final: final,
       satuan: it.satuan || (matched ? matched.satuan : 'tab'),
-      expDate: it.expDate || it.expiredDate || it.tglKadaluarsa || '-'
+      expDate: it.expDate || it.expiredDate || it.tglKadaluarsa || '-',
+      hargaModal: hModal
     };
   });
 

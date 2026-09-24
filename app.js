@@ -4093,7 +4093,8 @@ function addMedToShipmentDraft() {
     qty: qty,
     final: initialStok + qty,
     satuan: med.satuan || 'strip',
-    expDate: expDate || '-'
+    expDate: expDate || '-',
+    hargaModal: med.hargaModal !== undefined ? (parseFloat(med.hargaModal) || 0) : 0
   });
 
   renderShipmentDraftTable();
@@ -4184,6 +4185,7 @@ async function processShipmentAndPrint() {
           id: item.id,
           name: item.name,
           qty: item.qty,
+          hargaModal: item.hargaModal !== undefined ? item.hargaModal : 0,
           initial: item.initial,
           final: item.final,
           satuan: item.satuan,
@@ -4617,7 +4619,7 @@ function renderRiwayatSuratJalanTable(list = null) {
   if (dataList.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
+        <td colspan="8" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
           <i class="fa-solid fa-folder-open" style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;"></i>
           <p style="font-weight: 700; margin-bottom: 2px;">Belum Ada Riwayat Surat Jalan</p>
           <small style="color: var(--text-faint);">Surat jalan yang dikonfirmasi saat pengiriman obat akan otomatis tercatat di sini.</small>
@@ -4628,7 +4630,19 @@ function renderRiwayatSuratJalanTable(list = null) {
   }
 
   tbody.innerHTML = dataList.map((sj, idx) => {
+    let totalBiayaModal = 0;
     const itemsSummary = (sj.items || []).map(item => {
+      let itemCost = 0;
+      if (item.hargaModal !== undefined && item.hargaModal !== null && item.hargaModal !== '') {
+        itemCost = parseFloat(item.hargaModal) || 0;
+      } else {
+        const med = (appData.medicines || []).find(m => String(m.id) === String(item.id) || (m.nama && item.name && m.nama.toLowerCase() === item.name.toLowerCase()) || (m.nama && item.nama && m.nama.toLowerCase() === item.nama.toLowerCase()));
+        if (med && med.hargaModal !== undefined && med.hargaModal !== null) {
+          itemCost = parseFloat(med.hargaModal) || 0;
+        }
+      }
+      totalBiayaModal += (parseFloat(item.qty || item.jumlah) || 0) * itemCost;
+
       const expBadge = item.expDate && item.expDate !== '-' ? `<span style="color: #f43f5e; font-size: 0.72rem; margin-left: 2px;">(Exp: ${item.expDate})</span>` : '';
       return `<span style="display: inline-block; background: rgba(139, 92, 246, 0.12); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 0.76rem; font-weight: 600; margin: 2px;">${item.name || item.nama} <b>(+${item.qty} ${item.satuan || ''})</b>${expBadge}</span>`;
     }).join(' ');
@@ -4646,6 +4660,9 @@ function renderRiwayatSuratJalanTable(list = null) {
         <td style="font-weight: 600; color: var(--text-main);"><i class="fa-solid fa-user-tag" style="color:#ec4899;"></i> ${sj.sender || '-'}</td>
         <td style="font-weight: 600; color: var(--text-main);"><i class="fa-solid fa-user-nurse" style="color:#38bdf8;"></i> ${sj.receiver || '-'}</td>
         <td style="max-width: 320px; line-height: 1.4;">${itemsSummary || '-'}</td>
+        <td style="text-align: right; font-weight: 700; color: #10b981; font-size: 0.88rem; white-space: nowrap;">
+          Rp ${totalBiayaModal.toLocaleString('id-ID')}
+        </td>
         <td style="text-align: center; white-space: nowrap;">
           <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: nowrap;">
             <button class="btn btn-warning btn-sm" onclick="editSuratJalanById('${sj.id}')" title="Edit Surat Jalan & Koreksi Stok" style="background: #f59e0b; border: none; color: #000; font-weight: 700; padding: 5px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
@@ -4743,15 +4760,25 @@ function editSuratJalanById(id) {
   document.getElementById('edit-sj-tanggal').value = sj.tanggal || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
   // Clone items deeply to avoid mutating original state directly
-  currentEditSjItems = (sj.items || []).map(it => ({
-    id: it.id,
-    name: it.name || it.nama || 'Obat',
-    initial: it.initial !== undefined ? parseInt(it.initial) : 0,
-    qty: parseInt(it.qty || it.jumlah) || 0,
-    final: it.final !== undefined ? parseInt(it.final) : ((parseInt(it.initial) || 0) + (parseInt(it.qty || it.jumlah) || 0)),
-    satuan: it.satuan || 'tab',
-    expDate: it.expDate || it.expiredDate || '-'
-  }));
+  currentEditSjItems = (sj.items || []).map(it => {
+    let itemHargaModal = 0;
+    if (it.hargaModal !== undefined && it.hargaModal !== null && it.hargaModal !== '') {
+      itemHargaModal = parseFloat(it.hargaModal) || 0;
+    } else {
+      const med = (appData.medicines || []).find(m => String(m.id) === String(it.id) || (m.nama && it.name && m.nama.toLowerCase() === it.name.toLowerCase()));
+      if (med && med.hargaModal) itemHargaModal = parseFloat(med.hargaModal) || 0;
+    }
+    return {
+      id: it.id,
+      name: it.name || it.nama || 'Obat',
+      initial: it.initial !== undefined ? parseInt(it.initial) : 0,
+      qty: parseInt(it.qty || it.jumlah) || 0,
+      final: it.final !== undefined ? parseInt(it.final) : ((parseInt(it.initial) || 0) + (parseInt(it.qty || it.jumlah) || 0)),
+      satuan: it.satuan || 'tab',
+      expDate: it.expDate || it.expiredDate || '-',
+      hargaModal: itemHargaModal
+    };
+  });
 
   // Populate master medicine dropdown selector
   populateEditSjMedDropdown();
@@ -4940,7 +4967,8 @@ function addItemToEditSjDraft() {
     qty: qty,
     final: initial + qty,
     satuan: satuan,
-    expDate: expDate || '-'
+    expDate: expDate || '-',
+    hargaModal: med.hargaModal !== undefined ? (parseFloat(med.hargaModal) || 0) : 0
   });
 
   renderEditSjItemsTable();
@@ -5047,32 +5075,38 @@ function renderStokOpnameTable() {
   const tbody = document.getElementById('table-stok-opname-body');
   if (!tbody) return;
 
-  tbody.innerHTML = appData.medicines.map((m, i) => `
+  tbody.innerHTML = (appData.medicines || []).map((m, i) => {
+    const modalVal = (m.hargaModal !== undefined && m.hargaModal !== null && m.hargaModal !== '') ? (parseFloat(m.hargaModal) || 0) : 0;
+    return `
     <tr>
       <td data-label="No">${i + 1}</td>
-      <td data-label="Nama Obat"><strong>${m.nama}</strong></td>
-      <td data-label="Harga Modal">Rp ${(m.harga || 1000).toLocaleString('id-ID')}</td>
-      <td data-label="Stok Sistem" style="font-weight: 700;">${m.stok} ${m.satuan || 'strip'}</td>
+      <td data-label="Nama Obat"><strong>${escapeHtml(m.nama)}</strong></td>
+      <td data-label="Harga Modal" style="font-weight: 600; color: #a78bfa;">Rp ${modalVal.toLocaleString('id-ID')}</td>
+      <td data-label="Stok Sistem" style="font-weight: 700;">${m.stok} ${escapeHtml(m.satuan || 'strip')}</td>
       <td data-label="Stok Real (Fisik)" style="background: rgba(255,255,255,0.05); text-align: center; color: var(--text-muted);">_______</td>
       <td data-label="Selisih" style="text-align: center; color: var(--text-muted);">_______</td>
       <td data-label="Total Harga Selisih" style="text-align: center; color: var(--text-muted);">Rp _______</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function printStokOpnameDoc() {
   const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const rowsHTML = appData.medicines.map((m, i) => `
+  const rowsHTML = (appData.medicines || []).map((m, i) => {
+    const modalVal = (m.hargaModal !== undefined && m.hargaModal !== null && m.hargaModal !== '') ? (parseFloat(m.hargaModal) || 0) : 0;
+    return `
     <tr>
       <td style="text-align:center; padding: 6px; border: 1px solid #000;">${i + 1}</td>
       <td style="padding: 6px; font-weight: bold; border: 1px solid #000;">${m.nama}</td>
-      <td style="text-align:right; padding: 6px; border: 1px solid #000;">Rp ${(m.harga || 1000).toLocaleString('id-ID')}</td>
+      <td style="text-align:right; padding: 6px; border: 1px solid #000;">Rp ${modalVal.toLocaleString('id-ID')}</td>
       <td style="text-align:center; padding: 6px; font-weight: bold; border: 1px solid #000;">${m.stok} ${m.satuan || 'strip'}</td>
       <td style="border: 1px solid #000;"></td>
       <td style="border: 1px solid #000;"></td>
       <td style="border: 1px solid #000;"></td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   const printWindow = window.open('', '_blank');
   printWindow.document.write(`
@@ -5220,19 +5254,26 @@ async function saveInlineEditObat(id) {
   const namaEl = document.getElementById(`inline-obat-nama-${id}`);
   const katEl = document.getElementById(`inline-obat-kategori-${id}`);
   const stokEl = document.getElementById(`inline-obat-stok-${id}`);
+  const hargaModalEl = document.getElementById(`inline-obat-harga-modal-${id}`);
   const hargaEl = document.getElementById(`inline-obat-harga-${id}`);
   const satuanEl = document.getElementById(`inline-obat-satuan-${id}`);
 
   if (!namaEl || !stokEl) return;
 
   const rawStok = stokEl.value.trim();
+  const rawHargaModal = hargaModalEl ? hargaModalEl.value.trim() : '0';
   const rawHarga = hargaEl ? hargaEl.value.trim() : '0';
+
+  const hargaModalVal = rawHargaModal === '' ? 0 : (parseFloat(rawHargaModal) || 0);
+  const hargaJualVal = rawHarga === '' ? 0 : (parseFloat(rawHarga) || 0);
 
   const payload = {
     nama: namaEl.value.trim(),
     kategori: katEl ? katEl.value.trim() : 'Gudang PT ATI',
     stok: rawStok === '' ? 0 : (parseInt(rawStok) || 0),
-    harga: rawHarga === '' ? 0 : (parseFloat(rawHarga) || 0),
+    hargaModal: hargaModalVal,
+    harga: hargaJualVal,
+    hargaJual: hargaJualVal,
     satuan: satuanEl ? satuanEl.value.trim() : 'strip',
     petugas: (typeof currentUser !== 'undefined' && currentUser && currentUser.nama) ? currentUser.nama : 'Petugas Gudang',
     alasan: 'Edit langsung di tabel obat'
@@ -5300,6 +5341,7 @@ function renderGudangTable(customList = null) {
     const curNama = document.getElementById(`inline-obat-nama-${editingGudangObatId}`);
     const curKat = document.getElementById(`inline-obat-kategori-${editingGudangObatId}`);
     const curStok = document.getElementById(`inline-obat-stok-${editingGudangObatId}`);
+    const curHargaModal = document.getElementById(`inline-obat-harga-modal-${editingGudangObatId}`);
     const curHarga = document.getElementById(`inline-obat-harga-${editingGudangObatId}`);
     const curSatuan = document.getElementById(`inline-obat-satuan-${editingGudangObatId}`);
     if (curNama || curStok) {
@@ -5307,6 +5349,7 @@ function renderGudangTable(customList = null) {
         nama: curNama ? curNama.value : null,
         kategori: curKat ? curKat.value : null,
         stok: curStok ? curStok.value : null,
+        hargaModal: curHargaModal ? curHargaModal.value : null,
         harga: curHarga ? curHarga.value : null,
         satuan: curSatuan ? curSatuan.value : null,
         focusedId: document.activeElement ? document.activeElement.id : null,
@@ -5336,7 +5379,7 @@ function renderGudangTable(customList = null) {
   if (filteredList.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
+        <td colspan="9" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
           <i class="fa-solid fa-magnifying-glass" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>
           <strong>Obat "${escapeHtml(query)}" tidak ditemukan.</strong>
           <div style="font-size: 0.82rem; margin-top: 4px;">Periksa ejaan nama obat atau klik tombol <strong>+ Tambah Obat Baru</strong> di kanan atas untuk mendaftarkannya.</div>
@@ -5353,6 +5396,7 @@ function renderGudangTable(customList = null) {
       const valNama = (activeEditValues && activeEditValues.nama !== null) ? activeEditValues.nama : (m.nama || '');
       const valKat = (activeEditValues && activeEditValues.kategori !== null) ? activeEditValues.kategori : (m.kategori || 'Gudang PT ATI');
       const valStok = (activeEditValues && activeEditValues.stok !== null) ? activeEditValues.stok : (m.stok !== undefined ? m.stok : 0);
+      const valHargaModal = (activeEditValues && activeEditValues.hargaModal !== null) ? activeEditValues.hargaModal : (m.hargaModal !== undefined ? m.hargaModal : 0);
       const valHarga = (activeEditValues && activeEditValues.harga !== null) ? activeEditValues.harga : (parseFloat(m.harga) || 0);
       const valSatuan = (activeEditValues && activeEditValues.satuan !== null) ? activeEditValues.satuan : (m.satuan || 'strip');
 
@@ -5366,12 +5410,18 @@ function renderGudangTable(customList = null) {
             <input type="text" id="inline-obat-kategori-${m.id}" class="form-control" value="${escapeHtml(valKat)}" style="min-width: 110px; padding: 5px 8px; font-size: 0.85rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
           </td>
           <td data-label="Sisa Stok" style="vertical-align: middle;">
-            <input type="number" id="inline-obat-stok-${m.id}" class="form-control" min="0" value="${valStok}" style="font-weight: 700; width: 85px; padding: 5px 8px; font-size: 0.95rem; text-align: center; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+            <input type="number" id="inline-obat-stok-${m.id}" class="form-control" min="0" value="${valStok}" style="font-weight: 700; width: 80px; padding: 5px 8px; font-size: 0.95rem; text-align: center; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
           </td>
-          <td data-label="Harga (Rp)" style="vertical-align: middle;">
+          <td data-label="Harga Modal (Rp)" style="vertical-align: middle;">
             <div style="display: flex; align-items: center; gap: 4px;">
-              <span style="font-size: 0.8rem; color: var(--text-muted);">Rp</span>
-              <input type="number" id="inline-obat-harga-${m.id}" class="form-control" min="0" step="any" value="${valHarga}" style="font-weight: 700; width: 110px; padding: 5px 8px; font-size: 0.9rem; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+              <span style="font-size: 0.8rem; color: #a78bfa;">Rp</span>
+              <input type="number" id="inline-obat-harga-modal-${m.id}" class="form-control" min="0" step="any" value="${valHargaModal}" style="font-weight: 700; width: 100px; padding: 5px 8px; font-size: 0.9rem; color: #a78bfa;" onkeydown="handleInlineObatKey(event, '${m.id}')" placeholder="0">
+            </div>
+          </td>
+          <td data-label="Harga Jual (Rp)" style="vertical-align: middle;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 0.8rem; color: #38bdf8;">Rp</span>
+              <input type="number" id="inline-obat-harga-${m.id}" class="form-control" min="0" step="any" value="${valHarga}" style="font-weight: 700; width: 100px; padding: 5px 8px; font-size: 0.9rem; color: #38bdf8;" onkeydown="handleInlineObatKey(event, '${m.id}')" placeholder="0">
             </div>
           </td>
           <td data-label="Satuan" style="vertical-align: middle;">
@@ -5403,7 +5453,8 @@ function renderGudangTable(customList = null) {
         <td data-label="Nama Obat"><strong>${escapeHtml(m.nama)}</strong></td>
         <td data-label="Kategori">${escapeHtml(m.kategori || 'Gudang PT ATI')}</td>
         <td data-label="Sisa Stok" style="font-weight: 700; font-size: 1.05rem; ${isLow ? 'color: var(--danger);' : ''}">${m.stok}</td>
-        <td data-label="Harga (Rp)" style="font-weight: 700; color: #38bdf8;">Rp ${(parseFloat(m.harga) || 0).toLocaleString('id-ID')}</td>
+        <td data-label="Harga Modal (Rp)" style="font-weight: 700; color: #a78bfa;">Rp ${(parseFloat(m.hargaModal) || 0).toLocaleString('id-ID')}</td>
+        <td data-label="Harga Jual (Rp)" style="font-weight: 700; color: #38bdf8;">Rp ${(parseFloat(m.harga) || 0).toLocaleString('id-ID')}</td>
         <td data-label="Satuan">${escapeHtml(m.satuan || 'strip')}</td>
         <td data-label="Status">${statusBadge}</td>
         <td data-label="Aksi" style="white-space: nowrap;">
@@ -5437,10 +5488,17 @@ function closeModalTambahObat() {
 
 async function handleSaveTambahObat(e) {
   e.preventDefault();
+  const rawModal = document.getElementById('obat-harga-modal')?.value;
+  const rawJual = document.getElementById('obat-harga')?.value;
+  const modalVal = rawModal !== undefined && rawModal !== '' ? (parseFloat(rawModal) || 0) : 0;
+  const jualVal = rawJual !== undefined && rawJual !== '' ? (parseFloat(rawJual) || 0) : 0;
+
   const newObat = {
     nama: document.getElementById('obat-nama').value,
     stok: parseInt(document.getElementById('obat-stok').value) || 0,
-    harga: parseFloat(document.getElementById('obat-harga').value) || 0,
+    hargaModal: modalVal,
+    harga: jualVal,
+    hargaJual: jualVal,
     satuan: document.getElementById('obat-satuan').value,
     kategori: document.getElementById('obat-kategori').value || 'Gudang PT ATI'
   };
@@ -5463,6 +5521,21 @@ async function handleSaveTambahObat(e) {
 }
 
 function openModalEditObat(id) {
+  const med = (appData.medicines || []).find(m => String(m.id) === String(id));
+  const modal = document.getElementById('modal-edit-obat');
+  if (med && modal) {
+    document.getElementById('edit-obat-id').value = med.id;
+    document.getElementById('edit-obat-nama').value = med.nama || '';
+    document.getElementById('edit-obat-stok').value = med.stok !== undefined ? med.stok : 0;
+    const modalInput = document.getElementById('edit-obat-harga-modal');
+    if (modalInput) modalInput.value = med.hargaModal !== undefined ? med.hargaModal : 0;
+    const jualInput = document.getElementById('edit-obat-harga');
+    if (jualInput) jualInput.value = med.harga !== undefined ? med.harga : 0;
+    document.getElementById('edit-obat-satuan').value = med.satuan || 'strip';
+    document.getElementById('edit-obat-kategori').value = med.kategori || 'Gudang PT ATI';
+    modal.style.display = 'flex';
+    return;
+  }
   startInlineEditObat(id);
 }
 
@@ -5474,10 +5547,17 @@ function closeModalEditObat() {
 async function handleSaveEditObat(e) {
   e.preventDefault();
   const id = document.getElementById('edit-obat-id').value;
+  const rawModal = document.getElementById('edit-obat-harga-modal')?.value;
+  const rawJual = document.getElementById('edit-obat-harga')?.value;
+  const modalVal = rawModal !== undefined && rawModal !== '' ? (parseFloat(rawModal) || 0) : 0;
+  const jualVal = rawJual !== undefined && rawJual !== '' ? (parseFloat(rawJual) || 0) : 0;
+
   const payload = {
     nama: document.getElementById('edit-obat-nama').value.trim(),
     stok: parseInt(document.getElementById('edit-obat-stok').value) || 0,
-    harga: parseFloat(document.getElementById('edit-obat-harga').value) || 0,
+    hargaModal: modalVal,
+    harga: jualVal,
+    hargaJual: jualVal,
     satuan: document.getElementById('edit-obat-satuan').value.trim(),
     kategori: document.getElementById('edit-obat-kategori').value.trim() || 'Gudang PT ATI',
     petugas: document.getElementById('edit-obat-petugas')?.value.trim() || 'Petugas Gudang',
