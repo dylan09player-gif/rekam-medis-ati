@@ -4647,7 +4647,10 @@ function renderRiwayatSuratJalanTable(list = null) {
         <td style="font-weight: 600; color: var(--text-main);"><i class="fa-solid fa-user-nurse" style="color:#38bdf8;"></i> ${sj.receiver || '-'}</td>
         <td style="max-width: 320px; line-height: 1.4;">${itemsSummary || '-'}</td>
         <td style="text-align: center; white-space: nowrap;">
-          <div style="display: flex; gap: 6px; justify-content: center;">
+          <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: nowrap;">
+            <button class="btn btn-warning btn-sm" onclick="editSuratJalanById('${sj.id}')" title="Edit Surat Jalan & Koreksi Stok" style="background: #f59e0b; border: none; color: #000; font-weight: 700; padding: 5px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
             <button class="btn btn-primary btn-sm" onclick="reprintSuratJalanById('${sj.id}')" title="Cetak Ulang Surat Jalan" style="background: #8b5cf6; border: none; font-weight: 700; padding: 5px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-print"></i> Cetak
             </button>
@@ -4715,6 +4718,329 @@ function reprintSuratJalanById(id) {
     return;
   }
   printSuratJalanPDF(sj.sender, sj.receiver, sj.items, sj.noSurat, sj.tanggal);
+}
+
+// ============================================================
+// FITUR EDIT / KOREKSI SURAT JALAN & STOK OBAT TERINTEGRASI
+// ============================================================
+let currentEditSjItems = [];
+
+function editSuratJalanById(id) {
+  const sj = (appData.suratJalan || []).find(s => s.id === id || s.noSurat === id);
+  if (!sj) {
+    showToast('Surat jalan tidak ditemukan!', 'error');
+    return;
+  }
+
+  const modal = document.getElementById('modal-edit-surat-jalan');
+  if (!modal) return;
+
+  // Set form header fields
+  document.getElementById('edit-sj-id').value = sj.id || sj.noSurat;
+  document.getElementById('edit-sj-no-text').innerText = sj.noSurat || sj.id || '-';
+  document.getElementById('edit-sj-sender').value = sj.sender || '';
+  document.getElementById('edit-sj-receiver').value = sj.receiver || '';
+  document.getElementById('edit-sj-tanggal').value = sj.tanggal || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Clone items deeply to avoid mutating original state directly
+  currentEditSjItems = (sj.items || []).map(it => ({
+    id: it.id,
+    name: it.name || it.nama || 'Obat',
+    initial: it.initial !== undefined ? parseInt(it.initial) : 0,
+    qty: parseInt(it.qty || it.jumlah) || 0,
+    final: it.final !== undefined ? parseInt(it.final) : ((parseInt(it.initial) || 0) + (parseInt(it.qty || it.jumlah) || 0)),
+    satuan: it.satuan || 'tab',
+    expDate: it.expDate || it.expiredDate || '-'
+  }));
+
+  // Populate master medicine dropdown selector
+  populateEditSjMedDropdown();
+
+  // Reset add item inputs
+  const addMedSel = document.getElementById('edit-sj-add-med-select');
+  if (addMedSel) addMedSel.value = '';
+  const addExp = document.getElementById('edit-sj-add-med-exp');
+  if (addExp) addExp.value = '';
+  const addQty = document.getElementById('edit-sj-add-med-qty');
+  if (addQty) addQty.value = '';
+  const addSatuan = document.getElementById('edit-sj-add-med-satuan');
+  if (addSatuan) addSatuan.value = '';
+
+  renderEditSjItemsTable();
+  modal.style.display = 'flex';
+}
+
+function closeModalEditSuratJalan() {
+  const modal = document.getElementById('modal-edit-surat-jalan');
+  if (modal) modal.style.display = 'none';
+  currentEditSjItems = [];
+}
+
+function populateEditSjMedDropdown() {
+  const select = document.getElementById('edit-sj-add-med-select');
+  if (!select) return;
+
+  const meds = [...(appData.medicines || [])].sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+  select.innerHTML = '<option value="">-- Pilih Obat dari Master --</option>' +
+    meds.map(m => `<option value="${m.id}" data-nama="${m.nama}" data-satuan="${m.satuan || 'tab'}" data-stok="${m.stok || 0}">${m.nama} (Stok: ${m.stok || 0} ${m.satuan || 'tab'})</option>`).join('');
+}
+
+function handleEditSjMedSelectChange(medId) {
+  const select = document.getElementById('edit-sj-add-med-select');
+  const satuanInput = document.getElementById('edit-sj-add-med-satuan');
+  if (!select || !satuanInput) return;
+
+  const opt = select.selectedOptions[0];
+  if (opt && opt.dataset.satuan) {
+    satuanInput.value = opt.dataset.satuan;
+  }
+}
+
+function renderEditSjItemsTable() {
+  const tbody = document.getElementById('edit-sj-table-body');
+  if (!tbody) return;
+
+  if (currentEditSjItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">Belum ada item obat pada surat jalan ini</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = currentEditSjItems.map((it, idx) => {
+    const finalCalc = (parseInt(it.initial) || 0) + (parseInt(it.qty) || 0);
+    return `
+      <tr>
+        <td style="text-align: center; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>
+        <td style="font-weight: 700; text-transform: uppercase; color: var(--text-main); font-size: 0.85rem;">
+          ${it.name}
+        </td>
+        <td style="text-align: center;">
+          <input type="text" class="form-control" value="${it.expDate || '-'}" 
+            placeholder="DD/MM/YYYY"
+            style="width: 115px; font-size: 0.8rem; text-align: center; font-weight: 700; color: #b91c1c; background: #fff1f2; padding: 3px 6px; height: 30px; border-radius: 4px;"
+            onchange="updateEditSjItemExp(${idx}, this.value)"
+            onblur="updateEditSjItemExp(${idx}, this.value)">
+        </td>
+        <td style="text-align: center;">
+          <input type="text" class="form-control" value="${it.satuan || 'tab'}" 
+            style="width: 70px; font-size: 0.8rem; text-align: center; padding: 3px 6px; height: 30px; border-radius: 4px;"
+            onchange="updateEditSjItemSatuan(${idx}, this.value)">
+        </td>
+        <td style="text-align: center; font-weight: 600; color: var(--text-muted);">
+          ${it.initial !== undefined ? it.initial : 0} ${it.satuan}
+        </td>
+        <td style="text-align: center;">
+          <input type="number" min="1" class="form-control" value="${it.qty || 0}" 
+            style="width: 90px; font-size: 0.85rem; font-weight: 800; text-align: center; color: #ec4899; background: #fdf2f8; padding: 3px 6px; height: 30px; border-radius: 4px;"
+            oninput="updateEditSjItemQty(${idx}, this.value)"
+            onchange="updateEditSjItemQty(${idx}, this.value)">
+        </td>
+        <td style="text-align: center; font-weight: 800; color: #166534; background: #f0fdf4;" id="edit-sj-final-badge-${idx}">
+          ${finalCalc} ${it.satuan}
+        </td>
+        <td style="text-align: center;">
+          <button type="button" class="btn btn-danger btn-sm" onclick="removeEditSjItem(${idx})" title="Hapus obat ini dari surat jalan" style="padding: 3px 7px; font-size: 0.75rem; background: #ef4444; border: none; border-radius: 4px;">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateEditSjItemQty(idx, val) {
+  if (!currentEditSjItems[idx]) return;
+  const q = Math.max(0, parseInt(val) || 0);
+  currentEditSjItems[idx].qty = q;
+  const finalCalc = (parseInt(currentEditSjItems[idx].initial) || 0) + q;
+  currentEditSjItems[idx].final = finalCalc;
+  const badge = document.getElementById(`edit-sj-final-badge-${idx}`);
+  if (badge) {
+    badge.innerText = `${finalCalc} ${currentEditSjItems[idx].satuan || ''}`;
+  }
+}
+
+function updateEditSjItemExp(idx, val) {
+  if (!currentEditSjItems[idx]) return;
+  let str = (val || '').trim();
+  if (str.includes('-')) {
+    const p = str.split('-');
+    if (p.length === 3 && p[0].length === 4) {
+      str = `${p[2]}/${p[1]}/${p[0]}`;
+    }
+  }
+  currentEditSjItems[idx].expDate = str || '-';
+}
+
+function updateEditSjItemSatuan(idx, val) {
+  if (!currentEditSjItems[idx]) return;
+  const sat = (val || 'tab').trim();
+  currentEditSjItems[idx].satuan = sat;
+  const badge = document.getElementById(`edit-sj-final-badge-${idx}`);
+  if (badge) {
+    badge.innerText = `${currentEditSjItems[idx].final} ${sat}`;
+  }
+}
+
+function removeEditSjItem(idx) {
+  if (!currentEditSjItems[idx]) return;
+  const it = currentEditSjItems[idx];
+  if (confirm(`Hapus obat "${it.name}" dari surat jalan ini?`)) {
+    currentEditSjItems.splice(idx, 1);
+    renderEditSjItemsTable();
+    showToast(`Obat ${it.name} dihapus dari daftar surat jalan`, 'info');
+  }
+}
+
+function addItemToEditSjDraft() {
+  const select = document.getElementById('edit-sj-add-med-select');
+  const qtyInput = document.getElementById('edit-sj-add-med-qty');
+  const expInput = document.getElementById('edit-sj-add-med-exp');
+  const satuanInput = document.getElementById('edit-sj-add-med-satuan');
+
+  const medId = select?.value;
+  if (!medId) {
+    showToast('Pilih obat yang ingin ditambahkan!', 'warning');
+    return;
+  }
+
+  const qty = parseInt(qtyInput?.value) || 0;
+  if (qty <= 0) {
+    showToast('Jumlah kirim minimal 1!', 'warning');
+    return;
+  }
+
+  const med = (appData.medicines || []).find(m => String(m.id) === String(medId));
+  if (!med) {
+    showToast('Data obat tidak ditemukan di sistem!', 'error');
+    return;
+  }
+
+  // Cek apakah obat sudah ada di daftar
+  const exists = currentEditSjItems.some(it => String(it.id) === String(med.id) || it.name.toLowerCase() === med.nama.toLowerCase());
+  if (exists) {
+    showToast(`Obat "${med.nama}" sudah ada di dalam tabel. Silakan sesuaikan jumlahnya langsung pada baris tabel!`, 'warning');
+    return;
+  }
+
+  let expDate = expInput ? expInput.value.trim() : '';
+  if (expDate.includes('-')) {
+    const p = expDate.split('-');
+    if (p.length === 3 && p[0].length === 4) {
+      expDate = `${p[2]}/${p[1]}/${p[0]}`;
+    }
+  }
+
+  const satuan = (satuanInput?.value || med.satuan || 'tab').trim();
+  const initial = parseInt(med.stok) || 0;
+
+  currentEditSjItems.push({
+    id: med.id,
+    name: med.nama,
+    initial: initial,
+    qty: qty,
+    final: initial + qty,
+    satuan: satuan,
+    expDate: expDate || '-'
+  });
+
+  renderEditSjItemsTable();
+
+  // Reset input form
+  select.value = '';
+  qtyInput.value = '';
+  if (expInput) expInput.value = '';
+  if (satuanInput) satuanInput.value = '';
+
+  showToast(`Obat "${med.nama}" berhasil ditambahkan ke daftar!`, 'success');
+}
+
+async function saveEditSuratJalan(shouldPrint = false) {
+  const id = document.getElementById('edit-sj-id').value;
+  const sender = document.getElementById('edit-sj-sender').value.trim();
+  const receiver = document.getElementById('edit-sj-receiver').value.trim();
+  const tanggal = document.getElementById('edit-sj-tanggal').value.trim();
+
+  if (!id) {
+    showToast('ID Surat jalan tidak valid', 'error');
+    return;
+  }
+  if (!sender) {
+    showToast('Nama pengirim wajib diisi', 'warning');
+    return;
+  }
+  if (!receiver) {
+    showToast('Nama penerima wajib diisi', 'warning');
+    return;
+  }
+  if (currentEditSjItems.length === 0) {
+    showToast('Surat jalan harus memiliki minimal 1 item obat!', 'warning');
+    return;
+  }
+
+  for (const it of currentEditSjItems) {
+    if ((parseInt(it.qty) || 0) <= 0) {
+      showToast(`Jumlah obat "${it.name}" tidak boleh 0!`, 'warning');
+      return;
+    }
+  }
+
+  const btnSave = document.getElementById('btn-save-edit-sj');
+  const btnPrint = document.getElementById('btn-save-print-edit-sj');
+  const origSaveText = btnSave ? btnSave.innerHTML : '';
+  const origPrintText = btnPrint ? btnPrint.innerHTML : '';
+
+  if (btnSave) { btnSave.disabled = true; btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; }
+  if (btnPrint) { btnPrint.disabled = true; }
+
+  try {
+    const payload = {
+      sender,
+      receiver,
+      tanggal,
+      petugas: appData.currentUser?.name || appData.currentUser?.nama || 'Petugas Apotek / Klinik',
+      items: currentEditSjItems
+    };
+
+    const res = await fetch(`/api/surat-jalan/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`✅ Surat Jalan ${data.suratJalan?.noSurat || id} berhasil diperbarui dan sisa stok dikoreksi!`, 'success', 4500);
+
+      closeModalEditSuratJalan();
+
+      // Refresh seluruh data aplikasi
+      await loadAllAppData();
+      await loadRiwayatSuratJalan();
+      renderGudangTable();
+
+      // Jika user memilih Simpan & Cetak Ulang
+      if (shouldPrint && data.suratJalan) {
+        try {
+          printSuratJalanPDF(
+            data.suratJalan.sender,
+            data.suratJalan.receiver,
+            data.suratJalan.items,
+            data.suratJalan.noSurat,
+            data.suratJalan.tanggal
+          );
+        } catch (printErr) {
+          console.warn('Print error or blocked:', printErr);
+        }
+      }
+    } else {
+      showToast('Gagal menyimpan perubahan: ' + (data.error || 'Terjadi kesalahan'), 'error');
+    }
+  } catch (err) {
+    showToast('Koneksi server error: ' + err.message, 'error');
+  } finally {
+    if (btnSave) { btnSave.disabled = false; btnSave.innerHTML = origSaveText; }
+    if (btnPrint) { btnPrint.disabled = false; btnPrint.innerHTML = origPrintText; }
+  }
 }
 
 function renderStokOpnameTable() {

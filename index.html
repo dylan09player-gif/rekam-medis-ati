@@ -1151,7 +1151,7 @@
                     <th>PENGIRIM (APOTEK)</th>
                     <th>PENERIMA (PT ATI)</th>
                     <th>RINCIAN OBAT TERKIRIM</th>
-                    <th style="text-align: center; width: 140px;">AKSI</th>
+                    <th style="text-align: center; min-width: 195px; width: 200px;">AKSI</th>
                   </tr>
                 </thead>
                 <tbody id="table-riwayat-sj-body">
@@ -2629,6 +2629,115 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT SURAT JALAN & STOK OBAT -->
+  <div id="modal-edit-surat-jalan" class="modal-overlay" style="display: none; z-index: 10001;">
+    <div class="modal-card" style="max-width: 860px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px;">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-pen-to-square" style="color: #f59e0b;"></i> Edit Surat Jalan: 
+          <span id="edit-sj-no-text" style="font-family: monospace; color: #c084fc; font-size: 1.05rem;"></span>
+        </h3>
+        <button class="close-btn" onclick="closeModalEditSuratJalan()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding-right: 6px;">
+        <input type="hidden" id="edit-sj-id">
+
+        <!-- Grid Info Header Surat Jalan -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.82rem; font-weight: 700; color: #ec4899;"><i class="fa-solid fa-user-tag"></i> Pengirim (Apotek) *</label>
+            <input type="text" id="edit-sj-sender" class="form-control" list="list-ship-senders" required style="font-weight: 700;" autocomplete="off">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.82rem; font-weight: 700; color: #38bdf8;"><i class="fa-solid fa-user-nurse"></i> Penerima (PT ATI) *</label>
+            <input type="text" id="edit-sj-receiver" class="form-control" list="list-ship-receivers" required style="font-weight: 700;" autocomplete="off">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.82rem; font-weight: 700; color: #a78bfa;"><i class="fa-solid fa-calendar-day"></i> Tanggal Pengiriman *</label>
+            <input type="text" id="edit-sj-tanggal" class="form-control" required style="font-weight: 700;">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+          <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-color);">
+            <i class="fa-solid fa-boxes-stacked" style="color: #ec4899;"></i> Rincian Item Obat Terkirim
+          </h4>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">
+            Koreksi jumlah atau tanggal kadaluarsa langsung di tabel bawah ini:
+          </span>
+        </div>
+
+        <!-- Tabel Item Obat Terkirim -->
+        <div class="table-responsive" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 14px;">
+          <table class="custom-table" style="font-size: 0.82rem; width: 100%; margin-bottom: 0;">
+            <thead style="position: sticky; top: 0; background: var(--surface-1); z-index: 2;">
+              <tr>
+                <th style="width: 35px; text-align: center;">No</th>
+                <th>Nama Item Obat</th>
+                <th style="width: 140px; text-align: center; color: #f43f5e;">Exp Date</th>
+                <th style="width: 80px; text-align: center;">Satuan</th>
+                <th style="width: 80px; text-align: center;">Stok Awal</th>
+                <th style="width: 110px; text-align: center; color: #ec4899;">Jumlah Kirim</th>
+                <th style="width: 80px; text-align: center; color: #4ade80;">Stok Akhir</th>
+                <th style="width: 45px; text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="edit-sj-table-body">
+              <!-- Rendered dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tambah Obat Tambahan ke Surat Jalan -->
+        <div style="background: rgba(139, 92, 246, 0.05); border: 1px dashed rgba(139, 92, 246, 0.35); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: #c084fc; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-plus-circle"></i> Tambah Item Obat Tambahan ke Surat Jalan Ini:
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr auto; gap: 8px; align-items: flex-end;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Pilih Obat</label>
+              <select id="edit-sj-add-med-select" class="form-control" style="font-size: 0.82rem; height: 34px;" onchange="handleEditSjMedSelectChange(this.value)">
+                <option value="">-- Pilih Obat dari Master --</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Exp Date (DD/MM/YYYY)</label>
+              <input type="text" id="edit-sj-add-med-exp" class="form-control" placeholder="DD/MM/YYYY" style="font-size: 0.82rem; height: 34px; text-align: center;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Jumlah</label>
+              <input type="number" id="edit-sj-add-med-qty" class="form-control" min="1" placeholder="0" style="font-size: 0.82rem; height: 34px; text-align: center; font-weight: 700;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Satuan</label>
+              <input type="text" id="edit-sj-add-med-satuan" class="form-control" placeholder="tab" style="font-size: 0.82rem; height: 34px; text-align: center;">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="addItemToEditSjDraft()" style="height: 34px; background: #8b5cf6; border: none; font-size: 0.82rem; font-weight: 700; white-space: nowrap; padding: 0 12px;">
+              <i class="fa-solid fa-plus"></i> Tambah
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Card -->
+        <div style="font-size: 0.8rem; background: rgba(245, 158, 11, 0.08); border-left: 3px solid #f59e0b; padding: 9px 12px; border-radius: 6px; color: #fbbf24; line-height: 1.45;">
+          <i class="fa-solid fa-circle-info"></i> <strong>Integrasi Otomatis:</strong>
+          Setelah disimpan, sisa stok obat di sistem klinik akan langsung dikoreksi sesuai penyesuaian baru, dan dokumen cetak surat jalan otomatis sinkron.
+        </div>
+      </div>
+
+      <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="closeModalEditSuratJalan()">Batal</button>
+        <button type="button" id="btn-save-edit-sj" class="btn btn-warning" onclick="saveEditSuratJalan(false)" style="background: #f59e0b; border: none; color: #000; font-weight: 700;">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+        </button>
+        <button type="button" id="btn-save-print-edit-sj" class="btn btn-primary" onclick="saveEditSuratJalan(true)" style="background: #8b5cf6; border: none; font-weight: 700;">
+          <i class="fa-solid fa-print"></i> Simpan &amp; Cetak Ulang
+        </button>
+      </div>
     </div>
   </div>
 

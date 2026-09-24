@@ -1812,6 +1812,204 @@ app.get('/api/surat-jalan', (req, res) => {
   res.json(list);
 });
 
+// Endpoint Ambil Detail Surat Jalan Spesifik
+app.get('/api/surat-jalan/:id', (req, res) => {
+  const db = readDB();
+  const list = db.surat_jalan || [];
+  const targetId = String(req.params.id || '').trim();
+  const sj = list.find(s => s.id === targetId || s.noSurat === targetId);
+  if (!sj) {
+    return res.status(404).json({ success: false, error: 'Surat Jalan tidak ditemukan' });
+  }
+  res.json(sj);
+});
+
+// Endpoint Edit / Koreksi Surat Jalan & Stok Obat
+app.put('/api/surat-jalan/:id', (req, res) => {
+  const db = readDB();
+  if (!db.surat_jalan) return res.status(404).json({ success: false, error: 'Tidak ada data surat jalan' });
+
+  const targetId = String(req.params.id || '').trim();
+  const sjIndex = db.surat_jalan.findIndex(s => s.id === targetId || s.noSurat === targetId);
+  if (sjIndex === -1) {
+    return res.status(404).json({ success: false, error: 'Surat Jalan tidak ditemukan' });
+  }
+
+  const targetSJ = db.surat_jalan[sjIndex];
+  const noSurat = targetSJ.noSurat || targetSJ.id;
+  const nowIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const { sender, receiver, tanggal, items, petugas } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ success: false, error: 'Daftar item obat tidak boleh kosong' });
+  }
+
+  const oldItems = Array.isArray(targetSJ.items) ? [...targetSJ.items] : [];
+  if (!db.medicines) db.medicines = [];
+
+  // Helper pencari index obat di master data obat
+  const findMedIndex = (item) => {
+    const itemName = String(item.name || item.nama || '').trim().toLowerCase();
+    const itemId = item.id ? String(item.id).trim().toLowerCase() : '';
+    return db.medicines.findIndex(m => {
+      const mId = String(m.id || '').trim().toLowerCase();
+      const mName = String(m.nama || '').trim().toLowerCase();
+      return (itemId && mId === itemId) || (itemName && mName === itemName);
+    });
+  };
+
+  // 1. Hitung penyesuaian delta stok setiap obat:
+  // medDeltas map: key (id / lowercase name) -> { mIdx, name, satuan, oldQty, newQty }
+  const medDeltas = new Map();
+
+  oldItems.forEach(oldIt => {
+    const qty = parseSafeInt(oldIt.qty || oldIt.jumlah, 0);
+    const mIdx = findMedIndex(oldIt);
+    const key = mIdx !== -1 ? String(db.medicines[mIdx].id).toLowerCase() : String(oldIt.name || oldIt.nama || '').trim().toLowerCase();
+    const name = mIdx !== -1 ? db.medicines[mIdx].nama : (oldIt.name || oldIt.nama || 'Obat');
+    const satuan = mIdx !== -1 ? (db.medicines[mIdx].satuan || 'tab') : (oldIt.satuan || 'tab');
+
+    if (!medDeltas.has(key)) {
+      medDeltas.set(key, { mIdx, name, satuan, oldQty: 0, newQty: 0 });
+    }
+    const entry = medDeltas.get(key);
+    entry.oldQty += qty;
+  });
+
+  items.forEach(newIt => {
+    const qty = parseSafeInt(newIt.qty || newIt.jumlah, 0);
+    const mIdx = findMedIndex(newIt);
+    const key = mIdx !== -1 ? String(db.medicines[mIdx].id).toLowerCase() : String(newIt.name || newIt.nama || '').trim().toLowerCase();
+    const name = mIdx !== -1 ? db.medicines[mIdx].nama : (newIt.name || newIt.nama || 'Obat');
+    const satuan = mIdx !== -1 ? (db.medicines[mIdx].satuan || 'tab') : (newIt.satuan || 'tab');
+
+    if (!medDeltas.has(key)) {
+      medDeltas.set(key, { mIdx, name, satuan, oldQty: 0, newQty: 0 });
+    }
+    const entry = medDeltas.get(key);
+    entry.newQty += qty;
+    if (mIdx !== -1 && entry.mIdx === -1) {
+      entry.mIdx = mIdx;
+      entry.name = db.medicines[mIdx].nama;
+      entry.satuan = db.medicines[mIdx].satuan || entry.satuan;
+    }
+  });
+
+  const auditLogs = [];
+  const updatedMedicines = [];
+
+  // Terapkan penyesuaian delta ke master data obat & rekam mutasi stok
+  medDeltas.forEach((info, key) => {
+    const diff = info.newQty - info.oldQty; // Positif = tambah kirim, Negatif = kurangi kirim
+    if (info.mIdx !== -1 && diff !== 0) {
+      const oldMed = { ...db.medicines[info.mIdx] };
+      const prevStok = parseSafeInt(oldMed.stok, 0);
+      const nextStok = Math.max(0, prevStok + diff);
+      db.medicines[info.mIdx].stok = nextStok;
+
+      logStockMutation(db, {
+        tanggal: nowIndo,
+        created_at: new Date().toISOString(),
+        type: diff > 0 ? 'IN' : 'OUT',
+        namaObat: oldMed.nama,
+        satuan: oldMed.satuan || info.satuan || 'tab',
+        qty: Math.abs(diff),
+        delta: diff,
+        stokSebelum: prevStok,
+        stokSesudah: nextStok,
+        refType: 'EDIT_SURAT_JALAN',
+        refId: noSurat,
+        refDoc: noSurat,
+        petugas: petugas || `${sender || 'Petugas'} (Koreksi SJ)`,
+        keterangan: `Revisi Surat Jalan No: ${noSurat} (${diff > 0 ? '+' : ''}${diff} ${oldMed.satuan || 'item'})`
+      });
+
+      updatedMedicines.push(db.medicines[info.mIdx]);
+      auditLogs.push(`• ${oldMed.nama}: *${prevStok}* ➔ *${nextStok}* (${diff > 0 ? '+' : ''}${diff} ${oldMed.satuan || 'item'})`);
+    } else if (diff !== 0) {
+      auditLogs.push(`• ${info.name}: (${diff > 0 ? '+' : ''}${diff} ${info.satuan})`);
+    }
+  });
+
+  // 2. Format ulang rincian item obat pada surat jalan
+  const updatedItems = items.map(it => {
+    const mIdx = findMedIndex(it);
+    const matched = mIdx !== -1 ? db.medicines[mIdx] : null;
+    const qty = parseSafeInt(it.qty || it.jumlah, 0);
+
+    // Cari referensi item lama untuk menjaga kesinambungan stok awal
+    const existingOldItem = oldItems.find(oi => {
+      const oId = String(oi.id || '').trim().toLowerCase();
+      const oName = String(oi.name || oi.nama || '').trim().toLowerCase();
+      const itId = String(it.id || '').trim().toLowerCase();
+      const itName = String(it.name || it.nama || '').trim().toLowerCase();
+      return (itId && oId === itId) || (itName && oName === itName);
+    });
+
+    let initial = 0;
+    if (existingOldItem && existingOldItem.initial !== undefined) {
+      initial = parseSafeInt(existingOldItem.initial, 0);
+    } else if (it.initial !== undefined) {
+      initial = parseSafeInt(it.initial, 0);
+    } else if (matched) {
+      initial = Math.max(0, parseSafeInt(matched.stok, 0) - qty);
+    }
+
+    const final = initial + qty;
+
+    return {
+      id: it.id || (matched ? matched.id : ('MED-TEMP-' + Date.now())),
+      name: it.name || it.nama || (matched ? matched.nama : 'Obat'),
+      qty: qty,
+      initial: initial,
+      final: final,
+      satuan: it.satuan || (matched ? matched.satuan : 'tab'),
+      expDate: it.expDate || it.expiredDate || it.tglKadaluarsa || '-'
+    };
+  });
+
+  // 3. Simpan perubahan pada Surat Jalan
+  targetSJ.sender = sender !== undefined ? sender : targetSJ.sender;
+  targetSJ.receiver = receiver !== undefined ? receiver : targetSJ.receiver;
+  targetSJ.tanggal = tanggal || targetSJ.tanggal || nowIndo;
+  targetSJ.items = updatedItems;
+  targetSJ.updated_at = new Date().toISOString();
+  targetSJ.updated_by = petugas || 'Petugas Apotek / Klinik';
+
+  writeDB(db);
+  autoPushMedicinesToGSheet(db);
+  notifyClients();
+
+  // Kirim Audit Log ke Telegram Bot (non-blocking)
+  try {
+    const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+    const telegramText = 
+`✏️ <b>[SURAT JALAN DIREVISI / DI-EDIT]</b> ✏️
+━━━━━━━━━━━━━━━━━━━━
+📄 <b>No. Surat Jalan:</b> <code>${noSurat}</code>
+👤 <b>Pengirim (Apotek):</b> ${targetSJ.sender || '-'}
+👤 <b>Penerima (PT ATI):</b> ${targetSJ.receiver || '-'}
+👨‍⚕️ <b>Petugas Koreksi:</b> ${petugas || 'Petugas Apotek/Klinik'}
+━━━━━━━━━━━━━━━━━━━━
+📦 <b>Item Setelah Koreksi:</b>
+${updatedItems.map(it => `• ${it.name}: <b>${it.qty} ${it.satuan}</b> (Exp: ${it.expDate})`).join('\n')}
+${auditLogs.length > 0 ? `\n📊 <b>Koreksi Stok Medis:</b>\n${auditLogs.join('\n')}` : ''}
+⏱ <i>Waktu: ${nowWIB} WIB</i>
+🏥 <i>Sistem Rekam Medis PT ATI</i>`;
+
+    sendTelegramNotif(telegramText);
+  } catch (errTele) {
+    console.error('Non-blocking telegram notif error on edit SJ:', errTele.message);
+  }
+
+  res.json({
+    success: true,
+    message: `Surat Jalan ${noSurat} berhasil diperbarui dan sisa stok telah disesuaikan!`,
+    suratJalan: targetSJ,
+    updatedMedicines: updatedMedicines
+  });
+});
+
 app.delete('/api/surat-jalan/:id', (req, res) => {
   const db = readDB();
   if (!db.surat_jalan) return res.json({ success: true, message: 'Tidak ada surat jalan' });
