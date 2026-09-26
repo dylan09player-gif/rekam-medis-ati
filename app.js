@@ -1827,6 +1827,9 @@ function searchPatientByNIK() {
   if (chkPantauan) {
     chkPantauan.checked = !!isExistingPantauan;
     handlePoliCheckboxChange();
+    if (isExistingPantauan) {
+      populatePoliPantauanObatFromHistory();
+    }
   }
 
   renderPatientHistoryTimeline(p);
@@ -2553,18 +2556,21 @@ async function handleSavePoli(e) {
       else if (Number(sis) >= 140 || Number(dia) >= 90) statusTensi = 'Hipertensi Tk 1';
       else if (Number(sis) >= 120 || Number(dia) >= 80) statusTensi = 'Pre-Hipertensi';
 
-      const ambilObat = document.getElementById('poli-pantauan-chk-ambil-obat')?.checked !== false;
+      const chkSubObat = document.getElementById('poli-pantauan-chk-obat')?.checked;
+      const ambilObat = Boolean(chkSubObat && (document.getElementById('poli-pantauan-chk-ambil-obat')?.checked !== false));
       const catatanObat = document.getElementById('poli-pantauan-catatan-obat')?.value || '';
       const jadwalObat = document.getElementById('poli-pantauan-jadwal-obat')?.value || '';
       const daftarObat = [];
-      document.querySelectorAll('#poli-pantauan-obat-list > div').forEach(row => {
-        const medName = row.querySelector('.poli-pantauan-med-name')?.value?.trim();
-        const medQty = row.querySelector('.poli-pantauan-med-qty')?.value;
-        const medRule = row.querySelector('.poli-pantauan-med-rule')?.value?.trim();
-        if (medName) {
-          daftarObat.push({ nama: medName, jumlah: Number(medQty) || 30, aturan: medRule || '1x1' });
-        }
-      });
+      if (ambilObat) {
+        document.querySelectorAll('#poli-pantauan-obat-list > div').forEach(row => {
+          const medName = row.querySelector('.poli-pantauan-med-name')?.value?.trim();
+          const medQty = row.querySelector('.poli-pantauan-med-qty')?.value;
+          const medRule = row.querySelector('.poli-pantauan-med-rule')?.value?.trim();
+          if (medName) {
+            daftarObat.push({ nama: medName, jumlah: Number(medQty) || 30, aturan: medRule || '1x1' });
+          }
+        });
+      }
 
       const adaLab = document.getElementById('poli-pantauan-chk-ada-lab')?.checked !== false;
       const hba1c = document.getElementById('poli-pantauan-lab-hba1c')?.value || '';
@@ -8943,8 +8949,26 @@ function renderHSEPasienPantauanTable() {
     }
     const evalLP = matchedLongTerm?.mingguan?.evaluasiLingkarPerut || (dLP !== null ? (dLP < 0 ? 'membaik' : dLP > 0 ? 'memburuk' : 'stabil') : '');
 
-    // 5. Obat Bulanan & Evaluasi Dosis
-    const daftarObat = matchedLongTerm?.obatBulanan?.daftarObat || [];
+    // 5. Obat Bulanan & Evaluasi Dosis: Ambil HANYA dari ceklis pemantauan yang sah
+    const patientPantauanRecs = (_longTermPantauanRecords || []).filter(r => {
+      const k = (emp.nikPabrik || emp.namaPasien || '').toLowerCase();
+      return (r.nikPabrik && r.nikPabrik.toLowerCase() === k) || (r.namaPasien && r.namaPasien.toLowerCase() === k);
+    });
+    patientPantauanRecs.sort((a, b) => (b.rawTime || 0) - (a.rawTime || 0));
+
+    let daftarObat = [];
+    const validRecWithMeds = patientPantauanRecs.find(r => 
+      Array.isArray(r.obatBulanan?.daftarObat) && 
+      r.obatBulanan.daftarObat.length > 0 && 
+      !r.obatBulanan.isResepPoliFallback &&
+      !r.obatBulanan.daftarObat.every(m => m.aturan === 'Sesuai resep')
+    );
+    if (validRecWithMeds) {
+      daftarObat = validRecWithMeds.obatBulanan.daftarObat;
+    } else if (matchedLongTerm?.obatBulanan?.daftarObat && !matchedLongTerm.obatBulanan.isResepPoliFallback && !matchedLongTerm.obatBulanan.daftarObat.every(m => m.aturan === 'Sesuai resep')) {
+      daftarObat = matchedLongTerm.obatBulanan.daftarObat;
+    }
+
     const hasDoseReduced = daftarObat.some(m => m.evaluasi === 'turun');
     const hasDoseIncreased = daftarObat.some(m => m.evaluasi === 'tambah');
 
@@ -13123,7 +13147,10 @@ function togglePoliPantauanSection(type) {
     if (chkObat) {
       const obatList = document.getElementById('poli-pantauan-obat-list');
       if (obatList && obatList.children.length === 0) {
-        syncPoliResepToPantauan();
+        const loaded = populatePoliPantauanObatFromHistory();
+        if (!loaded) {
+          addPoliPantauanMedRow('', 30, '1x1 pagi');
+        }
       }
     }
   }
@@ -13243,6 +13270,33 @@ function addPoliPantauanMedRow(name = '', qty = 30, aturan = '1x1 pagi') {
     </div>
   `;
   container.insertAdjacentHTML('beforeend', rowHtml);
+}
+
+function populatePoliPantauanObatFromHistory() {
+  const container = document.getElementById('poli-pantauan-obat-list');
+  if (!container) return false;
+  const p = appData.currentPoliPatient;
+  if (!p) return false;
+  const key = (p.nikPabrik || p.nik || p.nama || '').trim().toLowerCase();
+  
+  // Cari rekam pantauan yang memiliki daftar obat rutin sah dari ceklis (bukan resep poli)
+  const recs = (_longTermPantauanRecords || []).filter(r => 
+    ((r.nikPabrik && r.nikPabrik.toLowerCase() === key) || (r.namaPasien && r.namaPasien.toLowerCase() === key)) &&
+    Array.isArray(r.obatBulanan?.daftarObat) && r.obatBulanan.daftarObat.length > 0 &&
+    !r.obatBulanan.isResepPoliFallback &&
+    !r.obatBulanan.daftarObat.every(m => m.aturan === 'Sesuai resep')
+  );
+  recs.sort((a, b) => (b.rawTime || 0) - (a.rawTime || 0));
+  const latestWithMeds = recs[0];
+
+  if (latestWithMeds && Array.isArray(latestWithMeds.obatBulanan.daftarObat) && latestWithMeds.obatBulanan.daftarObat.length > 0) {
+    container.innerHTML = '';
+    latestWithMeds.obatBulanan.daftarObat.forEach(med => {
+      addPoliPantauanMedRow(med.nama, med.jumlah || 30, med.aturan || '1x1 pagi');
+    });
+    return true;
+  }
+  return false;
 }
 
 function syncPoliResepToPantauan() {

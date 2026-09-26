@@ -379,6 +379,39 @@ function initDBOnce(data) {
     });
   }
 
+  // Sanitasi otomatis pantauan_records: pastikan obat rutin hanya dari ceklis pemantauan, bukan resep poli akut
+  if (Array.isArray(data.pantauan_records) && data.pantauan_records.length > 0) {
+    const patientValidMeds = {};
+    data.pantauan_records.forEach(r => {
+      const k = (r.nikPabrik || r.namaPasien || '').trim().toLowerCase();
+      if (!k) return;
+      const ob = r.obatBulanan || {};
+      const doMeds = ob.daftarObat || [];
+      const isFallback = doMeds.some(m => m.aturan === 'Sesuai resep');
+      if (doMeds.length > 0 && !isFallback && !patientValidMeds[k]) {
+        patientValidMeds[k] = JSON.parse(JSON.stringify(doMeds));
+      }
+    });
+
+    data.pantauan_records.forEach(r => {
+      const k = (r.nikPabrik || r.namaPasien || '').trim().toLowerCase();
+      const ob = r.obatBulanan || {};
+      const doMeds = ob.daftarObat || [];
+      const isFallback = doMeds.some(m => m.aturan === 'Sesuai resep');
+      if (isFallback) {
+        if (k && patientValidMeds[k]) {
+          ob.daftarObat = JSON.parse(JSON.stringify(patientValidMeds[k]));
+          ob.isResepPoliFallback = false;
+        } else {
+          ob.daftarObat = [];
+          ob.ambilObat = false;
+          ob.isResepPoliFallback = true;
+        }
+        modified = true;
+      }
+    });
+  }
+
   return modified;
 }
 
@@ -2725,6 +2758,32 @@ app.post('/api/records', async (req, res) => {
     const tipeP = String(newRecord.tipePantauan || 'mingguan').toLowerCase();
     const tglKontrol = newRecord.tanggalKontrol || '';
 
+    // Ambil obat rutin HANYA dari input ceklis pemantauan (pdObat.daftarObat)
+    // JANGAN PERNAH mengambil / fallback ke resep poli (newRecord.resep) karena resep poli adalah pengobatan akut!
+    const hasCeklisObat = Array.isArray(pdObat.daftarObat) && pdObat.daftarObat.length > 0;
+    const isAmbilObat = (pdObat.ambilObat !== undefined) ? Boolean(pdObat.ambilObat) : (tipeP.includes('obat') && hasCeklisObat);
+
+    let finalDaftarObat = [];
+    if (hasCeklisObat) {
+      finalDaftarObat = pdObat.daftarObat.map(o => ({
+        nama: (o.nama || o.namaObat || '').trim(),
+        jumlah: Number(o.jumlah || o.qty) || 30,
+        aturan: (o.aturan || '1x1').trim(),
+        evaluasi: o.evaluasi || 'tetap'
+      })).filter(o => o.nama !== '');
+    } else {
+      // Jika pada kunjungan ini tidak ada ceklis obat rutin baru, pertahankan daftar obat rutin sah sebelumnya
+      const prevPantauanRec = (db.pantauan_records || []).find(r => 
+        ((r.nikPabrik && r.nikPabrik === newRecord.nikPabrik) || (r.namaPasien && r.namaPasien.toLowerCase() === (newRecord.namaPasien || '').toLowerCase())) &&
+        Array.isArray(r.obatBulanan?.daftarObat) && r.obatBulanan.daftarObat.length > 0 &&
+        !r.obatBulanan.isResepPoliFallback &&
+        !r.obatBulanan.daftarObat.every(m => m.aturan === 'Sesuai resep')
+      );
+      if (prevPantauanRec) {
+        finalDaftarObat = prevPantauanRec.obatBulanan.daftarObat;
+      }
+    }
+
     const pntRecord = {
       id: 'PNT-' + Date.now(),
       nikPabrik: newRecord.nikPabrik || '',
@@ -2752,14 +2811,10 @@ app.post('/api/records', async (req, res) => {
         jadwalBerikutnya: pdMingguan.jadwalBerikutnya || (tipeP.includes('mingguan') ? tglKontrol : null)
       },
       obatBulanan: {
-        ambilObat: (pdObat.ambilObat !== undefined) ? Boolean(pdObat.ambilObat) : (tipeP.includes('obat') || (Array.isArray(newRecord.resep) && newRecord.resep.length > 0)),
-        daftarObat: (Array.isArray(pdObat.daftarObat) && pdObat.daftarObat.length > 0) ? pdObat.daftarObat : (Array.isArray(newRecord.resep) ? newRecord.resep.map(r => ({
-          nama: r.namaObat || r.obat,
-          jumlah: r.qty || 1,
-          aturan: r.aturan || 'Sesuai resep'
-        })) : []),
-        catatanObat: pdObat.catatanObat || (tipeP.includes('obat') ? (newRecord.catatanKontrol || 'Pengambilan obat rutin poli') : ''),
-        jadwalAmbilBerikutnya: pdObat.jadwalAmbilBerikutnya || (tipeP.includes('obat') ? tglKontrol : null)
+        ambilObat: isAmbilObat,
+        daftarObat: finalDaftarObat,
+        catatanObat: pdObat.catatanObat || '',
+        jadwalAmbilBerikutnya: (isAmbilObat && pdObat.jadwalAmbilBerikutnya) ? pdObat.jadwalAmbilBerikutnya : (pdObat.jadwalAmbilBerikutnya || (tipeP.includes('obat') ? tglKontrol : null))
       },
       lab3Bulan: {
         adaCekLab: (pdLab.adaCekLab !== undefined) ? Boolean(pdLab.adaCekLab) : tipeP.includes('lab'),
