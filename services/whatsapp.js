@@ -159,12 +159,15 @@ class WhatsAppService {
           if (isLoggedOut) {
             this.sessions[sessionType].status = 'DISCONNECTED';
             this.sessions[sessionType].qrDataUrl = null;
-            this.sessions[sessionType].number = sessionType === 'klinik' ? '+62 813-9816-9819' : '+62 822-APOTEK';
+            this.sessions[sessionType].rawQr = null;
+            this.sessions[sessionType].number = '';
             try {
-              fs.rmSync(authFolder, { recursive: true, force: true });
+              if (fs.existsSync(authFolder)) fs.rmSync(authFolder, { recursive: true, force: true });
             } catch (e) {}
             this.notifyStatusUpdate(sessionType);
-            setTimeout(() => this.initSession(sessionType), 3000);
+            if (this.io) {
+              this.io.emit('wa_status', { sessionName: sessionType, isConnected: false, status: 'DISCONNECTED', phone: '' });
+            }
           } else {
             if (this.sessions[sessionType].status !== 'CONNECTED' && !this.sessions[sessionType].qrDataUrl) {
               this.sessions[sessionType].status = 'CONNECTING';
@@ -325,8 +328,8 @@ class WhatsAppService {
     return { success: true, realSent: false, simulated: true };
   }
 
-  // Putuskan Tautan / Hubungkan Ulang
-  async logoutSession(sessionType) {
+  // Putuskan Tautan / Hubungkan Ulang (Logout)
+  async logoutSession(sessionType = 'klinik') {
     const session = this.sessions[sessionType];
     if (!session) return;
 
@@ -334,22 +337,33 @@ class WhatsAppService {
 
     try {
       if (session.sock) {
-        await session.sock.logout().catch(() => {});
+        try { session.sock.ev.removeAllListeners(); } catch (e) {}
+        await session.sock.logout().catch(e => console.warn('[WA Logout] Sock logout error:', e.message));
+        try { session.sock.end(); } catch (e) {}
         session.sock = null;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[WA Logout] Error ending socket:', e.message);
+    }
 
     try {
-      fs.rmSync(authFolder, { recursive: true, force: true });
-    } catch (e) {}
+      if (fs.existsSync(authFolder)) {
+        fs.rmSync(authFolder, { recursive: true, force: true });
+      }
+    } catch (e) {
+      console.error('[WA Logout] Error removing authFolder:', e.message);
+    }
 
     session.status = 'DISCONNECTED';
     session.qrDataUrl = null;
     session.rawQr = null;
-    session.number = sessionType === 'klinik' ? '+62 813-9816-9819' : '+62 822-APOTEK';
+    session.number = '';
+    session.deviceName = 'HP Klinik (Belum Tertaut)';
     this.notifyStatusUpdate(sessionType);
-
-    setTimeout(() => this.initSession(sessionType), 2000);
+    if (this.io) {
+      this.io.emit('wa_status', { sessionName: sessionType, isConnected: false, status: 'DISCONNECTED', phone: '' });
+      this.io.emit('wa_qr', { sessionName: sessionType, qr: null });
+    }
   }
 }
 

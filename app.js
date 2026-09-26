@@ -24,6 +24,8 @@ let appData = {
   waContacts: [
     { id: '1', nama: 'Apt. Nafila Medika', hp: '6281234567890', jabatan: 'Apoteker Utama' }
   ],
+  suratSakitLuar: [],
+  mcuRecords: [],
   currentPoliPatient: null
 };
 
@@ -639,7 +641,7 @@ async function handleUserRegister(e) {
   e.preventDefault();
   const nama = document.getElementById('gate-reg-nama')?.value.trim();
   const role = document.getElementById('gate-reg-role')?.value;
-  const username = document.getElementById('gate-reg-username')?.value.trim();
+  let username = document.getElementById('gate-reg-username')?.value.trim();
   const noWa = document.getElementById('gate-reg-nowa')?.value.trim();
   const password = document.getElementById('gate-reg-password')?.value.trim();
 
@@ -647,6 +649,9 @@ async function handleUserRegister(e) {
     showToast('Semua kolom bertanda * wajib diisi!', 'warning');
     return;
   }
+
+  // Otomatis bersihkan spasi di username
+  username = username.toLowerCase().replace(/\s+/g, '_');
 
   try {
     const res = await fetch('/api/auth/register', {
@@ -698,7 +703,7 @@ async function loadAllAppData() {
     };
 
     const noCacheOpt = { cache: 'no-store' };
-    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes, sjRes, mutRes, slRes] = await Promise.all([
+    const [patRes, recRes, medRes, icdRes, absRes, panRes, usrRes, tndRes, sjRes, mutRes, slRes, mcuRes] = await Promise.all([
       fetch('/api/patients', noCacheOpt),
       fetch('/api/records', noCacheOpt),
       fetch('/api/medicines', noCacheOpt),
@@ -709,7 +714,8 @@ async function loadAllAppData() {
       fetch('/api/tindakan', noCacheOpt),
       fetch('/api/surat-jalan', noCacheOpt),
       fetch('/api/stock-mutations', noCacheOpt),
-      fetch('/api/surat-luar', noCacheOpt)
+      fetch('/api/surat-luar', noCacheOpt),
+      fetch('/api/mcu', noCacheOpt)
     ]);
 
     appData.patients = await safeJson(patRes);
@@ -723,6 +729,7 @@ async function loadAllAppData() {
     appData.suratJalan = await safeJson(sjRes);
     appData.stockMutations = await safeJson(mutRes);
     appData.suratSakitLuar = await safeJson(slRes);
+    appData.mcuRecords = await safeJson(mcuRes);
 
     // Load Settings (GSheet & No WA Apoteker)
     try {
@@ -992,6 +999,14 @@ function initNavigation() {
     const hseWrap = document.getElementById('hse-med-filter-wrap');
     if (hseWrap && !hseWrap.contains(e.target)) {
       hideHSEMedFilterMenu();
+    }
+    const waSettingsContainer = document.getElementById('wa-settings-dropdown-container');
+    if (waSettingsContainer && !waSettingsContainer.contains(e.target)) {
+      if (typeof closeWaSettingsDropdown === 'function') closeWaSettingsDropdown();
+    }
+    const waChatGear = document.getElementById('wa-chat-gear-container');
+    if (waChatGear && !waChatGear.contains(e.target)) {
+      if (typeof closeWaChatGearDropdown === 'function') closeWaChatGearDropdown();
     }
   });
 }
@@ -2110,17 +2125,59 @@ function openModalRiwayatPasien(identifier) {
     nameEl.textContent = `Pasien: ${history.length > 0 ? history[0].namaPasien : identifier} | Total Kunjungan: ${history.length}`;
   }
 
+  const mcuList = (appData.mcuRecords || []).filter(m => 
+    (m.NIK && String(m.NIK) === String(identifier)) ||
+    (m.Nama && String(m.Nama).toLowerCase() === String(identifier).toLowerCase())
+  );
+
+  let mcuHtml = '';
+  if (mcuList.length > 0) {
+    const latestMcu = mcuList[0];
+    const statusKelayakan = latestMcu.Status_Kelayakan_Kerja || latestMcu.Catatan_Kelayakan || 'SELESAI';
+    const isFit = statusKelayakan.toLowerCase().includes('fit') && !statusKelayakan.toLowerCase().includes('unfit');
+    const isUnfit = statusKelayakan.toLowerCase().includes('unfit');
+    const badgeBg = isFit ? 'rgba(16, 185, 129, 0.2)' : isUnfit ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)';
+    const badgeColor = isFit ? '#10b981' : isUnfit ? '#ef4444' : '#f59e0b';
+
+    mcuHtml = `
+      <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(2, 132, 199, 0.15)); border: 1.5px solid #0ea5e9; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+          <div style="font-weight: 800; font-size: 0.95rem; color: #0284c7; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-heart-pulse"></i> HASIL MEDICAL CHECK UP (MCU)
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(${latestMcu.Tgl_Finalisasi || latestMcu.Batch_Import || 'Terkini'})</span>
+          </div>
+          <span class="badge" style="background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; padding: 4px 10px; border-radius: 6px;">
+            ${escapeHtml(statusKelayakan)}
+          </span>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 0.8rem; margin-bottom: 8px; background: rgba(0,0,0,0.15); padding: 8px 10px; border-radius: 8px;">
+          <div><span style="color: var(--text-muted);">Tekanan Darah:</span> <strong>${latestMcu.TD_Sistol || '-'}/${latestMcu.TD_Diastol || '-'} mmHg</strong></div>
+          <div><span style="color: var(--text-muted);">TB / BB / IMT:</span> <strong>${latestMcu.TB || '-'}cm / ${latestMcu.BB || '-'}kg (${latestMcu.IMT || '-'})</strong></div>
+          <div><span style="color: var(--text-muted);">Gol. Darah:</span> <strong>${latestMcu.Golongan_Darah || '-'} (${latestMcu.Rhesus || '+'})</strong></div>
+          <div><span style="color: var(--text-muted);">Kolesterol Total:</span> <strong>${latestMcu.Chol_Total || '-'} mg/dL</strong></div>
+          <div><span style="color: var(--text-muted);">Gula Darah:</span> <strong>${latestMcu.Gula_Darah_Sewaktu || latestMcu.Gula_Darah_Puasa || '-'} mg/dL</strong></div>
+          <div><span style="color: var(--text-muted);">Asam Urat:</span> <strong>${latestMcu.Asam_Urat || '-'} mg/dL</strong></div>
+        </div>
+
+        ${latestMcu.Diagnosis_Utama ? `<div style="font-size: 0.82rem; margin-bottom: 4px;"><strong>Diagnosis MCU:</strong> <span style="color: #f87171; font-weight: 600;">${escapeHtml(latestMcu.Diagnosis_Utama)}</span> ${latestMcu.Diagnosis_Sekunder1 ? `(${escapeHtml(latestMcu.Diagnosis_Sekunder1)})` : ''}</div>` : ''}
+        ${latestMcu.Kesimpulan_MCU ? `<div style="font-size: 0.82rem; margin-bottom: 4px;"><strong>Kesimpulan:</strong> ${escapeHtml(latestMcu.Kesimpulan_MCU)}</div>` : ''}
+        ${latestMcu.Rekomendasi || latestMcu.Saran_Tindak_Lanjut ? `<div style="font-size: 0.82rem; color: #38bdf8;"><strong>Saran/Rekomendasi:</strong> ${escapeHtml(latestMcu.Rekomendasi || latestMcu.Saran_Tindak_Lanjut)}</div>` : ''}
+      </div>
+    `;
+  }
+
   if (history.length === 0) {
-    container.innerHTML = `
-      <div style="text-align:center; padding: 48px 20px; color: var(--text-muted);">
-        <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.35;"></i>
-        <p style="font-weight: 700;">Belum ada riwayat rekam medis</p>
+    container.innerHTML = mcuHtml + `
+      <div style="text-align:center; padding: 32px 20px; color: var(--text-muted);">
+        <i class="fa-solid fa-folder-open" style="font-size: 2.2rem; margin-bottom: 10px; opacity: 0.35;"></i>
+        <p style="font-weight: 700; margin: 0;">Belum ada riwayat kunjungan rawat jalan / poli</p>
       </div>`;
     document.getElementById('modal-riwayat-pasien').style.display = 'flex';
     return;
   }
 
-  container.innerHTML = history.map(r => {
+  container.innerHTML = mcuHtml + history.map(r => {
     let diagHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
     if (r.asesmen) {
       diagHTML = renderDiagnosisBadges(r.asesmen);
@@ -6413,17 +6470,23 @@ function renderKaryawanTable() {
     const birthPlace = k.birthPlace || '';
     const tgl = k.tglLahir || k.tgl_lahir || '-';
     const usia = calculateAge(tgl);
-    const gender = k.gender || '-';
-    const golDarah = k.golDarah || '';
-    const rawHp = k.hp || k.no_hp || '';
+    const gender = k.gender || k.jenisKelamin || '-';
+    const golDarah = k.golDarah || k.golonganDarah || '';
+    const rawHp = k.hp || k.no_hp || k.noHp || k.telepon || '';
     const saldoObat = parseInt(k.saldoObat) || 0;
 
     const jumlahRM = getPatientRMCount(k, rmCountMap);
+    const hasMCU = (appData.mcuRecords || []).some(m => 
+      (m.NIK && String(m.NIK) === String(npk)) ||
+      (m.Nama && String(m.Nama).toLowerCase() === String(nama).toLowerCase())
+    );
 
     // Badge riwayat medis
     const rmBadgeColor = jumlahRM === 0 ? 'rgba(100,100,100,0.15)' : jumlahRM < 3 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
     const rmBadgeText = jumlahRM === 0 ? 'var(--text-muted)' : jumlahRM < 3 ? '#34d399' : '#f87171';
-    const rmBadgeHTML = `<span class="badge" title="Jumlah kunjungan rekam medis" style="background:${rmBadgeColor}; color:${rmBadgeText}; font-weight:700; cursor:${jumlahRM>0?'pointer':'default'};" ${jumlahRM>0?`onclick="event.stopPropagation(); openModalRiwayatPasien('${npk}')"`:''}>${jumlahRM > 0 ? `<i class="fa-solid fa-file-medical" style="margin-right:3px;"></i>${jumlahRM}x` : '-'}</span>`;
+    const rmMainBadge = jumlahRM > 0 ? `<span class="badge" title="Jumlah kunjungan rekam medis" style="background:${rmBadgeColor}; color:${rmBadgeText}; font-weight:700; cursor:pointer;" onclick="event.stopPropagation(); openModalRiwayatPasien('${npk}')"><i class="fa-solid fa-file-medical" style="margin-right:3px;"></i>${jumlahRM}x</span>` : '';
+    const mcuBadge = hasMCU ? `<span class="badge" title="Tersedia Hasil Medical Check Up (MCU)" style="background:rgba(14, 165, 233, 0.15); color:#0284c7; font-weight:700; cursor:pointer;" onclick="event.stopPropagation(); openModalRiwayatPasien('${npk}')"><i class="fa-solid fa-heart-pulse" style="margin-right:3px;"></i>MCU</span>` : '';
+    const rmBadgeHTML = (rmMainBadge || mcuBadge) ? `<div style="display:inline-flex; gap:4px; align-items:center;">${rmMainBadge}${mcuBadge}</div>` : `<span style="color:var(--text-muted);">-</span>`;
 
     // Badge gender
     const genderIsLaki = ['laki','l','pria','male','m'].some(v => gender.toLowerCase().includes(v));
@@ -6832,6 +6895,43 @@ async function handleSaveAbsenDokter(e) {
 // -------------------------------------------------------------
 // 7. TAB SHIFT LOGIC (WHATSAPP WEB - SISTEM MARUNDA)
 // -------------------------------------------------------------
+function setShiftPreset(shiftNum) {
+  const tglMulaiEl = document.getElementById('shift1-tgl-mulai');
+  const tglSelesaiEl = document.getElementById('shift1-tgl-selesai');
+  const jamMulaiEl = document.getElementById('shift1-jam-mulai');
+  const jamSelesaiEl = document.getElementById('shift1-jam-selesai');
+
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  if (shiftNum === 1) {
+    if (tglMulaiEl) tglMulaiEl.value = todayStr;
+    if (tglSelesaiEl) tglSelesaiEl.value = todayStr;
+    if (jamMulaiEl) jamMulaiEl.value = '07:00';
+    if (jamSelesaiEl) jamSelesaiEl.value = '15:00';
+  } else if (shiftNum === 2) {
+    if (tglMulaiEl) tglMulaiEl.value = todayStr;
+    if (tglSelesaiEl) tglSelesaiEl.value = todayStr;
+    if (jamMulaiEl) jamMulaiEl.value = '15:00';
+    if (jamSelesaiEl) jamSelesaiEl.value = '23:00';
+  } else if (shiftNum === 3) {
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const y_yyyy = yesterday.getFullYear();
+    const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const y_dd = String(yesterday.getDate()).padStart(2, '0');
+    const yestStr = `${y_yyyy}-${y_mm}-${y_dd}`;
+
+    if (tglMulaiEl) tglMulaiEl.value = yestStr;
+    if (tglSelesaiEl) tglSelesaiEl.value = todayStr;
+    if (jamMulaiEl) jamMulaiEl.value = '23:00';
+    if (jamSelesaiEl) jamSelesaiEl.value = '07:00';
+  }
+}
+
 function initShiftView() {
   const curUser = appData.currentUser;
   const userWa = curUser?.noWa || '';
@@ -6844,6 +6944,29 @@ function initShiftView() {
   if (waInput1 && (!waInput1.value || waInput1.value.trim() === '')) waInput1.value = userWa;
   if (waInput2 && (!waInput2.value || waInput2.value.trim() === '')) waInput2.value = userWa;
   if (dariInput && (!dariInput.value || dariInput.value.trim() === '')) dariInput.value = userName;
+
+  const tglMulai2 = document.getElementById('shift2-tgl-mulai');
+  const tglSelesai2 = document.getElementById('shift2-tgl-selesai');
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const y_yyyy = yesterday.getFullYear();
+  const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+  const y_dd = String(yesterday.getDate()).padStart(2, '0');
+  const yestStr = `${y_yyyy}-${y_mm}-${y_dd}`;
+
+  const tglMulai1 = document.getElementById('shift1-tgl-mulai');
+  const tglSelesai1 = document.getElementById('shift1-tgl-selesai');
+  if (tglMulai1 && !tglMulai1.value) tglMulai1.value = todayStr;
+  if (tglSelesai1 && !tglSelesai1.value) tglSelesai1.value = todayStr;
+
+  if (tglMulai2 && (!tglMulai2.value || tglMulai2.value === todayStr)) tglMulai2.value = yestStr;
+  if (tglSelesai2 && !tglSelesai2.value) tglSelesai2.value = todayStr;
 }
 
 async function handleKirimShift1(e) {
@@ -6906,6 +7029,8 @@ async function handleKirimShift2(e) {
   const data = {
     tglMulai: document.getElementById('shift2-tgl-mulai').value,
     tglSelesai: document.getElementById('shift2-tgl-selesai').value,
+    jamMulai: document.getElementById('shift2-jam-mulai')?.value || '07:00',
+    jamSelesai: document.getElementById('shift2-jam-selesai')?.value || '07:00',
     petugas1: document.getElementById('shift2-s1').value || '-',
     petugas2: document.getElementById('shift2-s2').value || '-',
     petugas3: document.getElementById('shift2-s3').value || '-',
@@ -6942,42 +7067,59 @@ async function handleKirimShift2(e) {
 // -------------------------------------------------------------
 // 8. TAB HSE LOGIC
 // -------------------------------------------------------------
-function switchHSESubTab(type) {
+// 8. TAB HSE LOGIC (REKAM MEDIS, PEMANTAUAN KRONIS & PROLANIS, SURKES)
+// -------------------------------------------------------------
+async function switchHSESubTab(type) {
   const rmTab = document.getElementById('hse-subtab-rm');
+  const pantauanTab = document.getElementById('hse-subtab-pantauan');
   const surkesTab = document.getElementById('hse-subtab-surkes');
+  
   const btnRm = document.getElementById('subtab-btn-rm');
+  const btnPantauan = document.getElementById('subtab-btn-pantauan');
   const btnSurkes = document.getElementById('subtab-btn-surkes');
 
   if (rmTab) rmTab.style.display = (type === 'rm') ? 'block' : 'none';
+  if (pantauanTab) pantauanTab.style.display = (type === 'pantauan') ? 'block' : 'none';
   if (surkesTab) surkesTab.style.display = (type === 'surkes') ? 'block' : 'none';
 
   if (btnRm) btnRm.className = (type === 'rm') ? 'btn btn-primary' : 'btn btn-secondary';
+  if (btnPantauan) btnPantauan.className = (type === 'pantauan') ? 'btn btn-primary' : 'btn btn-secondary';
   if (btnSurkes) btnSurkes.className = (type === 'surkes') ? 'btn btn-primary' : 'btn btn-secondary';
 
-  if (type === 'surkes') {
+  if (type === 'pantauan') {
+    if (typeof loadLongTermPantauanData === 'function') {
+      await loadLongTermPantauanData();
+    }
+    renderHSEPasienPantauanTable();
+    if (pantauanTab) pantauanTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else if (type === 'surkes') {
     renderHSESurkesTable();
+    if (surkesTab) surkesTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
 async function openModalHSEPantauan() {
-  document.getElementById('modal-hse-pantauan').style.display = 'flex';
-  if (typeof loadLongTermPantauanData === 'function') {
-    await loadLongTermPantauanData();
+  const hseView = document.getElementById('view-hse');
+  if (hseView && !hseView.classList.contains('active')) {
+    document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
+    hseView.classList.add('active');
+    if (typeof renderActiveViewOnly === 'function') renderActiveViewOnly('view-hse');
   }
-  renderHSEPasienPantauanTable();
+  await switchHSESubTab('pantauan');
 }
 
 function closeModalHSEPantauan() {
-  document.getElementById('modal-hse-pantauan').style.display = 'none';
+  const modal = document.getElementById('modal-hse-pantauan');
+  if (modal) modal.style.display = 'none';
 }
 
 function openModalHSESurkes() {
-  document.getElementById('modal-hse-surkes').style.display = 'flex';
-  renderHSESurkesTable();
+  switchHSESubTab('surkes');
 }
 
 function closeModalHSESurkes() {
-  document.getElementById('modal-hse-surkes').style.display = 'none';
+  const modal = document.getElementById('modal-hse-surkes');
+  if (modal) modal.style.display = 'none';
 }
 
 // -------------------------------------------------------------
@@ -8110,16 +8252,78 @@ function calcPantauanBMI() {
   }
 }
 
-function addPantauanMedicineRow(name = '', qty = 30, aturan = '1x1 tablet sesudah makan') {
+function evalPantauanLingkarPerut() {
+  const inpVal = Number(document.getElementById('inp-pantauan-lingkar-perut')?.value) || 0;
+  const diffEl = document.getElementById('val-pantauan-lp-diff');
+  const evalHidden = document.getElementById('inp-pantauan-eval-lp-val');
+  const deltaHidden = document.getElementById('inp-pantauan-delta-lp-val');
+  
+  if (!diffEl) return;
+
+  const baselineLP = window._currentPatientBaselineLP || null;
+
+  if (inpVal > 0) {
+    let diffText = '';
+    let evalStatus = 'stabil';
+    let delta = null;
+
+    if (baselineLP && baselineLP > 0) {
+      delta = inpVal - baselineLP;
+      if (delta < 0) {
+        evalStatus = 'membaik';
+        diffText = `<span style="color: #34d399; font-weight: 800;">🟢 Turun ${Math.abs(delta)} cm dari kunjungan lalu (${baselineLP} cm ➔ ${inpVal} cm) - Membaik!</span>`;
+      } else if (delta > 0) {
+        evalStatus = 'memburuk';
+        diffText = `<span style="color: #f87171; font-weight: 800;">🔴 Bertambah +${delta} cm dari kunjungan lalu (${baselineLP} cm ➔ ${inpVal} cm)</span>`;
+      } else {
+        diffText = `<span style="color: #38bdf8; font-weight: 700;">🔵 Stabil (${inpVal} cm)</span>`;
+      }
+    } else {
+      diffText = `Ref Kemenkes: Pria ≤ 90 cm, Wanita ≤ 80 cm (${inpVal > 90 ? '⚠️ Obesitas Sentral' : 'Normal'})`;
+    }
+
+    diffEl.innerHTML = diffText;
+    if (evalHidden) evalHidden.value = evalStatus;
+    if (deltaHidden) deltaHidden.value = delta !== null ? delta : '';
+  } else {
+    diffEl.textContent = 'Ref: Pria ≤ 90 cm, Wanita ≤ 80 cm';
+    if (evalHidden) evalHidden.value = '';
+    if (deltaHidden) deltaHidden.value = '';
+  }
+}
+
+function applyProlanisPreset(type) {
+  switchInputPantauanTab('lab');
+  const chkLab = document.getElementById('chk-pantauan-ada-lab');
+  if (chkLab) chkLab.checked = true;
+
+  if (type === 'dm') {
+    showToast('🩸 Template Prolanis Diabetes Melitus diterapkan. Fokus pada GDP, GD2PP, HbA1c, dan Ginjal.', 'info');
+    const gdp = document.getElementById('inp-pantauan-lab-gdp');
+    if (gdp) gdp.focus();
+  } else if (type === 'ht') {
+    showToast('❤️ Template Prolanis Hipertensi diterapkan. Fokus pada TD, Ureum, Creatinin, dan Elektrolit.', 'info');
+    const ureum = document.getElementById('inp-pantauan-lab-ureum');
+    if (ureum) ureum.focus();
+  }
+}
+
+function addPantauanMedicineRow(name = '', qty = 30, aturan = '1x1 tablet sesudah makan', evaluasi = 'tetap') {
   const container = document.getElementById('container-pantauan-obat-rows');
   if (!container) return;
   const rowId = 'med_row_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
 
   const rowHtml = `
-    <div id="${rowId}" style="display: flex; gap: 8px; align-items: center;">
-      <input type="text" class="form-control form-control-sm pantauan-med-name" placeholder="Nama Obat (misal: Amlodipine 5mg)" value="${escapeHtml(name)}" style="flex: 2;">
-      <input type="number" class="form-control form-control-sm pantauan-med-qty" placeholder="Jumlah" value="${qty}" style="width: 80px; text-align: center;">
-      <input type="text" class="form-control form-control-sm pantauan-med-rule" placeholder="Aturan Pakai" value="${escapeHtml(aturan)}" style="flex: 2;">
+    <div id="${rowId}" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--surface-2); padding: 8px; border-radius: 8px; border: 1px solid var(--border-card);">
+      <input type="text" class="form-control form-control-sm pantauan-med-name" placeholder="Nama Obat (misal: Amlodipine 5mg)" value="${escapeHtml(name)}" style="flex: 2; min-width: 150px;">
+      <input type="number" class="form-control form-control-sm pantauan-med-qty" placeholder="Jumlah" value="${qty}" style="width: 70px; text-align: center;">
+      <input type="text" class="form-control form-control-sm pantauan-med-rule" placeholder="Aturan Pakai" value="${escapeHtml(aturan)}" style="flex: 2; min-width: 140px;">
+      <select class="form-control form-control-sm pantauan-med-eval" style="width: 150px; font-weight: 700; font-size: 0.74rem;">
+        <option value="tetap" ${evaluasi === 'tetap' ? 'selected' : ''}>🔵 Dosis Tetap</option>
+        <option value="turun" ${evaluasi === 'turun' ? 'selected' : ''}>🟢 Penurunan Dosis</option>
+        <option value="tambah" ${evaluasi === 'tambah' ? 'selected' : ''}>🟠 Tambah / Naik Dosis</option>
+        <option value="stop" ${evaluasi === 'stop' ? 'selected' : ''}>⚪ Dihentikan</option>
+      </select>
       <button type="button" class="btn btn-sm btn-danger" onclick="document.getElementById('${rowId}').remove()" style="padding: 4px 8px; border-radius: 6px;" title="Hapus"><i class="fa-solid fa-trash"></i></button>
     </div>
   `;
@@ -8377,19 +8581,26 @@ async function submitPantauanRecord() {
     const medName = row.querySelector('.pantauan-med-name')?.value;
     const medQty = row.querySelector('.pantauan-med-qty')?.value;
     const medRule = row.querySelector('.pantauan-med-rule')?.value;
+    const medEval = row.querySelector('.pantauan-med-eval')?.value || 'tetap';
     if (medName) {
-      daftarObat.push({ nama: medName, jumlah: Number(medQty) || 30, aturan: medRule || '1x1' });
+      daftarObat.push({ nama: medName, jumlah: Number(medQty) || 30, aturan: medRule || '1x1', evaluasi: medEval });
     }
   });
 
-  // Lab 3 Bulanan
+  // Lab 3 Bulanan (Master PROLANIS & Dinamis)
   const adaLab = document.getElementById('chk-pantauan-ada-lab')?.checked;
+  const gdp = document.getElementById('inp-pantauan-lab-gdp')?.value;
+  const gd2pp = document.getElementById('inp-pantauan-lab-gd2pp')?.value;
   const hba1c = document.getElementById('inp-pantauan-lab-hba1c')?.value;
   const ureum = document.getElementById('inp-pantauan-lab-ureum')?.value;
   const creatinin = document.getElementById('inp-pantauan-lab-creatinin')?.value;
+  const ldl = document.getElementById('inp-pantauan-lab-ldl')?.value;
+  const trigliserida = document.getElementById('inp-pantauan-lab-trigliserida')?.value;
+  const mikroalbumin = document.getElementById('inp-pantauan-lab-mikroalbumin')?.value || '';
   const na = document.getElementById('inp-pantauan-lab-na')?.value;
   const k = document.getElementById('inp-pantauan-lab-k')?.value;
   const cl = document.getElementById('inp-pantauan-lab-cl')?.value;
+  const evaluasiLabStatus = document.getElementById('inp-pantauan-lab-eval-status')?.value || 'stabil';
   const catatanLab = document.getElementById('inp-pantauan-lab-catatan')?.value || '';
   const jadwalLab = document.getElementById('inp-pantauan-jadwal-lab')?.value;
 
@@ -8404,6 +8615,9 @@ async function submitPantauanRecord() {
     }
   });
 
+  const evaluasiLingkarPerut = document.getElementById('inp-pantauan-eval-lp-val')?.value || '';
+  const deltaLingkarPerut = document.getElementById('inp-pantauan-delta-lp-val')?.value;
+  const statusEvaluasiKlinis = document.getElementById('inp-pantauan-kesimpulan-status')?.value || 'rutin_membaik';
   const catatanDokter = document.getElementById('inp-pantauan-catatan-dokter')?.value || '';
   const sendWa = Boolean(document.getElementById('chk-pantauan-send-wa')?.checked);
 
@@ -8413,6 +8627,7 @@ async function submitPantauanRecord() {
     dept: dept,
     noHp: noHp,
     pemeriksa: pemeriksa,
+    statusEvaluasiKlinis: statusEvaluasiKlinis,
     mingguan: {
       tensiSistol: sis,
       tensiDiastol: dia,
@@ -8426,6 +8641,8 @@ async function submitPantauanRecord() {
       tinggiBadan: tb,
       bmi: bmi,
       lingkarPerut: lingkarPerut,
+      evaluasiLingkarPerut: evaluasiLingkarPerut,
+      deltaLingkarPerut: deltaLingkarPerut !== undefined && deltaLingkarPerut !== '' ? Number(deltaLingkarPerut) : null,
       jadwalBerikutnya: jadwalMingguan
     },
     obatBulanan: {
@@ -8436,11 +8653,17 @@ async function submitPantauanRecord() {
     },
     lab3Bulan: {
       adaCekLab: adaLab,
+      gdp: gdp,
+      gd2pp: gd2pp,
       hba1c: hba1c,
       ureum: ureum,
       creatinin: creatinin,
+      ldl: ldl,
+      trigliserida: trigliserida,
+      mikroalbumin: mikroalbumin,
       elektrolit: { natrium: na, kalium: k, klorida: cl },
       customLabs: customLabs,
+      evaluasiLabStatus: evaluasiLabStatus,
       catatanLab: catatanLab,
       jadwalLabBerikutnya: jadwalLab
     },
@@ -8580,6 +8803,31 @@ async function sendWaPantauanReportDirect(recordId) {
   }
 }
 
+function extractBPValues(str) {
+  if (!str) return null;
+  const m = String(str).match(/(?:TD|Tensi|BP)?[\s:]*(\d{2,3})\s*[\/]\s*(\d{2,3})/i);
+  if (m) return { sis: parseInt(m[1]), dia: parseInt(m[2]) };
+  return null;
+}
+
+function extractGDSValue(str) {
+  if (!str) return null;
+  const m = String(str).match(/(?:GDS|GDP|Gula)[\s:]*(\d{2,3})/i);
+  if (m) return parseInt(m[1]);
+  return null;
+}
+
+function extractLPValue(str) {
+  if (!str) return null;
+  const m = String(str).match(/(?:LP|Lingkar\s*Perut)[\s:]*(\d{2,3})/i);
+  if (m) return parseInt(m[1]);
+  return null;
+}
+
+function filterHSEPantauanCards() {
+  renderHSEPasienPantauanTable();
+}
+
 function renderHSEPasienPantauanTable() {
   const container = document.getElementById('table-hse-pantauan-body');
   if (!container) return;
@@ -8616,32 +8864,14 @@ function renderHSEPasienPantauanTable() {
     }
   });
 
-function extractBPValues(str) {
-  if (!str) return null;
-  const m = String(str).match(/(?:TD|Tensi|BP)?[\s:]*(\d{2,3})\s*[\/]\s*(\d{2,3})/i);
-  if (m) return { sis: parseInt(m[1]), dia: parseInt(m[2]) };
-  return null;
-}
-
-function extractGDSValue(str) {
-  if (!str) return null;
-  const m = String(str).match(/(?:GDS|GDP|Gula)[\s:]*(\d{2,3})/i);
-  if (m) return parseInt(m[1]);
-  return null;
-}
-
   const uniqueEmployees = Object.values(employeeMap);
 
-  const badgeTotal = document.getElementById('badge-hse-total-pantauan');
-  if (badgeTotal) badgeTotal.textContent = `${uniqueEmployees.length} Pasien`;
+  let kpiImproving = 0;
+  let kpiUnchanged = 0;
+  let kpiOverdue = 0;
+  let kpiWorsening = 0;
 
-  if (uniqueEmployees.length === 0) {
-    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Belum ada data pasien dalam pemantauan K3</div>`;
-    return;
-  }
-
-  const renderedCards = uniqueEmployees.map(emp => {
-    // Sort records descending by date
+  const processedList = uniqueEmployees.map(emp => {
     const sortedRecs = emp.records.slice().sort((a, b) => {
       const dA = getRecordTimestamp(a) || (parseRecordDate(a) ? parseRecordDate(a).getTime() : 0);
       const dB = getRecordTimestamp(b) || (parseRecordDate(b) ? parseRecordDate(b).getTime() : 0);
@@ -8649,22 +8879,23 @@ function extractGDSValue(str) {
     });
 
     const latestRec = sortedRecs[0] || {};
+    const prevRec = sortedRecs[1] || null;
     const visitCount = sortedRecs.length;
 
     // Ambil rekam pemantauan jangka panjang terbaru
-    const matchedLongTerm = _longTermPantauanRecords.find(r => {
+    const matchedLongTerm = (_longTermPantauanRecords || []).find(r => {
       const k = (emp.nikPabrik || emp.namaPasien || '').toLowerCase();
       return (r.nikPabrik && r.nikPabrik.toLowerCase() === k) || (r.namaPasien && r.namaPasien.toLowerCase() === k);
     });
 
-    // 1. Tentukan Jadwal Kontrol & Status Kontrol Pasien (Udah Kontrol atau Belum)
+    // 1. Tentukan Jadwal Kontrol & Status Kontrol Pasien
     const nextSchedule = matchedLongTerm?.mingguan?.jadwalBerikutnya ||
                          matchedLongTerm?.obatBulanan?.jadwalAmbilBerikutnya ||
                          matchedLongTerm?.lab3Bulan?.jadwalLabBerikutnya ||
                          latestRec.tanggalKontrol || '';
 
-    let statusKontrol = 'none'; // 'completed' | 'overdue' | 'today' | 'upcoming' | 'none'
-    let kontrolBadgeHtml = '';
+    let statusKontrol = 'none';
+    let diffDays = null;
 
     if (nextSchedule) {
       const now = new Date();
@@ -8673,100 +8904,79 @@ function extractGDSValue(str) {
       schedDate.setHours(0, 0, 0, 0);
 
       const diffTime = schedDate - now;
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
       const lastVisitDate = parseRecordDate(latestRec);
       if (lastVisitDate && lastVisitDate >= schedDate) {
         statusKontrol = 'completed';
-        kontrolBadgeHtml = `<span class="badge" style="background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.4); font-weight: 700; font-size: 0.76rem;"><i class="fa-solid fa-circle-check"></i> Sudah Kontrol (${latestRec.tanggal})</span>`;
       } else if (diffDays < 0) {
         statusKontrol = 'overdue';
-        kontrolBadgeHtml = `<span class="badge" style="background: rgba(239,68,68,0.22); color: #f87171; border: 1.5px solid #ef4444; font-weight: 800; font-size: 0.76rem;"><i class="fa-solid fa-triangle-exclamation"></i> Belum Kontrol (Lewat ${Math.abs(diffDays)} Hari)</span>`;
       } else if (diffDays === 0) {
         statusKontrol = 'today';
-        kontrolBadgeHtml = `<span class="badge" style="background: rgba(234,179,8,0.22); color: #facc15; border: 1.5px solid #eab308; font-weight: 800; font-size: 0.76rem;"><i class="fa-solid fa-bell"></i> Jadwal Kontrol Hari Ini!</span>`;
       } else {
         statusKontrol = 'upcoming';
-        kontrolBadgeHtml = `<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-weight: 700; font-size: 0.76rem;"><i class="fa-regular fa-calendar-check"></i> Kontrol ${diffDays} Hari Lagi (${nextSchedule})</span>`;
       }
-    } else {
-      kontrolBadgeHtml = `<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted); font-size: 0.74rem;"><i class="fa-solid fa-notes-medical"></i> Pemantauan Terbuka</span>`;
     }
 
-    // 2. Tentukan Indikator Progres Kesehatan (Bagus / Membaik vs Makin Jelek)
-    let progressCategory = 'stable'; // 'improving' | 'worsening' | 'stable' | 'baseline'
-    let progressBadgeHtml = '';
-    const progressNotes = [];
-
+    // 2. Parameter Fisik & Vital (TD)
     const curSis = matchedLongTerm?.mingguan?.tensiSistol || (extractBPValues(latestRec.objektif)?.sis || null);
     const curDia = matchedLongTerm?.mingguan?.tensiDiastol || (extractBPValues(latestRec.objektif)?.dia || null);
-
-    const prevRec = sortedRecs[1];
     const prevSis = prevRec ? (extractBPValues(prevRec.objektif)?.sis || null) : null;
     const prevDia = prevRec ? (extractBPValues(prevRec.objektif)?.dia || null) : null;
 
-    if (curSis && prevSis) {
-      const dSis = curSis - prevSis;
-      const dDia = (curDia && prevDia) ? (curDia - prevDia) : 0;
-      if (dSis <= -10 || (curSis <= 130 && prevSis >= 140)) {
-        progressCategory = 'improving';
-        progressNotes.push(`TD turun ${Math.abs(dSis)} mmHg (${prevSis}/${prevDia || 80} ➔ ${curSis}/${curDia || 80}) 👍 Terkontrol`);
-      } else if (dSis >= 15 || curSis >= 150) {
-        progressCategory = 'worsening';
-        progressNotes.push(`TD naik +${dSis} mmHg (${prevSis}/${prevDia || 80} ➔ ${curSis}/${curDia || 80}) ⚠️ Perlu Perhatian`);
-      } else {
-        progressNotes.push(`TD stabil (${curSis}/${curDia || 80} mmHg)`);
-      }
-    } else if (curSis) {
-      if (curSis <= 125) progressNotes.push(`TD Normal (${curSis}/${curDia || 80} mmHg)`);
-      else if (curSis >= 150) {
-        progressCategory = 'worsening';
-        progressNotes.push(`TD Tinggi (${curSis}/${curDia || 80} mmHg) ⚠️ Waspada`);
-      } else {
-        progressNotes.push(`TD Terpantau (${curSis}/${curDia || 80} mmHg)`);
-      }
-    }
+    const dSis = (curSis && prevSis) ? (curSis - prevSis) : null;
+    const dDia = (curDia && prevDia) ? (curDia - prevDia) : null;
 
+    // 3. Gula Darah (GDS / GDP)
     const curGDS = matchedLongTerm?.mingguan?.gulaDarah || (extractGDSValue(latestRec.objektif) || null);
     const prevGDS = prevRec ? extractGDSValue(prevRec.objektif) : null;
-    if (curGDS && prevGDS) {
-      const dGDS = curGDS - prevGDS;
-      if (dGDS <= -20 || (curGDS <= 140 && prevGDS > 180)) {
-        if (progressCategory !== 'worsening') progressCategory = 'improving';
-        progressNotes.push(`GDS turun ${Math.abs(dGDS)} mg/dL (${prevGDS} ➔ ${curGDS})`);
-      } else if (dGDS >= 30 || curGDS >= 200) {
-        progressCategory = 'worsening';
-        progressNotes.push(`GDS melonjak +${dGDS} mg/dL (${prevGDS} ➔ ${curGDS}) ⚠️ Gula Darah Tinggi`);
-      }
-    } else if (curGDS) {
-      if (curGDS <= 140) progressNotes.push(`Gula Darah Normal (${curGDS} mg/dL)`);
-      else if (curGDS >= 200) {
-        progressCategory = 'worsening';
-        progressNotes.push(`GDS Tinggi (${curGDS} mg/dL) ⚠️ Waspada`);
+    const dGDS = (curGDS && prevGDS) ? (curGDS - prevGDS) : null;
+
+    // 4. Lingkar Perut (LP)
+    const curLP = matchedLongTerm?.mingguan?.lingkarPerut || extractLPValue(latestRec.objektif) || null;
+    const prevLP = extractLPValue(prevRec?.objektif) || null;
+    let dLP = (matchedLongTerm?.mingguan?.deltaLingkarPerut !== undefined && matchedLongTerm?.mingguan?.deltaLingkarPerut !== '')
+      ? Number(matchedLongTerm.mingguan.deltaLingkarPerut)
+      : null;
+    if (dLP === null && curLP && prevLP) {
+      dLP = curLP - prevLP;
+    }
+    const evalLP = matchedLongTerm?.mingguan?.evaluasiLingkarPerut || (dLP !== null ? (dLP < 0 ? 'membaik' : dLP > 0 ? 'memburuk' : 'stabil') : '');
+
+    // 5. Obat Bulanan & Evaluasi Dosis
+    const daftarObat = matchedLongTerm?.obatBulanan?.daftarObat || [];
+    const hasDoseReduced = daftarObat.some(m => m.evaluasi === 'turun');
+    const hasDoseIncreased = daftarObat.some(m => m.evaluasi === 'tambah');
+
+    // 6. Laboratorium 3 Bulan (Prolanis BPJS)
+    const lab = matchedLongTerm?.lab3Bulan || {};
+    const evalLab = lab.evaluasiLabStatus || '';
+
+    // 7. Evaluasi Klinis HSE (4 Kategori)
+    let clinicalCategory = matchedLongTerm?.statusEvaluasiKlinis || '';
+    if (!clinicalCategory) {
+      const isHighRisk = (curSis && curSis >= 160) || (curDia && curDia >= 100) || (dSis !== null && dSis >= 15) || (curGDS && curGDS >= 200) || (dGDS !== null && dGDS >= 30) || evalLab === 'perburukan';
+      const isOverdue = statusKontrol === 'overdue';
+      const isImproved = !isHighRisk && !isOverdue && ((dSis !== null && dSis <= -10) || (curSis && curSis <= 135 && prevSis && prevSis >= 140) || (dGDS !== null && dGDS <= -20) || (dLP !== null && dLP <= -2) || hasDoseReduced || evalLab === 'membaik');
+
+      if (isHighRisk) {
+        clinicalCategory = 'memburuk';
+      } else if (isOverdue) {
+        clinicalCategory = 'tidak_rutin';
+      } else if (isImproved) {
+        clinicalCategory = 'rutin_membaik';
+      } else {
+        clinicalCategory = 'rutin_belum';
       }
     }
 
-    if (visitCount <= 1 && !prevRec) {
-      progressCategory = 'baseline';
-      progressBadgeHtml = `<span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-muted); border: 1px solid var(--border-color); font-size: 0.74rem;"><i class="fa-solid fa-flag"></i> Data Perdana (Baseline)</span>`;
-    } else if (progressCategory === 'improving') {
-      progressBadgeHtml = `<span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; border: 1.5px solid rgba(16,185,129,0.5); font-weight: 800; font-size: 0.74rem;"><i class="fa-solid fa-arrow-trend-down"></i> PROGRES MEMBAIK / TERKONTROL</span>`;
-    } else if (progressCategory === 'worsening') {
-      progressBadgeHtml = `<span class="badge" style="background: rgba(239,68,68,0.22); color: #f87171; border: 1.5px solid rgba(239,68,68,0.5); font-weight: 800; font-size: 0.74rem;"><i class="fa-solid fa-arrow-trend-up"></i> PERLU PERHATIAN / MEMBURUK</span>`;
-    } else {
-      progressBadgeHtml = `<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.74rem;"><i class="fa-solid fa-equals"></i> STABIL TERPANTAU</span>`;
-    }
+    // Hitung KPI
+    if (clinicalCategory === 'rutin_membaik') kpiImproving++;
+    else if (clinicalCategory === 'rutin_belum') kpiUnchanged++;
+    else if (clinicalCategory === 'tidak_rutin') kpiOverdue++;
+    else if (clinicalCategory === 'memburuk') kpiWorsening++;
 
-    // 3. Filter Kategori Tab HSE
-    if (_currentHSEPantauanCategory === 'overdue' && statusKontrol !== 'overdue' && statusKontrol !== 'today') return '';
-    if (_currentHSEPantauanCategory === 'controlled' && statusKontrol !== 'completed') return '';
-    if (_currentHSEPantauanCategory === 'improving' && progressCategory !== 'improving') return '';
-    if (_currentHSEPantauanCategory === 'worsening' && progressCategory !== 'worsening') return '';
-    if (_currentHSEPantauanCategory === 'weekly' && !matchedLongTerm?.mingguan?.tensiSistol && !latestRec.objektif) return '';
-    if (_currentHSEPantauanCategory === 'monthly' && !matchedLongTerm?.obatBulanan?.ambilObat) return '';
-    if (_currentHSEPantauanCategory === 'quarterly' && !matchedLongTerm?.lab3Bulan?.adaCekLab) return '';
-
-    // Gather all distinct diagnoses across visits
+    // Diagnosa & Identitas
     const allDiags = [];
     sortedRecs.forEach(rec => {
       if (rec.asesmen && rec.asesmen !== '-') {
@@ -8777,7 +8987,185 @@ function extractGDSValue(str) {
 
     const patient = (appData.patients || []).find(p => (p.nikPabrik || p.nik) === emp.nikPabrik || (p.nama || '').toLowerCase() === (emp.namaPasien || '').toLowerCase()) || {};
     const rawHp = patient.hp || patient.noHp || patient.no_hp || patient.telepon || emp.noHp || latestRec.noHp || matchedLongTerm?.noHp || '';
-    
+
+    return {
+      emp,
+      latestRec,
+      prevRec,
+      visitCount,
+      matchedLongTerm,
+      nextSchedule,
+      statusKontrol,
+      diffDays,
+      curSis, curDia, prevSis, prevDia, dSis, dDia,
+      curGDS, prevGDS, dGDS,
+      curLP, prevLP, dLP, evalLP,
+      daftarObat, hasDoseReduced, hasDoseIncreased,
+      lab, evalLab,
+      clinicalCategory,
+      allDiags,
+      rawHp
+    };
+  });
+
+  // Simpan list untuk keperluan ekspor Excel / blast pengingat
+  window._lastProcessedPantauanList = processedList;
+
+  // Update KPI counters di DOM
+  const elImp = document.getElementById('pantauan-kpi-improving');
+  const elUnc = document.getElementById('pantauan-kpi-unchanged');
+  const elOvd = document.getElementById('pantauan-kpi-overdue');
+  const elWor = document.getElementById('pantauan-kpi-worsening');
+  const elChipTot = document.getElementById('pantauan-chip-total');
+  const elBadgeTot = document.getElementById('badge-hse-total-pantauan');
+
+  if (elImp) elImp.textContent = kpiImproving;
+  if (elUnc) elUnc.textContent = kpiUnchanged;
+  if (elOvd) elOvd.textContent = kpiOverdue;
+  if (elWor) elWor.textContent = kpiWorsening;
+  if (elChipTot) elChipTot.textContent = uniqueEmployees.length;
+  if (elBadgeTot) elBadgeTot.textContent = `${uniqueEmployees.length} Pasien`;
+
+  if (uniqueEmployees.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Belum ada data pasien dalam pemantauan K3</div>`;
+    return;
+  }
+
+  // Filter Kategori & Search
+  const searchInput = document.getElementById('hse-pantauan-search');
+  const searchQuery = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+  const filteredList = processedList.filter(item => {
+    // 1. Filter Kategori
+    if (_currentHSEPantauanCategory === 'improving' && item.clinicalCategory !== 'rutin_membaik') return false;
+    if (_currentHSEPantauanCategory === 'unchanged' && item.clinicalCategory !== 'rutin_belum') return false;
+    if (_currentHSEPantauanCategory === 'overdue' && item.clinicalCategory !== 'tidak_rutin' && item.statusKontrol !== 'overdue') return false;
+    if (_currentHSEPantauanCategory === 'worsening' && item.clinicalCategory !== 'memburuk') return false;
+    if (_currentHSEPantauanCategory === 'ht') {
+      const isHT = item.allDiags.some(d => /hipertensi|ht/i.test(d)) || (item.curSis && item.curSis >= 135);
+      if (!isHT) return false;
+    }
+    if (_currentHSEPantauanCategory === 'dm') {
+      const isDM = item.allDiags.some(d => /diabetes|dm|gula/i.test(d)) || (item.curGDS && item.curGDS >= 140) || item.lab?.hba1c;
+      if (!isDM) return false;
+    }
+
+    // 2. Filter Search
+    if (searchQuery) {
+      const matchName = (item.emp.namaPasien || '').toLowerCase().includes(searchQuery);
+      const matchNik = (item.emp.nikPabrik || '').toLowerCase().includes(searchQuery);
+      const matchDept = (item.emp.dept || '').toLowerCase().includes(searchQuery);
+      const matchDiag = item.allDiags.some(d => d.toLowerCase().includes(searchQuery));
+      if (!matchName && !matchNik && !matchDept && !matchDiag) return false;
+    }
+
+    return true;
+  });
+
+  if (filteredList.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Tidak ada data pasien yang sesuai dengan filter kategori atau pencarian</div>`;
+    return;
+  }
+
+  const renderedCards = filteredList.map(item => {
+    const emp = item.emp;
+    const latestRec = item.latestRec;
+    const matchedLongTerm = item.matchedLongTerm;
+    const rawHp = item.rawHp;
+
+    // Badges Evaluasi Klinis HSE
+    let evalBadgeHtml = '';
+    if (item.clinicalCategory === 'rutin_membaik') {
+      evalBadgeHtml = `<span class="badge-eval-rutin-membaik"><i class="fa-solid fa-circle-check"></i> 🟢 1. Rutin &amp; Membaik</span>`;
+    } else if (item.clinicalCategory === 'rutin_belum') {
+      evalBadgeHtml = `<span class="badge-eval-rutin-belum"><i class="fa-solid fa-clipboard-question"></i> 🟡 2. Rutin Belum Berubah</span>`;
+    } else if (item.clinicalCategory === 'tidak_rutin') {
+      evalBadgeHtml = `<span class="badge-eval-tidak-rutin"><i class="fa-solid fa-clock-rotate-left"></i> 🔴 3. Tidak Rutin / Overdue</span>`;
+    } else if (item.clinicalCategory === 'memburuk') {
+      evalBadgeHtml = `<span class="badge-eval-worsening"><i class="fa-solid fa-triangle-exclamation"></i> ⚠️ 4. High Risk / Memburuk</span>`;
+    }
+
+    // Badges Jadwal Kontrol
+    let kontrolBadgeHtml = '';
+    if (item.statusKontrol === 'completed') {
+      kontrolBadgeHtml = `<span class="badge" style="background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.4); font-weight: 700; font-size: 0.74rem;"><i class="fa-solid fa-circle-check"></i> Sudah Kontrol (${latestRec.tanggal || '-'})</span>`;
+    } else if (item.statusKontrol === 'overdue') {
+      kontrolBadgeHtml = `<span class="badge" style="background: rgba(239,68,68,0.22); color: #f87171; border: 1.5px solid #ef4444; font-weight: 800; font-size: 0.74rem;"><i class="fa-solid fa-triangle-exclamation"></i> Belum Kontrol (Lewat ${Math.abs(item.diffDays)} Hari)</span>`;
+    } else if (item.statusKontrol === 'today') {
+      kontrolBadgeHtml = `<span class="badge" style="background: rgba(234,179,8,0.22); color: #facc15; border: 1.5px solid #eab308; font-weight: 800; font-size: 0.74rem;"><i class="fa-solid fa-bell"></i> Jadwal Kontrol Hari Ini!</span>`;
+    } else if (item.statusKontrol === 'upcoming') {
+      kontrolBadgeHtml = `<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-weight: 700; font-size: 0.74rem;"><i class="fa-regular fa-calendar-check"></i> Kontrol ${item.diffDays} Hari Lagi (${item.nextSchedule})</span>`;
+    } else {
+      kontrolBadgeHtml = `<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted); font-size: 0.74rem;"><i class="fa-solid fa-notes-medical"></i> Pemantauan Terbuka</span>`;
+    }
+
+    // 1. Tensi Darah Display
+    let bpDeltaBadge = '';
+    if (item.dSis !== null) {
+      if (item.dSis < 0) bpDeltaBadge = `<span style="color: #34d399; font-weight: 800; font-size: 0.7rem;"><i class="fa-solid fa-arrow-down"></i> ${Math.abs(item.dSis)} mmHg (Turun)</span>`;
+      else if (item.dSis > 0) bpDeltaBadge = `<span style="color: #f87171; font-weight: 800; font-size: 0.7rem;"><i class="fa-solid fa-arrow-up"></i> +${item.dSis} mmHg (Naik)</span>`;
+      else bpDeltaBadge = `<span style="color: #38bdf8; font-size: 0.7rem;">Stabil</span>`;
+    }
+    const bpDisplay = item.curSis ? `${item.curSis}/${item.curDia || 80} mmHg` : '<span style="color: var(--text-muted);">-</span>';
+    const bpSubtext = item.prevSis ? `Lalu: ${item.prevSis}/${item.prevDia || 80} mmHg` : (item.matchedLongTerm?.mingguan?.statusTensi ? `Status: ${item.matchedLongTerm.mingguan.statusTensi}` : 'Data Awal');
+
+    // 2. Lingkar Perut (LP) Display
+    let lpDeltaBadge = '';
+    if (item.dLP !== null) {
+      if (item.dLP < 0) lpDeltaBadge = `<span style="color: #34d399; font-weight: 800; font-size: 0.7rem;"><i class="fa-solid fa-arrow-down"></i> ${Math.abs(item.dLP)} cm (Mengecil)</span>`;
+      else if (item.dLP > 0) lpDeltaBadge = `<span style="color: #f87171; font-weight: 800; font-size: 0.7rem;"><i class="fa-solid fa-arrow-up"></i> +${item.dLP} cm (Bertambah)</span>`;
+      else lpDeltaBadge = `<span style="color: #38bdf8; font-size: 0.7rem;">Stabil</span>`;
+    }
+    const lpDisplay = item.curLP ? `${item.curLP} cm` : '<span style="color: var(--text-muted);">-</span>';
+    const lpSubtext = item.curLP ? `Target: Pria ≤90cm, Wanita ≤80cm (${item.curLP > 90 ? '⚠️ Obesitas' : 'Normal'})` : 'Ref: Pria ≤90cm, Wanita ≤80cm';
+
+    // 3. Obat & Dosis Display
+    let medsHtml = '';
+    if (item.daftarObat.length > 0) {
+      medsHtml = item.daftarObat.map(m => {
+        let dosePill = '';
+        if (m.evaluasi === 'turun') dosePill = `<span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; font-size: 0.66rem; padding: 2px 6px;"><i class="fa-solid fa-arrow-down"></i> Dosis Turun</span>`;
+        else if (m.evaluasi === 'tambah') dosePill = `<span class="badge" style="background: rgba(245,158,11,0.2); color: #fbbf24; font-size: 0.66rem; padding: 2px 6px;"><i class="fa-solid fa-arrow-up"></i> Naik / Tambah</span>`;
+        else if (m.evaluasi === 'stop') dosePill = `<span class="badge" style="background: rgba(239,68,68,0.2); color: #f87171; font-size: 0.66rem; padding: 2px 6px;">Dihentikan</span>`;
+        else dosePill = `<span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-muted); font-size: 0.66rem; padding: 2px 6px;">Dosis Tetap</span>`;
+
+        return `<div style="display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 0.74rem;">
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;" title="${escapeHtml(m.nama || '')}">${escapeHtml(m.nama || '-')}</span>
+          ${dosePill}
+        </div>`;
+      }).join('');
+    } else {
+      medsHtml = `<div style="font-size: 0.72rem; color: var(--text-muted); font-style: italic;">Tidak ada peresepan rutin</div>`;
+    }
+
+    // 4. Lab PROLANIS Display
+    let labStatusBadge = '';
+    if (item.evalLab === 'membaik') labStatusBadge = `<span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; font-size: 0.66rem;">🟢 Membaik</span>`;
+    else if (item.evalLab === 'perburukan') labStatusBadge = `<span class="badge" style="background: rgba(239,68,68,0.2); color: #f87171; font-size: 0.66rem;">🔴 Perburukan</span>`;
+    else if (item.evalLab === 'stabil') labStatusBadge = `<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8; font-size: 0.66rem;">🔵 Stabil</span>`;
+
+    const labPills = [];
+    if (item.lab.gdp) labPills.push(`GDP: <strong>${item.lab.gdp}</strong>`);
+    if (item.lab.gd2pp) labPills.push(`GD2PP: <strong>${item.lab.gd2pp}</strong>`);
+    if (item.lab.hba1c) labPills.push(`HbA1c: <strong>${item.lab.hba1c}%</strong>`);
+    if (item.lab.ldl) labPills.push(`LDL: <strong>${item.lab.ldl}</strong>`);
+    if (item.lab.hdl) labPills.push(`HDL: <strong>${item.lab.hdl}</strong>`);
+    if (item.lab.trigliserida) labPills.push(`TG: <strong>${item.lab.trigliserida}</strong>`);
+    if (item.lab.ureum) labPills.push(`Ureum: <strong>${item.lab.ureum}</strong>`);
+    if (item.lab.kreatinin) labPills.push(`Kreatinin: <strong>${item.lab.kreatinin}</strong>`);
+    if (item.lab.mikroalbumin) labPills.push(`Alb: <strong>${item.lab.mikroalbumin}</strong>`);
+    (item.lab.tesKustom || []).forEach(t => {
+      if (t.nama && t.hasil) labPills.push(`${escapeHtml(t.nama)}: <strong>${escapeHtml(t.hasil)}</strong>`);
+    });
+    if (item.curGDS && !item.lab.gdp) labPills.push(`GDS: <strong>${item.curGDS}</strong> mg/dL`);
+
+    let labDisplayHtml = '';
+    if (labPills.length > 0) {
+      labDisplayHtml = labPills.map(p => `<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-main); font-size: 0.72rem; padding: 2px 6px;">${p}</span>`).join(' ');
+    } else {
+      labDisplayHtml = `<span style="font-size: 0.72rem; color: var(--text-muted); font-style: italic;">Belum ada hasil lab 3 bulanan</span>`;
+    }
+
     const tplPantauan = encodeURIComponent(`Halo rekan ${emp.namaPasien || ''} (${emp.nikPabrik || ''}), ini dari Tim Medis & HSE PT ATI mengenai evaluasi jadwal pemantauan kesehatan Anda.`);
     const waBtn = rawHp 
       ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem;" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(emp.namaPasien || '')}', '${tplPantauan}')" title="Kirim Pesan WhatsApp di Dasbor"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
@@ -8787,7 +9175,6 @@ function extractGDSValue(str) {
       ? `<button type="button" class="btn btn-sm" style="background: #0284c7; color: #fff; border: none; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem;" onclick="event.stopPropagation(); openPhotoViewer('${latestRec.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
       : '';
 
-    // Siapkan parameter penguncian ke modal input catatan
     const cleanNik = String(emp.nikPabrik || '').replace(/'/g, "\\'");
     const cleanNama = String(emp.namaPasien || '').replace(/'/g, "\\'");
     const cleanDept = String(emp.dept || '').replace(/'/g, "\\'");
@@ -8795,6 +9182,7 @@ function extractGDSValue(str) {
 
     return `
     <div class="hse-patient-card pantauan-card" ondblclick="openModalRiwayatPantauan('${cleanNik || cleanNama}')" title="Dobel-klik untuk riwayat pemantauan jangka panjang">
+      <!-- Card Header -->
       <div class="hse-card-header">
         <div>
           <div class="hse-card-patient-name" onclick="event.stopPropagation(); openModalRiwayatPantauan('${cleanNik || cleanNama}')" title="Klik untuk membuka riwayat pemantauan">
@@ -8809,64 +9197,88 @@ function extractGDSValue(str) {
         <div class="hse-card-meta">
           <div class="hse-card-date"><i class="fa-regular fa-calendar" style="color: var(--danger);"></i> Terakhir: ${matchedLongTerm?.tanggal || latestRec.tanggal || '-'}</div>
           <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            ${evalBadgeHtml}
             ${kontrolBadgeHtml}
-            ${progressBadgeHtml}
           </div>
         </div>
       </div>
 
-      <!-- Kotak Indikator Progres & Evaluasi HSE -->
-      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; margin: 8px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-        <div style="font-size: 0.78rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-          <strong style="color: #38bdf8;"><i class="fa-solid fa-chart-line"></i> Evaluasi Klinis HSE:</strong>
-          <span>${progressNotes.length > 0 ? progressNotes.join(' &bull; ') : 'Data awal kunjungan tercatat.'}</span>
+      <!-- 4-Box Clinical Parameter Matrix (Dokter & HSE) -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 10px 0;">
+        
+        <!-- Box 1: Tensi Darah (TD) & Vital -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px;">
+          <div style="font-size: 0.72rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+            <span><i class="fa-solid fa-heart-pulse"></i> Tensi Darah</span>
+            ${bpDeltaBadge}
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 800; color: var(--text-main);">
+            ${bpDisplay}
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+            ${bpSubtext}
+          </div>
         </div>
-        <div style="font-size: 0.74rem; color: var(--text-muted);">
-          Total: <strong>${visitCount}x</strong> Kunjungan Berobat
+
+        <!-- Box 2: Lingkar Perut (LP) -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px;">
+          <div style="font-size: 0.72rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+            <span><i class="fa-solid fa-tape"></i> Lingkar Perut</span>
+            ${lpDeltaBadge}
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 800; color: var(--text-main);">
+            ${lpDisplay}
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+            ${lpSubtext}
+          </div>
         </div>
+
+        <!-- Box 3: Respon Terapi Obat -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px;">
+          <div style="font-size: 0.72rem; font-weight: 700; color: #a78bfa; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+            <span><i class="fa-solid fa-pills"></i> Respon Dosis Obat</span>
+            <span style="font-size: 0.68rem; color: var(--text-muted);">${item.daftarObat.length} Item</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; max-height: 68px; overflow-y: auto;">
+            ${medsHtml}
+          </div>
+        </div>
+
+        <!-- Box 4: Master Lab (PROLANIS BPJS) -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px;">
+          <div style="font-size: 0.72rem; font-weight: 700; color: #34d399; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+            <span><i class="fa-solid fa-flask-vial"></i> Lab PROLANIS</span>
+            ${labStatusBadge}
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 68px; overflow-y: auto;">
+            ${labDisplayHtml}
+          </div>
+        </div>
+
       </div>
 
-      <!-- Ringkasan Pemantauan Jangka Panjang -->
-      ${matchedLongTerm ? `
-      <div style="background: rgba(2,132,199,0.06); border: 1px solid rgba(2,132,199,0.2); border-radius: 8px; padding: 10px 12px; margin: 10px 0;">
-        <div style="font-weight: 700; font-size: 0.78rem; color: #38bdf8; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-          <span><i class="fa-solid fa-stethoscope"></i> Evaluasi Terakhir Pasien:</span>
-          <span style="font-size: 0.72rem; color: var(--text-muted);">${matchedLongTerm.tanggal}</span>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.76rem;">
-          ${matchedLongTerm.mingguan?.tensiSistol ? `<span class="badge badge-info">TD: ${matchedLongTerm.mingguan.tensiSistol}/${matchedLongTerm.mingguan.tensiDiastol} (${matchedLongTerm.mingguan.statusTensi})</span>` : ''}
-          ${matchedLongTerm.mingguan?.gulaDarah ? `<span class="badge badge-warning">Gula (${matchedLongTerm.mingguan.tipeGula}): ${matchedLongTerm.mingguan.gulaDarah} mg/dL</span>` : ''}
-          ${matchedLongTerm.mingguan?.asamUrat ? `<span class="badge" style="background: rgba(234,179,8,0.2); color: #facc15;">Asam Urat: ${matchedLongTerm.mingguan.asamUrat}</span>` : ''}
-          ${matchedLongTerm.mingguan?.kolesterol ? `<span class="badge" style="background: rgba(239,68,68,0.2); color: #f87171;">Kolesterol: ${matchedLongTerm.mingguan.kolesterol}</span>` : ''}
-          ${matchedLongTerm.obatBulanan?.ambilObat ? `<span class="badge badge-primary"><i class="fa-solid fa-pills"></i> Obat: ${matchedLongTerm.obatBulanan.daftarObat?.length || 0} item</span>` : ''}
-          ${matchedLongTerm.lab3Bulan?.adaCekLab ? `<span class="badge" style="background: rgba(168,85,247,0.2); color: #c084fc;"><i class="fa-solid fa-flask-vial"></i> Lab 3 Bln (HbA1c: ${matchedLongTerm.lab3Bulan.hba1c || '-'}%)</span>` : ''}
-        </div>
-      </div>
-      ` : ''}
-
+      <!-- SOAP Box (Diagnosa & Catatan Dokter) -->
       <div class="hse-card-soap-box">
         <div class="hse-card-soap-row">
           <strong class="hse-card-lbl">S (Keluhan):</strong>
           <span class="hse-card-val">${latestRec.keluhan || '-'}</span>
         </div>
-        ${latestRec.objektif ? `
         <div class="hse-card-soap-row">
-          <strong class="hse-card-lbl">O (Fisik/Vital):</strong>
-          <div class="hse-card-val-block">${renderObjektifBadges(latestRec.objektif)}</div>
-        </div>` : ''}
-        <div class="hse-card-soap-row">
-          <strong class="hse-card-lbl">A (Diagnosis Terpantau):</strong>
+          <strong class="hse-card-lbl">A (Diagnosis):</strong>
           <div class="hse-card-val-block" style="display: flex; flex-wrap: wrap; gap: 5px;">
-            ${allDiags.length > 0 ? allDiags.map(d => `<span class="badge badge-info" style="font-size: 0.76rem;"><i class="fa-solid fa-stethoscope"></i> ${d}</span>`).join('') : '<span class="hse-card-val">-</span>'}
+            ${item.allDiags.length > 0 ? item.allDiags.map(d => `<span class="badge badge-info" style="font-size: 0.74rem;"><i class="fa-solid fa-stethoscope"></i> ${d}</span>`).join('') : '<span class="hse-card-val">-</span>'}
           </div>
         </div>
         <div class="hse-card-pemeriksa">
-          <i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Pemeriksa: <strong>${matchedLongTerm?.pemeriksa || latestRec.pemeriksa || '-'}</strong>
+          <i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Dokter Pemeriksa: <strong>${matchedLongTerm?.pemeriksa || latestRec.pemeriksa || 'dr. Dylan Fadhilah'}</strong>
+          ${matchedLongTerm?.catatanDokter ? ` &bull; <span style="color: #38bdf8;">"${escapeHtml(matchedLongTerm.catatanDokter)}"</span>` : ''}
         </div>
       </div>
 
+      <!-- Actions Footer -->
       <div class="hse-card-footer">
-        <span class="hse-card-hint"><i class="fa-solid fa-circle-info"></i> Dobel-klik card untuk histori lengkap</span>
+        <span class="hse-card-hint"><i class="fa-solid fa-circle-info"></i> Dobel-klik card untuk grafik tren klinis</span>
         <div class="hse-card-actions">
           <button type="button" class="btn btn-sm" style="background: #10b981; color: #fff; font-weight: 800; border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; border: none; display: inline-flex; align-items: center; gap: 6px;" onclick="event.stopPropagation(); openModalInputPantauan('${cleanNik}', '${cleanNama}', '${cleanDept}', '${cleanHp}', true)" title="Catat Evaluasi Mingguan / Obat / Lab Terkunci untuk Pasien Ini">
             <i class="fa-solid fa-lock"></i> + Catat Pantauan
@@ -8882,13 +9294,104 @@ function extractGDSValue(str) {
         </div>
       </div>
     </div>`;
-  }).filter(c => c !== '');
+  });
 
-  if (renderedCards.length === 0) {
-    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Tidak ada data pasien yang sesuai dengan filter kategori ini</div>`;
-  } else {
-    container.innerHTML = renderedCards.join('');
+  container.innerHTML = renderedCards.join('');
+}
+
+function exportHSEPantauanExcel() {
+  const list = window._lastProcessedPantauanList || [];
+  if (list.length === 0) {
+    showToast('⚠️ Belum ada data pasien pemantauan untuk diekspor', 'warning');
+    return;
   }
+  if (typeof XLSX === 'undefined') {
+    showToast('❌ Library Excel belum siap', 'error');
+    return;
+  }
+
+  const rows = list.map((item, idx) => {
+    const medsStr = item.daftarObat.map(m => `${m.nama} (${m.aturan || ''}) [Dosis: ${m.evaluasi || 'tetap'}]`).join('; ');
+    const labParts = [];
+    if (item.lab.gdp) labParts.push(`GDP: ${item.lab.gdp}`);
+    if (item.lab.gd2pp) labParts.push(`GD2PP: ${item.lab.gd2pp}`);
+    if (item.lab.hba1c) labParts.push(`HbA1c: ${item.lab.hba1c}%`);
+    if (item.lab.ldl) labParts.push(`LDL: ${item.lab.ldl}`);
+    if (item.lab.hdl) labParts.push(`HDL: ${item.lab.hdl}`);
+    if (item.lab.trigliserida) labParts.push(`TG: ${item.lab.trigliserida}`);
+    if (item.lab.ureum) labParts.push(`Ureum: ${item.lab.ureum}`);
+    if (item.lab.kreatinin) labParts.push(`Kreatinin: ${item.lab.kreatinin}`);
+    if (item.lab.mikroalbumin) labParts.push(`Mikroalbumin: ${item.lab.mikroalbumin}`);
+    (item.lab.tesKustom || []).forEach(t => labParts.push(`${t.nama}: ${t.hasil}`));
+
+    let statusEvalStr = 'Rutin - Belum Berubah';
+    if (item.clinicalCategory === 'rutin_membaik') statusEvalStr = 'Rutin & Membaik';
+    else if (item.clinicalCategory === 'tidak_rutin') statusEvalStr = 'Tidak Rutin / Overdue';
+    else if (item.clinicalCategory === 'memburuk') statusEvalStr = 'Perlu Perhatian / Memburuk (High Risk)';
+
+    return {
+      'No': idx + 1,
+      'NIK Pabrik': item.emp.nikPabrik,
+      'Nama Pasien': item.emp.namaPasien,
+      'Departemen': item.emp.dept,
+      'No WhatsApp': item.rawHp || '-',
+      'Diagnosis Terpantau': item.allDiags.join(', ') || '-',
+      'Status Evaluasi HSE': statusEvalStr,
+      'Status Kontrol': item.statusKontrol,
+      'Jadwal Kontrol': item.nextSchedule || '-',
+      'Tensi Darah (mmHg)': item.curSis ? `${item.curSis}/${item.curDia || 80}` : '-',
+      'Delta TD (mmHg)': item.dSis !== null ? (item.dSis > 0 ? `+${item.dSis}` : `${item.dSis}`) : '-',
+      'Gula Darah (mg/dL)': item.curGDS || '-',
+      'Lingkar Perut (cm)': item.curLP || '-',
+      'Delta LP (cm)': item.dLP !== null ? (item.dLP > 0 ? `+${item.dLP}` : `${item.dLP}`) : '-',
+      'Respon Terapi Obat': medsStr || 'Tidak ada obat rutin',
+      'Laboratorium PROLANIS': labParts.join(', ') || 'Belum ada lab',
+      'Respon Lab': item.evalLab || '-',
+      'Catatan Dokter': item.matchedLongTerm?.catatanDokter || '-',
+      'Dokter Pemeriksa': item.matchedLongTerm?.pemeriksa || item.latestRec.pemeriksa || '-',
+      'Tanggal Terakhir': item.matchedLongTerm?.tanggal || item.latestRec.tanggal || '-'
+    };
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, 'Pemantauan Kronis HSE');
+  XLSX.writeFile(wb, `Pemantauan_Kronis_PROLANIS_HSE_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  showToast('✅ Berhasil mengunduh rekap Excel pemantauan pasien!', 'success');
+}
+
+function triggerManualPantauanReminders() {
+  const list = window._lastProcessedPantauanList || [];
+  const overdueOrToday = list.filter(i => (i.statusKontrol === 'overdue' || i.statusKontrol === 'today') && i.rawHp);
+
+  if (overdueOrToday.length === 0) {
+    showToast('✅ Semua pasien telah tertib kontrol tepat waktu atau nomor HP belum diisi!', 'info');
+    return;
+  }
+
+  const patientNames = overdueOrToday.map(i => `• ${i.emp.namaPasien} (${i.emp.nikPabrik}) - ${i.statusKontrol === 'today' ? 'Hari Ini' : 'Lewat Jadwal'}`).join('\n');
+  if (!confirm(`Ditemukan ${overdueOrToday.length} pasien yang memerlukan pengingat WhatsApp:\n\n${patientNames}\n\nKirimkan pengingat sekarang?`)) {
+    return;
+  }
+
+  let sentCount = 0;
+  overdueOrToday.forEach(async (item) => {
+    try {
+      const msg = `Halo Rekan ${item.emp.namaPasien} (${item.emp.nikPabrik}), ini Tim HSE & Medis PT ATI. Mengingatkan jadwal kontrol kesehatan rutin Anda (${item.nextSchedule || 'Jatuh Tempo'}). Mohon luangkan waktu ke Poliklinik perusahaan demi kesehatan yang optimal. Terima kasih!`;
+      await fetch('/api/wa/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: item.rawHp,
+          message: msg,
+          session: currentWaSession || 'klinik'
+        })
+      });
+      sentCount++;
+    } catch (e) {}
+  });
+
+  showToast(`🚀 Sedang mengirimkan pengingat WhatsApp ke ${overdueOrToday.length} pasien pantauan!`, 'success');
 }
 
 function renderHSESurkesTable() {
@@ -10440,6 +10943,43 @@ function togglePasswordVisibility(inputId, iconId) {
   }
 }
 
+async function testWaAkunSaya() {
+  const phone = document.getElementById('acc-input-nowa')?.value.trim();
+  const nama = document.getElementById('acc-input-nama')?.value.trim() || appData.currentUser?.nama || 'Petugas Medis';
+  const role = appData.currentUser?.role || 'Petugas Medis';
+
+  if (!phone) {
+    showToast('Silakan ketik nomor WhatsApp Anda terlebih dahulu!', 'warning');
+    document.getElementById('acc-input-nowa')?.focus();
+    return;
+  }
+
+  showToast('Mengirim pesan tes WhatsApp...', 'info');
+
+  try {
+    const res = await fetch('/api/auth/test-wa-petugas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, nama, role })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(data.message || 'Pesan tes WhatsApp terkirim!', 'success', 5000);
+      if (data.waMeLink && data.method === 'direct') {
+        window.open(data.waMeLink, '_blank');
+      }
+    } else {
+      showToast(data.error || 'Gagal mengirim pesan WhatsApp', 'error');
+    }
+  } catch (err) {
+    console.error('Test WA error:', err);
+    let clean = phone.replace(/[^0-9]/g, '');
+    if (clean.startsWith('0')) clean = '62' + clean.slice(1);
+    else if (clean.startsWith('8')) clean = '62' + clean;
+    window.open(`https://wa.me/${clean}?text=Halo%20${encodeURIComponent(nama)}%2C%20ini%20adalah%20tes%20verifikasi%20WhatsApp%20Klinik%20PT%20ATI.`, '_blank');
+  }
+}
+
 async function handleAccountChangePassword(e) {
   e.preventDefault();
   const cur = appData.currentUser;
@@ -10454,19 +10994,16 @@ async function handleAccountChangePassword(e) {
   const newPassword = document.getElementById('acc-new-password')?.value.trim();
   const confirmPassword = document.getElementById('acc-confirm-password')?.value.trim();
 
-  if (!newPassword || !confirmPassword) {
-    showToast('Kata sandi baru wajib diisi!', 'warning');
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    showToast('Konfirmasi kata sandi baru tidak cocok!', 'error');
-    return;
-  }
-
-  if (newPassword.length < 4) {
-    showToast('Kata sandi baru minimal 4 karakter!', 'warning');
-    return;
+  // Jika ingin ganti password, validasi kecocokan dan panjang
+  if (newPassword || confirmPassword) {
+    if (newPassword !== confirmPassword) {
+      showToast('Konfirmasi kata sandi baru tidak cocok!', 'error');
+      return;
+    }
+    if (newPassword.length < 4) {
+      showToast('Kata sandi baru minimal 4 karakter!', 'warning');
+      return;
+    }
   }
 
   const btnSubmit = document.getElementById('btn-save-acc-pwd');
@@ -10485,21 +11022,22 @@ async function handleAccountChangePassword(e) {
         nama: nama || cur.nama,
         role: cur.role,
         noWa: noWa,
-        currentPassword,
-        newPassword
+        currentPassword: newPassword ? currentPassword : '',
+        newPassword: newPassword || ''
       })
     });
 
     const data = await res.json();
     if (res.ok && data.success) {
-      showToast('Kata sandi berhasil diperbarui!', 'success');
+      const msg = newPassword ? 'Kata sandi dan profil berhasil diperbarui!' : 'Profil dan nomor WhatsApp berhasil disimpan!';
+      showToast(`✅ ${msg}`, 'success', 4000);
       if (data.user) {
         appData.currentUser = { ...appData.currentUser, ...data.user };
         localStorage.setItem('currentUser', JSON.stringify(appData.currentUser));
         updateNavbarUserBadge();
         autoFillPemeriksa();
       }
-      // Reset inputs
+      // Reset inputs password
       const pOld = document.getElementById('acc-current-password');
       const pNew = document.getElementById('acc-new-password');
       const pConf = document.getElementById('acc-confirm-password');
@@ -10509,11 +11047,11 @@ async function handleAccountChangePassword(e) {
       closeModalAccountSettings();
       await loadAllAppData();
     } else {
-      showToast(data.error || 'Gagal mengubah kata sandi', 'error');
+      showToast(`❌ ${data.error || 'Gagal menyimpan perubahan'}`, 'error');
     }
   } catch (err) {
     console.error('Change pwd error:', err);
-    showToast('Terjadi kesalahan koneksi saat mengubah kata sandi.', 'error');
+    showToast('Terjadi kesalahan koneksi saat menyimpan perubahan.', 'error');
   } finally {
     if (btnSubmit) {
       btnSubmit.disabled = false;
@@ -10726,9 +11264,10 @@ function renderAccountManageList() {
           <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
             <span class="badge badge-info" style="font-size: 0.72rem;">${u.role || 'Petugas'}</span>
             <span style="font-size: 0.8rem; color: var(--text-muted);">@${u.username}</span>
-            <span class="badge" style="background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); font-size: 0.72rem; font-weight: 700; padding: 1px 7px;">
+            <span class="badge" style="background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); font-size: 0.72rem; font-weight: 700; padding: 2px 8px;">
               <i class="fa-brands fa-whatsapp"></i> ${u.noWa || 'No WA belum diisi'}
             </span>
+            ${u.noWa ? `<a href="https://wa.me/${String(u.noWa).replace(/[^0-9]/g, '')}?text=Halo%20${encodeURIComponent(u.nama || u.username)}%2C%20ini%20dari%20Klinik%20PT%20ATI" target="_blank" class="btn btn-sm btn-outline-success" style="padding: 2px 8px; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;" title="Buka WhatsApp ke ${u.nama || u.username}"><i class="fa-brands fa-whatsapp"></i> Chat WA</a>` : ''}
           </div>
         </div>
       </div>
@@ -13503,6 +14042,20 @@ function initWaSocket() {
     waSocket.on('wa_new_message', (data) => {
       handleWaNewMessageReceived(data);
     });
+
+    waSocket.on('wa_chats_cleared', (data) => {
+      if (!data || data.all) {
+        waChats = [];
+        resetWaActiveChatView();
+        renderWaChatList();
+      } else if (data.chatId || data.jid) {
+        waChats = (waChats || []).filter(c => c.id !== data.chatId && c.jid !== data.jid);
+        if (activeWaChatJid === data.jid) {
+          resetWaActiveChatView();
+        }
+        renderWaChatList();
+      }
+    });
   }
 }
 
@@ -13695,24 +14248,245 @@ function handleWaStatusUpdate(statusData) {
   }
 }
 
-async function disconnectWaSession() {
-  if (!confirm('Putuskan tautan WhatsApp HP dari dashboard? Anda perlu scan ulang QR untuk menghubungkan kembali.')) return;
+// ============================================================
+// WHATSAPP CLEAR CHAT, SETTINGS & LOGOUT ENGINE
+// ============================================================
+function toggleWaSettingsDropdown(e) {
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+  const menu = document.getElementById('wa-settings-dropdown-menu');
+  const btn = document.getElementById('btn-wa-settings-toggle');
+  if (!menu) return;
+  const isShown = menu.classList.contains('show') || menu.style.display === 'block';
+  if (isShown) {
+    closeWaSettingsDropdown();
+  } else {
+    menu.classList.add('show');
+    menu.style.display = 'block';
+    if (btn) btn.classList.add('active');
+  }
+}
+
+function closeWaSettingsDropdown() {
+  const menu = document.getElementById('wa-settings-dropdown-menu');
+  const btn = document.getElementById('btn-wa-settings-toggle');
+  if (menu) {
+    menu.classList.remove('show');
+    menu.style.display = 'none';
+  }
+}
+
+function toggleWaChatGearDropdown(e) {
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+  const menu = document.getElementById('wa-chat-gear-dropdown');
+  const btn = document.getElementById('btn-wa-chat-gear');
+  if (!menu) return;
+  const isShown = menu.classList.contains('show') || menu.style.display === 'block';
+  if (isShown) {
+    closeWaChatGearDropdown();
+  } else {
+    menu.classList.add('show');
+    menu.style.display = 'block';
+    if (btn) btn.classList.add('active');
+  }
+}
+
+function closeWaChatGearDropdown() {
+  const menu = document.getElementById('wa-chat-gear-dropdown');
+  const btn = document.getElementById('btn-wa-chat-gear');
+  if (menu) {
+    menu.classList.remove('show');
+    menu.style.display = 'none';
+  }
+  if (btn) btn.classList.remove('active');
+}
+
+function resetWaActiveChatView() {
+  activeWaChatJid = null;
+  const nameEl = document.getElementById('wa-active-name');
+  const subEl = document.getElementById('wa-active-sub');
+  const avatarEl = document.getElementById('wa-active-avatar');
+  const btnPoli = document.getElementById('btn-wa-open-poli');
+  const btnClearActive = document.getElementById('btn-wa-clear-active-chat');
+  const feed = document.getElementById('wa-messages-feed');
+  const input = document.getElementById('wa-message-input');
+
+  if (nameEl) nameEl.textContent = 'Pilih Percakapan Pasien';
+  if (subEl) subEl.textContent = 'Pesan disinkronkan langsung dari WhatsApp HP & Web';
+  if (avatarEl) avatarEl.textContent = 'P';
+  if (btnPoli) btnPoli.style.display = 'none';
+  if (btnClearActive) btnClearActive.style.display = 'none';
+  if (input) input.value = '';
+  if (typeof cancelWaAttachment === 'function') cancelWaAttachment();
+
+  if (feed) {
+    feed.innerHTML = `
+      <div style="text-align: center; padding: 80px 20px;">
+        <i class="fa-brands fa-whatsapp" style="font-size: 3.5rem; color: #22c55e; opacity: 0.85; margin-bottom: 12px; display: block;"></i>
+        <p style="font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">WhatsApp Web Poliklinik PT ATI</p>
+        <p style="font-size: 0.88rem; color: var(--text-muted); max-width: 380px; margin: 0 auto; line-height: 1.45;">Silakan pilih salah satu obrolan pasien di panel sebelah kiri untuk mulai berkirim pesan.</p>
+      </div>
+    `;
+  }
+}
+
+function openModalClearWaChat(preferActive = false) {
+  const modal = document.getElementById('modal-wa-clear-chat');
+  if (!modal) return;
+
+  const radioAll = document.getElementById('wa-clear-scope-all');
+  const radioActive = document.getElementById('wa-clear-scope-active');
+  const labelActive = document.getElementById('label-clear-active-chat');
+  const activeNameLabel = document.getElementById('wa-clear-active-name-label');
+  const activeSubLabel = document.getElementById('wa-clear-active-sub-label');
+
+  const currentChat = activeWaChatJid ? (waChats || []).find(c => c.jid === activeWaChatJid) : null;
+
+  if (currentChat) {
+    if (labelActive) labelActive.style.display = 'flex';
+    const dispName = getWaChatDisplayName(currentChat);
+    if (activeNameLabel) activeNameLabel.textContent = `Hanya Percakapan: ${dispName}`;
+    if (activeSubLabel) activeSubLabel.textContent = `Hapus riwayat percakapan dengan ${dispName} (${currentChat.phone || ''}) saja.`;
+
+    if (preferActive && radioActive) {
+      radioActive.checked = true;
+    } else if (radioAll) {
+      radioAll.checked = true;
+    }
+  } else {
+    if (labelActive) labelActive.style.display = 'none';
+    if (radioAll) radioAll.checked = true;
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeModalClearWaChat() {
+  const modal = document.getElementById('modal-wa-clear-chat');
+  if (modal) modal.style.display = 'none';
+}
+
+function confirmClearActiveChat() {
+  openModalClearWaChat(true);
+}
+
+function confirmClearAllWaChats() {
+  openModalClearWaChat(false);
+}
+
+async function executeClearWaChat() {
+  const radioActive = document.getElementById('wa-clear-scope-active');
+  const isClearActiveOnly = radioActive && radioActive.checked && activeWaChatJid;
+  const currentChat = activeWaChatJid ? (waChats || []).find(c => c.jid === activeWaChatJid) : null;
+
+  closeModalClearWaChat();
+
   try {
-    const res = await fetch('/api/wa/disconnect', {
+    let payload;
+    if (isClearActiveOnly && currentChat) {
+      payload = {
+        sessionName: currentWaSession,
+        sessionType: currentWaSession,
+        chatId: currentChat.id,
+        jid: currentChat.jid,
+        all: false
+      };
+    } else {
+      payload = {
+        sessionName: currentWaSession,
+        sessionType: currentWaSession,
+        all: true
+      };
+    }
+
+    const res = await fetch('/api/wa/clear-chats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionName: currentWaSession })
+      body: JSON.stringify(payload)
     });
-    if (res.ok) {
-      showToast('Sesi WhatsApp telah diputuskan.', 'info');
-      closeModalWaQr();
-      await checkWaSessionStatus();
-      await loadWaChats();
+
+    const data = await res.json();
+    if (data.success) {
+      if (isClearActiveOnly && currentChat) {
+        waChats = (waChats || []).filter(c => c.jid !== currentChat.jid && c.id !== currentChat.id);
+        resetWaActiveChatView();
+        renderWaChatList();
+        showToast('🗑️ Riwayat obrolan pasien berhasil dibersihkan.', 'success');
+      } else {
+        waChats = [];
+        resetWaActiveChatView();
+        renderWaChatList();
+        showToast('🗑️ Seluruh riwayat obrolan WhatsApp di dasbor berhasil dibersihkan.', 'success');
+      }
+    } else {
+      showToast('❌ ' + (data.error || 'Gagal membersihkan riwayat obrolan'), 'error');
     }
   } catch (err) {
-    console.error(err);
-    showToast('❌ Gagal memutuskan sesi WhatsApp', 'error');
+    console.error('Error clearing WA chats:', err);
+    showToast('❌ Gagal menghubungi server saat membersihkan chat', 'error');
   }
+}
+
+function openModalLogoutWa() {
+  const modal = document.getElementById('modal-wa-logout');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalLogoutWa() {
+  const modal = document.getElementById('modal-wa-logout');
+  if (modal) modal.style.display = 'none';
+}
+
+async function executeLogoutWa() {
+  const btn = document.getElementById('btn-confirm-wa-logout');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Logout...';
+  }
+
+  try {
+    const res = await fetch('/api/wa/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionName: currentWaSession,
+        sessionType: currentWaSession,
+        clearChats: true
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    closeModalLogoutWa();
+    closeModalWaQr();
+
+    // 1. Bersihkan riwayat chat di memori dan tampilan
+    waChats = [];
+    resetWaActiveChatView();
+    renderWaChatList();
+
+    // 2. Perbarui status koneksi WhatsApp
+    await checkWaSessionStatus();
+
+    showToast('✅ WhatsApp berhasil Log Out & seluruh riwayat chat telah dibersihkan.', 'success');
+  } catch (err) {
+    console.error('Logout WA error:', err);
+    showToast('❌ Gagal memproses logout WhatsApp: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket"></i> Ya, Log Out &amp; Clear Chat';
+    }
+  }
+}
+
+function disconnectWaSession() {
+  openModalLogoutWa();
 }
 
 // ============================================================
@@ -14048,6 +14822,10 @@ async function selectWaChat(jid) {
 
     if (btnPoli) {
       btnPoli.style.display = 'inline-flex';
+    }
+    const btnClearActive = document.getElementById('btn-wa-clear-active-chat');
+    if (btnClearActive) {
+      btnClearActive.style.display = 'inline-flex';
     }
   }
 
@@ -15112,33 +15890,175 @@ async function handleSimpanSuratLuar(event) {
   }
 }
 
-function renderSuratLuarTable() {
+function populateSuratLuarDeptFilter() {
+  const sel = document.getElementById('filter-surat-dept');
+  if (!sel) return;
+  const currVal = sel.value;
   const list = appData.suratSakitLuar || [];
+  const depts = new Set();
+  list.forEach(it => {
+    const d = (it.dept || it.departemen || '').trim();
+    if (d && d !== '-') depts.add(d);
+  });
+  const sorted = Array.from(depts).sort((a, b) => a.localeCompare(b));
+  let options = '<option value="">Semua Departemen (' + sorted.length + ')</option>';
+  sorted.forEach(d => {
+    options += `<option value="${escapeHtml(d)}" ${d === currVal ? 'selected' : ''}>${escapeHtml(d)}</option>`;
+  });
+  sel.innerHTML = options;
+}
+
+function getFilteredSuratLuarList() {
+  const list = appData.suratSakitLuar || [];
+  const q = document.getElementById('search-surat-luar-input')?.value.toLowerCase().trim() || '';
+  const start = document.getElementById('filter-surat-start')?.value || '';
+  const end = document.getElementById('filter-surat-end')?.value || '';
+  const dept = document.getElementById('filter-surat-dept')?.value.toLowerCase().trim() || '';
+
+  return list.filter(item => {
+    const nik = String(item.nikPabrik || item.nik || item.npk || '').toLowerCase();
+    const nama = String(item.namaPasien || item.nama || '').toLowerCase();
+    const dpt = String(item.dept || item.departemen || '').toLowerCase();
+    const faskes = String(item.namaFaskes || item.fasyankes || item.faskesLuar || '').toLowerCase();
+    const diagnosa = String(item.diagnosa || item.diagnosis || '').toLowerCase();
+
+    // Query Search
+    if (q) {
+      const match = nik.includes(q) || nama.includes(q) || dpt.includes(q) || faskes.includes(q) || diagnosa.includes(q);
+      if (!match) return false;
+    }
+
+    // Dept Filter
+    if (dept && dpt !== dept) {
+      return false;
+    }
+
+    // Date Range Filter (based on tanggalMulai / tglMulai / created_at)
+    const itemDate = item.tanggalMulai || item.tglMulai || (item.createdAt ? item.createdAt.split('T')[0] : (item.created_at ? item.created_at.split('T')[0] : ''));
+    if (start && itemDate && itemDate < start) return false;
+    if (end && itemDate && itemDate > end) return false;
+
+    return true;
+  });
+}
+
+function setSuratLuarQuickDate(preset) {
+  const startEl = document.getElementById('filter-surat-start');
+  const endEl = document.getElementById('filter-surat-end');
+  if (!startEl || !endEl) return;
+
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+
+  const toIso = d => {
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${mm}-${dd}`;
+  };
+
+  if (preset === 'all') {
+    startEl.value = '';
+    endEl.value = '';
+  } else if (preset === 'this-month') {
+    startEl.value = toIso(new Date(y, m, 1));
+    endEl.value = toIso(now);
+  } else if (preset === 'last-month') {
+    startEl.value = toIso(new Date(y, m - 1, 1));
+    endEl.value = toIso(new Date(y, m, 0));
+  } else if (preset === 'this-year') {
+    startEl.value = `${y}-01-01`;
+    endEl.value = toIso(now);
+  }
+
+  filterSuratLuarTable();
+}
+
+function resetSuratLuarFilters() {
+  const startEl = document.getElementById('filter-surat-start');
+  const endEl = document.getElementById('filter-surat-end');
+  const deptEl = document.getElementById('filter-surat-dept');
+  const searchEl = document.getElementById('search-surat-luar-input');
+
+  if (startEl) startEl.value = '';
+  if (endEl) endEl.value = '';
+  if (deptEl) deptEl.value = '';
+  if (searchEl) searchEl.value = '';
+
+  filterSuratLuarTable();
+}
+
+function renderSuratLuarTable() {
+  populateSuratLuarDeptFilter();
   const tbody = document.getElementById('table-surat-luar-body');
   const badge = document.getElementById('badge-total-surat-luar');
+  const rawList = appData.suratSakitLuar || [];
 
-  if (badge) badge.textContent = `${list.length} Berkas Tercatat`;
+  if (badge) badge.textContent = `${rawList.length} Berkas Tercatat`;
   if (!tbody) return;
 
-  if (list.length === 0) {
+  const filtered = getFilteredSuratLuarList();
+
+  // Update Summary Stats Bar
+  const totalHari = filtered.reduce((acc, it) => {
+    const tM = it.tanggalMulai || it.tglMulai;
+    const tS = it.tanggalSelesai || it.tglSelesai || tM;
+    let dur = parseInt(it.durasiHari);
+    if (!dur && tM && tS) {
+      dur = Math.max(1, Math.round((new Date(tS) - new Date(tM)) / (1000 * 60 * 60 * 24)) + 1);
+    }
+    return acc + (dur || 1);
+  }, 0);
+
+  const uniquePatients = new Set(filtered.map(it => it.nikPabrik || it.nik || it.namaPasien || it.nama).filter(Boolean)).size;
+
+  const statTotal = document.getElementById('stat-surat-total');
+  const statHari = document.getElementById('stat-surat-hari');
+  const statPasien = document.getElementById('stat-surat-pasien');
+
+  if (statTotal) statTotal.textContent = `${filtered.length} Surat`;
+  if (statHari) statHari.textContent = `${totalHari} Hari`;
+  if (statPasien) statPasien.textContent = `${uniquePatients} Orang`;
+
+  if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 24px;">
-          Belum ada berkas surat sakit luar yang diinput.
+        <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 32px 16px;">
+          <i class="fa-solid fa-filter-circle-xmark" style="font-size: 1.8rem; margin-bottom: 8px; opacity: 0.4; display: block;"></i>
+          Tidak ada data surat sakit luar yang sesuai dengan kriteria filter / pencarian.
         </td>
       </tr>
     `;
     return;
   }
 
-  const sortedList = [...list].sort((a, b) => new Date(b.createdAt || b.tanggalMulai) - new Date(a.createdAt || a.tanggalMulai));
+  // Sort by date descending
+  const sorted = [...filtered].sort((a, b) => {
+    const da = a.tanggalMulai || a.tglMulai || a.created_at || a.tanggalInput || '';
+    const db = b.tanggalMulai || b.tglMulai || b.created_at || b.tanggalInput || '';
+    return db.localeCompare(da);
+  });
 
-  tbody.innerHTML = sortedList.map((item, idx) => {
-    const tglTerima = item.createdAt ? item.createdAt.split('T')[0] : (item.created_at ? item.created_at.split('T')[0] : (item.tanggalMulai || '-'));
+  tbody.innerHTML = sorted.map((item, idx) => {
+    const tglTerima = item.tanggalInput || (item.createdAt ? item.createdAt.split('T')[0] : (item.created_at ? item.created_at.split('T')[0] : (item.tanggalMulai || item.tglMulai || '-')));
     const nik = item.nikPabrik || item.nik || item.npk || '-';
     const nama = item.namaPasien || item.nama || '-';
     const dept = item.dept || item.departemen || '-';
-    const faskes = item.namaFaskes || item.faskesLuar || '-';
+    const faskes = item.namaFaskes || item.fasyankes || item.faskesLuar || '-';
+    const tMulai = item.tanggalMulai || item.tglMulai || '-';
+    const tSelesai = item.tanggalSelesai || item.tglSelesai || '-';
+    
+    let durasi = parseInt(item.durasiHari);
+    if (!durasi && tMulai !== '-' && tSelesai !== '-') {
+      try {
+        durasi = Math.max(1, Math.round((new Date(tSelesai) - new Date(tMulai)) / 86400000) + 1);
+      } catch {
+        durasi = 1;
+      }
+    }
+    if (!durasi) durasi = 1;
+
+    const diagnosa = item.diagnosa || item.diagnosis || '-';
     const foto = item.linkFoto || item.fotoBukti;
 
     const fotoBtn = foto 
@@ -15149,18 +16069,18 @@ function renderSuratLuarTable() {
 
     return `
       <tr>
-        <td style="text-align: center; font-weight: 700;">${idx + 1}</td>
-        <td>${tglTerima}</td>
-        <td><strong>${nik}</strong></td>
-        <td><strong>${nama}</strong></td>
-        <td>${dept}</td>
-        <td>${faskes}</td>
-        <td style="font-size: 0.8rem;">${item.tanggalMulai || '-'} s/d ${item.tanggalSelesai || '-'}</td>
-        <td style="text-align: center;"><span class="badge badge-warning">${item.durasiHari || 1} Hari</span></td>
-        <td>${item.diagnosa || '-'}</td>
+        <td style="text-align: center; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>
+        <td style="font-size: 0.82rem; white-space: nowrap;">${escapeHtml(tglTerima)}</td>
+        <td><span class="badge badge-info" style="font-weight: 700;">${escapeHtml(String(nik))}</span></td>
+        <td><strong>${escapeHtml(nama)}</strong></td>
+        <td><span class="badge" style="background: rgba(255,255,255,0.06); font-weight: 600;">${escapeHtml(dept)}</span></td>
+        <td style="font-size: 0.85rem;">${escapeHtml(faskes)}</td>
+        <td style="font-size: 0.82rem; white-space: nowrap;">${escapeHtml(tMulai)} s/d ${escapeHtml(tSelesai)}</td>
+        <td style="text-align: center;"><span class="badge badge-warning" style="font-weight: 700;">${durasi} Hari</span></td>
+        <td style="font-size: 0.85rem; font-weight: 600; color: #f87171;">${escapeHtml(diagnosa)}</td>
         <td style="text-align: center;">${fotoBtn}</td>
         <td style="text-align: center;">
-          <button type="button" class="btn btn-sm btn-danger" style="padding: 3px 8px; font-size: 0.75rem;" onclick="handleDeleteSuratLuar('${item.id}')" title="Hapus Berkas">
+          <button type="button" class="btn btn-sm btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleDeleteSuratLuar('${item.id}')" title="Hapus Berkas">
             <i class="fa-solid fa-trash"></i>
           </button>
         </td>
@@ -15170,66 +16090,287 @@ function renderSuratLuarTable() {
 }
 
 function filterSuratLuarTable() {
-  const q = document.getElementById('search-surat-luar-input')?.value.toLowerCase().trim() || '';
-  const tbody = document.getElementById('table-surat-luar-body');
-  const list = appData.suratSakitLuar || [];
+  renderSuratLuarTable();
+}
 
-  if (!tbody) return;
-
-  const filtered = list.filter(item => {
-    const nik = (item.nikPabrik || item.nik || item.npk || '').toLowerCase();
-    const nama = (item.namaPasien || item.nama || '').toLowerCase();
-    const dept = (item.dept || item.departemen || '').toLowerCase();
-    const faskes = (item.namaFaskes || item.faskesLuar || '').toLowerCase();
-    const diagnosa = (item.diagnosa || '').toLowerCase();
-    return nik.includes(q) || nama.includes(q) || dept.includes(q) || faskes.includes(q) || diagnosa.includes(q);
-  });
-
+function printRekapSuratSakitPDF() {
+  const filtered = getFilteredSuratLuarList();
   if (filtered.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 24px;">
-          Tidak ada data surat luar yang cocok dengan "${q}".
-        </td>
-      </tr>
-    `;
+    showToast('Tidak ada data surat sakit yang dipilih untuk dicetak!', 'warning');
     return;
   }
 
-  tbody.innerHTML = filtered.map((item, idx) => {
-    const tglTerima = item.createdAt ? item.createdAt.split('T')[0] : (item.created_at ? item.created_at.split('T')[0] : (item.tanggalMulai || '-'));
-    const nik = item.nikPabrik || item.nik || item.npk || '-';
-    const nama = item.namaPasien || item.nama || '-';
-    const dept = item.dept || item.departemen || '-';
-    const faskes = item.namaFaskes || item.faskesLuar || '-';
-    const foto = item.linkFoto || item.fotoBukti;
+  const startVal = document.getElementById('filter-surat-start')?.value || '';
+  const endVal = document.getElementById('filter-surat-end')?.value || '';
+  const deptVal = document.getElementById('filter-surat-dept')?.value || 'Semua Departemen';
+  const qVal = document.getElementById('search-surat-luar-input')?.value || '';
 
-    const fotoBtn = foto 
-      ? `<button type="button" class="btn btn-sm" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border: 1px solid #0ea5e9; padding: 3px 8px; font-size: 0.75rem; font-weight: 700;" onclick="openPreviewFotoSurat('${item.id}')" title="Lihat Foto Bukti">
-           <i class="fa-solid fa-image"></i> Lihat
-         </button>`
-      : `<span style="color: var(--text-muted); font-size: 0.75rem;">-</span>`;
+  let periodeText = 'SEMUA PERIODE';
+  if (startVal && endVal) {
+    periodeText = `${startVal} S/D ${endVal}`;
+  } else if (startVal) {
+    periodeText = `MULAI ${startVal}`;
+  } else if (endVal) {
+    periodeText = `HINGGA ${endVal}`;
+  }
+
+  // Summary Metrics
+  let totalHari = 0;
+  const diagCount = {};
+  const deptCount = {};
+  const faskesCount = {};
+  const patientSet = new Set();
+
+  filtered.forEach(it => {
+    const tM = it.tanggalMulai || it.tglMulai;
+    const tS = it.tanggalSelesai || it.tglSelesai || tM;
+    let dur = parseInt(it.durasiHari);
+    if (!dur && tM && tS) {
+      dur = Math.max(1, Math.round((new Date(tS) - new Date(tM)) / 86400000) + 1);
+    }
+    dur = dur || 1;
+    totalHari += dur;
+
+    const d = (it.diagnosa || it.diagnosis || 'Lainnya').trim();
+    diagCount[d] = (diagCount[d] || 0) + 1;
+
+    const dp = (it.dept || it.departemen || 'Lainnya').trim();
+    deptCount[dp] = (deptCount[dp] || 0) + 1;
+
+    const f = (it.namaFaskes || it.fasyankes || it.faskesLuar || 'Lainnya').trim();
+    faskesCount[f] = (faskesCount[f] || 0) + 1;
+
+    patientSet.add(it.nikPabrik || it.nik || it.namaPasien || it.nama);
+  });
+
+  const avgHari = (totalHari / filtered.length).toFixed(1);
+  const topDiag = Object.entries(diagCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topDept = Object.entries(deptCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  const printRows = filtered.map((it, idx) => {
+    const tglTerima = it.tanggalInput || (it.createdAt ? it.createdAt.split('T')[0] : (it.created_at ? it.created_at.split('T')[0] : (it.tanggalMulai || it.tglMulai || '-')));
+    const nik = it.nikPabrik || it.nik || it.npk || '-';
+    const nama = it.namaPasien || it.nama || '-';
+    const dept = it.dept || it.departemen || '-';
+    const faskes = it.namaFaskes || it.fasyankes || it.faskesLuar || '-';
+    const tM = it.tanggalMulai || it.tglMulai || '-';
+    const tS = it.tanggalSelesai || it.tglSelesai || '-';
+    let dur = parseInt(it.durasiHari);
+    if (!dur && tM !== '-' && tS !== '-') {
+      dur = Math.max(1, Math.round((new Date(tS) - new Date(tM)) / 86400000) + 1);
+    }
+    dur = dur || 1;
+    const diag = it.diagnosa || it.diagnosis || '-';
 
     return `
       <tr>
-        <td style="text-align: center; font-weight: 700;">${idx + 1}</td>
-        <td>${tglTerima}</td>
-        <td><strong>${nik}</strong></td>
-        <td><strong>${nama}</strong></td>
-        <td>${dept}</td>
-        <td>${faskes}</td>
-        <td style="font-size: 0.8rem;">${item.tanggalMulai || '-'} s/d ${item.tanggalSelesai || '-'}</td>
-        <td style="text-align: center;"><span class="badge badge-warning">${item.durasiHari || 1} Hari</span></td>
-        <td>${item.diagnosa || '-'}</td>
-        <td style="text-align: center;">${fotoBtn}</td>
-        <td style="text-align: center;">
-          <button type="button" class="btn btn-sm btn-danger" style="padding: 3px 8px; font-size: 0.75rem;" onclick="handleDeleteSuratLuar('${item.id}')" title="Hapus Berkas">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td>${escapeHtml(tglTerima)}</td>
+        <td><strong>${escapeHtml(nik)}</strong></td>
+        <td><strong>${escapeHtml(nama)}</strong></td>
+        <td>${escapeHtml(dept)}</td>
+        <td>${escapeHtml(faskes)}</td>
+        <td style="text-align: center; white-space: nowrap;">${escapeHtml(tM)} s/d ${escapeHtml(tS)}</td>
+        <td style="text-align: center; font-weight: bold;">${dur} Hari</td>
+        <td>${escapeHtml(diag)}</td>
       </tr>
     `;
   }).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Rekapitulasi Surat Izin Sakit - PT ATI</title>
+      <style>
+        @page {
+          size: A4 portrait;
+          margin: 1.2cm;
+        }
+        body {
+          font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+          color: #111;
+          background: #fff;
+          margin: 0;
+          padding: 0;
+          font-size: 9.5pt;
+        }
+        .header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 2.5px solid #0284c7;
+          padding-bottom: 12px;
+          margin-bottom: 16px;
+        }
+        .logo-title h2 {
+          margin: 0;
+          font-size: 14pt;
+          font-weight: 800;
+          color: #0284c7;
+          text-transform: uppercase;
+        }
+        .logo-title h3 {
+          margin: 2px 0;
+          font-size: 11pt;
+          color: #333;
+          text-transform: uppercase;
+        }
+        .logo-title p {
+          margin: 2px 0;
+          font-size: 8.5pt;
+          color: #666;
+        }
+        .kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        .kpi-card {
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          padding: 8px 12px;
+          background: #f8fafc;
+          text-align: center;
+        }
+        .kpi-num {
+          font-size: 14pt;
+          font-weight: 800;
+          color: #0284c7;
+        }
+        .kpi-label {
+          font-size: 7.5pt;
+          color: #64748b;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 8.5pt;
+          margin-bottom: 20px;
+        }
+        th, td {
+          border: 1px solid #cbd5e1;
+          padding: 5px 7px;
+          vertical-align: middle;
+        }
+        th {
+          background: #f1f5f9;
+          font-weight: 800;
+          color: #1e293b;
+          text-transform: uppercase;
+          font-size: 8pt;
+        }
+        tr:nth-child(even) {
+          background: #f8fafc;
+        }
+        .sign-area {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 30px;
+          page-break-inside: avoid;
+        }
+        .sign-box {
+          text-align: center;
+          width: 200px;
+          font-size: 9pt;
+        }
+        .sign-space {
+          height: 60px;
+        }
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="logo-title">
+          <h2>KLINIK PRATAMA PT ATI</h2>
+          <h3>REKAPITULASI SURAT IZIN SAKIT (EKSTERNAL) KARYAWAN</h3>
+          <p>Kawasan Industri PT ATI | Layanan Kesehatan Kerja &amp; Poliklinik Karyawan</p>
+        </div>
+        <div style="text-align: right; font-size: 8.5pt; color: #475569;">
+          <div><strong>PERIODE:</strong> ${periodeText}</div>
+          <div><strong>DEPARTEMEN:</strong> ${escapeHtml(deptVal)}</div>
+          <div><strong>TGL CETAK:</strong> ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-num">${filtered.length}</div>
+          <div class="kpi-label">Total Surat Sakit</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num" style="color: #f59e0b;">${totalHari} Hari</div>
+          <div class="kpi-label">Akumulasi Hari Sakit</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num" style="color: #10b981;">${patientSet.size} Orang</div>
+          <div class="kpi-label">Karyawan Terdampak</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num" style="color: #6366f1;">${avgHari} Hari</div>
+          <div class="kpi-label">Rata-rata Durasi Sakit</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 4%; text-align: center;">NO</th>
+            <th style="width: 10%;">TGL TERIMA</th>
+            <th style="width: 10%;">NPK</th>
+            <th style="width: 17%;">NAMA KARYAWAN</th>
+            <th style="width: 12%;">DEPARTEMEN</th>
+            <th style="width: 16%;">FASKES PENERBIT</th>
+            <th style="width: 13%; text-align: center;">PERIODE</th>
+            <th style="width: 6%; text-align: center;">DURASI</th>
+            <th style="width: 12%;">DIAGNOSIS</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${printRows}
+        </tbody>
+      </table>
+
+      <div class="sign-area">
+        <div class="sign-box">
+          <div>Dibuat Oleh,</div>
+          <div><strong>Petugas Medis / Paramedis</strong></div>
+          <div class="sign-space"></div>
+          <div>( ........................................... )</div>
+        </div>
+        <div class="sign-box">
+          <div>Mengetahui,</div>
+          <div><strong>HSE &amp; HRD PT ATI</strong></div>
+          <div class="sign-space"></div>
+          <div>( ........................................... )</div>
+        </div>
+        <div class="sign-box">
+          <div>Penanggung Jawab Medis,</div>
+          <div><strong>Dokter Penanggung Jawab</strong></div>
+          <div class="sign-space"></div>
+          <div><strong>dr. Dylan Fadhilah</strong></div>
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 400);
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+  win.document.close();
 }
 
 function openPreviewFotoSurat(suratIdOrSrc) {

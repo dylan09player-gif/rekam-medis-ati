@@ -50,14 +50,17 @@
           <label class="gate-label" for="gate-username-input">Nama / Username Petugas</label>
           <div class="gate-input-wrap">
             <i class="fa-solid fa-user-doctor gate-input-icon"></i>
-            <input type="text" id="gate-username-input" class="gate-input" placeholder="dr. Dylan / dr.medika / perawat..." required autofocus autocomplete="username">
+            <input type="text" id="gate-username-input" class="gate-input" placeholder="dr. Dylan / dylan / perawat..." required autofocus autocomplete="username">
           </div>
         </div>
         <div class="gate-input-group">
           <label class="gate-label" for="gate-password-input">Kata Sandi / Password</label>
-          <div class="gate-input-wrap">
+          <div class="gate-input-wrap" style="position: relative;">
             <i class="fa-solid fa-lock gate-input-icon"></i>
-            <input type="password" id="gate-password-input" class="gate-input" placeholder="Masukkan kata sandi..." required autocomplete="current-password">
+            <input type="password" id="gate-password-input" class="gate-input" placeholder="Masukkan kata sandi..." required autocomplete="current-password" style="padding-right: 42px;">
+            <button type="button" onclick="togglePasswordVisibility('gate-password-input', 'gate-login-peek-icon')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 4px;" title="Lihat/Sembunyikan Password">
+              <i class="fa-solid fa-eye" id="gate-login-peek-icon"></i>
+            </button>
           </div>
         </div>
         <button type="submit" class="btn-gate-submit" id="btn-submit-gate-login">
@@ -103,9 +106,12 @@
         </div>
         <div class="gate-input-group">
           <label class="gate-label" for="gate-reg-password">Kata Sandi Baru *</label>
-          <div class="gate-input-wrap">
+          <div class="gate-input-wrap" style="position: relative;">
             <i class="fa-solid fa-lock gate-input-icon"></i>
-            <input type="password" id="gate-reg-password" class="gate-input" placeholder="Minimal 4 karakter..." required autocomplete="new-password">
+            <input type="password" id="gate-reg-password" class="gate-input" placeholder="Minimal 4 karakter..." required autocomplete="new-password" style="padding-right: 42px;">
+            <button type="button" onclick="togglePasswordVisibility('gate-reg-password', 'gate-reg-peek-icon')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 4px;" title="Lihat/Sembunyikan Password">
+              <i class="fa-solid fa-eye" id="gate-reg-peek-icon"></i>
+            </button>
           </div>
         </div>
         <button type="submit" class="btn-gate-submit" style="background: linear-gradient(135deg, #10b981, #059669);" id="btn-submit-gate-reg">
@@ -135,7 +141,7 @@
         <i class="fa-solid fa-stethoscope"></i> POLI
       </button>
       <button class="nav-btn" data-target="view-edit-data">
-        <i class="fa-solid fa-clipboard-check"></i> DATA YANG SUDAH MASUK
+        <i class="fa-solid fa-clipboard-check"></i> <span class="nav-text-full">DATA YANG SUDAH MASUK</span><span class="nav-text-short">DATA MASUK</span>
       </button>
       <button class="nav-btn" data-target="view-karyawan">
         <i class="fa-solid fa-id-card"></i> KARYAWAN
@@ -198,7 +204,7 @@
 
       <button type="button" id="btn-vps-cloud-sync" onclick="triggerManualVpsSync()" style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); font-size: 0.74rem; font-weight: 700; color: #38bdf8; cursor: pointer; transition: all 0.2s;" title="Terintegrasi VPS Cloud Resmi (nafilamedika.my.id). Klik untuk sinkronkan.">
         <i class="fa-solid fa-cloud" id="icon-vps-status" style="color: #38bdf8;"></i>
-        <span id="txt-vps-status">VPS Online</span>
+        <span id="txt-vps-status"><span class="vps-text-full">VPS Online</span><span class="vps-text-short">VPS</span></span>
       </button>
 
       <button class="theme-toggle-btn" id="btn-toggle-theme" title="Ubah Tema" style="width: 32px; height: 32px;">
@@ -908,42 +914,94 @@
     <!-- TAB BARU: WHATSAPP WEB DASHBOARD (SESUAI SS 1 & SS 2) -->
     <!-- ============================================================ -->
     <section id="view-wa-web" class="page-view">
-      <div class="glass-card" style="padding: 12px; margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div class="glass-card" style="padding: 10px 14px; margin-bottom: 12px;">
+        <div class="wa-header-toolbar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           
           <!-- Single Session Title & Kirim Pesan Baru -->
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="background: rgba(2, 132, 199, 0.15); border: 1.5px solid #0284c7; color: #38bdf8; font-weight: 800; border-radius: 10px; padding: 6px 14px; display: flex; align-items: center; gap: 6px; font-size: 0.88rem;">
-              <i class="fa-brands fa-whatsapp" style="color: #22c55e; font-size: 1.15rem;"></i> WA Klinik PT ATI
+          <div class="wa-header-top-row" style="display: flex; align-items: center; gap: 8px;">
+            <div style="background: rgba(2, 132, 199, 0.15); border: 1.5px solid #0284c7; color: #38bdf8; font-weight: 800; border-radius: 10px; padding: 6px 14px; display: flex; align-items: center; gap: 6px; font-size: 0.88rem; white-space: nowrap;">
+              <i class="fa-brands fa-whatsapp" style="color: #22c55e; font-size: 1.15rem;"></i> 
+              <span class="wa-brand-full">WA Klinik PT ATI & ATI Medika</span>
+              <span class="wa-brand-short">WA Klinik PT AMS</span>
             </div>
-            <button type="button" onclick="openModalNewWaMessage()" class="btn btn-sm" style="background: #10b981; color: #fff; font-weight: 800; border-radius: 10px; padding: 6px 14px; border: none; display: flex; align-items: center; gap: 6px;">
-              <i class="fa-solid fa-paper-plane"></i> + Kirim Pesan Baru
+            <button type="button" onclick="openModalNewWaMessage()" class="btn btn-sm" style="background: #10b981; color: #fff; font-weight: 800; border-radius: 10px; padding: 6px 14px; border: none; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+              <i class="fa-solid fa-paper-plane"></i> <span>+ Kirim Pesan</span>
             </button>
           </div>
 
           <!-- Status HP & Tombol Action WhatsApp -->
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <div class="wa-header-actions-row" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             
-            <!-- Tombol Pengaturan Nada Dering -->
-            <button type="button" class="btn btn-sm" onclick="openModalWaSoundSettings()" style="background: rgba(245, 158, 11, 0.15); border: 1.5px solid #f59e0b; color: #fbbf24; font-weight: 800; border-radius: 10px; padding: 6px 12px; display: flex; align-items: center; gap: 6px;" title="Atur Nada Dering WhatsApp & Suara Notifikasi">
-              <i class="fa-solid fa-bell"></i> <span>Nada Dering</span>
-            </button>
-
-            <!-- Tombol Tes Kirim Pesan ke Nomor Dokter -->
-            <button type="button" class="btn btn-sm" onclick="testSendWaToDoctor()" style="background: rgba(16, 185, 129, 0.15); border: 1.5px solid #10b981; color: #34d399; font-weight: 800; border-radius: 10px; padding: 6px 12px; display: flex; align-items: center; gap: 6px;" title="Kirim Pesan Pengujian ke Nomor 081291868456">
-              <i class="fa-solid fa-paper-plane"></i> <span>Tes Kirim WA</span>
-            </button>
-
             <!-- Status Koneksi HP Klinik -->
-            <div id="wa-header-status-badge" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); font-size: 0.8rem; font-weight: 700; color: #34d399;">
-              <span id="wa-header-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399;"></span>
+            <div id="wa-header-status-badge" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); font-size: 0.8rem; font-weight: 700; color: #34d399; white-space: nowrap;">
+              <span id="wa-header-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399; flex-shrink: 0;"></span>
               <span id="wa-header-device-label">HP Klinik: Memeriksa...</span>
             </div>
 
             <!-- Tombol Tautkan Barcode QR -->
-            <button type="button" class="btn btn-sm" onclick="openModalWaQr()" style="background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 10px; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
-              <i class="fa-solid fa-qrcode"></i> Tautkan HP
+            <button type="button" class="btn btn-sm" onclick="openModalWaQr()" style="background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 10px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; white-space: nowrap;" title="Tautkan WhatsApp HP dengan Barcode QR">
+              <i class="fa-solid fa-qrcode"></i> <span>Tautkan HP</span>
             </button>
+
+            <!-- Dropdown Pengaturan & Tindakan WA (Nada Dering, Tes Kirim, Clear Chat, Log Out) -->
+            <div class="wa-settings-dropdown" id="wa-settings-dropdown-container">
+              <button type="button" class="btn btn-sm btn-wa-settings" id="btn-wa-settings-toggle" onclick="toggleWaSettingsDropdown(event)" title="Pengaturan & Tindakan WhatsApp Web">
+                <i class="fa-solid fa-gear" style="color: #38bdf8;"></i> <span>Pengaturan WA</span> <i class="fa-solid fa-chevron-down" style="font-size: 0.65rem; margin-left: 2px; opacity: 0.7;"></i>
+              </button>
+              
+              <div id="wa-settings-dropdown-menu" class="wa-settings-menu">
+                <div style="padding: 8px 12px 6px; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px;">
+                  Pengaturan WhatsApp
+                </div>
+                
+                <!-- Nada Dering -->
+                <button type="button" class="wa-menu-action-btn" onclick="openModalWaSoundSettings(); closeWaSettingsDropdown();">
+                  <div class="wa-menu-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                    <i class="fa-solid fa-bell"></i>
+                  </div>
+                  <div style="flex: 1; text-align: left;">
+                    <div style="font-weight: 700; font-size: 0.84rem; color: var(--text-main);">Nada Dering</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Atur bunyi &amp; notifikasi WA</div>
+                  </div>
+                </button>
+
+                <!-- Tes Kirim WA -->
+                <button type="button" class="wa-menu-action-btn" onclick="testSendWaToDoctor(); closeWaSettingsDropdown();">
+                  <div class="wa-menu-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                    <i class="fa-solid fa-paper-plane"></i>
+                  </div>
+                  <div style="flex: 1; text-align: left;">
+                    <div style="font-weight: 700; font-size: 0.84rem; color: var(--text-main);">Tes Kirim WA</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Kirim pesan tes ke dokter</div>
+                  </div>
+                </button>
+
+                <div style="height: 1px; background: var(--border-subtle); margin: 4px 6px;"></div>
+
+                <!-- Clear Chat -->
+                <button type="button" class="wa-menu-action-btn" onclick="confirmClearAllWaChats(); closeWaSettingsDropdown();">
+                  <div class="wa-menu-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </div>
+                  <div style="flex: 1; text-align: left;">
+                    <div style="font-weight: 700; font-size: 0.84rem; color: #fbbf24;">Clear Chat</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Bersihkan riwayat chat dasbor</div>
+                  </div>
+                </button>
+
+                <!-- Log Out WA -->
+                <button type="button" class="wa-menu-action-btn" onclick="openModalLogoutWa(); closeWaSettingsDropdown();">
+                  <div class="wa-menu-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                  </div>
+                  <div style="flex: 1; text-align: left;">
+                    <div style="font-weight: 700; font-size: 0.84rem; color: #f87171;">Log Out WA</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Keluar &amp; hapus chat otomatis</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -955,13 +1013,24 @@
         <!-- KOLOM KIRI: Daftar Obrolan Pasien -->
         <div class="glass-card" style="padding: 0; display: flex; flex-direction: column; overflow: hidden; height: 100%;">
           
-          <div style="padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+          <div style="padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 6px;">
             <div style="font-weight: 800; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
               <i class="fa-solid fa-comments" style="color: #38bdf8;"></i> Daftar Obrolan Pasien
             </div>
-            <button type="button" onclick="markAllWaChatsRead()" title="Tandai Semua Obrolan Pasien Sudah Dibaca" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8; border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 0.76rem; font-weight: 700; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
-              <i class="fa-solid fa-check-double"></i> Tandai Dibaca
-            </button>
+            <div style="position: relative;" id="wa-chat-gear-container">
+              <button type="button" id="btn-wa-chat-gear" onclick="toggleWaChatGearDropdown(event)" title="Opsi &amp; Pengaturan Obrolan" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.92rem; transition: all 0.2s ease;">
+                <i class="fa-solid fa-gear"></i>
+              </button>
+              <div id="wa-chat-gear-dropdown" class="wa-dropdown-menu" style="display: none; position: absolute; right: 0; top: calc(100% + 6px); min-width: 200px; background: var(--surface-1); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 1000; padding: 6px; overflow: hidden; backdrop-filter: blur(12px);">
+                <button type="button" onclick="markAllWaChatsRead(); closeWaChatGearDropdown();" class="wa-dropdown-item" style="width: 100%; text-align: left; padding: 8px 12px; background: transparent; border: none; border-radius: 6px; color: var(--text-main); font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s;">
+                  <i class="fa-solid fa-check-double" style="color: #38bdf8;"></i> Tandai Semua Dibaca
+                </button>
+                <div style="height: 1px; background: var(--border-subtle); margin: 4px 0;"></div>
+                <button type="button" onclick="confirmClearAllWaChats(); closeWaChatGearDropdown();" class="wa-dropdown-item" style="width: 100%; text-align: left; padding: 8px 12px; background: transparent; border: none; border-radius: 6px; color: #f87171; font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s;">
+                  <i class="fa-solid fa-trash-can" style="color: #ef4444;"></i> Bersihkan Semua Chat
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Input Search Chat -->
@@ -997,6 +1066,9 @@
             <div style="display: flex; align-items: center; gap: 8px;">
               <button type="button" id="btn-wa-open-poli" onclick="openActiveChatInPoli()" class="btn btn-sm btn-secondary" style="font-size: 0.76rem; display: none; align-items: center; gap: 6px;">
                 <i class="fa-solid fa-stethoscope" style="color: #38bdf8;"></i> Buka di Poli
+              </button>
+              <button type="button" id="btn-wa-clear-active-chat" onclick="confirmClearActiveChat()" class="btn btn-sm" style="font-size: 0.76rem; display: none; align-items: center; gap: 6px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-weight: 700; border-radius: 8px; padding: 5px 10px; cursor: pointer;" title="Hapus riwayat obrolan dengan pasien ini">
+                <i class="fa-solid fa-trash-can"></i> Hapus Obrolan Ini
               </button>
               <div style="padding: 4px 10px; border-radius: 12px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25); color: #38bdf8; font-size: 0.76rem; font-weight: 700;">
                 <i class="fa-solid fa-user-shield"></i> Balasan Manual Petugas
@@ -1121,7 +1193,7 @@
         <div class="glass-card" style="margin-bottom: 20px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
             <div>
-              <h2><i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i> Stok Obat Apotek &amp; Klinik PT ATI</h2>
+              <h2><i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i> Stok Obat Apotek &amp; Klinik PT ATI & ATI Medika</h2>
               <p style="color: var(--text-muted); font-size: 0.85rem;">Manajemen stok obat klinik (disuplai Gudang Apotek Nafila), sisa stok, &amp; cetak lembar stok opname manual PT ATI.</p>
             </div>
             <div class="gudang-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -1582,6 +1654,19 @@
               </small>
             </div>
 
+            <!-- Preset Pilihan Shift Cepat -->
+            <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setShiftPreset(1)" style="flex: 1; font-weight: 700; font-size: 0.78rem; padding: 6px 4px;">
+                ☀️ Shift 1 (07-15)
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setShiftPreset(2)" style="flex: 1; font-weight: 700; font-size: 0.78rem; padding: 6px 4px;">
+                🌇 Shift 2 (15-23)
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setShiftPreset(3)" style="flex: 1; font-weight: 700; font-size: 0.78rem; padding: 6px 4px;">
+                🌙 Shift 3 (23-07)
+              </button>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
               <div>
                 <label class="form-label">Tgl Mulai</label>
@@ -1599,7 +1684,7 @@
               </div>
               <div>
                 <label class="form-label">Jam Selesai</label>
-                <input type="time" id="shift1-jam-selesai" class="form-control" value="14:00">
+                <input type="time" id="shift1-jam-selesai" class="form-control" value="15:00">
               </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
@@ -1647,17 +1732,27 @@
                 <input type="date" id="shift2-tgl-selesai" class="form-control" required>
               </div>
             </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
+              <div>
+                <label class="form-label">Jam Mulai</label>
+                <input type="time" id="shift2-jam-mulai" class="form-control" value="07:00">
+              </div>
+              <div>
+                <label class="form-label">Jam Selesai</label>
+                <input type="time" id="shift2-jam-selesai" class="form-control" value="07:00">
+              </div>
+            </div>
             <div class="form-group">
               <label class="form-label">Petugas Shift 1</label>
-              <input type="text" id="shift2-s1" class="form-control" placeholder="Shift 1: Dian & Budi">
+              <input type="text" id="shift2-s1" class="form-control" placeholder="Contoh: Zr.rika">
             </div>
             <div class="form-group">
               <label class="form-label">Petugas Shift 2</label>
-              <input type="text" id="shift2-s2" class="form-control" placeholder="Shift 2: Nisa & Rina">
+              <input type="text" id="shift2-s2" class="form-control" placeholder="Contoh: Bd.nurhayati">
             </div>
             <div class="form-group">
               <label class="form-label">Petugas Shift 3</label>
-              <input type="text" id="shift2-s3" class="form-control" placeholder="Shift 3: Andi">
+              <input type="text" id="shift2-s3" class="form-control" placeholder="Contoh: Zr.ria">
             </div>
             <button type="submit" id="btn-submit-shift2" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; background: linear-gradient(135deg, #16a34a, #15803d); border: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-brands fa-whatsapp"></i> KIRIM REKAP 24H KE WA PETUGAS
@@ -1757,11 +1852,71 @@
       <!-- RIWAYAT SURAT SAKIT LUAR TABEL -->
       <div class="glass-card">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
-          <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">
-            <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Riwayat Surat Sakit (Luar) Masuk
-          </h3>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="text" id="search-surat-luar-input" class="form-control" placeholder="Cari NPK / Nama / Faskes..." style="width: 240px;" onkeyup="filterSuratLuarTable()">
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main);">
+              <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Riwayat Surat Sakit (Luar) Masuk
+            </h3>
+            <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+              Data surat keterangan istirahat sakit dari faskes eksternal beserta bukti dokumen.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="btn btn-primary" onclick="printRekapSuratSakitPDF()" style="background: linear-gradient(135deg, #0284c7, #0369a1); font-weight: 700; border: none; padding: 7px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+              <i class="fa-solid fa-print"></i> Cetak Rekap PDF
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="resetSuratLuarFilters()" style="padding: 7px 14px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;" title="Reset Semua Filter">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- FILTER BAR & QUICK STATS -->
+        <div style="background: var(--surface-2); border: 1px solid var(--border-card); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: flex-end;">
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
+                <i class="fa-regular fa-calendar"></i> Dari Tanggal
+              </label>
+              <input type="date" id="filter-surat-start" class="form-control" style="font-size: 0.85rem;" onchange="filterSuratLuarTable()">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
+                <i class="fa-regular fa-calendar-check"></i> Sampai Tanggal
+              </label>
+              <input type="date" id="filter-surat-end" class="form-control" style="font-size: 0.85rem;" onchange="filterSuratLuarTable()">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-building"></i> Departemen
+              </label>
+              <select id="filter-surat-dept" class="form-control" style="font-size: 0.85rem;" onchange="filterSuratLuarTable()">
+                <option value="">Semua Departemen</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-magnifying-glass"></i> Cari NPK / Pasien / Faskes / Diagnosa
+              </label>
+              <input type="text" id="search-surat-luar-input" class="form-control" placeholder="Ketik kata kunci..." style="font-size: 0.85rem;" onkeyup="filterSuratLuarTable()">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-card);">
+            <!-- Quick Preset Buttons -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-right: 4px;">Periode:</span>
+              <button type="button" class="btn btn-xs btn-secondary" onclick="setSuratLuarQuickDate('all')">Semua</button>
+              <button type="button" class="btn btn-xs btn-secondary" onclick="setSuratLuarQuickDate('this-month')">Bulan Ini</button>
+              <button type="button" class="btn btn-xs btn-secondary" onclick="setSuratLuarQuickDate('last-month')">Bulan Lalu</button>
+              <button type="button" class="btn btn-xs btn-secondary" onclick="setSuratLuarQuickDate('this-year')">Tahun Ini</button>
+            </div>
+
+            <!-- Live Summary Counter -->
+            <div id="surat-luar-summary-stats" style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); display: flex; gap: 14px; flex-wrap: wrap;">
+              <span><i class="fa-solid fa-file-medical" style="color: #ec4899;"></i> Total Surat: <strong id="stat-surat-total" style="color: #0284c7;">0</strong></span>
+              <span><i class="fa-solid fa-bed-pulse" style="color: #f59e0b;"></i> Total Hari Sakit: <strong id="stat-surat-hari" style="color: #f59e0b;">0 Hari</strong></span>
+              <span><i class="fa-solid fa-users" style="color: #10b981;"></i> Pasien Unik: <strong id="stat-surat-pasien" style="color: #10b981;">0 Orang</strong></span>
+            </div>
           </div>
         </div>
 
@@ -1812,7 +1967,7 @@
             </div>
           </div>
 
-          <div class="stat-card clickable" onclick="openModalHSEPantauan()" title="Klik untuk melihat Daftar Pasien Pantauan">
+          <div class="stat-card clickable" onclick="switchHSESubTab('pantauan')" title="Klik untuk membuka Dasbor Pemantauan Pasien Kronis &amp; Prolanis">
             <div class="stat-card-header">
               <span class="stat-label">Pasien Pantauan</span>
               <span class="stat-pill-badge badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> K3</span>
@@ -1884,9 +2039,16 @@
         </div>
 
         <div class="hse-subtab-actions" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap;">
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="btn btn-primary" id="subtab-btn-rm" onclick="switchHSESubTab('rm')">
               <i class="fa-solid fa-file-medical"></i> REKAM MEDIS PASIEN
+            </button>
+            <button class="btn btn-secondary" id="subtab-btn-pantauan" onclick="switchHSESubTab('pantauan')">
+              <i class="fa-solid fa-heart-pulse"></i> 🚨 PEMANTAUAN KRONIS &amp; PROLANIS
+              <span id="badge-hse-pantauan-tab-count" class="badge badge-danger" style="margin-left: 6px; font-size: 0.72rem;">0 Pasien</span>
+            </button>
+            <button class="btn btn-secondary" id="subtab-btn-surkes" onclick="switchHSESubTab('surkes')">
+              <i class="fa-solid fa-file-signature"></i> 📑 SURAT IZIN SAKIT (SURKES)
             </button>
             <button class="btn btn-secondary" onclick="openModalHSEObatKeluar()" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700;">
               <i class="fa-solid fa-capsules"></i> 💊 REKAP OBAT TERPAKAI
@@ -1940,9 +2102,163 @@
           </div>
         </div>
 
-        <!-- SUB-TAB 2 HAS BEEN MOVED TO MODAL (modal-hse-pantauan) -->
+        <!-- SUB-TAB 2: DASHBOARD DEDIKASI PEMANTAUAN PASIEN KRONIS & PROLANIS (HSE & DOKTER) -->
+        <div id="hse-subtab-pantauan" style="display: none;">
+          
+          <!-- BANNER HEADER & ACTION BUTTONS -->
+          <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 20px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="font-weight: 800; font-size: 1.15rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> DASBOR PEMANTAUAN PASIEN KRONIS &amp; PROLANIS (HSE &amp; MEDIS)
+              </div>
+              <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
+                Evaluasi Kepatuhan Kontrol, Hipertensi, Diabetes Melitus, Lingkar Perut, Respon Terapi Obat &amp; Hasil Laboratorium Berkala.
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="btn btn-sm" onclick="openModalInputPantauan()" style="background: #10b981; color: #fff; font-weight: 800; border-radius: 8px; padding: 8px 16px; border: none; display: flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 10px rgba(16,185,129,0.35);">
+                <i class="fa-solid fa-circle-plus"></i> + Catat Pemantauan Baru
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="exportHSEPantauanExcel()" style="font-weight: 700; border-radius: 8px; padding: 8px 14px;">
+                <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Ekspor Excel
+              </button>
+            </div>
+          </div>
 
-        <!-- SURKES MOVED TO MODAL -->
+          <!-- 4 MATRIX KPI CARDS FOR DOCTOR & HSE -->
+          <div class="pantauan-kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 18px;">
+            
+            <!-- KPI 1: Rutin & Membaik -->
+            <div class="stat-card clickable" onclick="filterHSEPantauanCategory('improving')" style="border-left: 5px solid #10b981; padding: 14px 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #10b981; text-transform: uppercase;">1. Rutin &amp; Membaik</span>
+                <span class="stat-pill-badge" style="background: rgba(16,185,129,0.15); color: #10b981;"><i class="fa-solid fa-circle-check"></i> Terkontrol</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span id="pantauan-kpi-improving" style="font-size: 1.8rem; font-weight: 900; color: #10b981;">0</span>
+                <span style="font-size: 0.76rem; color: var(--text-muted);">Pasien</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
+                Rutin kontrol, parameter vital/lab capai target klinis, dosis obat/LP membaik.
+              </div>
+            </div>
+
+            <!-- KPI 2: Rutin Belum Berubah -->
+            <div class="stat-card clickable" onclick="filterHSEPantauanCategory('unchanged')" style="border-left: 5px solid #f59e0b; padding: 14px 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #f59e0b; text-transform: uppercase;">2. Rutin - Belum Berubah</span>
+                <span class="stat-pill-badge" style="background: rgba(245,158,11,0.15); color: #f59e0b;"><i class="fa-solid fa-clipboard-question"></i> Evaluasi</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span id="pantauan-kpi-unchanged" style="font-size: 1.8rem; font-weight: 900; color: #f59e0b;">0</span>
+                <span style="font-size: 0.76rem; color: var(--text-muted);">Pasien</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
+                Rutin kontrol tapi parameter fisik belum berubah. Butuh penyesuaian dosis obat / gaya hidup.
+              </div>
+            </div>
+
+            <!-- KPI 3: Tidak Rutin / Jatuh Tempo -->
+            <div class="stat-card clickable" onclick="filterHSEPantauanCategory('overdue')" style="border-left: 5px solid #ef4444; padding: 14px 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #ef4444; text-transform: uppercase;">3. Tidak Rutin / Overdue</span>
+                <span class="stat-pill-badge" style="background: rgba(239,68,68,0.15); color: #ef4444;"><i class="fa-solid fa-clock-rotate-left"></i> Jatuh Tempo</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span id="pantauan-kpi-overdue" style="font-size: 1.8rem; font-weight: 900; color: #ef4444;">0</span>
+                <span style="font-size: 0.76rem; color: var(--text-muted);">Pasien</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
+                Lewat jadwal kontrol. Prioritas HSE untuk jemput bola / pengingat WhatsApp.
+              </div>
+            </div>
+
+            <!-- KPI 4: Perburukan / High Risk -->
+            <div class="stat-card clickable" onclick="filterHSEPantauanCategory('worsening')" style="border-left: 5px solid #dc2626; padding: 14px 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #f87171; text-transform: uppercase;">4. Perlu Perhatian / Memburuk</span>
+                <span class="stat-pill-badge" style="background: rgba(220,38,38,0.15); color: #f87171;"><i class="fa-solid fa-triangle-exclamation"></i> High Risk</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span id="pantauan-kpi-worsening" style="font-size: 1.8rem; font-weight: 900; color: #f87171;">0</span>
+                <span style="font-size: 0.76rem; color: var(--text-muted);">Pasien</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
+                TD ≥ 160/100, GDS ≥ 200, atau lab ginjal memburuk. Wajib penanganan intensif dokter.
+              </div>
+            </div>
+
+          </div>
+
+          <!-- TOOLBAR FILTER & SEARCH -->
+          <div style="background: var(--surface-1); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <!-- Input Search Pasien -->
+              <div style="position: relative; flex: 1; min-width: 260px; max-width: 420px;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.82rem;"></i>
+                <input type="text" id="hse-pantauan-search" oninput="filterHSEPantauanCards()" class="form-control form-control-sm" placeholder="Cari Nama Pasien, NIK Pabrik, Departemen..." style="padding-left: 34px; border-radius: 20px;">
+              </div>
+              
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-muted);">
+                <i class="fa-brands fa-whatsapp" style="color: #22c55e; font-size: 1rem;"></i> Auto WhatsApp H-1: <strong style="color: #34d399;">Aktif</strong>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="triggerManualPantauanReminders()" title="Kirim Pengingat WA ke Semua Pasien yang Jatuh Tempo Hari Ini" style="padding: 4px 10px; font-size: 0.74rem; border-radius: 6px;">
+                  <i class="fa-solid fa-paper-plane" style="color: #22c55e;"></i> Blast Pengingat
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter Chips -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="btn btn-sm btn-hse-filter active" id="filter-btn-pantauan-all" onclick="filterHSEPantauanCategory('all')" style="background: #0284c7; color: #fff; border-radius: 20px; font-weight: 700; padding: 4px 12px; border: none; font-size: 0.76rem;">
+                <i class="fa-solid fa-users"></i> Semua Pasien (<span id="pantauan-chip-total">0</span>)
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-improving" onclick="filterHSEPantauanCategory('improving')" style="background: rgba(16,185,129,0.12); color: #34d399; border-radius: 20px; font-weight: 700; padding: 4px 12px; border: 1px solid rgba(16,185,129,0.3); font-size: 0.76rem;">
+                <i class="fa-solid fa-arrow-trend-down"></i> 🟢 Rutin &amp; Membaik
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-unchanged" onclick="filterHSEPantauanCategory('unchanged')" style="background: rgba(245,158,11,0.12); color: #fbbf24; border-radius: 20px; font-weight: 700; padding: 4px 12px; border: 1px solid rgba(245,158,11,0.3); font-size: 0.76rem;">
+                <i class="fa-solid fa-clipboard-question"></i> 🟡 Rutin Belum Berubah
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-overdue" onclick="filterHSEPantauanCategory('overdue')" style="background: rgba(239,68,68,0.12); color: #f87171; border-radius: 20px; font-weight: 700; padding: 4px 12px; border: 1px solid rgba(239,68,68,0.3); font-size: 0.76rem;">
+                <i class="fa-solid fa-triangle-exclamation"></i> 🔴 Tidak Rutin / Jatuh Tempo
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-worsening" onclick="filterHSEPantauanCategory('worsening')" style="background: rgba(220,38,38,0.12); color: #fca5a5; border-radius: 20px; font-weight: 700; padding: 4px 12px; border: 1px solid rgba(220,38,38,0.3); font-size: 0.76rem;">
+                <i class="fa-solid fa-arrow-trend-up"></i> ⚠️ Perlu Perhatian / Memburuk
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-ht" onclick="filterHSEPantauanCategory('ht')" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border-radius: 20px; font-weight: 600; padding: 4px 12px; border: 1px solid var(--border-color); font-size: 0.76rem;">
+                <i class="fa-solid fa-heart"></i> Hipertensi
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-filter" id="filter-btn-pantauan-dm" onclick="filterHSEPantauanCategory('dm')" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border-radius: 20px; font-weight: 600; padding: 4px 12px; border: 1px solid var(--border-color); font-size: 0.76rem;">
+                <i class="fa-solid fa-droplet"></i> Diabetes (DM)
+              </button>
+            </div>
+          </div>
+
+          <!-- KARTU DAFTAR PASIEN PEMANTAUAN -->
+          <div id="table-hse-pantauan-body" style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+            <!-- Rendered dynamically via renderHSEPasienPantauanTable() -->
+          </div>
+
+        </div>
+
+        <!-- SUB-TAB 3: SURAT IZIN SAKIT (SURKES) PADA DASBOR -->
+        <div id="hse-subtab-surkes" style="display: none;">
+          <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.08) 100%); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <div style="font-weight: 800; font-size: 1.1rem; color: #f59e0b; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-file-signature"></i> REKAPITULASI SURAT IZIN SAKIT (SURKES)
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 3px;">
+                Daftar karyawan yang dipulangkan atau diberikan rekomendasi istirahat sakit dari PT ATI.
+              </div>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="exportHSESurkesExcel()" style="font-weight: 700; border-radius: 8px;">
+              <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Unduh Rekap Surkes
+            </button>
+          </div>
+          <div id="table-hse-surkes-body" style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+            <!-- Rendered dynamically via renderHSESurkesTable() -->
+          </div>
+        </div>
 
       </div>
     </section>
@@ -3371,7 +3687,10 @@
 
             <div>
               <label class="form-label" style="font-size: 0.78rem; font-weight: 700;">Lingkar Perut (cm)</label>
-              <input type="number" id="inp-pantauan-lingkar-perut" class="form-control form-control-sm" placeholder="Contoh: 85">
+              <input type="number" id="inp-pantauan-lingkar-perut" class="form-control form-control-sm" placeholder="Contoh: 85" oninput="evalPantauanLingkarPerut()">
+              <div id="val-pantauan-lp-diff" style="font-size: 0.72rem; color: #38bdf8; margin-top: 3px;">Ref: Pria ≤ 90 cm, Wanita ≤ 80 cm</div>
+              <input type="hidden" id="inp-pantauan-eval-lp-val" value="">
+              <input type="hidden" id="inp-pantauan-delta-lp-val" value="">
             </div>
 
             <div>
@@ -3384,7 +3703,7 @@
         <!-- KONTEN TAB 2: PENGAMBILAN OBAT RUTIN BULANAN -->
         <div id="tab-content-pantauan-obat" style="display: none;">
           <div style="background: var(--surface-1); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
               <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
                 <input type="checkbox" id="chk-pantauan-ambil-obat" checked style="width: 16px; height: 16px;">
                 Ada Pengambilan Obat Rutin Bulan Ini
@@ -3392,6 +3711,9 @@
               <button type="button" class="btn btn-sm" onclick="addPantauanMedicineRow()" style="background: #0284c7; color: #fff; font-size: 0.76rem; padding: 4px 10px; border-radius: 6px; border: none;">
                 <i class="fa-solid fa-plus"></i> + Tambah Obat
               </button>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px;">
+              💡 <em>Dokter dapat menilai respon obat: <strong>Penurunan Dosis</strong> (tapering down), <strong>Dosis Tetap</strong>, <strong>Naik Dosis</strong>, atau <strong>Dihentikan</strong>.</em>
             </div>
 
             <!-- List Baris Obat -->
@@ -3402,7 +3724,7 @@
             <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div>
                 <label class="form-label" style="font-size: 0.78rem; font-weight: 700;">Catatan Obat / Kepatuhan Minum</label>
-                <input type="text" id="inp-pantauan-catatan-obat" class="form-control form-control-sm" placeholder="Contoh: Diminum teratur, sisa obat sebelumnya habis">
+                <input type="text" id="inp-pantauan-catatan-obat" class="form-control form-control-sm" placeholder="Contoh: Diminum teratur, respon terapi sangat baik">
               </div>
               <div>
                 <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #38bdf8;">Jadwal Ambil Obat Bulan Depan</label>
@@ -3412,54 +3734,96 @@
           </div>
         </div>
 
-        <!-- KONTEN TAB 3: CEK LAB BERKALA 3 BULANAN (DINAMIS) -->
+        <!-- KONTEN TAB 3: CEK LAB BERKALA 3 BULANAN (MASTER PROLANIS & DINAMIS) -->
         <div id="tab-content-pantauan-lab" style="display: none;">
           <div style="background: var(--surface-1); border: 1px solid var(--border-card); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
               <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer;">
                 <input type="checkbox" id="chk-pantauan-ada-lab" checked style="width: 16px; height: 16px;">
                 Ada Pemeriksaan Laboratorium (Triwulanan)
               </label>
-              <button type="button" class="btn btn-sm" onclick="addCustomLabTestRow()" style="background: #8b5cf6; color: #fff; font-size: 0.76rem; padding: 5px 12px; border-radius: 6px; border: none; font-weight: 700;">
-                <i class="fa-solid fa-plus-circle"></i> + Tambah Pemeriksaan Lab Bebas
-              </button>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-sm" onclick="applyProlanisPreset('dm')" style="background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); font-size: 0.74rem; font-weight: 700; border-radius: 6px; padding: 4px 10px;">
+                  <i class="fa-solid fa-droplet"></i> Template DM
+                </button>
+                <button type="button" class="btn btn-sm" onclick="applyProlanisPreset('ht')" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.74rem; font-weight: 700; border-radius: 6px; padding: 4px 10px;">
+                  <i class="fa-solid fa-heart"></i> Template Hipertensi
+                </button>
+                <button type="button" class="btn btn-sm" onclick="addCustomLabTestRow()" style="background: #8b5cf6; color: #fff; font-size: 0.74rem; padding: 4px 10px; border-radius: 6px; border: none; font-weight: 700;">
+                  <i class="fa-solid fa-plus-circle"></i> + Lab Bebas
+                </button>
+              </div>
             </div>
 
-            <!-- Parameter Lab Standar HSE -->
+            <!-- Parameter Lab Standar PROLANIS & HSE -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; background: rgba(139,92,246,0.06); padding: 12px; border-radius: 8px; border: 1px solid rgba(139,92,246,0.2);">
+              <div>
+                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Gula Darah Puasa (GDP)</label>
+                <input type="number" id="inp-pantauan-lab-gdp" class="form-control form-control-sm" placeholder="Contoh: 115 mg/dL">
+                <span style="font-size: 0.69rem; color: var(--text-muted);">Ref: 80 - 130 mg/dL</span>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Gula Darah 2 Jam PP</label>
+                <input type="number" id="inp-pantauan-lab-gd2pp" class="form-control form-control-sm" placeholder="Contoh: 160 mg/dL">
+                <span style="font-size: 0.69rem; color: var(--text-muted);">Ref: &lt; 180 mg/dL</span>
+              </div>
               <div>
                 <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">HbA1c (%)</label>
                 <input type="number" step="0.1" id="inp-pantauan-lab-hba1c" class="form-control form-control-sm" placeholder="Contoh: 6.5">
-                <span style="font-size: 0.7rem; color: var(--text-muted);">Ref: &lt; 5.7% (Normal), &lt; 7.0% (DM Terkontrol)</span>
+                <span style="font-size: 0.69rem; color: var(--text-muted);">Ref: &lt; 7.0% (Terkontrol)</span>
               </div>
               <div>
                 <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Ureum (mg/dL)</label>
                 <input type="number" step="0.1" id="inp-pantauan-lab-ureum" class="form-control form-control-sm" placeholder="Contoh: 28">
-                <span style="font-size: 0.7rem; color: var(--text-muted);">Ref: 15 - 45 mg/dL</span>
+                <span style="font-size: 0.69rem; color: var(--text-muted);">Ref: 15 - 45 mg/dL</span>
               </div>
               <div>
                 <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Creatinin (mg/dL)</label>
                 <input type="number" step="0.01" id="inp-pantauan-lab-creatinin" class="form-control form-control-sm" placeholder="Contoh: 0.9">
-                <span style="font-size: 0.7rem; color: var(--text-muted);">Ref: 0.6 - 1.2 mg/dL</span>
+                <span style="font-size: 0.69rem; color: var(--text-muted);">Ref: 0.6 - 1.2 mg/dL</span>
               </div>
               <div>
-                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Elektrolit Natrium (Na)</label>
-                <input type="number" step="0.1" id="inp-pantauan-lab-na" class="form-control form-control-sm" placeholder="140 mmol/L">
+                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Kolesterol LDL (mg/dL)</label>
+                <input type="number" id="inp-pantauan-lab-ldl" class="form-control form-control-sm" placeholder="Contoh: 95">
+                <span style="font-size: 0.69rem; color: var(--text-muted);">Ref: &lt; 100 mg/dL</span>
               </div>
               <div>
-                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Elektrolit Kalium (K)</label>
-                <input type="number" step="0.1" id="inp-pantauan-lab-k" class="form-control form-control-sm" placeholder="4.2 mmol/L">
+                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Trigliserida (mg/dL)</label>
+                <input type="number" id="inp-pantauan-lab-trigliserida" class="form-control form-control-sm" placeholder="Contoh: 140">
+                <span style="font-size: 0.69rem; color: var(--text-muted);">Ref: &lt; 150 mg/dL</span>
               </div>
               <div>
-                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Elektrolit Klorida (Cl)</label>
-                <input type="number" step="0.1" id="inp-pantauan-lab-cl" class="form-control form-control-sm" placeholder="102 mmol/L">
+                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Mikroalbumin / Protein Urine</label>
+                <select id="inp-pantauan-lab-mikroalbumin" class="form-control form-control-sm">
+                  <option value="Negatif">Negatif (Normal)</option>
+                  <option value="Trace">Trace (Sedikit)</option>
+                  <option value="+1">+1 (Positif 1)</option>
+                  <option value="+2">+2 (Positif 2)</option>
+                  <option value="+3">+3 (Positif 3)</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Elektrolit Na / K / Cl</label>
+                <div style="display: flex; gap: 4px;">
+                  <input type="number" step="0.1" id="inp-pantauan-lab-na" class="form-control form-control-sm" placeholder="Na 140" style="text-align: center;">
+                  <input type="number" step="0.1" id="inp-pantauan-lab-k" class="form-control form-control-sm" placeholder="K 4.2" style="text-align: center;">
+                  <input type="number" step="0.1" id="inp-pantauan-lab-cl" class="form-control form-control-sm" placeholder="Cl 102" style="text-align: center;">
+                </div>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Status Evaluasi Lab Dokter</label>
+                <select id="inp-pantauan-lab-eval-status" class="form-control form-control-sm" style="font-weight: 700;">
+                  <option value="membaik">🟢 Hasil Lab Membaik / Terkontrol</option>
+                  <option value="stabil">🔵 Hasil Lab Stabil</option>
+                  <option value="perburukan">🔴 Hasil Lab Perburukan (Perlu Evaluasi)</option>
+                </select>
               </div>
             </div>
 
             <!-- Kontainer Parameter Lab Tambahan / Kustom -->
             <div style="margin-bottom: 12px;">
               <div style="font-weight: 700; font-size: 0.8rem; color: var(--text-main); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-list-check" style="color: #8b5cf6;"></i> Pemeriksaan Lab Tambahan / Kustom:
+                <i class="fa-solid fa-list-check" style="color: #8b5cf6;"></i> Pemeriksaan Lab Tambahan / Kustom Lainnya:
               </div>
               <div id="container-custom-lab-rows" style="display: flex; flex-direction: column; gap: 8px;">
                 <!-- Dinamis diisi baris lab tambahan -->
@@ -3469,7 +3833,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div>
                 <label class="form-label" style="font-size: 0.78rem; font-weight: 700;">Catatan Evaluasi Hasil Lab</label>
-                <input type="text" id="inp-pantauan-lab-catatan" class="form-control form-control-sm" placeholder="Contoh: Fungsi ginjal baik, HbA1c stabil">
+                <input type="text" id="inp-pantauan-lab-catatan" class="form-control form-control-sm" placeholder="Contoh: Fungsi ginjal aman, HbA1c turun signifikan">
               </div>
               <div>
                 <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #8b5cf6;">Jadwal Cek Lab Berikutnya (3 Bulan)</label>
@@ -3479,8 +3843,21 @@
           </div>
         </div>
 
-        <!-- Bagian Saran / Edukasi Dokter & Opsi WhatsApp -->
+        <!-- Bagian Status Kesimpulan Dokter & HSE, Saran / Edukasi & Opsi WhatsApp -->
         <div style="margin-top: 14px; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 12px;">
+          
+          <div style="margin-bottom: 10px; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); border-radius: 8px; padding: 10px 12px;">
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-clipboard-check"></i> Kesimpulan Status Evaluasi Pasien (Dokter &amp; HSE):
+            </label>
+            <select id="inp-pantauan-kesimpulan-status" class="form-control form-control-sm" style="font-weight: 700; font-size: 0.84rem;">
+              <option value="rutin_membaik">🟢 Rutin Kontrol &amp; Progres Membaik (Target Tercapai / Dosis Turun / LP Berkurang)</option>
+              <option value="rutin_belum_berubah">🟡 Rutin Kontrol tapi Belum Ada Perubahan (Perlu Evaluasi Terapi Dokter / Gaya Hidup)</option>
+              <option value="tidak_rutin">🔴 Tidak Rutin Kontrol / Jatuh Tempo (Perlu Follow-up HSE &amp; WhatsApp Reminder)</option>
+              <option value="tidak_terkontrol">⚠️ Tidak Terkontrol / Perburukan Klinis (High Risk Alert)</option>
+            </select>
+          </div>
+
           <div style="margin-bottom: 8px;">
             <label class="form-label" style="font-size: 0.78rem; font-weight: 700;">💡 Saran / Edukasi Tim Medis &amp; HSE untuk Pasien:</label>
             <textarea id="inp-pantauan-catatan-dokter" class="form-control form-control-sm" rows="2" placeholder="Contoh: Pertahankan pola makan rendah garam, jalan kaki 30 menit sehari, dan obat diminum rutin."></textarea>
@@ -3490,7 +3867,7 @@
               <input type="checkbox" id="chk-pantauan-send-wa" style="width: 16px; height: 16px;">
               <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Kirim Rangkuman Evaluasi ke WhatsApp Pasien Sekarang (Opsional)
             </label>
-            <span style="font-size: 0.74rem; color: var(--text-muted);">Terkirim via WhatsApp Klinik PT ATI</span>
+            <span style="font-size: 0.74rem; color: var(--text-muted);">Terkirim via WhatsApp Klinik PT ATI & ATI Medika</span>
           </div>
           <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-clock-rotate-left"></i>
@@ -3553,7 +3930,7 @@
 
   <!-- MODAL RIWAYAT PASIEN (TIMELINE) -->
   <div id="modal-riwayat-pasien" class="modal-overlay" style="display: none; z-index: 10003;">
-    <div class="modal-card" style="max-width: 600px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-card" style="max-width: 750px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
       <div class="modal-header" style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h3 class="modal-title" style="margin: 0; display: flex; align-items: center; gap: 8px;">
@@ -3798,7 +4175,7 @@
 
           <div class="acc-form-card">
             <h4 style="margin: 0 0 14px 0; font-size: 0.98rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Form Ubah Kata Sandi Akun
+              <i class="fa-solid fa-user-pen" style="color: var(--primary);"></i> Form Profil &amp; Kata Sandi Akun
             </h4>
             <form onsubmit="handleAccountChangePassword(event)" id="form-account-change-pwd">
               <div class="form-group" style="margin-bottom: 12px;">
@@ -3806,42 +4183,53 @@
                 <input type="text" id="acc-input-nama" class="form-control" placeholder="Nama Anda..." required>
               </div>
 
-              <div class="form-group" style="margin-bottom: 12px;">
-                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">
-                  <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> Nomor WhatsApp Aktif (Menerima Laporan Shift) *
-                </label>
+              <div class="form-group" style="margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 0;">
+                    <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> Nomor WhatsApp Petugas *
+                  </label>
+                  <button type="button" class="btn btn-sm btn-outline-success" onclick="testWaAkunSaya()" style="font-size: 0.73rem; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; font-weight: 700;" title="Kirim pesan tes ke nomor ini">
+                    <i class="fa-brands fa-whatsapp"></i> Tes Kirim WA
+                  </button>
+                </div>
                 <input type="tel" id="acc-input-nowa" class="form-control" placeholder="Contoh: 081291868456" required>
-                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 3px;">Nomor ini wajib aktif untuk menerima laporan oper shift &amp; rekap 24H.</small>
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 3px;">Nomor ini wajib aktif untuk menerima laporan oper shift, notifikasi pasien, &amp; rekap kunjungan.</small>
               </div>
 
-              <div class="form-group" style="margin-bottom: 12px;">
-                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Kata Sandi Saat Ini *</label>
-                <div class="acc-pwd-input-wrap">
-                  <input type="password" id="acc-current-password" class="form-control" placeholder="Masukkan kata sandi lama Anda..." required>
-                  <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-current-password', 'acc-peek-icon-old')" title="Lihat/Sembunyikan">
-                    <i class="fa-solid fa-eye" id="acc-peek-icon-old"></i>
-                  </button>
+              <div style="background: rgba(255,255,255,0.03); border: 1px dashed var(--border-color); border-radius: 8px; padding: 12px; margin-top: 14px; margin-bottom: 14px;">
+                <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-key"></i> GANTI KATA SANDI (OPSIONAL — Kosongkan jika hanya ingin ubah nama atau No WA)
                 </div>
-                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 3px;">Kunci master (231067) dapat digunakan jika Anda lupa kata sandi lama.</small>
-              </div>
 
-              <div class="form-group" style="margin-bottom: 12px;">
-                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Kata Sandi Baru *</label>
-                <div class="acc-pwd-input-wrap">
-                  <input type="password" id="acc-new-password" class="form-control" placeholder="Minimal 4 karakter..." minlength="4" required>
-                  <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-new-password', 'acc-peek-icon-new')" title="Lihat/Sembunyikan">
-                    <i class="fa-solid fa-eye" id="acc-peek-icon-new"></i>
-                  </button>
+                <div class="form-group" style="margin-bottom: 10px;">
+                  <label class="form-label" style="font-size: 0.82rem; color: var(--text-main);">Kata Sandi Saat Ini</label>
+                  <div class="acc-pwd-input-wrap">
+                    <input type="password" id="acc-current-password" class="form-control" placeholder="Masukkan jika ingin ganti password...">
+                    <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-current-password', 'acc-peek-icon-old')" title="Lihat/Sembunyikan">
+                      <i class="fa-solid fa-eye" id="acc-peek-icon-old"></i>
+                    </button>
+                  </div>
+                  <small style="color: var(--text-muted); font-size: 0.73rem; display: block; margin-top: 2px;">Kunci master (231067) dapat digunakan jika lupa password lama.</small>
                 </div>
-              </div>
 
-              <div class="form-group" style="margin-bottom: 18px;">
-                <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Konfirmasi Kata Sandi Baru *</label>
-                <div class="acc-pwd-input-wrap">
-                  <input type="password" id="acc-confirm-password" class="form-control" placeholder="Ketik ulang kata sandi baru..." minlength="4" required>
-                  <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-confirm-password', 'acc-peek-icon-conf')" title="Lihat/Sembunyikan">
-                    <i class="fa-solid fa-eye" id="acc-peek-icon-conf"></i>
-                  </button>
+                <div class="form-group" style="margin-bottom: 10px;">
+                  <label class="form-label" style="font-size: 0.82rem; color: var(--text-main);">Kata Sandi Baru</label>
+                  <div class="acc-pwd-input-wrap">
+                    <input type="password" id="acc-new-password" class="form-control" placeholder="Minimal 4 karakter (kosongkan jika tidak diganti)...">
+                    <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-new-password', 'acc-peek-icon-new')" title="Lihat/Sembunyikan">
+                      <i class="fa-solid fa-eye" id="acc-peek-icon-new"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 4px;">
+                  <label class="form-label" style="font-size: 0.82rem; color: var(--text-main);">Konfirmasi Kata Sandi Baru</label>
+                  <div class="acc-pwd-input-wrap">
+                    <input type="password" id="acc-confirm-password" class="form-control" placeholder="Ketik ulang kata sandi baru...">
+                    <button type="button" class="acc-pwd-peek-btn" onclick="togglePasswordVisibility('acc-confirm-password', 'acc-peek-icon-conf')" title="Lihat/Sembunyikan">
+                      <i class="fa-solid fa-eye" id="acc-peek-icon-conf"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -4357,7 +4745,7 @@
       <!-- Subtitle Single Device HP Klinik -->
       <div style="text-align: center; margin-bottom: 16px;">
         <span style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 16px; border-radius: 20px; font-weight: 800; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 6px;">
-          <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> WhatsApp HP Klinik PT ATI
+          <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> WhatsApp HP Klinik PT ATI & ATI Medika
         </span>
       </div>
 
@@ -4371,8 +4759,8 @@
         <div id="modal-wa-device-number" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 2px;">+62 813-9816-9819</div>
         <div style="font-size: 0.75rem; color: var(--text-faint); margin-top: 6px;">Sinkronisasi pesan masuk &amp; keluar aktif</div>
         
-        <button type="button" onclick="disconnectWaSession()" style="margin-top: 16px; padding: 8px 16px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i> Putuskan Tautan &amp; Ganti HP
+        <button type="button" onclick="openModalLogoutWa()" style="margin-top: 16px; padding: 8px 16px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out WA &amp; Clear Chat
         </button>
       </div>
 
@@ -4414,6 +4802,89 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: KONFIRMASI CLEAR CHAT WHATSAPP -->
+  <!-- ============================================================ -->
+  <div id="modal-wa-clear-chat" class="modal-overlay" style="display: none; z-index: 10015;">
+    <div class="modal-card" style="max-width: 480px; width: 92vw; padding: 22px; border-radius: 16px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: #f59e0b; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-trash-can"></i> Bersihkan Riwayat Chat
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalClearWaChat()">&times;</button>
+      </div>
+
+      <div class="info-banner" style="background: rgba(245, 158, 11, 0.12); border: 1.5px solid #f59e0b; color: #fbbf24; margin-bottom: 16px; font-size: 0.85rem; border-radius: 10px; padding: 12px; line-height: 1.5;">
+        ⚠️ <strong>Pemberitahuan:</strong> Fitur ini akan mengosongkan riwayat percakapan yang tersimpan pada dasbor sistem rekam medis. Pesan pada aplikasi WhatsApp fisik di HP Anda <strong>tidak akan terhapus</strong>.
+      </div>
+
+      <div id="wa-clear-chat-scope-box" style="margin-bottom: 18px;">
+        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; display: block;">Pilih cakupan pembersihan chat:</label>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <label style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; background: var(--surface-2);" id="label-clear-all-chats">
+            <input type="radio" name="wa-clear-scope" id="wa-clear-scope-all" value="all" checked style="margin-top: 3px;">
+            <div>
+              <div style="font-weight: 800; font-size: 0.88rem; color: var(--text-main);">Bersihkan SEMUA Riwayat Obrolan</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Kosongkan seluruh daftar percakapan pasien dari dasbor.</div>
+            </div>
+          </label>
+
+          <label style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; background: var(--surface-2);" id="label-clear-active-chat">
+            <input type="radio" name="wa-clear-scope" id="wa-clear-scope-active" value="active" style="margin-top: 3px;">
+            <div>
+              <div style="font-weight: 800; font-size: 0.88rem; color: var(--text-main);" id="wa-clear-active-name-label">Hanya Percakapan Aktif Ini</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;" id="wa-clear-active-sub-label">Hapus riwayat obrolan dengan pasien yang sedang dipilih saja.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModalClearWaChat()" style="border-radius: 10px; padding: 8px 16px;">Batal</button>
+        <button type="button" class="btn btn-danger" onclick="executeClearWaChat()" style="background: #dc2626; border: none; font-weight: 800; border-radius: 10px; padding: 8px 18px; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-trash-can"></i> Ya, Bersihkan Chat
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: KONFIRMASI LOG OUT WHATSAPP & CLEAR CHAT -->
+  <!-- ============================================================ -->
+  <div id="modal-wa-logout" class="modal-overlay" style="display: none; z-index: 10015;">
+    <div class="modal-card" style="max-width: 490px; width: 92vw; padding: 22px; border-radius: 16px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: #ef4444; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out WhatsApp HP
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalLogoutWa()">&times;</button>
+      </div>
+
+      <div class="info-banner" style="background: rgba(239, 68, 68, 0.12); border: 1.5px solid #ef4444; color: #f87171; margin-bottom: 16px; font-size: 0.85rem; border-radius: 10px; padding: 12px; line-height: 1.5;">
+        ⚠️ <strong>Konfirmasi Log Out &amp; Bersihkan Chat:</strong><br>
+        Sesi koneksi WhatsApp HP Klinik akan diputuskan dari dasbor.<br>
+        Sesuai standar privasi, <strong>seluruh riwayat chat di dasbor akan otomatis dibersihkan (Clear Chat)</strong>.
+      </div>
+
+      <div style="background: var(--surface-2); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; border: 1px solid var(--border-subtle); font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+        <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Informasi Setelah Log Out:</div>
+        <ul style="margin: 0; padding-left: 18px;">
+          <li>Dasbor tidak dapat lagi menerima atau mengirim pesan WA sampai HP ditautkan kembali.</li>
+          <li>Riwayat obrolan di dasbor dikosongkan untuk menjaga kerahasiaan medis.</li>
+          <li>Untuk menghubungkan kembali, Anda cukup klik <strong>"Tautkan HP"</strong> dan scan barcode QR baru.</li>
+        </ul>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModalLogoutWa()" style="border-radius: 10px; padding: 8px 16px;">Batal</button>
+        <button type="button" class="btn btn-danger" onclick="executeLogoutWa()" id="btn-confirm-wa-logout" style="background: #dc2626; border: none; font-weight: 800; border-radius: 10px; padding: 8px 18px; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Ya, Log Out &amp; Clear Chat
+        </button>
+      </div>
     </div>
   </div>
 

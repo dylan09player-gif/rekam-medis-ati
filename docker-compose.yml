@@ -13,6 +13,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./uploads:/app/uploads
+      - ./auth_baileys:/app/auth_baileys
     networks:
       - default
       - coolify

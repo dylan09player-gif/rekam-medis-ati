@@ -621,6 +621,15 @@ function sendWhaCenterNotif(number, message) {
 // AUTHENTICATION & USER MANAGEMENT ENDPOINTS
 // ============================================================
 
+// Helper: Format nomor WhatsApp ke standar 62...
+function formatNoWa(p) {
+  let s = String(p || '').trim().replace(/[^0-9]/g, '');
+  if (!s) return '';
+  if (s.startsWith('0')) s = '62' + s.slice(1);
+  else if (s.startsWith('8')) s = '62' + s;
+  return s;
+}
+
 // Universal User Login (Multi-Account)
 app.post('/api/auth/login', (req, res) => {
   const { username, password, userId } = req.body;
@@ -634,14 +643,24 @@ app.post('/api/auth/login', (req, res) => {
   const cleanPass = String(password).trim();
   const masterPass = db.settings?.gate_password || "231067";
 
-  // 1. Cari user berdasarkan userId (paling presisi), username, atau nama lengkap
-  let matchedUser = users.find(u => 
-    (userId && u.id === userId) ||
-    (cleanUser && u.username && u.username.toLowerCase() === cleanUser) ||
-    (cleanUser && u.nama && u.nama.toLowerCase() === cleanUser) ||
-    (cleanUser && u.nama && u.nama.toLowerCase().includes(cleanUser)) ||
-    (cleanUser && u.username && u.username.toLowerCase().includes(cleanUser))
-  );
+  // 1. Cari user secara hierarki yang presisi:
+  // a. Berdasarkan ID
+  let matchedUser = userId ? users.find(u => u.id === userId) : null;
+  // b. Berdasarkan Username PERSIS (Case-insensitive)
+  if (!matchedUser && cleanUser) {
+    matchedUser = users.find(u => u.username && u.username.trim().toLowerCase() === cleanUser);
+  }
+  // c. Berdasarkan Nama Lengkap PERSIS (Case-insensitive)
+  if (!matchedUser && cleanUser) {
+    matchedUser = users.find(u => u.nama && u.nama.trim().toLowerCase() === cleanUser);
+  }
+  // d. Fallback prefix (hanya jika pencarian persis tidak ketemu)
+  if (!matchedUser && cleanUser) {
+    matchedUser = users.find(u => 
+      (u.username && u.username.trim().toLowerCase().startsWith(cleanUser)) ||
+      (u.nama && u.nama.trim().toLowerCase().startsWith(cleanUser))
+    );
+  }
 
   // 2. Jika menggunakan Master Password / PIN Klinik (231067)
   if (cleanPass === masterPass) {
@@ -682,7 +701,7 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // User Registration (Buat Akun Petugas Baru)
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const { nama, username, role, password, noWa, hp } = req.body;
   if (!nama || !username || !password) {
     return res.status(400).json({ success: false, error: 'Nama, Username, dan Password wajib diisi!' });
@@ -691,18 +710,21 @@ app.post('/api/auth/register', (req, res) => {
   const db = readDB();
   if (!db.users) db.users = [];
 
-  const cleanUser = String(username).trim().toLowerCase();
+  // Bersihkan spasi dan karakter khusus di username
+  const cleanUser = String(username).trim().toLowerCase().replace(/\s+/g, '_');
   const exists = db.users.some(u => u.username && u.username.toLowerCase() === cleanUser);
   if (exists) {
     return res.status(400).json({ success: false, error: 'Username sudah digunakan, silakan pilih username lain.' });
   }
+
+  const cleanPhone = formatNoWa(noWa || hp);
 
   const newUser = {
     id: 'usr-' + Date.now(),
     nama: String(nama).trim(),
     username: cleanUser,
     role: role || 'Perawat',
-    noWa: String(noWa || hp || '').trim(),
+    noWa: cleanPhone,
     password: String(password).trim(),
     created_at: new Date().toISOString()
   };
@@ -711,23 +733,30 @@ app.post('/api/auth/register', (req, res) => {
   writeDB(db);
   notifyClients();
 
+  // Otomatis kirim pesan sambutan WhatsApp ke nomor petugas jika bot terhubung
+  if (cleanPhone) {
+    const session = whatsappService.sessions?.klinik;
+    const isConnected = session && session.sock && session.status === 'CONNECTED';
+    if (isConnected) {
+      const welcomeMsg = `🏥 *KLINIK PRATAMA PT ATI*\n\nHalo Rekan Medis *${newUser.nama}* (${newUser.role}),\n\nAkun petugas Anda telah berhasil didaftarkan di Sistem Rekam Medis PT ATI:\n👤 *Username:* ${newUser.username}\n💼 *Profesi:* ${newUser.role}\n📱 *No. WA:* ${cleanPhone}\n\nNomor ini terdaftar untuk menerima laporan oper shift jaga dan notifikasi pasien klinik.\n\n_Selamat bertugas!_`;
+      whatsappService.sendWhatsAppMessage('klinik', cleanPhone, welcomeMsg).catch(e => console.warn('Welcome WA err:', e));
+    }
+  }
+
   const { password: _, ...safeUser } = newUser;
   return res.status(201).json({ success: true, user: safeUser, message: 'Akun petugas berhasil dibuat!' });
 });
 
-// Change Password for Logged-In User
+// Change Password & Profile for Logged-In User
 app.post('/api/auth/change-password', (req, res) => {
   const { username, currentPassword, newPassword, userId, nama, role, noWa, hp } = req.body;
-  if (!username || !newPassword) {
-    return res.status(400).json({ success: false, error: 'Username dan Kata Sandi baru wajib diisi!' });
-  }
-  if (String(newPassword).trim().length < 4) {
-    return res.status(400).json({ success: false, error: 'Kata sandi baru minimal 4 karakter!' });
+  if (!username && !userId) {
+    return res.status(400).json({ success: false, error: 'Identitas user wajib disertakan!' });
   }
 
   const db = readDB();
   if (!db.users) db.users = [];
-  const cleanUser = String(username).trim().toLowerCase();
+  const cleanUser = String(username || '').trim().toLowerCase();
   const masterPass = db.settings?.gate_password || "231067";
 
   let userIdx = db.users.findIndex(u => 
@@ -743,35 +772,84 @@ app.post('/api/auth/change-password', (req, res) => {
       nama: nama || username,
       username: cleanUser,
       role: role || 'Dokter',
-      noWa: String(noWa || hp || '').trim(),
-      password: String(newPassword).trim(),
+      noWa: formatNoWa(noWa || hp),
+      password: newPassword ? String(newPassword).trim() : '123456',
       created_at: new Date().toISOString()
     };
     db.users.push(newUser);
     writeDB(db);
     notifyClients();
     const { password: _, ...safeUser } = newUser;
-    return res.json({ success: true, message: 'Kata sandi baru berhasil disimpan!', user: safeUser });
+    return res.json({ success: true, message: 'Profil petugas berhasil disimpan!', user: safeUser });
+  }
+
+  // Jika HANYA update profil (nama / noWa) tanpa ganti password
+  if (!newPassword || String(newPassword).trim() === '') {
+    if (nama && String(nama).trim() !== '') db.users[userIdx].nama = String(nama).trim();
+    if (role && String(role).trim() !== '') db.users[userIdx].role = role;
+    if (noWa !== undefined || hp !== undefined) db.users[userIdx].noWa = formatNoWa(noWa || hp);
+    db.users[userIdx].updated_at = new Date().toISOString();
+    writeDB(db);
+    notifyClients();
+    const { password: _, ...safeUser } = db.users[userIdx];
+    return res.json({ success: true, message: 'Profil & Nomor WhatsApp berhasil diperbarui!', user: safeUser });
+  }
+
+  // Jika GANTI password
+  if (String(newPassword).trim().length < 4) {
+    return res.status(400).json({ success: false, error: 'Kata sandi baru minimal 4 karakter!' });
   }
 
   const existingUser = db.users[userIdx];
-  // Verify current password unless master password was entered
   if (currentPassword) {
     const cleanCurrent = String(currentPassword).trim();
     if (cleanCurrent !== masterPass && String(existingUser.password).trim() !== cleanCurrent) {
-      return res.status(400).json({ success: false, error: 'Kata sandi lama salah!' });
+      return res.status(400).json({ success: false, error: 'Kata sandi lama salah! Gunakan password lama atau master key (231067).' });
     }
   }
 
   db.users[userIdx].password = String(newPassword).trim();
   if (nama && String(nama).trim() !== '') db.users[userIdx].nama = String(nama).trim();
   if (role && String(role).trim() !== '') db.users[userIdx].role = role;
-  if (noWa !== undefined || hp !== undefined) db.users[userIdx].noWa = String(noWa || hp || '').trim();
+  if (noWa !== undefined || hp !== undefined) db.users[userIdx].noWa = formatNoWa(noWa || hp);
   db.users[userIdx].updated_at = new Date().toISOString();
   writeDB(db);
   notifyClients();
   const { password: _, ...safeUser } = db.users[userIdx];
   return res.json({ success: true, message: 'Kata sandi dan profil berhasil diperbarui!', user: safeUser });
+});
+
+// Endpoint: Tes Kirim WA Langsung ke Nomor Petugas
+app.post('/api/auth/test-wa-petugas', async (req, res) => {
+  const { phone, nama, role } = req.body;
+  const cleanPhone = formatNoWa(phone);
+  if (!cleanPhone) {
+    return res.status(400).json({ success: false, error: 'Nomor WhatsApp belum diisi atau tidak valid!' });
+  }
+
+  const textMsg = `🏥 *KLINIK PRATAMA PT ATI*\n\nHalo Rekan Medis *${nama || 'Petugas'}* (${role || 'Tenaga Medis'}),\n\nIni adalah pesan konfirmasi bahwa nomor WhatsApp Anda aktif dan terhubung ke Sistem Rekam Medis PT ATI.\n\n📱 *No. Terdaftar:* ${cleanPhone}\n⏰ *Waktu Verifikasi:* ${new Date().toLocaleString('id-ID')}\n\nNomor ini siap menerima Laporan Oper Shift Jaga dan notifikasi klinik.\n\n_Salam Sehat, Tim Medis & IT PT ATI_`;
+
+  const session = whatsappService.sessions?.klinik;
+  const isConnected = session && session.sock && session.status === 'CONNECTED';
+  if (isConnected) {
+    try {
+      const waRes = await whatsappService.sendWhatsAppMessage('klinik', cleanPhone, textMsg);
+      if (waRes && (waRes.success || waRes.realSent)) {
+        return res.json({ success: true, method: 'bot', message: `✅ Pesan konfirmasi WhatsApp berhasil terkirim ke HP ${cleanPhone}!` });
+      }
+    } catch (e) {
+      console.warn('Bot WA send error:', e);
+    }
+  }
+
+  const encoded = encodeURIComponent(textMsg);
+  const directLink = `https://wa.me/${cleanPhone}?text=${encoded}`;
+  return res.json({
+    success: true,
+    method: 'direct',
+    waMeLink: directLink,
+    message: `Nomor terverifikasi: ${cleanPhone}. Silakan klik tombol untuk membuka obrolan langsung via WhatsApp.`
+  });
 });
 
 // Legacy Gate Login (Pass: 231067)
@@ -810,7 +888,7 @@ app.post('/api/users', (req, res) => {
     nama: String(nama).trim(),
     username: cleanUser,
     role: role || 'Perawat',
-    noWa: String(noWa || hp || '').trim(),
+    noWa: formatNoWa(noWa || hp),
     password: password ? String(password).trim() : '123456',
     created_at: new Date().toISOString()
   };
@@ -832,7 +910,7 @@ app.put('/api/users/:id', (req, res) => {
   if (nama) db.users[idx].nama = String(nama).trim();
   if (username) db.users[idx].username = String(username).trim().toLowerCase();
   if (role) db.users[idx].role = role;
-  if (noWa !== undefined || hp !== undefined) db.users[idx].noWa = String(noWa || hp || '').trim();
+  if (noWa !== undefined || hp !== undefined) db.users[idx].noWa = formatNoWa(noWa || hp);
   if (password && String(password).trim() !== '') {
     db.users[idx].password = String(password).trim();
   }
@@ -2136,6 +2214,24 @@ app.get('/api/patients', (req, res) => {
   res.json(db.employees || []);
 });
 
+// ============================================================
+// MEDICAL CHECK UP (MCU) RECORDS
+// ============================================================
+app.get('/api/mcu', (req, res) => {
+  const db = readDB();
+  res.json(db.mcu_records || []);
+});
+
+app.get('/api/mcu/:nik', (req, res) => {
+  const db = readDB();
+  const rawParam = decodeURIComponent(req.params.nik || '').trim().toLowerCase();
+  const list = (db.mcu_records || []).filter(m => 
+    (m.NIK && String(m.NIK).toLowerCase() === rawParam) ||
+    (m.Nama && String(m.Nama).toLowerCase() === rawParam)
+  );
+  res.json(list);
+});
+
 app.post('/api/patients', (req, res) => {
   const db = readDB();
   const newEmp = req.body;
@@ -2314,21 +2410,36 @@ app.post('/api/employees/reset', (req, res) => {
 app.get('/api/surat-luar', (req, res) => {
   const db = readDB();
   let list = db.surat_sakit_luar || [];
-  const { nik, tglMulai, tglSelesai } = req.query;
+  const { nik, tglMulai, tglSelesai, dept } = req.query;
   if (nik) {
     const qNik = nik.toLowerCase();
     list = list.filter(s => 
       (s.nikPabrik && s.nikPabrik.toLowerCase().includes(qNik)) || 
-      (s.namaPasien && s.namaPasien.toLowerCase().includes(qNik))
+      (s.nik && s.nik.toLowerCase().includes(qNik)) || 
+      (s.namaPasien && s.namaPasien.toLowerCase().includes(qNik)) ||
+      (s.nama && s.nama.toLowerCase().includes(qNik))
+    );
+  }
+  if (dept) {
+    const qDept = dept.toLowerCase();
+    list = list.filter(s => 
+      (s.dept && s.dept.toLowerCase() === qDept) ||
+      (s.departemen && s.departemen.toLowerCase() === qDept)
     );
   }
   if (tglMulai) {
-    list = list.filter(s => (s.tanggalMulai >= tglMulai || s.created_at >= tglMulai));
+    list = list.filter(s => {
+      const d = s.tanggalMulai || s.tglMulai || s.created_at;
+      return d && d >= tglMulai;
+    });
   }
   if (tglSelesai) {
-    list = list.filter(s => (s.tanggalMulai <= tglSelesai || s.created_at <= tglSelesai));
+    list = list.filter(s => {
+      const d = s.tanggalMulai || s.tglMulai || s.created_at;
+      return d && d <= tglSelesai;
+    });
   }
-  list.sort((a, b) => new Date(b.created_at || b.tanggalMulai) - new Date(a.created_at || a.tanggalMulai));
+  list.sort((a, b) => new Date(b.created_at || b.tanggalMulai || b.tglMulai) - new Date(a.created_at || a.tanggalMulai || a.tglMulai));
   res.json(list);
 });
 
@@ -2522,7 +2633,8 @@ app.post('/api/records', async (req, res) => {
   newRecord.created_at = newRecord.created_at || new Date().toISOString();
   if (!newRecord.jam) {
     const nowWIB = new Date();
-    newRecord.jam = nowWIB.toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' });
+    const timeStr = nowWIB.toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' });
+    newRecord.jam = timeStr.replace(/\./g, ':');
   }
   
   // 2. Auto-Deduct Stock from resep list & Log Mutation
@@ -3277,70 +3389,267 @@ app.post('/api/absen', (req, res) => {
 // SHIFT REPORTS (WHATSAPP WEB - SISTEM MARUNDA)
 // ============================================================
 
+function formatShiftDateDDMMYYYY(dStr) {
+  if (!dStr) return '-';
+  let d, m, y;
+  if (typeof dStr === 'string') {
+    const cleanStr = dStr.trim().split(/\s+/)[0];
+    if (cleanStr.includes('-')) {
+      const p = cleanStr.split('-');
+      if (p[0].length === 4) { y = p[0]; m = p[1]; d = p[2]; }
+      else { d = p[0]; m = p[1]; y = p[2]; }
+    } else if (cleanStr.includes('/')) {
+      const p = cleanStr.split('/');
+      if (p[0].length === 4) { y = p[0]; m = p[1]; d = p[2]; }
+      else { d = p[0]; m = p[1]; y = p[2]; }
+    }
+  } else if (dStr instanceof Date && !isNaN(dStr.getTime())) {
+    d = String(dStr.getDate()).padStart(2, '0');
+    m = String(dStr.getMonth() + 1).padStart(2, '0');
+    y = String(dStr.getFullYear());
+  }
+  if (y && m && d) {
+    return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
+  }
+  return String(dStr);
+}
+
+function formatShiftJam(jStr) {
+  if (!jStr) return '00:00';
+  const clean = String(jStr).replace(/[()]/g, '').trim();
+  const p = clean.split(/[:.]/);
+  return `${(p[0] || '0').padStart(2, '0')}:${(p[1] || '0').padStart(2, '0')}`;
+}
+
+function formatShiftTglJam(tglStr, jamStr, isoFallback) {
+  if (typeof tglStr === 'string' && tglStr.trim().includes(' ')) {
+    const parts = tglStr.trim().split(/\s+/);
+    if (!jamStr || jamStr === '00:00') {
+      jamStr = parts[1];
+    }
+  }
+  if ((!jamStr || jamStr === '00:00') && isoFallback) {
+    const raw = new Date(isoFallback);
+    if (!isNaN(raw.getTime())) {
+      const wib = new Date(raw.getTime() + 7 * 3600 * 1000);
+      jamStr = `${String(wib.getUTCHours()).padStart(2, '0')}:${String(wib.getUTCMinutes()).padStart(2, '0')}`;
+    }
+  }
+  const d = formatShiftDateDDMMYYYY(tglStr).replace(/-/g, '/');
+  const j = formatShiftJam(jamStr);
+  return `${d} ${j}`;
+}
+
+function prepareEndJam(jamStr, defaultJam = '23:59:59') {
+  if (!jamStr) return defaultJam;
+  const clean = String(jamStr).replace(/[()]/g, '').trim().replace(/\./g, ':');
+  const parts = clean.split(':');
+  const hh = (parts[0] || '0').padStart(2, '0');
+  const mm = (parts[1] || '0').padStart(2, '0');
+  return `${hh}:${mm}:59`;
+}
+
+function parseShiftDateTime(dateStr, timeStr, isoFallback) {
+  if (!dateStr && !isoFallback) return null;
+  let d, m, y;
+  let hh = 0, mm = 0, ss = 0;
+
+  if (timeStr && typeof timeStr === 'string') {
+    const cleanTime = timeStr.replace(/[()]/g, '').trim();
+    const tParts = cleanTime.split(/[:.]/).map(Number);
+    if (tParts.length >= 2 && !isNaN(tParts[0]) && !isNaN(tParts[1])) {
+      hh = tParts[0];
+      mm = tParts[1];
+      ss = tParts[2] || 0;
+    }
+  }
+
+  if (typeof dateStr === 'string' && (dateStr.includes(' ') || dateStr.includes('('))) {
+    const clean = dateStr.replace(/[()]/g, ' ').trim();
+    const parts = clean.split(/\s+/);
+    if (parts.length >= 2) {
+      dateStr = parts[0];
+      if (!timeStr || timeStr === '00:00' || timeStr === '00:00:00') {
+        const tParts = parts[1].split(/[:.]/).map(Number);
+        if (tParts.length >= 2 && !isNaN(tParts[0]) && !isNaN(tParts[1])) {
+          hh = tParts[0];
+          mm = tParts[1];
+          ss = tParts[2] || 0;
+        }
+      }
+    }
+  }
+
+  if ((!timeStr || timeStr === '00:00' || timeStr === '00:00:00') && hh === 0 && mm === 0 && ss === 0 && isoFallback) {
+    const raw = new Date(isoFallback);
+    if (!isNaN(raw.getTime())) {
+      const wib = new Date(raw.getTime() + 7 * 3600 * 1000);
+      hh = wib.getUTCHours();
+      mm = wib.getUTCMinutes();
+      ss = wib.getUTCSeconds();
+    }
+  }
+
+  if (typeof dateStr === 'string') {
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          y = parseInt(parts[0], 10);
+          m = parseInt(parts[1], 10) - 1;
+          d = parseInt(parts[2], 10);
+        } else {
+          d = parseInt(parts[0], 10);
+          m = parseInt(parts[1], 10) - 1;
+          y = parseInt(parts[2], 10);
+        }
+      }
+    } else if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          y = parseInt(parts[0], 10);
+          m = parseInt(parts[1], 10) - 1;
+          d = parseInt(parts[2], 10);
+        } else {
+          d = parseInt(parts[0], 10);
+          m = parseInt(parts[1], 10) - 1;
+          y = parseInt(parts[2], 10);
+        }
+      }
+    }
+  }
+
+  if (y !== undefined && m !== undefined && d !== undefined) {
+    return new Date(Date.UTC(y, m, d, hh, mm, ss));
+  }
+
+  if (isoFallback) {
+    const raw = new Date(isoFallback);
+    if (!isNaN(raw.getTime())) {
+      const wib = new Date(raw.getTime() + 7 * 3600 * 1000);
+      return new Date(Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate(), wib.getUTCHours(), wib.getUTCMinutes(), wib.getUTCSeconds()));
+    }
+  }
+
+  return null;
+}
+
 app.post('/api/shift/format1', async (req, res) => {
   const { tglMulai, tglSelesai, jamMulai, jamSelesai, dari, ke, targetWa, targetPhone } = req.body;
   const db = readDB();
   const records = db.records || [];
   const suratLuar = db.surat_sakit_luar || [];
-  const kontrolList = loadKontrolPasien();
-  const namaKlinik = db.settings?.nama_klinik || 'Klinik PT ATI & Nafila Medika';
-  
-  const start = new Date(`${tglMulai}T${jamMulai || '00:00'}:00`);
-  const end = new Date(`${tglSelesai}T${jamSelesai || '23:59'}:59`);
-  
+
+  let start = parseShiftDateTime(tglMulai, jamMulai || '00:00');
+  let end = parseShiftDateTime(tglSelesai, prepareEndJam(jamSelesai));
+
+  if (start && end && end < start) {
+    // Shift lintas malam / pergantian hari (misal 23:00 - 07:00 pada tanggal yang sama)
+    end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+  }
+
   const filtered = records.filter(r => {
-    const d = new Date(r.created_at || r.tanggal);
-    return d >= start && d <= end;
+    const d = parseShiftDateTime(r.tanggal, r.jam, r.created_at);
+    return d && d >= start && d <= end;
+  });
+
+  filtered.sort((a, b) => {
+    const da = parseShiftDateTime(a.tanggal, a.jam, a.created_at);
+    const db = parseShiftDateTime(b.tanggal, b.jam, b.created_at);
+    return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
   });
 
   const suratLuarFiltered = suratLuar.filter(s => {
-    const d = new Date(s.created_at || s.tanggalMulai);
-    return d >= start && d <= end;
+    const dInput = parseShiftDateTime(s.tanggalInput || s.created_at || s.createdAt, null, s.created_at || s.createdAt);
+    const dMulai = parseShiftDateTime(s.tanggalMulai || s.tglMulai, '00:00:00');
+    const dSelesai = parseShiftDateTime(s.tanggalSelesai || s.tglSelesai || s.tanggalMulai || s.tglMulai, '23:59:59');
+    return (dInput && dInput >= start && dInput <= end) || (dMulai && dMulai <= end && dSelesai && dSelesai >= start);
   });
 
-  const totalSurkes = filtered.filter(r => r.izinSakit === true).length;
-  const rujukanCount = filtered.filter(r => r.rujukan === true || (r.resep && r.resep.some(o => o.nama && o.nama.toLowerCase().includes('rujuk')))).length;
-  const observasiCount = filtered.filter(r => r.observasi === true || (r.diagnosa && r.diagnosa.toLowerCase().includes('observasi'))).length;
+  suratLuarFiltered.sort((a, b) => {
+    const da = parseShiftDateTime(a.tanggalInput || a.created_at || a.createdAt, null, a.created_at || a.createdAt) || parseShiftDateTime(a.tanggalMulai || a.tglMulai);
+    const db = parseShiftDateTime(b.tanggalInput || b.created_at || b.createdAt, null, b.created_at || b.createdAt) || parseShiftDateTime(b.tanggalMulai || b.tglMulai);
+    return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+  });
 
   let msg = 
-    `*📋 LAPORAN OPER SHIFT KLINIK*\n` +
-    `*🏥 ${namaKlinik.toUpperCase()}*\n` +
+    `📋 LAPORAN OPER SHIFT KLINIK\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📅 *Periode :* ${tglMulai} s/d ${tglSelesai}\n` +
-    `⏰ *Waktu   :* ${jamMulai || '07:00'} - ${jamSelesai || '14:00'}\n` +
-    `👥 *Serah Terima :* ${dari || 'Petugas Shift 1'} ➜ ${ke || 'Petugas Shift 2'}\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `*📊 RINGKASAN PELAYANAN:*\n` +
-    `• Total Pasien Berobat : *${filtered.length} Pasien*\n` +
-    `• Surat Sakit Internal (Surkes) : *${totalSurkes} Pasien*\n` +
-    `• Surat Sakit Luar Diterima : *${suratLuarFiltered.length} Berkas*\n` +
-    `• Pasien Rujukan : *${rujukanCount} Pasien*\n` +
-    `• Pasien Observasi : *${observasiCount} Pasien*\n\n`;
+    `📅 Periode : ${formatShiftDateDDMMYYYY(tglMulai)} s/d ${formatShiftDateDDMMYYYY(tglSelesai)}\n` +
+    `⏰ Waktu   : ${formatShiftJam(jamMulai)} - ${formatShiftJam(jamSelesai)}\n` +
+    `👥 Serah   : ${dari || '-'} ➜ ${ke || '-'}\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
+  msg += `🏥 KUNJUNGAN PASIEN:\n`;
   if (filtered.length > 0) {
-    msg += `*📝 RINCIAN PASIEN BEROBAT:*\n`;
-    filtered.slice(0, 15).forEach((r, idx) => {
-      const obat = (r.resep || []).map(o => o.nama).join(', ') || '-';
-      msg += `${idx + 1}. *${r.namaPasien || '-'}* (${r.dept || '-'}) - _${r.asesmen || r.diagnosa || '-'}_ [${obat}]\n`;
+    const pasienBlocks = filtered.map((r, idx) => {
+      const nama = r.namaPasien || r.nama || '-';
+      const npk = r.nikPabrik || r.npk || r.nik || '-';
+      const dept = r.dept || r.departemen || '-';
+      const keluhan = r.keluhan || r.keluhanUtama || r.anamnesa || '-';
+      let periksa = (r.objektif || r.pemeriksaanFisik || r.ttv || '').trim();
+      if (!periksa || periksa === '-') periksa = '-';
+
+      const diagRaw = (r.asesmen || r.diagnosa || r.diagnosis || r.icd10 || '').trim();
+      let diags = [];
+      if (diagRaw) {
+        diags = diagRaw.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+      }
+      if (diags.length === 0) diags = ['-'];
+      const diagStr = diags.map(d => `      ▪️ ${d}`).join('\n');
+
+      let obatStr = '';
+      if (Array.isArray(r.resep) && r.resep.length > 0) {
+        const items = r.resep.map(o => {
+          const nom = (o.namaObat || o.obat || o.nama || '').trim();
+          const qty = o.qty !== undefined && o.qty !== null ? o.qty : (o.jumlah || 1);
+          return nom ? `      💊 ${nom} (${qty})` : null;
+        }).filter(Boolean);
+        obatStr = items.length > 0 ? items.join('\n') : `      💊 -`;
+      } else {
+        obatStr = `      💊 -`;
+      }
+
+      const nakes = r.pemeriksa || r.nakes || r.dokter || '-';
+      const jamFull = formatShiftTglJam(r.tanggal || tglMulai, r.jam || '00:00', r.created_at);
+
+      return `${idx + 1}. 👤 ${nama}\n` +
+        `   🪪 NPK/NIK : ${npk}\n` +
+        `   🏢 Dept    : ${dept}\n` +
+        `   🗣️ Keluhan : ${keluhan}\n` +
+        `   🩺 Periksa : ${periksa}\n` +
+        `   🔬 Diag    :\n${diagStr}\n` +
+        `   📦 Obat    :\n${obatStr}\n` +
+        `   👨‍⚕️ Nakes   : ${nakes}\n` +
+        `   🕒 Jam     : ${jamFull}`;
     });
-    if (filtered.length > 15) {
-      msg += `_...dan ${filtered.length - 15} pasien lainnya_\n`;
-    }
-    msg += `\n`;
+    msg += pasienBlocks.join('\n\n') + '\n\n';
   } else {
-    msg += `*📝 RINCIAN PASIEN:* Tidak ada kunjungan dalam shift ini.\n\n`;
+    msg += `(Tidak ada kunjungan pasien dalam shift ini)\n\n`;
   }
 
+  msg += `📄 SURAT SAKIT (LUAR):\n`;
   if (suratLuarFiltered.length > 0) {
-    msg += `*📑 SURAT SAKIT LUAR MASUK:*\n`;
-    suratLuarFiltered.forEach((s, idx) => {
-      msg += `• *${s.namaPasien}* (${s.dept}) - ${s.namaFaskes} (${s.durasiHari} Hari) [_${s.diagnosa}_]\n`;
-    });
-    msg += `\n`;
-  }
+    const suratBlocks = suratLuarFiltered.map((s, idx) => {
+      const nama = s.namaPasien || s.nama || '-';
+      const dept = s.dept || s.departemen || '-';
+      const diag = s.diagnosa || s.diagnosis || '-';
+      const faskes = s.namaFaskes || s.fasyankes || s.faskesLuar || '-';
+      const tglM = formatShiftDateDDMMYYYY(s.tanggalMulai || s.tglMulai);
+      const tglS = formatShiftDateDDMMYYYY(s.tanggalSelesai || s.tglSelesai || s.tanggalMulai || s.tglMulai);
+      const izin = `${tglM} s/d ${tglS}`;
 
-  msg += `━━━━━━━━━━━━━━━━━━━━\n` +
-    `_Laporan otomatis sistem rekam medis Nafila Medika_ 🩺`;
+      return `${idx + 1}. 👤 ${nama}\n` +
+        `   🏢 Dept   : ${dept}\n` +
+        `   🔬 Diag   : ${diag}\n` +
+        `   🏥 Faskes : ${faskes}\n` +
+        `   🛌 Izin   : ${izin}`;
+    });
+    msg += suratBlocks.join('\n\n') + '\n';
+  } else {
+    msg += `(Tidak ada surat sakit luar dalam shift ini)\n`;
+  }
 
   // Resolusi nomor tujuan WA
   let destWa = String(targetWa || targetPhone || '').trim();
@@ -3368,67 +3677,122 @@ app.post('/api/shift/format1', async (req, res) => {
     success: true,
     destWa: destWa,
     waResult: waResult,
+    preview: msg,
+    totalPasien: filtered.length,
+    totalSurat: suratLuarFiltered.length,
     message: destWa 
-      ? `Laporan Oper Shift berhasil dikirim via WhatsApp ke ${destWa}!`
-      : 'Laporan Oper Shift dibuat (Nomor WhatsApp petugas belum diset).'
+      ? `Laporan Oper Shift (${filtered.length} Pasien, ${suratLuarFiltered.length} Surat Sakit) berhasil dikirim via WhatsApp ke ${destWa}!`
+      : `Laporan Oper Shift dibuat (${filtered.length} Pasien, ${suratLuarFiltered.length} Surat Sakit).`
   });
 });
 
 app.post('/api/shift/format2', async (req, res) => {
-  const { tglMulai, tglSelesai, petugas1, petugas2, petugas3, targetWa, targetPhone } = req.body;
+  const { tglMulai, tglSelesai, jamMulai, jamSelesai, petugas1, petugas2, petugas3, targetWa, targetPhone } = req.body;
   const db = readDB();
   const records = db.records || [];
   const suratLuar = db.surat_sakit_luar || [];
-  const kontrolList = loadKontrolPasien();
-  const namaKlinik = db.settings?.nama_klinik || 'Klinik PT ATI & Nafila Medika';
-  
-  const start = new Date(`${tglMulai}T00:00:00`);
-  const end = new Date(`${tglSelesai}T23:59:59`);
-  
-  const deptMap = {};
-  let total = 0;
-  let totalSurkes = 0;
-  records.forEach(r => {
-    const d = new Date(r.created_at || r.tanggal);
-    if (d >= start && d <= end) {
-      const dept = r.dept || 'Lain-lain';
-      deptMap[dept] = (deptMap[dept] || 0) + 1;
-      total++;
-      if (r.izinSakit === true) totalSurkes++;
+
+  const start = parseShiftDateTime(tglMulai, jamMulai || '07:00');
+  let end = parseShiftDateTime(tglSelesai, prepareEndJam(jamSelesai || '07:00'));
+
+  if (start && end) {
+    if (end < start || (end.getTime() - start.getTime()) < 3600 * 1000) {
+      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
     }
+  }
+
+  // 1. Kunjungan Klinik
+  const filteredRecords = records.filter(r => {
+    const d = parseShiftDateTime(r.tanggal, r.jam, r.created_at);
+    return d && d >= start && d <= end;
   });
 
-  const totalSuratLuar = suratLuar.filter(s => {
-    const d = new Date(s.created_at || s.tanggalMulai);
-    return d >= start && d <= end;
-  }).length;
+  filteredRecords.sort((a, b) => {
+    const da = parseShiftDateTime(a.tanggal, a.jam, a.created_at);
+    const db = parseShiftDateTime(b.tanggal, b.jam, b.created_at);
+    return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+  });
 
-  const totalKontrol = kontrolList.filter(k => {
-    const d = new Date(k.tanggalRencana || k.created_at);
-    return d >= start && d <= end;
-  }).length;
+  const deptKunjunganMap = {};
+  filteredRecords.forEach(r => {
+    const dept = (r.dept || r.departemen || 'Lain-lain').trim();
+    deptKunjunganMap[dept] = (deptKunjunganMap[dept] || 0) + 1;
+  });
 
-  const deptDetail = Object.keys(deptMap).map(d => `  • ${d} : *${deptMap[d]} Pasien*`).join('\n');
+  let deptKunjunganLines = '';
+  const deptKunjunganKeys = Object.keys(deptKunjunganMap).sort((a, b) => deptKunjunganMap[b] - deptKunjunganMap[a]);
+  if (deptKunjunganKeys.length > 0) {
+    deptKunjunganLines = deptKunjunganKeys.map(dept => {
+      const label = dept.toLowerCase().startsWith('dept') ? dept : `Dept ${dept}`;
+      return `  🔹 ${label} : ${deptKunjunganMap[dept]}`;
+    }).join('\n');
+  } else {
+    deptKunjunganLines = `  🔹 -`;
+  }
+
+  // 2. Surat Sakit Luar
+  const filteredSuratLuar = suratLuar.filter(s => {
+    const dInput = parseShiftDateTime(s.tanggalInput || s.created_at || s.createdAt, null, s.created_at || s.createdAt);
+    const dMulai = parseShiftDateTime(s.tanggalMulai || s.tglMulai, '00:00:00');
+    const dSelesai = parseShiftDateTime(s.tanggalSelesai || s.tglSelesai || s.tanggalMulai || s.tglMulai, '23:59:59');
+    return (dInput && dInput >= start && dInput <= end) || (dMulai && dMulai <= end && dSelesai && dSelesai >= start);
+  });
+
+  filteredSuratLuar.sort((a, b) => {
+    const da = parseShiftDateTime(a.tanggalInput || a.created_at || a.createdAt, null, a.created_at || a.createdAt) || parseShiftDateTime(a.tanggalMulai || a.tglMulai);
+    const db = parseShiftDateTime(b.tanggalInput || b.created_at || b.createdAt, null, b.created_at || b.createdAt) || parseShiftDateTime(b.tanggalMulai || b.tglMulai);
+    return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+  });
+
+  const deptSuratMap = {};
+  filteredSuratLuar.forEach(s => {
+    const dept = (s.dept || s.departemen || 'Lain-lain').trim();
+    deptSuratMap[dept] = (deptSuratMap[dept] || 0) + 1;
+  });
+
+  let deptSuratLines = '';
+  const deptSuratKeys = Object.keys(deptSuratMap).sort((a, b) => deptSuratMap[b] - deptSuratMap[a]);
+  if (deptSuratKeys.length > 0) {
+    deptSuratLines = deptSuratKeys.map(dept => {
+      const label = dept.toLowerCase().startsWith('dept') ? dept : `Dept ${dept}`;
+      return `  🔹 ${label} : ${deptSuratMap[dept]}`;
+    }).join('\n');
+  } else {
+    deptSuratLines = `  🔹 -`;
+  }
+
+  let detailSuratLines = '';
+  if (filteredSuratLuar.length > 0) {
+    detailSuratLines = filteredSuratLuar.map(s => {
+      const nama = s.namaPasien || s.nama || '-';
+      const dept = s.dept || s.departemen || '-';
+      const faskes = s.namaFaskes || s.fasyankes || s.faskesLuar || '-';
+      return `   ▪️ ${nama} (${dept}) ➜ ${faskes}`;
+    }).join('\n');
+  } else {
+    detailSuratLines = `   ▪️ -`;
+  }
 
   const msg = 
-    `*🌅 LAPORAN REKAPITULASI PELAYANAN 24 JAM*\n` +
-    `*🏥 ${namaKlinik.toUpperCase()}*\n` +
+    `🌅 Selamat Pagi Bapak/Ibu 🙏🏻\n` +
+    `Berikut Rekap Laporan Kunjungan & Surat Sakit\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📅 *Periode :* ${tglMulai} s/d ${tglSelesai}\n` +
-    `👨‍⚕️ *Petugas Jaga:*\n` +
+    `📅 Periode : ${formatShiftDateDDMMYYYY(tglMulai)} s/d ${formatShiftDateDDMMYYYY(tglSelesai)}\n` +
+    `⏰ Waktu   : ${formatShiftJam(jamMulai || '07:00')} - ${formatShiftJam(jamSelesai || '07:00')}\n\n` +
+    `🏥 KUNJUNGAN KLINIK :\n` +
+    `${deptKunjunganLines}\n` +
+    `📋 Total : ${filteredRecords.length} Kunjungan\n\n` +
+    `📄 SURAT SAKIT (LUAR) :\n` +
+    `${deptSuratLines}\n` +
+    `📋 Total : ${filteredSuratLuar.length} Surat\n` +
+    `Detail Surat Sakit:\n` +
+    `${detailSuratLines}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `👨‍⚕️ Petugas Medis:\n` +
     `  ☀️ Shift 1 : ${petugas1 || '-'}\n` +
     `  🌇 Shift 2 : ${petugas2 || '-'}\n` +
-    `  🌙 Shift 3 : ${petugas3 || '-'}\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `*📊 KUNJUNGAN PER DEPARTEMEN:*\n` +
-    (deptDetail || '  • Tidak ada kunjungan\n') + `\n` +
-    `*📈 TOTAL REKAPITULASI 24 JAM:*\n` +
-    `• Total Kunjungan Poli : *${total} Pasien*\n` +
-    `• Surat Sakit Internal (Surkes) : *${totalSurkes} Kasus*\n` +
-    `• Surat Sakit Luar : *${totalSuratLuar} Berkas*\n` +
-    `• Pasien Perlu Kontrol : *${totalKontrol} Pasien*\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `_Tetap utamakan Keselamatan dan Kesehatan Kerja! ⛑️_`;
+    `  🌙 Shift 3 : ${petugas3 || '-'}\n\n` +
+    `Terima kasih, tetap utamakan keselamatan kerja! ⛑️`;
 
   // Resolusi nomor tujuan WA
   let destWa = String(targetWa || targetPhone || '').trim();
@@ -3452,9 +3816,12 @@ app.post('/api/shift/format2', async (req, res) => {
     success: true,
     destWa: destWa,
     waResult: waResult,
+    preview: msg,
+    totalKunjungan: filteredRecords.length,
+    totalSurat: filteredSuratLuar.length,
     message: destWa 
-      ? `Rekap 24H berhasil dikirim via WhatsApp ke ${destWa}!`
-      : 'Rekap 24H dibuat (Nomor WhatsApp petugas belum diset).'
+      ? `Rekap 24H (${filteredRecords.length} Kunjungan, ${filteredSuratLuar.length} Surat Sakit) berhasil dikirim via WhatsApp ke ${destWa}!`
+      : `Rekap 24H dibuat (${filteredRecords.length} Kunjungan, ${filteredSuratLuar.length} Surat Sakit).`
   });
 });
 
@@ -3984,12 +4351,61 @@ app.post('/api/wa/send', waUpload.single('file'), async (req, res) => {
   res.json({ success: true, result, message: newMsg, chatSession: session });
 });
 
-app.post('/api/wa/disconnect', async (req, res) => {
+app.post(['/api/wa/logout', '/api/wa/disconnect'], async (req, res) => {
   const sessionType = req.body.sessionType || req.body.sessionName || 'klinik';
+  const clearChats = req.body.clearChats !== false; // Default true: sekali logout, otomatis clear chat!
   try {
     await whatsappService.logoutSession(sessionType);
-    res.json({ success: true, message: `Sesi ${sessionType} berhasil diputuskan.` });
+    if (clearChats) {
+      chatSessions = [];
+      saveChatSessions(chatSessions);
+      if (io) {
+        io.emit('wa_chats_cleared', { sessionType, all: true });
+      }
+    }
+    res.json({
+      success: true,
+      message: clearChats
+        ? `WhatsApp berhasil Logout dan seluruh riwayat chat di dasbor telah dibersihkan.`
+        : `Sesi ${sessionType} berhasil diputuskan.`
+    });
   } catch (err) {
+    console.error('[WA Logout] Error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/wa/clear-chats', (req, res) => {
+  const sessionType = req.body.sessionType || req.body.sessionName || 'klinik';
+  const { chatId, jid, all } = req.body;
+
+  try {
+    if (all || (!chatId && !jid)) {
+      chatSessions = [];
+      saveChatSessions(chatSessions);
+      if (io) {
+        io.emit('wa_chats_cleared', { sessionType, all: true });
+      }
+      return res.json({ success: true, message: 'Seluruh riwayat chat di dasbor berhasil dibersihkan.' });
+    }
+
+    const cleanDigits = jid ? jid.replace(/\D/g, '') : '';
+    const suffix8 = cleanDigits.length >= 8 ? cleanDigits.slice(-8) : cleanDigits;
+
+    chatSessions = chatSessions.filter(c => {
+      if (chatId && c.id === chatId) return false;
+      if (jid && (c.rawJid === jid || c.jid === jid || c.patientPhone === jid)) return false;
+      if (suffix8 && c.patientPhone && c.patientPhone.replace(/\D/g, '').endsWith(suffix8)) return false;
+      return true;
+    });
+
+    saveChatSessions(chatSessions);
+    if (io) {
+      io.emit('wa_chats_cleared', { sessionType, chatId, jid });
+    }
+    return res.json({ success: true, message: 'Riwayat obrolan pasien ini berhasil dibersihkan.' });
+  } catch (err) {
+    console.error('[WA Clear Chats] Error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -4139,6 +4555,8 @@ app.post('/api/pantauan/record', async (req, res) => {
         tinggiBadan: Number(mingguan.tinggiBadan) || null,
         bmi: mingguan.bmi || null,
         lingkarPerut: Number(mingguan.lingkarPerut) || null,
+        evaluasiLingkarPerut: mingguan.evaluasiLingkarPerut || '',
+        deltaLingkarPerut: mingguan.deltaLingkarPerut !== undefined ? Number(mingguan.deltaLingkarPerut) : null,
         jadwalBerikutnya: mingguan.jadwalBerikutnya || null
       },
       obatBulanan: {
@@ -4150,18 +4568,27 @@ app.post('/api/pantauan/record', async (req, res) => {
       lab3Bulan: {
         adaCekLab: Boolean(lab3Bulan.adaCekLab),
         tanggalLab: lab3Bulan.tanggalLab || tanggalStr,
+        kategoriPaket: lab3Bulan.kategoriPaket || 'umum',
+        gdp: Number(lab3Bulan.gdp) || null,
+        gd2pp: Number(lab3Bulan.gd2pp) || null,
         hba1c: Number(lab3Bulan.hba1c) || null,
+        ldl: Number(lab3Bulan.ldl) || null,
+        hdl: Number(lab3Bulan.hdl) || null,
+        trigliserida: Number(lab3Bulan.trigliserida) || null,
         ureum: Number(lab3Bulan.ureum) || null,
         creatinin: Number(lab3Bulan.creatinin) || null,
+        mikroalbumin: lab3Bulan.mikroalbumin || '',
         elektrolit: {
           natrium: Number(lab3Bulan.elektrolit?.natrium) || null,
           kalium: Number(lab3Bulan.elektrolit?.kalium) || null,
           klorida: Number(lab3Bulan.elektrolit?.klorida) || null
         },
         customLabs: Array.isArray(lab3Bulan.customLabs) ? lab3Bulan.customLabs : [],
+        evaluasiLabStatus: lab3Bulan.evaluasiLabStatus || '',
         catatanLab: lab3Bulan.catatanLab || '',
         jadwalLabBerikutnya: lab3Bulan.jadwalLabBerikutnya || null
       },
+      statusEvaluasiKlinis: req.body.statusEvaluasiKlinis || '',
       catatanDokter: catatanDokter || '',
       waSent: false,
       waSentAt: null
@@ -4253,34 +4680,63 @@ function buildPantauanWaMessage(r) {
   let text = `🏥 *EVALUASI PEMANTAUAN KESEHATAN KLINIK PT ATI*\n`;
   text += `_Program Pemantauan Jangka Panjang Tim HSE & Medis_\n\n`;
   text += `Halo Rekan *${r.namaPasien}* (${r.nikPabrik || '-'}),\n`;
-  text += `Berikut rangkuman hasil pemeriksaan kesehatan berkala Anda:\n\n`;
-  text += `🗓 *Tanggal:* ${r.tanggal} (${r.jam})\n`;
+  text += `Berikut rangkuman hasil evaluasi pemantauan kesehatan Anda:\n\n`;
+  text += `🗓 *Tanggal Evaluasi:* ${r.tanggal} (${r.jam})\n`;
   text += `👨‍⚕️ *Pemeriksa:* ${r.pemeriksa}\n\n`;
 
-  text += `📊 *HASIL PEMERIKSAAN MINGGUAN:*\n`;
+  // Status Klinis
+  if (r.statusEvaluasiKlinis) {
+    let evalText = '';
+    if (r.statusEvaluasiKlinis === 'rutin_membaik') evalText = '🟢 RUTIN KONTROL & PROGRES MEMBAIK (Target Tercapai)';
+    else if (r.statusEvaluasiKlinis === 'rutin_belum_berubah') evalText = '🟡 RUTIN KONTROL - PERLU PENYESUAIAN TERAPI';
+    else if (r.statusEvaluasiKlinis === 'tidak_rutin') evalText = '🔴 TIDAK RUTIN KONTROL / PERLU JEMPUT BOLA';
+    else if (r.statusEvaluasiKlinis === 'tidak_terkontrol') evalText = '⚠️ TIDAK TERKONTROL / PERLU PERHATIAN KHUSUS';
+    if (evalText) text += `📌 *Status Pemantauan HSE:* ${evalText}\n\n`;
+  }
+
+  text += `📊 *HASIL PEMERIKSAAN FISIK & RUTIN:*\n`;
   if (m.tensiSistol && m.tensiDiastol) {
-    text += `• Tensi Darah: *${m.tensiSistol}/${m.tensiDiastol} mmHg* (${m.statusTensi || 'Terpantau'})\n`;
+    text += `• Tekanan Darah: *${m.tensiSistol}/${m.tensiDiastol} mmHg* (${m.statusTensi || 'Terpantau'})\n`;
   }
   if (m.nadi) text += `• Nadi: ${m.nadi} x/menit\n`;
   if (m.gulaDarah) text += `• Gula Darah (${m.tipeGula || 'GDS'}): *${m.gulaDarah} mg/dL*\n`;
   if (m.asamUrat) text += `• Asam Urat: *${m.asamUrat} mg/dL*\n`;
   if (m.kolesterol) text += `• Kolesterol Total: *${m.kolesterol} mg/dL*\n`;
   if (m.beratBadan) text += `• Berat Badan: ${m.beratBadan} kg ${m.bmi ? `(BMI: ${m.bmi})` : ''}\n`;
-  if (m.lingkarPerut) text += `• Lingkar Perut: ${m.lingkarPerut} cm\n`;
+  if (m.lingkarPerut) {
+    let lpDesc = `• Lingkar Perut: *${m.lingkarPerut} cm*`;
+    if (m.deltaLingkarPerut !== null && m.deltaLingkarPerut !== undefined) {
+      if (m.deltaLingkarPerut < 0) lpDesc += ` (🟢 Turun ${Math.abs(m.deltaLingkarPerut)} cm - Membaik)`;
+      else if (m.deltaLingkarPerut > 0) lpDesc += ` (🔴 Bertambah +${m.deltaLingkarPerut} cm)`;
+      else lpDesc += ` (Stabil)`;
+    }
+    text += lpDesc + `\n`;
+  }
 
   if (o.ambilObat && Array.isArray(o.daftarObat) && o.daftarObat.length > 0) {
-    text += `\n💊 *PENGAMBILAN OBAT RUTIN BULANAN:*\n`;
+    text += `\n💊 *EVALUASI OBAT RUTIN BULANAN:*\n`;
     o.daftarObat.forEach(med => {
-      text += `• ${med.nama || med.namaObat} (${med.jumlah || med.qty || '-'} tab) - ${med.aturan || 'Sesuai resep'}\n`;
+      let evalTag = '';
+      if (med.evaluasi === 'turun') evalTag = ' ➔ [🟢 Penurunan Dosis]';
+      else if (med.evaluasi === 'tambah') evalTag = ' ➔ [🟠 Tambah/Naik Dosis]';
+      else if (med.evaluasi === 'stop') evalTag = ' ➔ [⚪ Dihentikan]';
+      else if (med.evaluasi === 'tetap') evalTag = ' ➔ [🔵 Dosis Tetap]';
+      text += `• *${med.nama || med.namaObat}* (${med.jumlah || med.qty || '-'} tab) - ${med.aturan || 'Sesuai resep'}${evalTag}\n`;
     });
-    if (o.catatanObat) text += `  _Catatan: ${o.catatanObat}_\n`;
+    if (o.catatanObat) text += `  _Catatan Obat: ${o.catatanObat}_\n`;
   }
 
   if (l.adaCekLab) {
-    text += `\n🧪 *HASIL CEK LAB BERKALA (3 BULANAN):*\n`;
-    if (l.hba1c) text += `• HbA1c: *${l.hba1c}%*\n`;
+    text += `\n🧪 *HASIL LABORATORIUM PROLANIS / BERKALA:*\n`;
+    if (l.gdp) text += `• Gula Darah Puasa (GDP): *${l.gdp} mg/dL*\n`;
+    if (l.gd2pp) text += `• Gula Darah 2 Jam PP: *${l.gd2pp} mg/dL*\n`;
+    if (l.hba1c) text += `• HbA1c: *${l.hba1c}%* ${l.hba1c < 7.0 ? '(🟢 Terkontrol)' : '(⚠️ Di atas target)'}\n`;
+    if (l.ldl) text += `• Kolesterol LDL: *${l.ldl} mg/dL*\n`;
+    if (l.hdl) text += `• Kolesterol HDL: *${l.hdl} mg/dL*\n`;
+    if (l.trigliserida) text += `• Trigliserida: *${l.trigliserida} mg/dL*\n`;
     if (l.ureum) text += `• Ureum: *${l.ureum} mg/dL*\n`;
     if (l.creatinin) text += `• Creatinin: *${l.creatinin} mg/dL*\n`;
+    if (l.mikroalbumin) text += `• Mikroalbumin/Protein Urine: *${l.mikroalbumin}*\n`;
     if (l.elektrolit && (l.elektrolit.natrium || l.elektrolit.kalium || l.elektrolit.klorida)) {
       text += `• Elektrolit: Na ${l.elektrolit.natrium || '-'} | K ${l.elektrolit.kalium || '-'} | Cl ${l.elektrolit.klorida || '-'} mmol/L\n`;
     }
@@ -4289,14 +4745,17 @@ function buildPantauanWaMessage(r) {
         text += `• ${cl.namaTes}: *${cl.hasil} ${cl.satuan || ''}* ${cl.rujukan ? `(Ref: ${cl.rujukan})` : ''}\n`;
       });
     }
+    if (l.evaluasiLabStatus) {
+      text += `  _Evaluasi Lab: ${l.evaluasiLabStatus}_\n`;
+    }
     if (l.catatanLab) text += `  _Catatan Lab: ${l.catatanLab}_\n`;
   }
 
   if (r.catatanDokter) {
-    text += `\n💡 *Anjuran / Saran Dokter:*\n_${r.catatanDokter}_\n`;
+    text += `\n💡 *Anjuran & Saran Tim Medis:*\n_${r.catatanDokter}_\n`;
   }
 
-  text += `\n📅 *JADWAL PEMANTAUAN BERIKUTNYA:*\n`;
+  text += `\n📅 *JADWAL KONTROL BERIKUTNYA:*\n`;
   if (m.jadwalBerikutnya) text += `• Cek Rutin Mingguan: *${m.jadwalBerikutnya}*\n`;
   if (o.jadwalAmbilBerikutnya) text += `• Ambil Obat Rutin: *${o.jadwalAmbilBerikutnya}*\n`;
   if (l.jadwalLabBerikutnya) text += `• Cek Lab 3 Bulan: *${l.jadwalLabBerikutnya}*\n`;

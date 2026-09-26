@@ -4192,3 +4192,348 @@ select.form-control {
 .karyawan-head-title:hover {
   color: var(--primary-light, #38bdf8);
 }
+
+/* ============================================================ */
+/* RESPONSIVE BEAUTY OPTIMIZATION (LANDSCAPE & PORTRAIT)       */
+/* ============================================================ */
+
+/* Navigation text toggles */
+.nav-text-short, .vps-text-short, .wa-brand-short {
+  display: none;
+}
+.nav-text-full, .vps-text-full, .wa-brand-full {
+  display: inline;
+}
+
+/* WA Web Settings Menu & Dropdown */
+.wa-settings-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.btn-wa-settings {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-card);
+  color: var(--text-main);
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-wa-settings:hover,
+.btn-wa-settings.active {
+  background: var(--surface-hover, rgba(56, 189, 248, 0.12));
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+.wa-settings-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 250px;
+  background: var(--surface-1);
+  border: 1.5px solid var(--border-card);
+  border-radius: 14px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  padding: 6px;
+  z-index: 1000;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: navFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .wa-settings-menu {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+.wa-settings-menu.show {
+  display: block !important;
+}
+
+.wa-menu-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+.wa-menu-action-btn:hover {
+  background: var(--surface-2);
+  transform: translateX(3px);
+}
+
+[data-theme="light"] .wa-menu-action-btn:hover {
+  background: #f1f5f9;
+}
+
+.wa-menu-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+/* Smooth Horizontal Navlinks Scrolling for Medium Screens */
+.nav-links {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.nav-links::-webkit-scrollbar {
+  display: none;
+}
+
+/* Breakpoint: Small Desktop & Large Tablet Landscape (<= 1280px) */
+@media (max-width: 1280px) {
+  .brand-subtitle {
+    display: none !important;
+  }
+  .nav-text-full {
+    display: none;
+  }
+  .nav-text-short {
+    display: inline;
+  }
+  .wa-brand-full {
+    display: none;
+  }
+  .wa-brand-short {
+    display: inline;
+  }
+  .nav-btn {
+    padding: 6px 10px;
+    font-size: 0.77rem;
+    gap: 4px;
+  }
+}
+
+/* Breakpoint: Medium Tablet Landscape & Portrait (<= 1100px) */
+@media (max-width: 1100px) {
+  .app-navbar {
+    padding: 0 10px !important;
+    gap: 8px !important;
+  }
+  .brand-title {
+    font-size: 0.92rem;
+  }
+  .nav-user-role-badge {
+    display: none !important;
+  }
+  .vps-text-full {
+    display: none;
+  }
+  .vps-text-short {
+    display: inline;
+  }
+  .nav-links {
+    max-width: 52vw;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+  }
+  .app-navbar-actions {
+    gap: 5px !important;
+  }
+}
+
+/* Breakpoint: Tablet Portrait & Large Phones (<= 992px) */
+@media (max-width: 992px) {
+  .vps-text-short {
+    display: none !important;
+  }
+  #btn-vps-cloud-sync {
+    padding: 6px 8px !important;
+  }
+  .wa-header-toolbar {
+    gap: 8px !important;
+  }
+}
+
+/* Breakpoint: Mobile Phones (<= 768px) */
+@media (max-width: 768px) {
+  .wa-header-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .wa-header-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  .wa-header-actions-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+  }
+  #wa-header-status-badge {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.74rem !important;
+    padding: 6px 8px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wa-settings-menu {
+    right: 0;
+    left: auto;
+    width: 250px;
+  }
+  .wa-chat-container {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    min-height: calc(100vh - 190px) !important;
+  }
+}
+
+/* Breakpoint: Small Mobile Phones (<= 480px) */
+@media (max-width: 480px) {
+  #wa-header-device-label {
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .btn-wa-settings span {
+    display: none;
+  }
+  .btn-wa-settings {
+    padding: 6px 9px !important;
+  }
+  .wa-header-top-row button span {
+    display: inline;
+  }
+}
+
+/* ============================================================
+   WA CHAT LIST GEAR MENU & PROLANIS PANTAUAN DASHBOARD STYLES
+   ============================================================ */
+
+#btn-wa-chat-gear:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="light"] #btn-wa-chat-gear {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] #btn-wa-chat-gear:hover {
+  background: #e2e8f0 !important;
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="light"] #wa-chat-gear-dropdown {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
+}
+
+[data-theme="light"] #wa-chat-gear-dropdown button {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] #wa-chat-gear-dropdown button:hover {
+  background: #f1f5f9 !important;
+}
+
+/* HSE Pantauan Subtab Styling */
+#hse-subtab-pantauan .stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#hse-subtab-pantauan .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+
+[data-theme="light"] #hse-subtab-pantauan .stat-card {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* Clinical Status Badges */
+.badge-eval-rutin-membaik {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #10b981 !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.4) !important;
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge-eval-rutin-belum {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #f59e0b !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.4) !important;
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge-eval-tidak-rutin {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #ef4444 !important;
+  border: 1.5px solid #ef4444 !important;
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge-eval-worsening {
+  background: rgba(220, 38, 38, 0.22) !important;
+  color: #f87171 !important;
+  border: 1.5px solid #dc2626 !important;
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
