@@ -1634,9 +1634,12 @@
         <div class="glass-card">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <h3 style="margin: 0;"><i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> FORMAT 1 – Oper Shift (Sistem Marunda)</h3>
-            <span class="badge badge-success" style="font-size: 0.72rem; font-weight: 800;">WA Web</span>
+            <div style="display: flex; gap: 6px;">
+              <span class="badge badge-success" style="font-size: 0.72rem; font-weight: 800;">WA Web</span>
+              <span class="badge" style="background: rgba(0, 136, 204, 0.15); color: #0088cc; font-size: 0.72rem; font-weight: 800; border: 1px solid rgba(0, 136, 204, 0.3);"><i class="fa-brands fa-telegram"></i> Telegram</span>
+            </div>
           </div>
-          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rangkuman kunjungan pasien, surkes, dan surat luar langsung ke nomor WhatsApp petugas login.</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rangkuman kunjungan pasien, surkes, dan surat luar ke nomor WhatsApp petugas &amp; grup Telegram.</p>
           
           <form onsubmit="handleKirimShift1(event)">
             <!-- Nomor WhatsApp Penerima -->
@@ -1694,7 +1697,10 @@
               </div>
             </div>
             <button type="submit" id="btn-submit-shift1" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
-              <i class="fa-brands fa-whatsapp"></i> KIRIM OPER SHIFT KE WA PETUGAS
+              <i class="fa-brands fa-whatsapp"></i> <i class="fa-brands fa-telegram"></i> KIRIM OPER SHIFT (WA &amp; TELEGRAM)
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="handleKirimShiftTelegramOnly(1)" style="width: 100%; margin-top: 8px; font-weight: 700; font-size: 0.82rem; border-color: #0088cc; color: #0088cc; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fa-brands fa-telegram"></i> Kirim Langsung ke Grup Telegram Saja
             </button>
           </form>
         </div>
@@ -1702,9 +1708,12 @@
         <div class="glass-card">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <h3 style="margin: 0;"><i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> FORMAT 2 – Rekap 24 Jam (Sistem Marunda)</h3>
-            <span class="badge badge-success" style="font-size: 0.72rem; font-weight: 800;">WA Web</span>
+            <div style="display: flex; gap: 6px;">
+              <span class="badge badge-success" style="font-size: 0.72rem; font-weight: 800;">WA Web</span>
+              <span class="badge" style="background: rgba(0, 136, 204, 0.15); color: #0088cc; font-size: 0.72rem; font-weight: 800; border: 1px solid rgba(0, 136, 204, 0.3);"><i class="fa-brands fa-telegram"></i> Telegram</span>
+            </div>
           </div>
-          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rekapitulasi total kunjungan 24 jam per departemen dan surat sakit luar ke WhatsApp petugas.</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Kirim rekapitulasi total kunjungan 24 jam per departemen dan surat sakit luar ke WhatsApp &amp; Telegram.</p>
           
           <form onsubmit="handleKirimShift2(event)">
             <!-- Nomor WhatsApp Penerima -->
@@ -1751,7 +1760,10 @@
               <input type="text" id="shift2-s3" class="form-control" placeholder="Contoh: Zr.ria">
             </div>
             <button type="submit" id="btn-submit-shift2" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; background: linear-gradient(135deg, #16a34a, #15803d); border: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
-              <i class="fa-brands fa-whatsapp"></i> KIRIM REKAP 24H KE WA PETUGAS
+              <i class="fa-brands fa-whatsapp"></i> <i class="fa-brands fa-telegram"></i> KIRIM REKAP 24H (WA &amp; TELEGRAM)
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="handleKirimShiftTelegramOnly(2)" style="width: 100%; margin-top: 8px; font-weight: 700; font-size: 0.82rem; border-color: #0088cc; color: #0088cc; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fa-brands fa-telegram"></i> Kirim Langsung ke Grup Telegram Saja
             </button>
           </form>
         </div>

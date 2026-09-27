@@ -7370,7 +7370,7 @@ async function handleKirimShift1(e) {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> KIRIM OPER SHIFT KE WA (WA Web)';
+      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> <i class="fa-brands fa-telegram"></i> KIRIM OPER SHIFT (WA &amp; TELEGRAM)';
     }
   }
 }
@@ -7422,7 +7422,82 @@ async function handleKirimShift2(e) {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> KIRIM REKAP 24H KE WA (WA Web)';
+      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> <i class="fa-brands fa-telegram"></i> KIRIM REKAP 24H (WA &amp; TELEGRAM)';
+    }
+  }
+}
+
+async function handleKirimShiftTelegramOnly(shiftFormat) {
+  if (shiftFormat === 1) {
+    const tglMulai = document.getElementById('shift1-tgl-mulai')?.value;
+    const tglSelesai = document.getElementById('shift1-tgl-selesai')?.value;
+    if (!tglMulai || !tglSelesai) {
+      showToast('Pilih tanggal mulai & tanggal selesai!', 'warning');
+      return;
+    }
+    const data = {
+      tglMulai: tglMulai,
+      tglSelesai: tglSelesai,
+      jamMulai: document.getElementById('shift1-jam-mulai')?.value || '07:00',
+      jamSelesai: document.getElementById('shift1-jam-selesai')?.value || '15:00',
+      dari: document.getElementById('shift1-dari')?.value || appData.currentUser?.nama || 'Petugas Shift 1',
+      ke: document.getElementById('shift1-ke')?.value || 'Petugas Shift 2',
+      targetWa: document.getElementById('shift1-target-wa')?.value || ''
+    };
+    showToast('Mengirim Laporan Oper Shift ke Grup Telegram...', 'info');
+    try {
+      const res = await fetch('/api/shift/format1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToast('✅ Laporan Oper Shift berhasil dikirim ke Grup Telegram!', 'success', 6000);
+        if (result.preview && navigator.clipboard) {
+          navigator.clipboard.writeText(result.preview).catch(() => {});
+        }
+      } else {
+        showToast(result.error || 'Gagal mengirim ke Telegram', 'error');
+      }
+    } catch (err) {
+      showToast('Koneksi server gagal', 'error');
+    }
+  } else if (shiftFormat === 2) {
+    const tglMulai = document.getElementById('shift2-tgl-mulai')?.value;
+    const tglSelesai = document.getElementById('shift2-tgl-selesai')?.value;
+    if (!tglMulai || !tglSelesai) {
+      showToast('Pilih tanggal mulai & tanggal selesai!', 'warning');
+      return;
+    }
+    const data = {
+      tglMulai: tglMulai,
+      tglSelesai: tglSelesai,
+      jamMulai: document.getElementById('shift2-jam-mulai')?.value || '07:00',
+      jamSelesai: document.getElementById('shift2-jam-selesai')?.value || '07:00',
+      petugas1: document.getElementById('shift2-s1')?.value || '-',
+      petugas2: document.getElementById('shift2-s2')?.value || '-',
+      petugas3: document.getElementById('shift2-s3')?.value || '-',
+      targetWa: document.getElementById('shift2-target-wa')?.value || ''
+    };
+    showToast('Mengirim Rekap 24 Jam ke Grup Telegram...', 'info');
+    try {
+      const res = await fetch('/api/shift/format2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToast('✅ Rekap 24 Jam berhasil dikirim ke Grup Telegram!', 'success', 6000);
+        if (result.preview && navigator.clipboard) {
+          navigator.clipboard.writeText(result.preview).catch(() => {});
+        }
+      } else {
+        showToast(result.error || 'Gagal mengirim ke Telegram', 'error');
+      }
+    } catch (err) {
+      showToast('Koneksi server gagal', 'error');
     }
   }
 }
