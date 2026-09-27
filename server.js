@@ -2269,6 +2269,7 @@ app.post('/api/patients', (req, res) => {
   const db = readDB();
   const newEmp = req.body;
   if (!newEmp.id) newEmp.id = 'EMP-' + Date.now();
+  newEmp.created_at = newEmp.created_at || new Date().toISOString();
   if (!db.employees) db.employees = [];
   db.employees.unshift(newEmp);
   writeDB(db);
@@ -2668,6 +2669,8 @@ app.post('/api/records', async (req, res) => {
     const nowWIB = new Date();
     const timeStr = nowWIB.toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' });
     newRecord.jam = timeStr.replace(/\./g, ':');
+  } else {
+    newRecord.jam = String(newRecord.jam).replace(/[()]/g, '').trim().replace(/\./g, ':');
   }
   
   // 2. Auto-Deduct Stock from resep list & Log Mutation
@@ -2827,7 +2830,8 @@ app.post('/api/records', async (req, res) => {
           kalium: (pdLab.elektrolit && pdLab.elektrolit.kalium != null && pdLab.elektrolit.kalium !== '') ? parseFloat(pdLab.elektrolit.kalium) : null,
           klorida: (pdLab.elektrolit && pdLab.elektrolit.klorida != null && pdLab.elektrolit.klorida !== '') ? parseFloat(pdLab.elektrolit.klorida) : null
         },
-        customLabs: Array.isArray(pdLab.customLabs) ? pdLab.customLabs : [],
+        customLabs: Array.isArray(pdLab.customLabs) ? pdLab.customLabs : (Array.isArray(pdLab.daftarLab) ? pdLab.daftarLab : []),
+        daftarLab: Array.isArray(pdLab.daftarLab) ? pdLab.daftarLab : (Array.isArray(pdLab.customLabs) ? pdLab.customLabs : []),
         catatanLab: pdLab.catatanLab || '',
         jadwalLabBerikutnya: pdLab.jadwalLabBerikutnya || (tipeP.includes('lab') ? tglKontrol : null)
       },
@@ -3508,7 +3512,9 @@ function parseShiftDateTime(dateStr, timeStr, isoFallback) {
   if (!dateStr && !isoFallback) return null;
   let d, m, y;
   let hh = 0, mm = 0, ss = 0;
+  let timeSet = false;
 
+  // 1. Ambil Jam dari timeStr jika ada
   if (timeStr && typeof timeStr === 'string') {
     const cleanTime = timeStr.replace(/[()]/g, '').trim();
     const tParts = cleanTime.split(/[:.]/).map(Number);
@@ -3516,36 +3522,59 @@ function parseShiftDateTime(dateStr, timeStr, isoFallback) {
       hh = tParts[0];
       mm = tParts[1];
       ss = tParts[2] || 0;
+      timeSet = true;
     }
   }
 
-  if (typeof dateStr === 'string' && (dateStr.includes(' ') || dateStr.includes('('))) {
+  // 2. Jika dateStr adalah ISO string (mengandung 'T')
+  if (typeof dateStr === 'string' && dateStr.includes('T')) {
+    const raw = new Date(dateStr);
+    if (!isNaN(raw.getTime())) {
+      const wib = new Date(raw.getTime() + 7 * 3600 * 1000);
+      y = wib.getUTCFullYear();
+      m = wib.getUTCMonth();
+      d = wib.getUTCDate();
+      if (!timeSet) {
+        hh = wib.getUTCHours();
+        mm = wib.getUTCMinutes();
+        ss = wib.getUTCSeconds();
+        timeSet = true;
+      }
+    }
+  }
+
+  // 3. Normalisasi dateStr jika ada spasi / jam di dalamnya (misal '27/09/2026 14:30')
+  if (typeof dateStr === 'string' && !dateStr.includes('T') && (dateStr.includes(' ') || dateStr.includes('('))) {
     const clean = dateStr.replace(/[()]/g, ' ').trim();
     const parts = clean.split(/\s+/);
     if (parts.length >= 2) {
       dateStr = parts[0];
-      if (!timeStr || timeStr === '00:00' || timeStr === '00:00:00') {
+      if (!timeSet) {
         const tParts = parts[1].split(/[:.]/).map(Number);
         if (tParts.length >= 2 && !isNaN(tParts[0]) && !isNaN(tParts[1])) {
           hh = tParts[0];
           mm = tParts[1];
           ss = tParts[2] || 0;
+          timeSet = true;
         }
       }
     }
   }
 
-  if ((!timeStr || timeStr === '00:00' || timeStr === '00:00:00') && hh === 0 && mm === 0 && ss === 0 && isoFallback) {
+  // 4. Jika jam belum ada, gunakan isoFallback (created_at)
+  if (!timeSet && isoFallback) {
     const raw = new Date(isoFallback);
     if (!isNaN(raw.getTime())) {
       const wib = new Date(raw.getTime() + 7 * 3600 * 1000);
       hh = wib.getUTCHours();
       mm = wib.getUTCMinutes();
       ss = wib.getUTCSeconds();
+      timeSet = true;
     }
   }
 
-  if (typeof dateStr === 'string') {
+  // 5. Parse tanggal (d, m, y)
+  if (typeof dateStr === 'string' && !dateStr.includes('T')) {
     if (dateStr.includes('/')) {
       const parts = dateStr.split('/');
       if (parts.length === 3) {
@@ -3628,6 +3657,20 @@ app.post('/api/shift/format1', async (req, res) => {
     return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
   });
 
+  // Filter pasien / karyawan baru yang diinput dalam rentang shift
+  const newEmpsFiltered = (db.employees || []).filter(e => {
+    let t = null;
+    if (e.created_at) {
+      t = parseShiftDateTime(null, null, e.created_at);
+    } else if (e.id && String(e.id).startsWith('EMP-17')) {
+      const ms = parseInt(e.id.replace('EMP-', ''), 10);
+      if (!isNaN(ms)) {
+        t = parseShiftDateTime(null, null, new Date(ms).toISOString());
+      }
+    }
+    return t && t >= start && t <= end;
+  });
+
   let msg = 
     `📋 LAPORAN OPER SHIFT KLINIK\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -3635,6 +3678,17 @@ app.post('/api/shift/format1', async (req, res) => {
     `⏰ Waktu   : ${formatShiftJam(jamMulai)} - ${formatShiftJam(jamSelesai)}\n` +
     `👥 Serah   : ${dari || '-'} ➜ ${ke || '-'}\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  if (newEmpsFiltered.length > 0) {
+    msg += `🆕 PASIEN / KARYAWAN BARU DIINPUT (${newEmpsFiltered.length} Orang):\n`;
+    newEmpsFiltered.forEach((e, idx) => {
+      const eNama = e.nama || '-';
+      const eDept = e.dept || e.departemen || '-';
+      const eNpk = e.nikPabrik || e.nik || '-';
+      msg += `   ${idx + 1}. 👤 ${eNama} (${eDept}) 🪪 NPK: ${eNpk}\n`;
+    });
+    msg += `\n`;
+  }
 
   msg += `🏥 KUNJUNGAN PASIEN:\n`;
   if (filtered.length > 0) {
@@ -3735,6 +3789,7 @@ app.post('/api/shift/format1', async (req, res) => {
     preview: msg,
     totalPasien: filtered.length,
     totalSurat: suratLuarFiltered.length,
+    totalPasienBaru: newEmpsFiltered.length,
     message: destWa 
       ? `Laporan Oper Shift (${filtered.length} Pasien, ${suratLuarFiltered.length} Surat Sakit) berhasil dikirim via WhatsApp ke ${destWa}!`
       : `Laporan Oper Shift dibuat (${filtered.length} Pasien, ${suratLuarFiltered.length} Surat Sakit).`
@@ -3785,6 +3840,20 @@ app.post('/api/shift/format2', async (req, res) => {
     deptKunjunganLines = `  🔹 -`;
   }
 
+  // Detail Pasien Kunjungan
+  let detailKunjunganLines = '';
+  if (filteredRecords.length > 0) {
+    detailKunjunganLines = filteredRecords.map(r => {
+      const nama = r.namaPasien || r.nama || '-';
+      const dept = r.dept || r.departemen || '-';
+      const diagRaw = (r.asesmen || r.diagnosa || r.diagnosis || 'Pemeriksaan').trim();
+      const jam = r.jam ? String(r.jam).replace(/\./g, ':').substring(0, 5) : '-';
+      return `   ▪️ ${nama} (${dept}) ➜ ${diagRaw} [${jam}]`;
+    }).join('\n');
+  } else {
+    detailKunjunganLines = `   ▪️ -`;
+  }
+
   // 2. Surat Sakit Luar
   const filteredSuratLuar = suratLuar.filter(s => {
     const dInput = parseShiftDateTime(s.tanggalInput || s.created_at || s.createdAt, null, s.created_at || s.createdAt);
@@ -3828,6 +3897,26 @@ app.post('/api/shift/format2', async (req, res) => {
     detailSuratLines = `   ▪️ -`;
   }
 
+  // Filter pasien / karyawan baru yang diinput dalam rentang shift
+  const newEmpsFiltered = (db.employees || []).filter(e => {
+    let t = null;
+    if (e.created_at) {
+      t = parseShiftDateTime(null, null, e.created_at);
+    } else if (e.id && String(e.id).startsWith('EMP-17')) {
+      const ms = parseInt(e.id.replace('EMP-', ''), 10);
+      if (!isNaN(ms)) {
+        t = parseShiftDateTime(null, null, new Date(ms).toISOString());
+      }
+    }
+    return t && t >= start && t <= end;
+  });
+
+  let newEmpLines = '';
+  if (newEmpsFiltered.length > 0) {
+    newEmpLines = `🆕 PASIEN BARU TERDAFTAR : ${newEmpsFiltered.length} Orang\n` +
+      newEmpsFiltered.map(e => `   ▪️ ${e.nama || '-'} (${e.dept || e.departemen || '-'}) - NPK: ${e.nikPabrik || e.nik || '-'}`).join('\n') + '\n\n';
+  }
+
   const msg = 
     `🌅 Selamat Pagi Bapak/Ibu 🙏🏻\n` +
     `Berikut Rekap Laporan Kunjungan & Surat Sakit\n` +
@@ -3836,7 +3925,10 @@ app.post('/api/shift/format2', async (req, res) => {
     `⏰ Waktu   : ${formatShiftJam(jamMulai || '07:00')} - ${formatShiftJam(jamSelesai || '07:00')}\n\n` +
     `🏥 KUNJUNGAN KLINIK :\n` +
     `${deptKunjunganLines}\n` +
-    `📋 Total : ${filteredRecords.length} Kunjungan\n\n` +
+    `📋 Total : ${filteredRecords.length} Kunjungan\n` +
+    `Detail Pasien Berobat:\n` +
+    `${detailKunjunganLines}\n\n` +
+    `${newEmpLines}` +
     `📄 SURAT SAKIT (LUAR) :\n` +
     `${deptSuratLines}\n` +
     `📋 Total : ${filteredSuratLuar.length} Surat\n` +

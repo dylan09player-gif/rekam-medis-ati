@@ -349,6 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDateInputs();
   initMobileBackTrap();
   initSSE();
+  initReqWANumber();
 });
 
 // SSE Initialization for Live Updates
@@ -927,6 +928,7 @@ function renderActiveViewOnly(forcedViewId) {
     renderAbsenDirekturTable();
   } else if (activeId === 'view-obat-req') {
     renderReqMedicineCatalog();
+    initReqWANumber();
   } else if (activeId === 'view-jadwal-kontrol') {
     loadKontrolData();
   } else if (activeId === 'view-wa-web') {
@@ -1237,7 +1239,7 @@ function initPoliForm() {
   autoFillPemeriksa(true); // Selalu set default nama nakes yang sedang login
   calculateCombinedGrandTotal();
 
-  // Set default visit date to today
+  // Set default visit date and time to now
   const today = new Date();
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -1245,6 +1247,13 @@ function initPoliForm() {
   const formattedToday = `${yyyy}-${mm}-${dd}`;
   const tglInput = document.getElementById('poli-tanggal-berobat');
   if (tglInput) tglInput.value = formattedToday;
+
+  const jamInput = document.getElementById('poli-jam-berobat');
+  if (jamInput) {
+    const hh = String(today.getHours()).padStart(2, '0');
+    const min = String(today.getMinutes()).padStart(2, '0');
+    jamInput.value = `${hh}:${min}`;
+  }
 
   // Prevent Enter key in form from submitting/saving (only explicit button click saves)
   const formPoli = document.getElementById('form-poli-entry');
@@ -1770,6 +1779,124 @@ function calculateCombinedGrandTotal() {
   return { grandTotalTindakan, grandTotalResep, combinedTotal };
 }
 
+// -------------------------------------------------------------
+// QUICK ADD PASIEN BARU / MANUAL LANGSUNG DARI POLI
+// -------------------------------------------------------------
+function openModalQuickTambahPasien(prefillName = '') {
+  const modal = document.getElementById('modal-quick-pasien');
+  if (!modal) return;
+  const namaInp = document.getElementById('quick-pasien-nama');
+  const nikInp = document.getElementById('quick-pasien-nik');
+  const deptInp = document.getElementById('quick-pasien-dept');
+  const hpInp = document.getElementById('quick-pasien-hp');
+  
+  if (namaInp) {
+    namaInp.value = prefillName || '';
+    setTimeout(() => namaInp.focus(), 150);
+  }
+  if (nikInp) nikInp.value = '';
+  if (deptInp) deptInp.value = '';
+  if (hpInp) hpInp.value = '';
+  modal.style.display = 'flex';
+}
+
+function closeModalQuickTambahPasien() {
+  const modal = document.getElementById('modal-quick-pasien');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleSaveQuickPasien(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const nama = document.getElementById('quick-pasien-nama')?.value?.trim();
+  let nik = document.getElementById('quick-pasien-nik')?.value?.trim();
+  const dept = document.getElementById('quick-pasien-dept')?.value?.trim() || 'Tamu / Umum';
+  const gender = document.getElementById('quick-pasien-gender')?.value || 'Laki-laki';
+  const hp = document.getElementById('quick-pasien-hp')?.value?.trim() || '';
+
+  if (!nama) {
+    showToast('Nama lengkap pasien wajib diisi!', 'warning');
+    return;
+  }
+
+  // Jika NPK/NIK dikosongkan, buat otomatis NPK manual yang rapi
+  if (!nik) {
+    nik = 'PASIEN-' + Date.now().toString().slice(-6);
+  }
+
+  const newPatient = {
+    nikPabrik: nik,
+    nik: nik,
+    nama: nama,
+    dept: dept,
+    departemen: dept,
+    gender: gender,
+    golDarah: '-',
+    hp: hp,
+    no_hp: hp,
+    saldoObat: 0,
+    isManualEntry: true,
+    created_at: new Date().toISOString()
+  };
+
+  const btn = document.getElementById('btn-submit-quick-pasien');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mendaftarkan Pasien...';
+  }
+
+  try {
+    const res = await fetch('/api/patients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newPatient)
+    });
+
+    const savedPatient = res.ok ? await res.json().catch(() => newPatient) : newPatient;
+
+    if (!Array.isArray(appData.patients)) appData.patients = [];
+    appData.patients.unshift(savedPatient);
+
+    closeModalQuickTambahPasien();
+    showToast(`✅ Pasien "${nama}" berhasil didaftarkan & dipilih di Poli!`, 'success', 5000);
+
+    // Langsung pilih pasien ini di Poli
+    appData.currentPoliPatient = savedPatient;
+    const searchInput = document.getElementById('poli-search-nik');
+    if (searchInput) searchInput.value = savedPatient.nikPabrik || savedPatient.nama;
+
+    // Tampilkan quick info banner di Poli
+    const infoBox = document.getElementById('poli-patient-info-box');
+    if (infoBox) infoBox.style.display = 'block';
+    const infoNama = document.getElementById('poli-info-nama');
+    if (infoNama) infoNama.textContent = savedPatient.nama;
+    const infoSub = document.getElementById('poli-info-sub');
+    if (infoSub) infoSub.textContent = `NPK/ID: ${savedPatient.nikPabrik || '-'} | Dept: ${savedPatient.dept || '-'} | Pasien Baru`;
+
+    // Right panel banner
+    const bName = document.getElementById('poli-banner-name');
+    if (bName) bName.textContent = `${savedPatient.nama} (${savedPatient.nikPabrik || '-'})`;
+    const bSub = document.getElementById('poli-banner-sub');
+    if (bSub) bSub.innerHTML = `Dept: ${savedPatient.dept || '-'} | Gender: ${savedPatient.gender || '-'}`;
+
+    // Fokus ke keluhan utama
+    setTimeout(() => {
+      document.getElementById('poli-keluhan')?.focus();
+    }, 120);
+
+    // Asinkron perbarui master data & tabel karyawan
+    loadAllAppData().then(() => {
+      if (typeof renderKaryawanTable === 'function') renderKaryawanTable();
+    }).catch(() => {});
+  } catch (err) {
+    showToast('Gagal mendaftarkan pasien: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan &amp; Lanjut Periksa di Poli';
+    }
+  }
+}
+
 function searchPatientByNIK() {
   const query = document.getElementById('poli-search-nik').value.trim().toLowerCase();
   if (!query) {
@@ -1784,7 +1911,9 @@ function searchPatientByNIK() {
   );
 
   if (!p) {
-    showToast('Pasien tidak ditemukan. Tambahkan di Tab Karyawan.', 'warning');
+    const rawVal = document.getElementById('poli-search-nik').value.trim();
+    showToast(`Pasien "${rawVal}" tidak ditemukan. Membuka formulir input pasien baru...`, 'warning', 4500);
+    openModalQuickTambahPasien(rawVal);
     return;
   }
 
@@ -2475,19 +2604,37 @@ async function handleSavePoli(e) {
     recordNakesUsage(pemeriksa);
 
     const selectedDateVal = document.getElementById('poli-tanggal-berobat').value;
+    const selectedJamVal = document.getElementById('poli-jam-berobat')?.value?.trim();
     let tanggalFormatted = '';
     let customCreatedAt = '';
+    let jamFormatted = '';
+
+    const now = new Date();
+    let jamH = now.getHours();
+    let jamM = now.getMinutes();
+    let jamS = now.getSeconds();
+
+    if (selectedJamVal) {
+      const jParts = selectedJamVal.split(':');
+      if (jParts.length >= 2) {
+        jamH = parseInt(jParts[0], 10) || 0;
+        jamM = parseInt(jParts[1], 10) || 0;
+        jamS = 0;
+      }
+      jamFormatted = `${String(jamH).padStart(2, '0')}:${String(jamM).padStart(2, '0')}:00`;
+    } else {
+      jamFormatted = `${String(jamH).padStart(2, '0')}:${String(jamM).padStart(2, '0')}:${String(jamS).padStart(2, '0')}`;
+    }
+
     if (selectedDateVal) {
       const [yr, mo, dy] = selectedDateVal.split('-');
       tanggalFormatted = `${parseInt(dy)}/${parseInt(mo)}/${yr}`;
-      
-      const now = new Date();
-      const customDateObj = new Date(yr, mo - 1, dy, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+      const customDateObj = new Date(yr, mo - 1, dy, jamH, jamM, jamS);
       customCreatedAt = customDateObj.toISOString();
     } else {
-      const now = new Date();
       tanggalFormatted = now.toLocaleDateString('id-ID');
-      customCreatedAt = now.toISOString();
+      const customDateObj = new Date(now.getFullYear(), now.getMonth(), now.getDate(), jamH, jamM, jamS);
+      customCreatedAt = customDateObj.toISOString();
     }
 
     const chkKontrol = document.getElementById('poli-chk-kontrol');
@@ -2504,6 +2651,7 @@ async function handleSavePoli(e) {
       dept: appData.currentPoliPatient.dept || '',
       noHp: appData.currentPoliPatient.hp || appData.currentPoliPatient.noHp || appData.currentPoliPatient.telepon || '',
       tanggal: tanggalFormatted,
+      jam: jamFormatted,
       created_at: customCreatedAt,
       keluhan,
       objektif: objektifFull,
@@ -2573,25 +2721,54 @@ async function handleSavePoli(e) {
       }
 
       const adaLab = document.getElementById('poli-pantauan-chk-ada-lab')?.checked !== false;
-      const hba1c = document.getElementById('poli-pantauan-lab-hba1c')?.value || '';
-      const ureum = document.getElementById('poli-pantauan-lab-ureum')?.value || '';
-      const creatinin = document.getElementById('poli-pantauan-lab-creatinin')?.value || '';
-      const na = document.getElementById('poli-pantauan-lab-na')?.value || '';
-      const k = document.getElementById('poli-pantauan-lab-k')?.value || '';
-      const cl = document.getElementById('poli-pantauan-lab-cl')?.value || '';
-      const catatanLab = document.getElementById('poli-pantauan-lab-catatan')?.value || '';
-      const jadwalLab = document.getElementById('poli-pantauan-jadwal-lab')?.value || '';
-
+      let hba1c = '';
+      let ureum = '';
+      let creatinin = '';
+      let na = '';
+      let k = '';
+      let cl = '';
       const customLabs = [];
-      document.querySelectorAll('#poli-pantauan-custom-lab-list > div').forEach(row => {
-        const cName = row.querySelector('.poli-custom-lab-name')?.value?.trim();
-        const cResult = row.querySelector('.poli-custom-lab-result')?.value?.trim();
-        const cUnit = row.querySelector('.poli-custom-lab-unit')?.value?.trim();
-        const cRef = row.querySelector('.poli-custom-lab-ref')?.value?.trim();
-        if (cName && cResult) {
-          customLabs.push({ namaTes: cName, hasil: cResult, satuan: cUnit, rujukan: cRef });
+
+      // Baca seluruh baris pemeriksaan lab dinamis
+      const labRows = document.querySelectorAll('#poli-pantauan-lab-list .poli-lab-row, #poli-pantauan-custom-lab-list > div');
+      labRows.forEach(row => {
+        const sel = row.querySelector('.poli-lab-row-select');
+        const customInp = row.querySelector('.poli-lab-row-custom-name') || row.querySelector('.poli-custom-lab-name');
+        let tName = '';
+        if (sel) {
+          tName = (sel.value === '__custom__' ? customInp?.value : sel.value) || '';
+        } else if (customInp) {
+          tName = customInp.value || '';
+        }
+        tName = tName.trim();
+
+        const res = (row.querySelector('.poli-lab-row-result')?.value || row.querySelector('.poli-custom-lab-result')?.value || '').trim();
+        const unit = (row.querySelector('.poli-lab-row-unit')?.value || row.querySelector('.poli-custom-lab-unit')?.value || '').trim();
+        const ref = (row.querySelector('.poli-lab-row-ref')?.value || row.querySelector('.poli-custom-lab-ref')?.value || '').trim();
+
+        if (tName && res) {
+          customLabs.push({ namaTes: tName, hasil: res, satuan: unit, rujukan: ref });
+
+          const lower = tName.toLowerCase();
+          if (lower.includes('hba1c')) hba1c = res;
+          else if (lower.includes('ureum')) ureum = res;
+          else if (lower.includes('creatinin') || lower.includes('kreatinin')) creatinin = res;
+          else if (lower.includes('natrium') || lower === 'na') na = res;
+          else if (lower.includes('kalium') || lower === 'k') k = res;
+          else if (lower.includes('klorida') || lower === 'cl') cl = res;
         }
       });
+
+      // Fallback jika masih ada input statis
+      if (!hba1c) hba1c = document.getElementById('poli-pantauan-lab-hba1c')?.value || '';
+      if (!ureum) ureum = document.getElementById('poli-pantauan-lab-ureum')?.value || '';
+      if (!creatinin) creatinin = document.getElementById('poli-pantauan-lab-creatinin')?.value || '';
+      if (!na) na = document.getElementById('poli-pantauan-lab-na')?.value || '';
+      if (!k) k = document.getElementById('poli-pantauan-lab-k')?.value || '';
+      if (!cl) cl = document.getElementById('poli-pantauan-lab-cl')?.value || '';
+
+      const catatanLab = document.getElementById('poli-pantauan-lab-catatan')?.value || '';
+      const jadwalLab = document.getElementById('poli-pantauan-jadwal-lab')?.value || '';
 
       const catatanDokter = document.getElementById('poli-pantauan-catatan-dokter')?.value || '';
       const sendWa = Boolean(document.getElementById('poli-pantauan-send-wa')?.checked);
@@ -2632,6 +2809,7 @@ async function handleSavePoli(e) {
           creatinin: creatinin,
           elektrolit: { natrium: na, kalium: k, klorida: cl },
           customLabs: customLabs,
+          daftarLab: customLabs,
           catatanLab: catatanLab,
           jadwalLabBerikutnya: jadwalLab
         },
@@ -2842,8 +3020,10 @@ function resetFormPoli() {
 
   const obatList = document.getElementById('poli-pantauan-obat-list');
   if (obatList) obatList.innerHTML = '';
-  const labList = document.getElementById('poli-pantauan-custom-lab-list');
+  const labList = document.getElementById('poli-pantauan-lab-list');
   if (labList) labList.innerHTML = '';
+  const customLabList = document.getElementById('poli-pantauan-custom-lab-list');
+  if (customLabList) customLabList.innerHTML = '';
 
   initPoliForm();
   autoFillPemeriksa(true);
@@ -6008,16 +6188,96 @@ function addObatReqRowManual() {
   tbody.appendChild(tr);
 }
 
-async function handleSendObatReqWA(e) {
-  e.preventDefault();
-  const perawat = document.getElementById('req-nama-perawat').value.trim();
-  const targetHP = document.getElementById('req-target-wa')?.value;
-  const rows = document.querySelectorAll('#req-table-body tr');
+function initReqWANumber() {
+  const inputEl = document.getElementById('req-target-wa-input');
+  const perawatEl = document.getElementById('req-nama-perawat');
+  const statusEl = document.getElementById('req-wa-saved-status');
+  if (!inputEl) return;
 
-  if (!targetHP) {
-    showToast('Pilih tujuan nomor WhatsApp terlebih dahulu!', 'error');
+  const savedNumber = localStorage.getItem('klinik_req_wa_number') ||
+                      (appData.settings && appData.settings.wa_tujuan_permintaan_obat) ||
+                      (appData.waContacts && appData.waContacts[0]?.hp) || '';
+  if (savedNumber) {
+    inputEl.value = savedNumber;
+    if (statusEl) statusEl.style.display = 'inline-flex';
+  }
+
+  const savedPerawat = localStorage.getItem('klinik_req_wa_perawat') || '';
+  if (perawatEl && !perawatEl.value && savedPerawat) {
+    perawatEl.value = savedPerawat;
+  }
+}
+
+function handleReqWANumberInput(val) {
+  let clean = String(val || '').replace(/[^0-9]/g, '');
+  if (clean.length >= 9) {
+    if (clean.startsWith('0')) clean = '62' + clean.substring(1);
+    localStorage.setItem('klinik_req_wa_number', clean);
+    const statusEl = document.getElementById('req-wa-saved-status');
+    if (statusEl) statusEl.style.display = 'inline-flex';
+  }
+}
+
+async function saveReqWANumberManual() {
+  const inputEl = document.getElementById('req-target-wa-input');
+  if (!inputEl) return;
+  let raw = inputEl.value.trim().replace(/[^0-9]/g, '');
+  if (raw.startsWith('0')) raw = '62' + raw.substring(1);
+  if (!raw.startsWith('62')) raw = '62' + raw;
+
+  if (raw.length < 10) {
+    showToast('Masukkan nomor WhatsApp yang valid (minimal 10 digit)!', 'error');
     return;
   }
+
+  inputEl.value = raw;
+  localStorage.setItem('klinik_req_wa_number', raw);
+  const statusEl = document.getElementById('req-wa-saved-status');
+  if (statusEl) statusEl.style.display = 'inline-flex';
+
+  // Simpan juga ke settings server jika tersedia
+  try {
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wa_tujuan_permintaan_obat: raw })
+    }).catch(() => {});
+  } catch (e) {}
+
+  showToast('✅ Nomor WhatsApp tujuan berhasil disimpan!', 'success');
+}
+
+async function handleSendObatReqWA(e) {
+  e.preventDefault();
+  const perawatEl = document.getElementById('req-nama-perawat');
+  const perawat = (perawatEl?.value || '').trim();
+  const rawTargetHP = (document.getElementById('req-target-wa-input')?.value || document.getElementById('req-target-wa')?.value || '').trim();
+  const rows = document.querySelectorAll('#req-table-body tr');
+
+  if (!rawTargetHP) {
+    showToast('Silakan isi nomor WhatsApp tujuan terlebih dahulu!', 'error');
+    const inputEl = document.getElementById('req-target-wa-input');
+    if (inputEl) {
+      inputEl.focus();
+      inputEl.style.borderColor = '#ef4444';
+    }
+    return;
+  }
+
+  let cleanHP = rawTargetHP.replace(/[^0-9]/g, '');
+  if (cleanHP.startsWith('0')) cleanHP = '62' + cleanHP.substring(1);
+  if (!cleanHP.startsWith('62')) cleanHP = '62' + cleanHP;
+
+  if (cleanHP.length < 10) {
+    showToast('Nomor WhatsApp tujuan tidak valid (minimal 10 digit)!', 'error');
+    return;
+  }
+
+  // Simpan nomor dan perawat ke localStorage agar selalu diingat
+  localStorage.setItem('klinik_req_wa_number', cleanHP);
+  if (perawat) localStorage.setItem('klinik_req_wa_perawat', perawat);
+  const statusEl = document.getElementById('req-wa-saved-status');
+  if (statusEl) statusEl.style.display = 'inline-flex';
 
   if (rows.length === 0) {
     showToast('Tambahkan minimal 1 item obat yang diminta!', 'error');
@@ -6025,42 +6285,41 @@ async function handleSendObatReqWA(e) {
   }
 
   let textWA = `*PERMINTAAN OBAT KLINIK PT ATI*\n`;
-  textWA += `Pengirim (Nakes): *${perawat}*\n`;
-  textWA += `Tanggal: ${new Date().toLocaleDateString('id-ID')}\n\n`;
-  textWA += `*Daftar Obat Yang Diminta:*\n`;
+  textWA += `Pengirim (Nakes): *${perawat || 'Perawat Klinik'}*\n`;
+  textWA += `Tanggal: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n\n`;
+  textWA += `*Daftar Permintaan Obat:*\n`;
 
-  rows.forEach((tr, idx) => {
+  let validItems = 0;
+  rows.forEach((tr) => {
     const nameEl = tr.querySelector('.req-med-name');
-    const name = nameEl ? nameEl.value : '';
-    const qty = tr.querySelector('.req-med-qty').value;
+    const name = nameEl ? nameEl.value.trim() : '';
+    const qty = tr.querySelector('.req-med-qty')?.value || '1';
     if (name) {
-      textWA += `${idx + 1}. ${name} - *${qty} item*\n`;
+      validItems++;
+      textWA += `${validItems}. ${name} - *${qty} item*\n`;
     }
   });
 
-  textWA += `\nMohon segera diproses ke Apotek Nafila. Terima kasih.`;
+  if (validItems === 0) {
+    showToast('Tambahkan nama obat yang diminta pada daftar draft!', 'error');
+    return;
+  }
 
-  showToast('🚀 Mengirim pesan via WhatsApp WhaCenter API...', 'info');
+  textWA += `\nMohon segera diproses untuk ketersediaan stok Klinik PT ATI. Terima kasih.`;
 
-  try {
-    const res = await fetch('/api/send-wa', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number: targetHP, message: textWA })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('✅ Permintaan Obat Berhasil Terkirim via WhaCenter WA API!', 'success');
-    } else {
-      const errMsg = data.response?.message || data.error || 'Server API Offline';
-      showToast(`⚠️ API WA: ${errMsg}. Mengalihkan ke dasbor WhatsApp Web...`, 'warning');
-      const encoded = encodeURIComponent(textWA);
-      openWaChatWithPatient(targetHP, 'Apoteker', encoded);
-    }
-  } catch (err) {
-    showToast('⚠️ Mengalihkan ke dasbor WhatsApp Web...', 'warning');
-    const encoded = encodeURIComponent(textWA);
-    openWaChatWithPatient(targetHP, 'Apoteker', encoded);
+  // Buka WhatsApp Web secara langsung
+  const encoded = encodeURIComponent(textWA);
+  const waWebUrl = `https://web.whatsapp.com/send?phone=${cleanHP}&text=${encoded}`;
+
+  showToast('🚀 Membuka WhatsApp Web untuk mengirim permintaan obat...', 'info');
+
+  const win = window.open(waWebUrl, '_blank');
+  if (win) {
+    win.focus();
+    showToast('✅ WhatsApp Web berhasil dibuka dengan draf pesan permintaan obat!', 'success', 5000);
+  } else {
+    // Jika popup diblokir oleh browser
+    window.location.href = waWebUrl;
   }
 }
 
@@ -6947,9 +7206,21 @@ function initShiftView() {
   const waInput2 = document.getElementById('shift2-target-wa');
   const dariInput = document.getElementById('shift1-dari');
 
-  if (waInput1 && (!waInput1.value || waInput1.value.trim() === '')) waInput1.value = userWa;
-  if (waInput2 && (!waInput2.value || waInput2.value.trim() === '')) waInput2.value = userWa;
+  const savedWa = localStorage.getItem('shift_target_wa') || userWa;
+  if (waInput1 && (!waInput1.value || waInput1.value.trim() === '')) waInput1.value = savedWa;
+  if (waInput2 && (!waInput2.value || waInput2.value.trim() === '')) waInput2.value = savedWa;
   if (dariInput && (!dariInput.value || dariInput.value.trim() === '')) dariInput.value = userName;
+
+  if (waInput1) {
+    waInput1.oninput = function() {
+      if (this.value.trim()) localStorage.setItem('shift_target_wa', this.value.trim());
+    };
+  }
+  if (waInput2) {
+    waInput2.oninput = function() {
+      if (this.value.trim()) localStorage.setItem('shift_target_wa', this.value.trim());
+    };
+  }
 
   const tglMulai2 = document.getElementById('shift2-tgl-mulai');
   const tglSelesai2 = document.getElementById('shift2-tgl-selesai');
@@ -6985,6 +7256,8 @@ async function handleKirimShift1(e) {
     return;
   }
 
+  localStorage.setItem('shift_target_wa', targetWa);
+
   const data = {
     tglMulai: document.getElementById('shift1-tgl-mulai').value,
     tglSelesai: document.getElementById('shift1-tgl-selesai').value,
@@ -6997,7 +7270,7 @@ async function handleKirimShift1(e) {
 
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim via WA...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan Oper Shift...';
   }
 
   try {
@@ -7008,16 +7281,24 @@ async function handleKirimShift1(e) {
     });
     const result = await res.json();
     if (res.ok && result.success) {
-      showToast(result.message || `Laporan Oper Shift Terkirim ke WhatsApp (${targetWa})!`, 'success');
+      showToast(result.message || `Laporan Oper Shift disiapkan (${result.totalPasien || 0} Pasien)!`, 'success', 5000);
+      
+      // Buka seketika via WhatsApp Web
+      if (result.preview) {
+        let cleanPhone = targetWa.replace(/\D/g, '');
+        if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1);
+        const waWebUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(result.preview)}`;
+        window.open(waWebUrl, '_blank');
+      }
     } else {
-      showToast(result.error || 'Gagal mengirim laporan', 'error');
+      showToast(result.error || 'Gagal menyiapkan laporan', 'error');
     }
   } catch (err) {
     showToast('Gagal mengirim WhatsApp. Periksa koneksi server.', 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> KIRIM OPER SHIFT KE WA PETUGAS';
+      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> KIRIM OPER SHIFT KE WA (WA Web)';
     }
   }
 }
@@ -7032,6 +7313,8 @@ async function handleKirimShift2(e) {
     return;
   }
 
+  localStorage.setItem('shift_target_wa', targetWa);
+
   const data = {
     tglMulai: document.getElementById('shift2-tgl-mulai').value,
     tglSelesai: document.getElementById('shift2-tgl-selesai').value,
@@ -7045,7 +7328,7 @@ async function handleKirimShift2(e) {
 
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim via WA...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan Rekap 24H...';
   }
 
   try {
@@ -7056,16 +7339,24 @@ async function handleKirimShift2(e) {
     });
     const result = await res.json();
     if (res.ok && result.success) {
-      showToast(result.message || `Rekap 24H Terkirim ke WhatsApp (${targetWa})!`, 'success');
+      showToast(result.message || `Rekap 24H disiapkan (${result.totalKunjungan || 0} Kunjungan)!`, 'success', 5000);
+      
+      // Buka seketika via WhatsApp Web
+      if (result.preview) {
+        let cleanPhone = targetWa.replace(/\D/g, '');
+        if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1);
+        const waWebUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(result.preview)}`;
+        window.open(waWebUrl, '_blank');
+      }
     } else {
-      showToast(result.error || 'Gagal mengirim laporan', 'error');
+      showToast(result.error || 'Gagal menyiapkan laporan', 'error');
     }
   } catch (err) {
     showToast('Gagal mengirim WhatsApp. Periksa koneksi server.', 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> KIRIM REKAP 24H KE WA PETUGAS';
+      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> KIRIM REKAP 24H KE WA (WA Web)';
     }
   }
 }
@@ -8761,14 +9052,14 @@ async function openModalRiwayatPantauan(nikOrName) {
           ` : ''}
 
           <!-- Rincian Lab 3 Bulanan -->
-          ${l.adaCekLab ? `
+          ${(l.adaCekLab || l.hba1c || l.ureum || l.creatinin || l.kreatinin || (Array.isArray(l.customLabs) && l.customLabs.length > 0) || (Array.isArray(l.daftarLab) && l.daftarLab.length > 0)) ? `
             <div style="font-size: 0.78rem; margin-bottom: 6px; color: #a78bfa;">
               <strong><i class="fa-solid fa-flask-vial"></i> Cek Lab:</strong>
               ${l.hba1c ? `HbA1c: ${l.hba1c}%, ` : ''}
               ${l.ureum ? `Ureum: ${l.ureum} mg/dL, ` : ''}
-              ${l.creatinin ? `Creatinin: ${l.creatinin} mg/dL, ` : ''}
+              ${(l.creatinin || l.kreatinin) ? `Creatinin: ${l.creatinin || l.kreatinin} mg/dL, ` : ''}
               ${l.elektrolit ? `Na: ${l.elektrolit.natrium || '-'} / K: ${l.elektrolit.kalium || '-'} / Cl: ${l.elektrolit.klorida || '-'} mmol/L` : ''}
-              ${Array.isArray(l.customLabs) && l.customLabs.length > 0 ? l.customLabs.map(cl => `, ${cl.namaTes}: ${cl.hasil} ${cl.satuan || ''}`).join('') : ''}
+              ${Array.isArray(l.daftarLab || l.customLabs) && (l.daftarLab || l.customLabs).length > 0 ? (l.daftarLab || l.customLabs).map(cl => `, ${cl.namaTes || cl.nama}: ${cl.hasil} ${cl.satuan || ''}`).join('') : ''}
             </div>
           ` : ''}
 
@@ -8972,9 +9263,21 @@ function renderHSEPasienPantauanTable() {
     const hasDoseReduced = daftarObat.some(m => m.evaluasi === 'turun');
     const hasDoseIncreased = daftarObat.some(m => m.evaluasi === 'tambah');
 
-    // 6. Laboratorium 3 Bulan (Prolanis BPJS)
-    const lab = matchedLongTerm?.lab3Bulan || {};
+    // 6. Laboratorium 3 Bulan (Prolanis BPJS) & Pantauan Mingguan
+    const validLabRec = patientPantauanRecs.find(r => r.lab3Bulan && (
+      r.lab3Bulan.adaCekLab || r.lab3Bulan.hba1c || r.lab3Bulan.ureum || r.lab3Bulan.creatinin || r.lab3Bulan.kreatinin ||
+      (Array.isArray(r.lab3Bulan.daftarLab) && r.lab3Bulan.daftarLab.length > 0) ||
+      (Array.isArray(r.lab3Bulan.customLabs) && r.lab3Bulan.customLabs.length > 0) ||
+      (Array.isArray(r.lab3Bulan.tesKustom) && r.lab3Bulan.tesKustom.length > 0)
+    ));
+    const lab = validLabRec?.lab3Bulan || matchedLongTerm?.lab3Bulan || {};
     const evalLab = lab.evaluasiLabStatus || '';
+
+    // Ambil nilai lab mingguan (Asam Urat, Kolesterol, GDS)
+    const recWithMingguan = patientPantauanRecs.find(r => r.mingguan && (r.mingguan.asamUrat || r.mingguan.kolesterol || r.mingguan.gulaDarah));
+    const curAU = matchedLongTerm?.mingguan?.asamUrat || recWithMingguan?.mingguan?.asamUrat || (String(latestRec.objektif || '').match(/(?:AU|Asam\s*Urat)[\s:]*([\d\.]+)/i)?.[1] || null);
+    const curKol = matchedLongTerm?.mingguan?.kolesterol || recWithMingguan?.mingguan?.kolesterol || (String(latestRec.objektif || '').match(/(?:Kol|Kolesterol)[\s:]*(\d{2,3})/i)?.[1] || null);
+    const tipeGula = matchedLongTerm?.mingguan?.tipeGula || recWithMingguan?.mingguan?.tipeGula || 'GDS';
 
     // 7. Evaluasi Klinis HSE (4 Kategori)
     let clinicalCategory = matchedLongTerm?.statusEvaluasiKlinis || '';
@@ -9022,7 +9325,7 @@ function renderHSEPasienPantauanTable() {
       statusKontrol,
       diffDays,
       curSis, curDia, prevSis, prevDia, dSis, dDia,
-      curGDS, prevGDS, dGDS,
+      curGDS, prevGDS, dGDS, tipeGula, curAU, curKol,
       curLP, prevLP, dLP, evalLP,
       daftarObat, hasDoseReduced, hasDoseIncreased,
       lab, evalLab,
@@ -9162,32 +9465,122 @@ function renderHSEPasienPantauanTable() {
       medsHtml = `<div style="font-size: 0.72rem; color: var(--text-muted); font-style: italic;">Tidak ada peresepan rutin</div>`;
     }
 
-    // 4. Lab PROLANIS Display
+    // 4. Lab PROLANIS & Pantauan Mingguan Display (SS 2)
     let labStatusBadge = '';
     if (item.evalLab === 'membaik') labStatusBadge = `<span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; font-size: 0.66rem;">🟢 Membaik</span>`;
     else if (item.evalLab === 'perburukan') labStatusBadge = `<span class="badge" style="background: rgba(239,68,68,0.2); color: #f87171; font-size: 0.66rem;">🔴 Perburukan</span>`;
     else if (item.evalLab === 'stabil') labStatusBadge = `<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8; font-size: 0.66rem;">🔵 Stabil</span>`;
 
     const labPills = [];
-    if (item.lab.gdp) labPills.push(`GDP: <strong>${item.lab.gdp}</strong>`);
-    if (item.lab.gd2pp) labPills.push(`GD2PP: <strong>${item.lab.gd2pp}</strong>`);
-    if (item.lab.hba1c) labPills.push(`HbA1c: <strong>${item.lab.hba1c}%</strong>`);
-    if (item.lab.ldl) labPills.push(`LDL: <strong>${item.lab.ldl}</strong>`);
-    if (item.lab.hdl) labPills.push(`HDL: <strong>${item.lab.hdl}</strong>`);
-    if (item.lab.trigliserida) labPills.push(`TG: <strong>${item.lab.trigliserida}</strong>`);
-    if (item.lab.ureum) labPills.push(`Ureum: <strong>${item.lab.ureum}</strong>`);
-    if (item.lab.kreatinin) labPills.push(`Kreatinin: <strong>${item.lab.kreatinin}</strong>`);
-    if (item.lab.mikroalbumin) labPills.push(`Alb: <strong>${item.lab.mikroalbumin}</strong>`);
-    (item.lab.tesKustom || []).forEach(t => {
-      if (t.nama && t.hasil) labPills.push(`${escapeHtml(t.nama)}: <strong>${escapeHtml(t.hasil)}</strong>`);
-    });
-    if (item.curGDS && !item.lab.gdp) labPills.push(`GDS: <strong>${item.curGDS}</strong> mg/dL`);
+    const seenTests = new Set();
+
+    // A. Hasil Lab Pantauan Mingguan (Point-of-Care / Rapid)
+    if (item.curGDS) {
+      const lblGula = item.tipeGula || 'GDS';
+      labPills.push(`<span class="badge" style="background: rgba(234,179,8,0.18); color: #facc15; border: 1px solid rgba(234,179,8,0.35); font-size: 0.72rem; padding: 2px 6px;" title="Pantauan Mingguan">${escapeHtml(lblGula)}: <strong>${item.curGDS}</strong> mg/dL</span>`);
+      seenTests.add('gds');
+      seenTests.add('gdp');
+      seenTests.add('gd2pp');
+      seenTests.add('gula darah');
+    }
+    if (item.curKol) {
+      labPills.push(`<span class="badge" style="background: rgba(239,68,68,0.18); color: #f87171; border: 1px solid rgba(239,68,68,0.35); font-size: 0.72rem; padding: 2px 6px;" title="Pantauan Mingguan">Kol: <strong>${item.curKol}</strong> mg/dL</span>`);
+      seenTests.add('kol');
+      seenTests.add('kolesterol');
+      seenTests.add('kolesterol total');
+    }
+    if (item.curAU) {
+      labPills.push(`<span class="badge" style="background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); font-size: 0.72rem; padding: 2px 6px;" title="Pantauan Mingguan">AU: <strong>${item.curAU}</strong> mg/dL</span>`);
+      seenTests.add('au');
+      seenTests.add('asam urat');
+    }
+
+    // B. Hasil Lab Pantauan 3 Bulan (Triwulanan)
+    if (item.lab) {
+      const l = item.lab;
+      if (l.gdp && !seenTests.has('gdp')) {
+        labPills.push(`<span class="badge" style="background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.3); font-size: 0.72rem; padding: 2px 6px;" title="Lab 3 Bulan">GDP: <strong>${l.gdp}</strong></span>`);
+        seenTests.add('gdp');
+      }
+      if (l.gd2pp && !seenTests.has('gd2pp')) {
+        labPills.push(`<span class="badge" style="background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.3); font-size: 0.72rem; padding: 2px 6px;" title="Lab 3 Bulan">GD2PP: <strong>${l.gd2pp}</strong></span>`);
+        seenTests.add('gd2pp');
+      }
+      if (l.hba1c && !seenTests.has('hba1c')) {
+        labPills.push(`<span class="badge" style="background: rgba(168,85,247,0.18); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); font-size: 0.72rem; padding: 2px 6px;" title="Lab 3 Bulan">HbA1c: <strong>${l.hba1c}%</strong></span>`);
+        seenTests.add('hba1c');
+      }
+      if (l.ureum && !seenTests.has('ureum')) {
+        labPills.push(`<span class="badge" style="background: rgba(168,85,247,0.18); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); font-size: 0.72rem; padding: 2px 6px;" title="Lab 3 Bulan">Ureum: <strong>${l.ureum}</strong></span>`);
+        seenTests.add('ureum');
+      }
+      const creatVal = l.creatinin || l.kreatinin;
+      if (creatVal && !seenTests.has('creatinin') && !seenTests.has('kreatinin')) {
+        labPills.push(`<span class="badge" style="background: rgba(168,85,247,0.18); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); font-size: 0.72rem; padding: 2px 6px;" title="Lab 3 Bulan">Creat: <strong>${creatVal}</strong></span>`);
+        seenTests.add('creatinin');
+        seenTests.add('kreatinin');
+      }
+      if (l.elektrolit) {
+        const el = l.elektrolit;
+        if (el.natrium && !seenTests.has('natrium')) {
+          labPills.push(`<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; padding: 2px 6px;" title="Elektrolit">Na: <strong>${el.natrium}</strong></span>`);
+          seenTests.add('natrium');
+        }
+        if (el.kalium && !seenTests.has('kalium')) {
+          labPills.push(`<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; padding: 2px 6px;" title="Elektrolit">K: <strong>${el.kalium}</strong></span>`);
+          seenTests.add('kalium');
+        }
+        if (el.klorida && !seenTests.has('klorida')) {
+          labPills.push(`<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; padding: 2px 6px;" title="Elektrolit">Cl: <strong>${el.klorida}</strong></span>`);
+          seenTests.add('klorida');
+        }
+      }
+      if (l.ldl && !seenTests.has('ldl')) {
+        labPills.push(`<span class="badge" style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); font-size: 0.72rem; padding: 2px 6px;">LDL: <strong>${l.ldl}</strong></span>`);
+        seenTests.add('ldl');
+      }
+      if (l.hdl && !seenTests.has('hdl')) {
+        labPills.push(`<span class="badge" style="background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem; padding: 2px 6px;">HDL: <strong>${l.hdl}</strong></span>`);
+        seenTests.add('hdl');
+      }
+      if (l.trigliserida && !seenTests.has('trigliserida')) {
+        labPills.push(`<span class="badge" style="background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); font-size: 0.72rem; padding: 2px 6px;">TG: <strong>${l.trigliserida}</strong></span>`);
+        seenTests.add('trigliserida');
+      }
+      if (l.mikroalbumin && !seenTests.has('mikroalbumin')) {
+        labPills.push(`<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-main); font-size: 0.72rem; padding: 2px 6px;">Alb: <strong>${l.mikroalbumin}</strong></span>`);
+        seenTests.add('mikroalbumin');
+      }
+
+      // Seluruh Daftar Lab Dinamis & Kustom
+      const dynLabs = [...(l.daftarLab || []), ...(l.customLabs || [])];
+      dynLabs.forEach(itemLab => {
+        const tName = (itemLab.namaTes || itemLab.nama || '').trim();
+        const tRes = (itemLab.hasil || '').trim();
+        const tUnit = (itemLab.satuan || '').trim();
+        const lowerName = tName.toLowerCase();
+        if (tName && tRes && !seenTests.has(lowerName)) {
+          seenTests.add(lowerName);
+          labPills.push(`<span class="badge" style="background: rgba(168,85,247,0.12); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.3); font-size: 0.72rem; padding: 2px 6px;" title="${escapeHtml(tName)}">${escapeHtml(tName)}: <strong>${escapeHtml(tRes)}</strong> ${escapeHtml(tUnit)}</span>`);
+        }
+      });
+
+      (l.tesKustom || []).forEach(itemLab => {
+        const tName = (itemLab.nama || '').trim();
+        const tRes = (itemLab.hasil || '').trim();
+        const lowerName = tName.toLowerCase();
+        if (tName && tRes && !seenTests.has(lowerName)) {
+          seenTests.add(lowerName);
+          labPills.push(`<span class="badge" style="background: rgba(168,85,247,0.12); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.3); font-size: 0.72rem; padding: 2px 6px;">${escapeHtml(tName)}: <strong>${escapeHtml(tRes)}</strong></span>`);
+        }
+      });
+    }
 
     let labDisplayHtml = '';
     if (labPills.length > 0) {
-      labDisplayHtml = labPills.map(p => `<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-main); font-size: 0.72rem; padding: 2px 6px;">${p}</span>`).join(' ');
+      labDisplayHtml = labPills.join(' ');
     } else {
-      labDisplayHtml = `<span style="font-size: 0.72rem; color: var(--text-muted); font-style: italic;">Belum ada hasil lab 3 bulanan</span>`;
+      labDisplayHtml = `<span style="font-size: 0.72rem; color: var(--text-muted); font-style: italic;">Belum ada hasil lab</span>`;
     }
 
     const tplPantauan = encodeURIComponent(`Halo rekan ${emp.namaPasien || ''} (${emp.nikPabrik || ''}), ini dari Tim Medis & HSE PT ATI mengenai evaluasi jadwal pemantauan kesehatan Anda.`);
@@ -13320,21 +13713,212 @@ function syncPoliResepToPantauan() {
   }
 }
 
-function addPoliPantauanCustomLabRow(name = '', result = '', unit = '', ref = '') {
-  const container = document.getElementById('poli-pantauan-custom-lab-list');
+// Master Daftar Pemeriksaan Laboratorium Medis Lengkap (PERKENI, PAPDI, PERKI, PGI, Kemenkes & Harrison's)
+const MASTER_LAB_TESTS = [
+  // 1. Diabetes & Metabolisme
+  { kategori: 'Diabetes & Metabolisme', nama: 'HbA1c (Hemoglobin Terglikasi)', satuan: '%', rujukan: '< 5.7% (Normal), 5.7-6.4% (Pre-DM), < 7.0% (Terkontrol)' },
+  { kategori: 'Diabetes & Metabolisme', nama: 'Gula Darah Puasa (GDP)', satuan: 'mg/dL', rujukan: '70 - 99 mg/dL (Normal), 100 - 125 mg/dL (Pre-DM), ≥ 126 mg/dL (DM)' },
+  { kategori: 'Diabetes & Metabolisme', nama: 'Gula Darah 2 Jam PP (GD2PP)', satuan: 'mg/dL', rujukan: '< 140 mg/dL (Normal), 140 - 199 mg/dL (TGT), ≥ 200 mg/dL (DM)' },
+  { kategori: 'Diabetes & Metabolisme', nama: 'Gula Darah Sewaktu (GDS)', satuan: 'mg/dL', rujukan: '< 140 mg/dL (Normal), 140 - 199 mg/dL (Waspada), ≥ 200 mg/dL (DM)' },
+  { kategori: 'Diabetes & Metabolisme', nama: 'C-Peptide', satuan: 'ng/mL', rujukan: '0.5 - 2.0 ng/mL' },
+  { kategori: 'Diabetes & Metabolisme', nama: 'Insulin Puasa', satuan: 'µIU/mL', rujukan: '2.6 - 24.9 µIU/mL' },
+
+  // 2. Profil Lipid & Jantung (Kardiovaskular)
+  { kategori: 'Profil Lipid & Jantung', nama: 'Kolesterol Total', satuan: 'mg/dL', rujukan: '< 200 mg/dL (Optimal), 200-239 (Ambang), ≥ 240 (Tinggi)' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'Kolesterol LDL (Direk)', satuan: 'mg/dL', rujukan: '< 100 mg/dL (Optimal), < 70 mg/dL (Risiko Tinggi)' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'Kolesterol HDL', satuan: 'mg/dL', rujukan: 'Pria > 40 mg/dL, Wanita > 50 mg/dL' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'Trigliserida', satuan: 'mg/dL', rujukan: '< 150 mg/dL (Normal), 150-199 (Ambang), ≥ 200 (Tinggi)' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'Non-HDL Kolesterol', satuan: 'mg/dL', rujukan: '< 130 mg/dL' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'Apolipoprotein B (Apo-B)', satuan: 'mg/dL', rujukan: '60 - 130 mg/dL' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'hs-CRP (Risiko Vaskular)', satuan: 'mg/L', rujukan: '< 1.0 mg/L (Risiko Rendah), 1.0-3.0 (Sedang), > 3.0 (Tinggi)' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'Troponin I', satuan: 'ng/mL', rujukan: '< 0.04 ng/mL' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'Troponin T', satuan: 'ng/mL', rujukan: '< 0.01 ng/mL' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'CK-MB', satuan: 'U/L', rujukan: '< 25 U/L' },
+  { kategori: 'Profil Lipid & Jantung', nama: 'NT-proBNP', satuan: 'pg/mL', rujukan: '< 125 pg/mL (< 75 th), < 450 pg/mL (≥ 75 th)' },
+
+  // 3. Fungsi Ginjal & Asam Urat
+  { kategori: 'Fungsi Ginjal & Asam Urat', nama: 'Ureum (BUN)', satuan: 'mg/dL', rujukan: '15 - 45 mg/dL' },
+  { kategori: 'Fungsi Ginjal & Asam Urat', nama: 'Creatinin (Kreatinin Darah)', satuan: 'mg/dL', rujukan: 'Pria: 0.7 - 1.3 mg/dL, Wanita: 0.6 - 1.1 mg/dL' },
+  { kategori: 'Fungsi Ginjal & Asam Urat', nama: 'eGFR (Laju Filtrasi Glomerulus)', satuan: 'mL/min/1.73m²', rujukan: '≥ 90 (Normal/G1), 60-89 (G2), 30-59 (G3)' },
+  { kategori: 'Fungsi Ginjal & Asam Urat', nama: 'Asam Urat (Uric Acid)', satuan: 'mg/dL', rujukan: 'Pria: 3.4 - 7.0 mg/dL, Wanita: 2.4 - 5.7 mg/dL' },
+  { kategori: 'Fungsi Ginjal & Asam Urat', nama: 'Cystatin C', satuan: 'mg/L', rujukan: '0.53 - 0.95 mg/L' },
+  { kategori: 'Fungsi Ginjal & Asam Urat', nama: 'Mikroalbumin Urine (UACR)', satuan: 'mg/g', rujukan: '< 30 mg/g (Normal), 30-300 mg/g (Mikroalbuminuria)' },
+  { kategori: 'Fungsi Ginjal & Asam Urat', nama: 'Protein Urine Kualitatif', satuan: 'kualitatif', rujukan: 'Negatif' },
+
+  // 4. Elektrolit Darah
+  { kategori: 'Elektrolit', nama: 'Natrium (Na)', satuan: 'mmol/L', rujukan: '135 - 145 mmol/L' },
+  { kategori: 'Elektrolit', nama: 'Kalium (K)', satuan: 'mmol/L', rujukan: '3.5 - 5.0 mmol/L' },
+  { kategori: 'Elektrolit', nama: 'Klorida (Cl)', satuan: 'mmol/L', rujukan: '98 - 106 mmol/L' },
+  { kategori: 'Elektrolit', nama: 'Kalsium Total (Ca)', satuan: 'mg/dL', rujukan: '8.5 - 10.5 mg/dL' },
+  { kategori: 'Elektrolit', nama: 'Magnesium (Mg)', satuan: 'mg/dL', rujukan: '1.7 - 2.4 mg/dL' },
+  { kategori: 'Elektrolit', nama: 'Fosfat Anorganik', satuan: 'mg/dL', rujukan: '2.5 - 4.5 mg/dL' },
+
+  // 5. Fungsi Hati & Hepatobilier
+  { kategori: 'Fungsi Hati', nama: 'SGOT / AST', satuan: 'U/L', rujukan: 'Pria: < 37 U/L, Wanita: < 31 U/L' },
+  { kategori: 'Fungsi Hati', nama: 'SGPT / ALT', satuan: 'U/L', rujukan: 'Pria: < 41 U/L, Wanita: < 31 U/L' },
+  { kategori: 'Fungsi Hati', nama: 'Gamma GT (GGT)', satuan: 'U/L', rujukan: 'Pria: 11 - 50 U/L, Wanita: 7 - 32 U/L' },
+  { kategori: 'Fungsi Hati', nama: 'Fosfatase Alkali (ALP)', satuan: 'U/L', rujukan: '44 - 147 U/L' },
+  { kategori: 'Fungsi Hati', nama: 'Bilirubin Total', satuan: 'mg/dL', rujukan: '0.2 - 1.2 mg/dL' },
+  { kategori: 'Fungsi Hati', nama: 'Bilirubin Direk', satuan: 'mg/dL', rujukan: '0.0 - 0.3 mg/dL' },
+  { kategori: 'Fungsi Hati', nama: 'Bilirubin Indirek', satuan: 'mg/dL', rujukan: '0.2 - 0.8 mg/dL' },
+  { kategori: 'Fungsi Hati', nama: 'Protein Total', satuan: 'g/dL', rujukan: '6.4 - 8.3 g/dL' },
+  { kategori: 'Fungsi Hati', nama: 'Albumin Serum', satuan: 'g/dL', rujukan: '3.5 - 5.2 g/dL' },
+  { kategori: 'Fungsi Hati', nama: 'Globulin', satuan: 'g/dL', rujukan: '2.3 - 3.5 g/dL' },
+
+  // 6. Hematologi Lengkap (Darah Rutin / CBC)
+  { kategori: 'Hematologi Lengkap', nama: 'Hemoglobin (Hb)', satuan: 'g/dL', rujukan: 'Pria: 13.5 - 17.5 g/dL, Wanita: 12.0 - 15.5 g/dL' },
+  { kategori: 'Hematologi Lengkap', nama: 'Hematokrit (Ht)', satuan: '%', rujukan: 'Pria: 40 - 52 %, Wanita: 36 - 48 %' },
+  { kategori: 'Hematologi Lengkap', nama: 'Leukosit (WBC)', satuan: '/µL', rujukan: '4.500 - 11.000 /µL' },
+  { kategori: 'Hematologi Lengkap', nama: 'Trombosit (PLT)', satuan: '/µL', rujukan: '150.000 - 450.000 /µL' },
+  { kategori: 'Hematologi Lengkap', nama: 'Eritrosit (RBC)', satuan: '10^6/µL', rujukan: 'Pria: 4.5 - 5.9 jt/µL, Wanita: 4.0 - 5.2 jt/µL' },
+  { kategori: 'Hematologi Lengkap', nama: 'Laju Endap Darah (LED / ESR)', satuan: 'mm/jam', rujukan: 'Pria: < 15 mm/jam, Wanita: < 20 mm/jam' },
+  { kategori: 'Hematologi Lengkap', nama: 'Eosinofil', satuan: '%', rujukan: '1 - 3 %' },
+  { kategori: 'Hematologi Lengkap', nama: 'Basofil', satuan: '%', rujukan: '0 - 1 %' },
+  { kategori: 'Hematologi Lengkap', nama: 'Neutrofil Batang', satuan: '%', rujukan: '2 - 6 %' },
+  { kategori: 'Hematologi Lengkap', nama: 'Neutrofil Segmen', satuan: '%', rujukan: '50 - 70 %' },
+  { kategori: 'Hematologi Lengkap', nama: 'Limfosit', satuan: '%', rujukan: '20 - 40 %' },
+  { kategori: 'Hematologi Lengkap', nama: 'Monosit', satuan: '%', rujukan: '2 - 8 %' },
+  { kategori: 'Hematologi Lengkap', nama: 'MCV', satuan: 'fL', rujukan: '80 - 100 fL' },
+  { kategori: 'Hematologi Lengkap', nama: 'MCH', satuan: 'pg', rujukan: '27 - 31 pg' },
+  { kategori: 'Hematologi Lengkap', nama: 'MCHC', satuan: 'g/dL', rujukan: '32 - 36 g/dL' },
+
+  // 7. Urinalisis Lengkap
+  { kategori: 'Urinalisis Lengkap', nama: 'Sedimen Urine - Leukosit', satuan: '/LPB', rujukan: '0 - 5 /LPB' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Sedimen Urine - Eritrosit', satuan: '/LPB', rujukan: '0 - 2 /LPB' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Sedimen Urine - Epitel', satuan: '/LPK', rujukan: 'Positif normal' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Sedimen Urine - Silinder / Torak', satuan: '/LPK', rujukan: 'Negatif' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Sedimen Urine - Kristal', satuan: '/LPK', rujukan: 'Negatif' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Glukosa Urine', satuan: 'kualitatif', rujukan: 'Negatif' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Keton Urine', satuan: 'kualitatif', rujukan: 'Negatif' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Berat Jenis Urine', satuan: '-', rujukan: '1.005 - 1.030' },
+  { kategori: 'Urinalisis Lengkap', nama: 'pH Urine', satuan: '-', rujukan: '4.6 - 8.0' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Nitrit Urine', satuan: 'kualitatif', rujukan: 'Negatif' },
+  { kategori: 'Urinalisis Lengkap', nama: 'Urobilinogen', satuan: 'EU/dL', rujukan: '0.1 - 1.0 EU/dL' },
+
+  // 8. Endokrin & Tiroid
+  { kategori: 'Endokrin & Tiroid', nama: 'TSH (Thyroid Stimulating Hormone)', satuan: 'µIU/mL', rujukan: '0.4 - 4.0 µIU/mL' },
+  { kategori: 'Endokrin & Tiroid', nama: 'Free T4 (FT4)', satuan: 'ng/dL', rujukan: '0.8 - 1.8 ng/dL' },
+  { kategori: 'Endokrin & Tiroid', nama: 'Free T3 (FT3)', satuan: 'pg/mL', rujukan: '2.3 - 4.2 pg/mL' },
+
+  // 9. Imunologi & Serologi
+  { kategori: 'Imunologi & Serologi', nama: 'HBsAg (Rapid Kualitatif)', satuan: 'kualitatif', rujukan: 'Non-Reaktif' },
+  { kategori: 'Imunologi & Serologi', nama: 'Anti-HCV (Rapid Kualitatif)', satuan: 'kualitatif', rujukan: 'Non-Reaktif' },
+  { kategori: 'Imunologi & Serologi', nama: 'Anti-HIV (Screening)', satuan: 'kualitatif', rujukan: 'Non-Reaktif' },
+  { kategori: 'Imunologi & Serologi', nama: 'Widal (S. Typhi)', satuan: 'titer', rujukan: '< 1/160' },
+  { kategori: 'Imunologi & Serologi', nama: 'NS1 Dengue', satuan: 'kualitatif', rujukan: 'Negatif' },
+  { kategori: 'Imunologi & Serologi', nama: 'IgM / IgG Dengue', satuan: 'kualitatif', rujukan: 'Negatif' },
+
+  // 10. Feses Rutin
+  { kategori: 'Feses Rutin', nama: 'Feses Rutin - Darah Samar (FOBT)', satuan: 'kualitatif', rujukan: 'Negatif' },
+  { kategori: 'Feses Rutin', nama: 'Feses Rutin - Parasit / Amuba', satuan: 'kualitatif', rujukan: 'Negatif' }
+];
+
+function addPoliPantauanLabRow(testName = '', result = '', unit = '', ref = '') {
+  const container = document.getElementById('poli-pantauan-lab-list') || document.getElementById('poli-pantauan-custom-lab-list');
   if (!container) return;
   const rowId = 'poli_lab_row_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
 
+  // Group master lab tests by category
+  const categories = {};
+  MASTER_LAB_TESTS.forEach(t => {
+    if (!categories[t.kategori]) categories[t.kategori] = [];
+    categories[t.kategori].push(t);
+  });
+
+  let optionsHtml = `<option value="">-- Pilih Pemeriksaan Lab --</option>`;
+  let matched = false;
+  for (const cat in categories) {
+    optionsHtml += `<optgroup label="🔬 ${escapeHtml(cat)}">`;
+    categories[cat].forEach(item => {
+      const isSel = (testName && (item.nama.toLowerCase() === testName.toLowerCase() || item.nama.toLowerCase().startsWith(testName.toLowerCase()))) ? 'selected' : '';
+      if (isSel) {
+        matched = true;
+        if (!unit) unit = item.satuan;
+        if (!ref) ref = item.rujukan;
+      }
+      optionsHtml += `<option value="${escapeHtml(item.nama)}" data-unit="${escapeHtml(item.satuan)}" data-ref="${escapeHtml(item.rujukan)}" ${isSel}>${escapeHtml(item.nama)}</option>`;
+    });
+    optionsHtml += `</optgroup>`;
+  }
+
+  const isCustom = Boolean(testName && !matched);
+  optionsHtml += `<option value="__custom__" ${isCustom ? 'selected' : ''}>➕ [Ketik Nama Lab Lainnya / Manual]</option>`;
+
   const rowHtml = `
-    <div id="${rowId}" style="display: flex; gap: 6px; align-items: center; background: var(--surface-2); padding: 5px 8px; border-radius: 6px; border: 1px dashed var(--border-card); margin-bottom: 6px;">
-      <input type="text" class="form-control form-control-sm poli-custom-lab-name" placeholder="Nama Tes (misal: SGPT)" value="${escapeHtml(name)}" style="flex: 2; font-size: 0.82rem; padding: 4px 8px;">
-      <input type="text" class="form-control form-control-sm poli-custom-lab-result" placeholder="Hasil" value="${escapeHtml(result)}" style="width: 80px; text-align: center; font-weight: 700; font-size: 0.82rem; padding: 4px 6px;">
-      <input type="text" class="form-control form-control-sm poli-custom-lab-unit" placeholder="Satuan (U/L)" value="${escapeHtml(unit)}" style="width: 80px; text-align: center; font-size: 0.82rem; padding: 4px 6px;">
-      <input type="text" class="form-control form-control-sm poli-custom-lab-ref" placeholder="Rujukan (< 41)" value="${escapeHtml(ref)}" style="flex: 1.2; font-size: 0.82rem; padding: 4px 8px;">
+    <div id="${rowId}" class="poli-lab-row" style="display: flex; gap: 6px; align-items: center; background: var(--surface-2); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 6px; flex-wrap: wrap;">
+      <div style="flex: 2; min-width: 170px; display: flex; flex-direction: column; gap: 4px;">
+        <select class="form-control form-control-sm poli-lab-row-select" onchange="onPoliLabTestChange(this)" style="font-size: 0.82rem; font-weight: 600; padding: 4px 8px;">
+          ${optionsHtml}
+        </select>
+        <input type="text" class="form-control form-control-sm poli-lab-row-custom-name" placeholder="Ketik nama pemeriksaan lab..." value="${isCustom ? escapeHtml(testName) : ''}" style="display: ${isCustom ? 'block' : 'none'}; font-size: 0.8rem; padding: 3px 6px;">
+      </div>
+      <div style="width: 95px;">
+        <input type="text" class="form-control form-control-sm poli-lab-row-result" placeholder="Hasil..." value="${escapeHtml(result)}" style="text-align: center; font-weight: 700; font-size: 0.84rem; padding: 4px 6px;">
+      </div>
+      <div style="width: 80px;">
+        <input type="text" class="form-control form-control-sm poli-lab-row-unit" placeholder="Satuan" value="${escapeHtml(unit)}" style="text-align: center; font-size: 0.8rem; padding: 4px 6px;">
+      </div>
+      <div style="flex: 1.5; min-width: 130px;">
+        <input type="text" class="form-control form-control-sm poli-lab-row-ref" placeholder="Nilai Normal / Rujukan" value="${escapeHtml(ref)}" style="font-size: 0.8rem; padding: 4px 6px; color: var(--text-muted);" title="Nilai Normal Medis">
+      </div>
       <button type="button" class="btn btn-sm btn-danger" onclick="document.getElementById('${rowId}').remove()" style="padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;" title="Hapus"><i class="fa-solid fa-trash"></i></button>
     </div>
   `;
   container.insertAdjacentHTML('beforeend', rowHtml);
+}
+
+function onPoliLabTestChange(selEl) {
+  const row = selEl.closest('.poli-lab-row');
+  if (!row) return;
+  const customInp = row.querySelector('.poli-lab-row-custom-name');
+  const unitInp = row.querySelector('.poli-lab-row-unit');
+  const refInp = row.querySelector('.poli-lab-row-ref');
+  const resInp = row.querySelector('.poli-lab-row-result');
+
+  const selectedOpt = selEl.options[selEl.selectedIndex];
+  if (selEl.value === '__custom__') {
+    if (customInp) {
+      customInp.style.display = 'block';
+      customInp.focus();
+    }
+  } else {
+    if (customInp) {
+      customInp.style.display = 'none';
+      customInp.value = '';
+    }
+    if (selectedOpt) {
+      if (unitInp && selectedOpt.dataset.unit) unitInp.value = selectedOpt.dataset.unit;
+      if (refInp && selectedOpt.dataset.ref) refInp.value = selectedOpt.dataset.ref;
+    }
+  }
+  if (resInp && !resInp.value) resInp.focus();
+}
+
+function addPoliPantauanPresetLabs(presetType = 'prolanis') {
+  const container = document.getElementById('poli-pantauan-lab-list') || document.getElementById('poli-pantauan-custom-lab-list');
+  if (!container) return;
+  if (presetType === 'prolanis') {
+    const prolanisTests = [
+      'HbA1c (Hemoglobin Terglikasi)',
+      'Ureum (BUN)',
+      'Creatinin (Kreatinin Darah)',
+      'Natrium (Na)',
+      'Kalium (K)',
+      'Klorida (Cl)'
+    ];
+    prolanisTests.forEach(testName => {
+      const already = Array.from(container.querySelectorAll('.poli-lab-row-select')).some(s => s.value.toLowerCase().startsWith(testName.substring(0, 5).toLowerCase()));
+      if (!already) {
+        addPoliPantauanLabRow(testName);
+      }
+    });
+    showToast('🧪 Paket Lab Prolanis (HbA1c, Ureum, Creatinin, Elektrolit) ditambahkan.', 'info');
+  }
+}
+
+// Backward-compatibility alias
+function addPoliPantauanCustomLabRow(name = '', result = '', unit = '', ref = '') {
+  addPoliPantauanLabRow(name, result, unit, ref);
 }
 
 function syncPoliObjektifToPantauan() {

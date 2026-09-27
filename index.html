@@ -324,6 +324,9 @@
               <button class="btn btn-primary" onclick="searchPatientByNIK()" style="padding: 0 18px;">
                 <i class="fa-solid fa-magnifying-glass"></i> CARI
               </button>
+              <button type="button" class="btn btn-success" onclick="openModalQuickTambahPasien()" style="padding: 0 14px; font-weight: 700; white-space: nowrap; background: #16a34a; border-color: #16a34a;" title="Input pasien baru / manual yang belum terdaftar di master karyawan">
+                <i class="fa-solid fa-user-plus"></i> + PASIEN BARU
+              </button>
             </div>
 
             <!-- Patient Quick Info Badge -->
@@ -339,12 +342,20 @@
 
             <form id="form-poli-entry" onsubmit="event.preventDefault(); return false;">
 
-              <!-- TANGGAL BEROBAT -->
-              <div class="form-group" style="margin-bottom: 16px;">
-                <label class="form-label marunda-section-label" for="poli-tanggal-berobat">
-                  <i class="fa-regular fa-calendar-check" style="color: var(--accent);"></i> TANGGAL BEROBAT / KUNJUNGAN
-                </label>
-                <input type="date" id="poli-tanggal-berobat" class="form-control" style="max-width: 250px;" required>
+              <!-- TANGGAL & JAM BEROBAT -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label marunda-section-label" for="poli-tanggal-berobat">
+                    <i class="fa-regular fa-calendar-check" style="color: var(--accent);"></i> TANGGAL BEROBAT
+                  </label>
+                  <input type="date" id="poli-tanggal-berobat" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label marunda-section-label" for="poli-jam-berobat">
+                    <i class="fa-regular fa-clock" style="color: var(--accent);"></i> JAM KUNJUNGAN
+                  </label>
+                  <input type="time" id="poli-jam-berobat" class="form-control" required>
+                </div>
               </div>
 
               <!-- 1. KELUHAN UTAMA (Subjektif - S) -->
@@ -633,52 +644,26 @@
                       </div>
                     </div>
 
-                    <!-- 3. FORM INPUT CEK LAB 3 BULANAN (SS 3) -->
+                    <!-- 3. FORM INPUT CEK LAB 3 BULANAN (SS 3 / DINAMIS SEPERTI OBAT) -->
                     <div id="poli-pantauan-sec-lab" style="display: none; background: var(--surface-1); border: 1px solid rgba(168,85,247,0.3); border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
                       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(168,85,247,0.2); padding-bottom: 6px; flex-wrap: wrap; gap: 6px;">
                         <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; color: #c084fc; margin: 0; cursor: pointer;">
                           <input type="checkbox" id="poli-pantauan-chk-ada-lab" checked style="width: 16px; height: 16px; accent-color: #8b5cf6;">
                           <i class="fa-solid fa-flask-vial"></i> 3. Ada Pemeriksaan Laboratorium (Triwulanan)
                         </label>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="addPoliPantauanCustomLabRow()" style="background: #8b5cf6; color: #fff; font-size: 0.74rem; padding: 3px 10px; border-radius: 4px; border: none; font-weight: 700;">
-                          <i class="fa-solid fa-plus-circle"></i> + Tambah Pemeriksaan Lab Bebas
-                        </button>
-                      </div>
-
-                      <!-- Parameter Lab Standar -->
-                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; background: rgba(168,85,247,0.06); padding: 10px; border-radius: 6px; border: 1px solid rgba(168,85,247,0.15);">
-                        <div>
-                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">HbA1c (%)</label>
-                          <input type="number" step="0.1" id="poli-pantauan-lab-hba1c" class="form-control form-control-sm" placeholder="Contoh: 6.5">
-                          <span style="font-size: 0.68rem; color: var(--text-muted);">&lt; 5.7% (Normal)</span>
-                        </div>
-                        <div>
-                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Ureum (mg/dL)</label>
-                          <input type="number" id="poli-pantauan-lab-ureum" class="form-control form-control-sm" placeholder="Contoh: 28">
-                          <span style="font-size: 0.68rem; color: var(--text-muted);">Ref: 15-45</span>
-                        </div>
-                        <div>
-                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Creatinin (mg/dL)</label>
-                          <input type="number" step="0.1" id="poli-pantauan-lab-creatinin" class="form-control form-control-sm" placeholder="Contoh: 0.9">
-                          <span style="font-size: 0.68rem; color: var(--text-muted);">Ref: 0.6-1.2</span>
-                        </div>
-                        <div>
-                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Natrium (Na)</label>
-                          <input type="number" id="poli-pantauan-lab-na" class="form-control form-control-sm" placeholder="140 mmol/L">
-                        </div>
-                        <div>
-                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Kalium (K)</label>
-                          <input type="number" step="0.1" id="poli-pantauan-lab-k" class="form-control form-control-sm" placeholder="4.2 mmol/L">
-                        </div>
-                        <div>
-                          <label class="form-label" style="font-size: 0.74rem; font-weight: 700;">Klorida (Cl)</label>
-                          <input type="number" id="poli-pantauan-lab-cl" class="form-control form-control-sm" placeholder="102 mmol/L">
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                          <button type="button" class="btn btn-sm" onclick="addPoliPantauanPresetLabs('prolanis')" style="background: rgba(168,85,247,0.15); color: #c084fc; font-size: 0.74rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(168,85,247,0.3); font-weight: 700;" title="Paket Cepat Prolanis">
+                            <i class="fa-solid fa-bolt"></i> + Paket Prolanis
+                          </button>
+                          <button type="button" class="btn btn-sm btn-primary" onclick="addPoliPantauanLabRow()" style="background: #8b5cf6; color: #fff; font-size: 0.74rem; padding: 3px 10px; border-radius: 4px; border: none; font-weight: 700;">
+                            <i class="fa-solid fa-plus"></i> + Tambah Pemeriksaan Lab
+                          </button>
                         </div>
                       </div>
 
-                      <!-- Baris Lab Bebas / Kustom -->
-                      <div id="poli-pantauan-custom-lab-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
-                        <!-- Dynamic custom lab rows -->
+                      <!-- List Baris Pemeriksaan Lab (Dinamis: Dropdown Lab, Kolom Isi, Kolom Nilai Normal & Satuan) -->
+                      <div id="poli-pantauan-lab-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                        <!-- Dynamic lab rows rendered via addPoliPantauanLabRow() -->
                       </div>
 
                       <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px;">
@@ -1474,10 +1459,21 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
-              <label class="form-label marunda-section-label" style="font-size: 0.76rem;">KIRIM PERMINTAAN KE (TUJUAN WHATSAPP)</label>
-              <select id="req-target-wa" class="form-control" required style="font-weight: 700;">
-                <!-- Rendered dynamically -->
-              </select>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label class="form-label marunda-section-label" style="font-size: 0.76rem; margin: 0;">NOMOR WHATSAPP TUJUAN (KLINIK / APOTEKER)</label>
+                <span id="req-wa-saved-status" style="font-size: 0.72rem; color: #22c55e; display: none; font-weight: 700;">
+                  <i class="fa-solid fa-circle-check"></i> Tersimpan
+                </span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <input type="tel" id="req-target-wa-input" class="form-control" placeholder="Contoh: 08123456789 atau 628123456789" style="font-weight: 700; font-size: 0.88rem; flex: 1;" oninput="handleReqWANumberInput(this.value)">
+                <button type="button" class="btn btn-sm" onclick="saveReqWANumberManual()" style="background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.4); padding: 6px 12px; font-size: 0.75rem; font-weight: 700; border-radius: var(--r-sm); white-space: nowrap;" title="Simpan nomor ini agar tersimpan dan tidak perlu ketik ulang">
+                  <i class="fa-solid fa-floppy-disk"></i> Simpan
+                </button>
+              </div>
+              <div style="font-size: 0.71rem; color: var(--text-muted); margin-top: 4px;">
+                💡 Nomor tersimpan otomatis. Bila nomor klinik/apoteker berganti, ketik nomor baru lalu klik <strong>Simpan</strong>.
+              </div>
             </div>
 
             <div class="form-group">
@@ -1502,8 +1498,8 @@
               </div>
             </div>
 
-            <button type="submit" class="btn btn-warning" style="width: 100%; padding: 12px; font-size: 0.98rem; font-weight: 700; background: #f59e0b; color: #000; margin-top: 15px; border-radius: var(--r-md); border: none;">
-              <i class="fa-brands fa-whatsapp"></i> KIRIM PERMINTAAN via WhatsApp
+            <button type="submit" class="btn btn-warning" style="width: 100%; padding: 12px; font-size: 0.98rem; font-weight: 700; background: #f59e0b; color: #000; margin-top: 15px; border-radius: var(--r-md); border: none; cursor: pointer;">
+              <i class="fa-brands fa-whatsapp"></i> KIRIM PERMINTAAN via WhatsApp (WA Web)
             </button>
           </form>
         </div>
@@ -2979,6 +2975,73 @@
           </button>
           <button type="submit" id="btn-submit-delete-record" class="btn btn-danger" style="flex: 1.5; font-weight: 800; background: #ef4444; color: white; border: none; padding: 12px;">
             <i class="fa-solid fa-trash-can"></i> Hapus &amp; Kembalikan Stok
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: QUICK INPUT PASIEN BARU / MANUAL DI POLI -->
+  <div id="modal-quick-pasien" class="modal-overlay" style="display: none; z-index: 10006;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-user-plus" style="color: #22c55e;"></i> Input Pasien Baru / Manual (Poli)</h3>
+        <button type="button" class="close-btn" onclick="closeModalQuickTambahPasien()">&times;</button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.82rem; margin-top: -8px; margin-bottom: 14px;">
+        Daftarkan pasien baru, karyawan baru, vendor, kontraktor, atau tamu klinik agar langsung bisa diperiksa di Poli &amp; otomatis terekam di laporan ganti shift.
+      </p>
+      <form id="form-quick-pasien" onsubmit="handleSaveQuickPasien(event)">
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 700;">Nama Lengkap Pasien *</label>
+            <input type="text" id="quick-pasien-nama" class="form-control" placeholder="Contoh: Budi Santoso / Tn. Satrio" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">NPK / NIK (Opsional)</label>
+            <input type="text" id="quick-pasien-nik" class="form-control" placeholder="Otomatis jika kosong">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 700;">Departemen / Instansi *</label>
+            <input type="text" id="quick-pasien-dept" class="form-control" list="quick-dept-suggestions" placeholder="Pilih / ketik departemen..." required>
+            <datalist id="quick-dept-suggestions">
+              <option value="Process">
+              <option value="Mechanical">
+              <option value="Electrical, Instrument & Automation">
+              <option value="QA, QC & Laboratory">
+              <option value="Power Plant & Utility">
+              <option value="SCM & Procurement">
+              <option value="HR & GA">
+              <option value="HSE">
+              <option value="Casting 1">
+              <option value="Casting 2">
+              <option value="Machining 1, 2">
+              <option value="Maintenance Casting">
+              <option value="Vendor / Kontraktor">
+              <option value="Tamu / Visitor">
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jenis Kelamin</label>
+            <select id="quick-pasien-gender" class="form-control">
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label"><i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> No. WhatsApp Pasien (Opsional)</label>
+          <input type="tel" id="quick-pasien-hp" class="form-control" placeholder="Contoh: 08123456789...">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalQuickTambahPasien()">Batal</button>
+          <button type="submit" id="btn-submit-quick-pasien" class="btn btn-primary" style="background: linear-gradient(135deg, #22c55e, #16a34a); border: none; font-weight: 700;">
+            <i class="fa-solid fa-check"></i> Simpan &amp; Lanjut Periksa di Poli
           </button>
         </div>
       </form>
