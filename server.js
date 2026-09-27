@@ -563,40 +563,90 @@ app.get('/api/events', (req, res) => {
   });
 });
 
-// Telegram Helper Function
-function sendTelegramNotif(message) {
-  const db = readDB();
-  const botToken = db.settings?.telegram_token || "8584899750:AAESDB2sLqsTCMqocFPs15o_tKLUcWrjDmE";
-  const chatId = db.settings?.telegram_chat_id || "-1003726103172";
-  
-  try {
-    const postData = JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: "HTML"
-    });
-
-    const req = https.request({
-      hostname: 'api.telegram.org',
-      path: `/bot${botToken}/sendMessage`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      }
-    }, (res) => {
-      res.on('data', () => {});
-    });
-
-    req.on('error', (e) => {
-      console.log('Telegram API Error:', e.message);
-    });
-
-    req.write(postData);
-    req.end();
-  } catch (err) {
-    console.error('Telegram notification error:', err);
+// Markdown to Telegram HTML Converter
+function formatTelegramHtml(text) {
+  if (!text) return '';
+  if (/<[a-z][\s\S]*>/i.test(text)) {
+    return text;
   }
+  let t = String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  t = t.replace(/\*([^*]+)\*/g, '<b>$1</b>');
+  t = t.replace(/_([^_]+)_/g, '<i>$1</i>');
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+  return t;
+}
+
+// Telegram Helper Function (Async / Promise based with Auto Fallback)
+function sendTelegramNotif(message, customToken, customChatId, parseMode = 'HTML') {
+  return new Promise((resolve) => {
+    const db = readDB();
+    const botToken = customToken || db.settings?.telegram_token || "8584899750:AAESDB2sLqsTCMqocFPs15o_tKLUcWrjDmE";
+    const chatId = customChatId || db.settings?.telegram_chat_id || "-1003726103172";
+
+    if (!botToken || !chatId) {
+      console.warn('[Telegram] Token atau Chat ID belum dikonfigurasi.');
+      return resolve({ success: false, error: 'Token atau Chat ID Telegram belum diatur.' });
+    }
+
+    let payloadText = message;
+    if (parseMode === 'HTML') {
+      payloadText = formatTelegramHtml(message);
+    }
+
+    const sendReq = (mode) => {
+      const bodyObj = {
+        chat_id: chatId,
+        text: payloadText
+      };
+      if (mode) bodyObj.parse_mode = mode;
+
+      const postData = JSON.stringify(bodyObj);
+      const req = https.request({
+        hostname: 'api.telegram.org',
+        path: `/bot${botToken}/sendMessage`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      }, (res) => {
+        let respData = '';
+        res.on('data', chunk => respData += chunk);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(respData);
+            if (parsed.ok) {
+              resolve({ success: true, result: parsed.result });
+            } else {
+              // Jika gagal karena HTML entity parsing error, fallback kirim sebagai plain text tanpa parse_mode
+              if (mode === 'HTML' && (parsed.error_code === 400 || String(parsed.description).includes('parse'))) {
+                console.warn('[Telegram] HTML parse error, retrying as plain text...', parsed.description);
+                payloadText = String(message).replace(/<[^>]*>?/gm, ''); // strip html tags
+                return sendReq(null);
+              }
+              console.warn('[Telegram] Send error:', parsed.description);
+              resolve({ success: false, error: parsed.description, error_code: parsed.error_code });
+            }
+          } catch (e) {
+            resolve({ success: false, error: e.message });
+          }
+        });
+      });
+
+      req.on('error', (e) => {
+        console.error('[Telegram] Network error:', e.message);
+        resolve({ success: false, error: e.message });
+      });
+
+      req.write(postData);
+      req.end();
+    };
+
+    sendReq(parseMode);
+  });
 }
 
 // WhaCenter WhatsApp Helper Function
@@ -2971,13 +3021,14 @@ app.post('/api/records', async (req, res) => {
       const biayaTindakanTeks = Number(newRecord.biayaTindakan || 0).toLocaleString('id-ID');
       const biayaObatTeks = Number(newRecord.biayaObat || 0).toLocaleString('id-ID');
 
+      const namaPtKlinik = db.settings?.nama_pt || 'PT ATI';
       const telegramText = 
-`🏥 <b>LAPORAN HASIL PEMERIKSAAN PASIEN</b>
+`🏥 <b>LAPORAN HASIL PEMERIKSAAN PASIEN (${namaPtKlinik})</b>
 ━━━━━━━━━━━━━━━━━━━━
 🕐 <b>Waktu:</b> ${nowWIB} WIB
 👤 <b>Pasien:</b> <b>${newRecord.namaPasien || '-'}</b>
 🔢 <b>NPK / NIK:</b> <code>${newRecord.nikPabrik || '-'}</code>
-🏢 <b>Bagian / Dept:</b> ${newRecord.dept || 'PT ATI'}
+🏢 <b>Bagian / Dept:</b> ${newRecord.dept || namaPtKlinik}
 ━━━━━━━━━━━━━━━━━━━━
 📋 <b>DATA REKAM MEDIS (SOAP):</b>
 • <b>[S] Keluhan Utama:</b>
@@ -3005,9 +3056,11 @@ ${obatDetailTeks}
 
 👨‍⚕️ <b>Nakes Pemeriksa:</b> <b>${newRecord.pemeriksa || '-'}</b>
 ━━━━━━━━━━━━━━━━━━━━
-🏥 <i>Sistem Rekam Medis & Manajemen Klinik PT ATI</i>`;
+🏥 <i>Sistem Rekam Medis & Manajemen Klinik ${namaPtKlinik}</i>`;
 
-      sendTelegramNotif(telegramText);
+      if (db.settings?.telegram_send_patient !== false) {
+        sendTelegramNotif(telegramText);
+      }
     } catch (err) {
       console.error('Telegram notification error:', err);
     }
@@ -3779,20 +3832,37 @@ app.post('/api/shift/format1', async (req, res) => {
     }
   }
 
-  // Telegram fallback jika ada konfigurasi
-  try { sendTelegramNotif(msg.replace(/\*/g, '<b>').replace(/\_/g, '<i>')); } catch (e) {}
+  // Kirim otomatis ke Grup Telegram jika fitur diaktifkan
+  let tgResult = { success: false };
+  if (db.settings?.telegram_send_shift !== false) {
+    try {
+      tgResult = await sendTelegramNotif(msg);
+    } catch (e) {
+      console.error('[Shift 1] Telegram send error:', e.message);
+    }
+  }
+
+  const isRealWaSent = Boolean(waResult?.realSent);
+  const isTgSent = Boolean(tgResult?.success);
+  let statusMsg = `Laporan Oper Shift disiapkan (${filtered.length} Pasien, ${suratLuarFiltered.length} Surat Sakit).`;
+  if (isRealWaSent && isTgSent) {
+    statusMsg = `Laporan Oper Shift terkirim ke WhatsApp ${destWa} & Grup Telegram!`;
+  } else if (isTgSent) {
+    statusMsg = `Laporan Oper Shift terkirim ke Grup Telegram & siap dibuka di WhatsApp!`;
+  } else if (isRealWaSent) {
+    statusMsg = `Laporan Oper Shift berhasil dikirim ke WhatsApp ${destWa}!`;
+  }
 
   res.json({
     success: true,
     destWa: destWa,
     waResult: waResult,
+    tgResult: tgResult,
     preview: msg,
     totalPasien: filtered.length,
     totalSurat: suratLuarFiltered.length,
     totalPasienBaru: newEmpsFiltered.length,
-    message: destWa 
-      ? `Laporan Oper Shift (${filtered.length} Pasien, ${suratLuarFiltered.length} Surat Sakit) berhasil dikirim via WhatsApp ke ${destWa}!`
-      : `Laporan Oper Shift dibuat (${filtered.length} Pasien, ${suratLuarFiltered.length} Surat Sakit).`
+    message: statusMsg
   });
 });
 
@@ -3956,19 +4026,36 @@ app.post('/api/shift/format2', async (req, res) => {
     }
   }
 
-  // Telegram fallback jika ada konfigurasi
-  try { sendTelegramNotif(msg.replace(/\*/g, '<b>').replace(/\_/g, '<i>')); } catch (e) {}
+  // Kirim otomatis ke Grup Telegram jika fitur diaktifkan
+  let tgResult = { success: false };
+  if (db.settings?.telegram_send_shift !== false) {
+    try {
+      tgResult = await sendTelegramNotif(msg);
+    } catch (e) {
+      console.error('[Shift 2] Telegram send error:', e.message);
+    }
+  }
+
+  const isRealWaSent = Boolean(waResult?.realSent);
+  const isTgSent = Boolean(tgResult?.success);
+  let statusMsg = `Rekap 24H disiapkan (${filteredRecords.length} Kunjungan, ${filteredSuratLuar.length} Surat Sakit).`;
+  if (isRealWaSent && isTgSent) {
+    statusMsg = `Rekap 24H terkirim ke WhatsApp ${destWa} & Grup Telegram!`;
+  } else if (isTgSent) {
+    statusMsg = `Rekap 24H terkirim ke Grup Telegram & siap dibuka di WhatsApp!`;
+  } else if (isRealWaSent) {
+    statusMsg = `Rekap 24H berhasil dikirim ke WhatsApp ${destWa}!`;
+  }
 
   res.json({
     success: true,
     destWa: destWa,
     waResult: waResult,
+    tgResult: tgResult,
     preview: msg,
     totalKunjungan: filteredRecords.length,
     totalSurat: filteredSuratLuar.length,
-    message: destWa 
-      ? `Rekap 24H (${filteredRecords.length} Kunjungan, ${filteredSuratLuar.length} Surat Sakit) berhasil dikirim via WhatsApp ke ${destWa}!`
-      : `Rekap 24H dibuat (${filteredRecords.length} Kunjungan, ${filteredSuratLuar.length} Surat Sakit).`
+    message: statusMsg
   });
 });
 
@@ -4011,6 +4098,11 @@ app.get('/api/settings', (req, res) => {
   if (!db.settings.sub_title) db.settings.sub_title = 'Klinik Nafila Medika & ' + (db.settings.nama_pt || 'PT ATI');
   if (!db.settings.logo_pt) db.settings.logo_pt = 'ATI Logo.png';
   if (!db.settings.logo_nafila) db.settings.logo_nafila = 'Salinan Logo nafila.webp';
+  if (!db.settings.telegram_token) db.settings.telegram_token = '8584899750:AAESDB2sLqsTCMqocFPs15o_tKLUcWrjDmE';
+  if (!db.settings.telegram_chat_id) db.settings.telegram_chat_id = '-1003726103172';
+  if (db.settings.telegram_send_patient === undefined) db.settings.telegram_send_patient = true;
+  if (db.settings.telegram_send_shift === undefined) db.settings.telegram_send_shift = true;
+  if (db.settings.telegram_send_audit === undefined) db.settings.telegram_send_audit = true;
   res.json(db.settings);
 });
 
@@ -4020,6 +4112,43 @@ app.post('/api/settings', (req, res) => {
   db.settings = { ...db.settings, ...req.body };
   writeDB(db);
   res.json({ success: true, settings: db.settings });
+});
+
+// Endpoint Uji Coba Koneksi Bot & Grup Telegram
+app.post('/api/telegram/test', async (req, res) => {
+  const { token, chatId } = req.body;
+  const db = readDB();
+  const botToken = token || db.settings?.telegram_token || '8584899750:AAESDB2sLqsTCMqocFPs15o_tKLUcWrjDmE';
+  const targetChatId = chatId || db.settings?.telegram_chat_id || '-1003726103172';
+
+  if (!botToken || !targetChatId) {
+    return res.status(400).json({ success: false, error: 'Bot API Token dan ID Grup / Chat ID Telegram wajib diisi!' });
+  }
+
+  const testMsg = 
+    `🏥 <b>TEST KONEKSI TELEGRAM BOT SISTEM MEDIS</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `✅ <b>Status:</b> Bot & Grup Berhasil Terhubung!\n` +
+    `🏢 <b>Klinik:</b> ${db.settings?.nama_pt || 'Klinik PT ATI'}\n` +
+    `⏰ <b>Waktu:</b> ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `<i>Sistem siap mengirimkan laporan otomatis kunjungan pasien, oper shift, dan notifikasi audit rekam medis.</i>`;
+
+  const sendRes = await sendTelegramNotif(testMsg, botToken, targetChatId, 'HTML');
+  if (sendRes.success) {
+    const chatTitle = sendRes.result?.chat?.title || targetChatId;
+    return res.json({
+      success: true,
+      chatTitle: chatTitle,
+      message: `Berhasil terhubung! Pesan uji coba berhasil dikirim ke grup "${chatTitle}".`,
+      result: sendRes.result
+    });
+  } else {
+    return res.status(400).json({
+      success: false,
+      error: sendRes.error || 'Gagal mengirim pesan ke Telegram. Pastikan Bot Token benar dan Bot sudah dimasukkan ke Grup sebagai Admin.'
+    });
+  }
 });
 
 app.get('/api/backup/export', (req, res) => {

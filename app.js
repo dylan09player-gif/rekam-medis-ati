@@ -7246,6 +7246,84 @@ function initShiftView() {
   if (tglSelesai2 && !tglSelesai2.value) tglSelesai2.value = todayStr;
 }
 
+let currentShiftReportText = '';
+
+function showModalShiftReport(previewText, targetWa, title, isTgSent = false) {
+  currentShiftReportText = previewText || '';
+  const modal = document.getElementById('modal-shift-report');
+  if (!modal) return;
+
+  let cleanPhone = String(targetWa || '').replace(/\D/g, '');
+  if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1);
+
+  // Auto-copy text to clipboard
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(currentShiftReportText)
+      .then(() => showToast('📋 Laporan otomatis disalin ke clipboard!', 'info', 3000))
+      .catch(() => {});
+  }
+
+  const titleEl = document.getElementById('shift-modal-title');
+  if (titleEl) titleEl.textContent = title || 'Laporan Oper Shift Siap Dikirim';
+
+  const waEl = document.getElementById('shift-modal-target-wa');
+  if (waEl) waEl.textContent = cleanPhone ? `+${cleanPhone}` : '-';
+
+  const tgBadge = document.getElementById('shift-modal-tg-badge');
+  if (tgBadge) {
+    if (isTgSent) {
+      tgBadge.innerHTML = '<span class="badge" style="background: rgba(0, 136, 204, 0.15); color: #0088cc; font-size: 0.75rem; font-weight: 700;"><i class="fa-brands fa-telegram"></i> Terkirim ke Grup Telegram</span>';
+    } else {
+      tgBadge.innerHTML = '<span class="badge" style="background: rgba(100, 116, 139, 0.15); color: var(--text-muted); font-size: 0.75rem;"><i class="fa-brands fa-telegram"></i> Telegram Siap</span>';
+    }
+  }
+
+  const previewBox = document.getElementById('shift-modal-preview-text');
+  if (previewBox) previewBox.value = currentShiftReportText;
+
+  const waWebUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(currentShiftReportText)}`;
+  const waMeUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(currentShiftReportText)}`;
+
+  const btnWaWeb = document.getElementById('shift-modal-btn-waweb');
+  if (btnWaWeb) btnWaWeb.href = waWebUrl;
+
+  const btnWaMe = document.getElementById('shift-modal-btn-wame');
+  if (btnWaMe) btnWaMe.href = waMeUrl;
+
+  modal.style.display = 'flex';
+
+  // Coba buka WhatsApp Web langsung
+  try {
+    const newTab = window.open(waWebUrl, '_blank');
+    if (newTab) {
+      newTab.focus();
+    }
+  } catch (e) {}
+}
+
+function closeModalShiftReport() {
+  const modal = document.getElementById('modal-shift-report');
+  if (modal) modal.style.display = 'none';
+}
+
+function copyShiftReportToClipboard() {
+  if (!currentShiftReportText) {
+    showToast('Tidak ada teks laporan untuk disalin', 'warning');
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(currentShiftReportText).then(() => {
+      showToast('📋 Seluruh isi laporan berhasil disalin ke clipboard!', 'success');
+    }).catch(() => {
+      const t = document.getElementById('shift-modal-preview-text');
+      if (t) { t.select(); document.execCommand('copy'); showToast('📋 Laporan disalin!', 'success'); }
+    });
+  } else {
+    const t = document.getElementById('shift-modal-preview-text');
+    if (t) { t.select(); document.execCommand('copy'); showToast('📋 Laporan disalin!', 'success'); }
+  }
+}
+
 async function handleKirimShift1(e) {
   e.preventDefault();
   const btn = document.getElementById('btn-submit-shift1');
@@ -7281,20 +7359,14 @@ async function handleKirimShift1(e) {
     });
     const result = await res.json();
     if (res.ok && result.success) {
+      const isTgSent = Boolean(result.tgResult?.success);
       showToast(result.message || `Laporan Oper Shift disiapkan (${result.totalPasien || 0} Pasien)!`, 'success', 5000);
-      
-      // Buka seketika via WhatsApp Web
-      if (result.preview) {
-        let cleanPhone = targetWa.replace(/\D/g, '');
-        if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1);
-        const waWebUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(result.preview)}`;
-        window.open(waWebUrl, '_blank');
-      }
+      showModalShiftReport(result.preview, targetWa, 'Laporan Oper Shift (Format 1)', isTgSent);
     } else {
       showToast(result.error || 'Gagal menyiapkan laporan', 'error');
     }
   } catch (err) {
-    showToast('Gagal mengirim WhatsApp. Periksa koneksi server.', 'error');
+    showToast('Gagal memproses laporan shift. Periksa koneksi server.', 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -7339,20 +7411,14 @@ async function handleKirimShift2(e) {
     });
     const result = await res.json();
     if (res.ok && result.success) {
+      const isTgSent = Boolean(result.tgResult?.success);
       showToast(result.message || `Rekap 24H disiapkan (${result.totalKunjungan || 0} Kunjungan)!`, 'success', 5000);
-      
-      // Buka seketika via WhatsApp Web
-      if (result.preview) {
-        let cleanPhone = targetWa.replace(/\D/g, '');
-        if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1);
-        const waWebUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(result.preview)}`;
-        window.open(waWebUrl, '_blank');
-      }
+      showModalShiftReport(result.preview, targetWa, 'Rekapitulasi 24 Jam (Format 2)', isTgSent);
     } else {
       showToast(result.error || 'Gagal menyiapkan laporan', 'error');
     }
   } catch (err) {
-    showToast('Gagal mengirim WhatsApp. Periksa koneksi server.', 'error');
+    showToast('Gagal memproses laporan rekap 24 jam. Periksa koneksi server.', 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -17142,6 +17208,34 @@ function applyBranding(settings, forceInputs = false) {
     }
     if (prevTitle) prevTitle.textContent = namaKlinik;
     if (prevSub) prevSub.textContent = subTitle;
+
+    // Telegram Bot & Group Settings
+    const inputTgToken = document.getElementById('setting-telegram-token');
+    const inputTgChatId = document.getElementById('setting-telegram-chat-id');
+    const checkTgPatient = document.getElementById('setting-telegram-send-patient');
+    const checkTgShift = document.getElementById('setting-telegram-send-shift');
+    const checkTgAudit = document.getElementById('setting-telegram-send-audit');
+
+    if (inputTgToken && (forceInputs || !inputTgToken.dataset.initialized)) {
+      inputTgToken.value = settings.telegram_token || '8584899750:AAESDB2sLqsTCMqocFPs15o_tKLUcWrjDmE';
+      inputTgToken.dataset.initialized = 'true';
+    }
+    if (inputTgChatId && (forceInputs || !inputTgChatId.dataset.initialized)) {
+      inputTgChatId.value = settings.telegram_chat_id || '-1003726103172';
+      inputTgChatId.dataset.initialized = 'true';
+    }
+    if (checkTgPatient && (forceInputs || !checkTgPatient.dataset.initialized)) {
+      checkTgPatient.checked = settings.telegram_send_patient !== false;
+      checkTgPatient.dataset.initialized = 'true';
+    }
+    if (checkTgShift && (forceInputs || !checkTgShift.dataset.initialized)) {
+      checkTgShift.checked = settings.telegram_send_shift !== false;
+      checkTgShift.dataset.initialized = 'true';
+    }
+    if (checkTgAudit && (forceInputs || !checkTgAudit.dataset.initialized)) {
+      checkTgAudit.checked = settings.telegram_send_audit !== false;
+      checkTgAudit.dataset.initialized = 'true';
+    }
   }
 }
 
@@ -17251,6 +17345,120 @@ async function resetBrandingToDefault() {
     }
   } catch (err) {
     showToast('Gagal reset branding', 'error');
+  }
+}
+
+// ============================================================================
+// KONFIGURASI TELEGRAM BOT & GRUP (LAPORAN OTOMATIS PASIEN & SHIFT)
+// ============================================================================
+
+async function handleSaveTelegramConfig(event) {
+  event.preventDefault();
+  const token = document.getElementById('setting-telegram-token')?.value.trim();
+  const chatId = document.getElementById('setting-telegram-chat-id')?.value.trim();
+  const sendPatient = document.getElementById('setting-telegram-send-patient')?.checked ?? true;
+  const sendShift = document.getElementById('setting-telegram-send-shift')?.checked ?? true;
+  const sendAudit = document.getElementById('setting-telegram-send-audit')?.checked ?? true;
+
+  if (!token || !chatId) {
+    showToast('Bot API Token dan Chat ID Telegram wajib diisi!', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-telegram');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+  }
+
+  try {
+    const payload = {
+      telegram_token: token,
+      telegram_chat_id: chatId,
+      telegram_send_patient: sendPatient,
+      telegram_send_shift: sendShift,
+      telegram_send_audit: sendAudit
+    };
+
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      appData.settings = data.settings || data;
+      showToast('Konfigurasi Telegram Bot & Grup berhasil disimpan!', 'success');
+      const resBox = document.getElementById('telegram-test-result');
+      if (resBox) {
+        resBox.style.display = 'block';
+        resBox.style.background = 'rgba(16, 185, 129, 0.12)';
+        resBox.style.color = '#059669';
+        resBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        resBox.innerHTML = `<i class="fa-solid fa-check-circle"></i> Konfigurasi Telegram Bot aktif. Laporan otomatis diarahkan ke Chat ID: <code>${chatId}</code>`;
+      }
+    } else {
+      showToast(data.error || 'Gagal menyimpan konfigurasi Telegram', 'error');
+    }
+  } catch (err) {
+    showToast('Terjadi kesalahan koneksi', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Konfigurasi Telegram';
+    }
+  }
+}
+
+async function testTelegramConnection() {
+  const token = document.getElementById('setting-telegram-token')?.value.trim();
+  const chatId = document.getElementById('setting-telegram-chat-id')?.value.trim();
+  const btn = document.getElementById('btn-test-telegram');
+  const resBox = document.getElementById('telegram-test-result');
+
+  if (!token || !chatId) {
+    showToast('Isi Bot API Token dan Chat ID sebelum melakukan tes!', 'warning');
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Tes ke Grup...';
+  }
+
+  try {
+    const res = await fetch('/api/telegram/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, chatId })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`✅ ${data.message}`, 'success', 6000);
+      if (resBox) {
+        resBox.style.display = 'block';
+        resBox.style.background = 'rgba(16, 185, 129, 0.12)';
+        resBox.style.color = '#059669';
+        resBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        resBox.innerHTML = `✅ <strong>Berhasil Terhubung!</strong> Pesan tes berhasil diterima oleh grup <u>${data.chatTitle || chatId}</u>. Notifikasi otomatis aktif.`;
+      }
+    } else {
+      showToast(data.error || 'Gagal mengirim pesan tes ke Telegram', 'error', 6000);
+      if (resBox) {
+        resBox.style.display = 'block';
+        resBox.style.background = 'rgba(239, 68, 68, 0.12)';
+        resBox.style.color = '#dc2626';
+        resBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        resBox.innerHTML = `❌ <strong>Gagal:</strong> ${data.error || 'Periksa token bot atau pastikan bot sudah dimasukkan ke grup & dijadikan Admin.'}`;
+      }
+    }
+  } catch (err) {
+    showToast('Koneksi gagal saat menghubungi server', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Tes Kirim Pesan ke Grup Telegram';
+    }
   }
 }
 
