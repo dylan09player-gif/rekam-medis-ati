@@ -11438,6 +11438,12 @@ function switchManajemenTab(tabName) {
     renderUsersTable();
   } else if (tabName === 'billing') {
     if (typeof renderBillingPTTable === 'function') renderBillingPTTable();
+  } else if (tabName === 'settings') {
+    if (typeof updateAdminStatBadges === 'function') updateAdminStatBadges();
+    if (typeof loadTelegramConfig === 'function') loadTelegramConfig();
+    if (appData.brandingSettings && typeof applyBranding === 'function') {
+      applyBranding(appData.brandingSettings, true);
+    }
   }
 }
 
@@ -11603,24 +11609,35 @@ function renderUsersTable() {
 
   const users = appData.users || [];
   if (users.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">Belum ada akun petugas terdaftar.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">Belum ada akun petugas terdaftar.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = users.map((u, idx) => `
-    <tr>
-      <td style="text-align: center;">${idx + 1}</td>
-      <td><strong>${u.nama || '-'}</strong></td>
-      <td><code>${u.username || '-'}</code></td>
-      <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; font-weight: 600;">${u.role || 'Petugas'}</span></td>
-      <td style="text-align: center;">
-        <div style="display: flex; gap: 6px; justify-content: center;">
-          <button class="btn btn-sm btn-secondary" onclick="openModalEditUser('${u.id}')" title="Edit Akun"><i class="fa-solid fa-user-pen"></i></button>
-          <button class="btn btn-sm btn-danger" onclick="handleDeleteUser('${u.id}')" title="Hapus Akun"><i class="fa-solid fa-trash-can"></i></button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = users.map((u, idx) => {
+    const phone = u.noWa || u.hp || u.no_hp || u.telepon || '';
+    const phoneBtn = phone ? `
+      <button type="button" class="btn btn-sm" onclick="openWaChatWithPatient('${escapeHtml(phone)}', '${escapeHtml(u.nama || '')}')" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 0.8rem; font-weight: 700; border-radius: 6px; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); color: #22c55e; cursor: pointer; text-decoration: none;" title="Klik untuk membuka WhatsApp Web tersambung di aplikasi">
+        <i class="fa-brands fa-whatsapp" style="font-size: 0.95rem; color: #22c55e;"></i>
+        <span>${escapeHtml(phone)}</span>
+      </button>
+    ` : `<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">- Belum diatur -</span>`;
+
+    return `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td><strong>${escapeHtml(u.nama || '-')}</strong></td>
+        <td><code>${escapeHtml(u.username || '-')}</code></td>
+        <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; font-weight: 600;">${escapeHtml(u.role || 'Petugas')}</span></td>
+        <td style="text-align: center;">${phoneBtn}</td>
+        <td style="text-align: center;">
+          <div style="display: flex; gap: 6px; justify-content: center;">
+            <button class="btn btn-sm btn-secondary" onclick="openModalEditUser('${u.id}')" title="Edit Akun"><i class="fa-solid fa-user-pen"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="handleDeleteUser('${u.id}')" title="Hapus Akun"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 async function handleTambahUserAdmin(e) {
@@ -11629,6 +11646,7 @@ async function handleTambahUserAdmin(e) {
   const role = document.getElementById('adm-user-role').value;
   const username = document.getElementById('adm-user-username').value.trim();
   const password = document.getElementById('adm-user-password').value.trim();
+  const noWa = document.getElementById('adm-user-nowa')?.value.trim() || '';
 
   if (!nama || !username || !password) {
     showToast('Semua field wajib diisi!', 'warning');
@@ -11639,7 +11657,7 @@ async function handleTambahUserAdmin(e) {
     const res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, role, username, password })
+      body: JSON.stringify({ nama, role, username, password, noWa })
     });
     const data = await res.json();
     if (res.ok && data.success) {
@@ -11647,6 +11665,7 @@ async function handleTambahUserAdmin(e) {
       document.getElementById('adm-user-nama').value = '';
       document.getElementById('adm-user-username').value = '';
       document.getElementById('adm-user-password').value = '';
+      if (document.getElementById('adm-user-nowa')) document.getElementById('adm-user-nowa').value = '';
       await loadAllAppData();
     } else {
       showToast(data.error || 'Gagal membuat akun petugas', 'error');
