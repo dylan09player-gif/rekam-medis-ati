@@ -18887,7 +18887,14 @@ function applyRoleAccess() {
     navGudang.style.display = '';
   }
 
-  // 5. Navigation Guard: Bila user role Nakes/Apotek membuka view yang terkunci
+  // 5. Tombol Navigasi Obat Req (Permintaan Obat oleh Nakes ke Apotek via WA)
+  const navObatReq = document.querySelectorAll('[data-target="view-obat-req"]');
+  navObatReq.forEach(el => {
+    // Selalu dibuka penuh untuk Nakes (Perawat, Bidan, Dokter), Apotek, dan Manajemen
+    el.style.display = '';
+  });
+
+  // 6. Navigation Guard: Bila user role Nakes/Apotek membuka view yang terkunci
   const activeView = document.querySelector('.page-view.active');
   if (activeView) {
     if (activeView.id === 'view-manajemen' && !isManajemen) {
