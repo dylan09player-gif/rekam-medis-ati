@@ -2359,7 +2359,7 @@ app.post('/api/patients', (req, res) => {
 
 app.put('/api/patients/:id', (req, res) => {
   const db = readDB();
-  if (!db.employees) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
+  if (!db.employees) db.employees = [];
   const rawParam = req.params.id ? String(req.params.id) : '';
   const param = decodeURIComponent(rawParam).trim();
   const idx = db.employees.findIndex(e => 
@@ -2368,12 +2368,13 @@ app.put('/api/patients/:id', (req, res) => {
     String(e.nik || '').trim() === param ||
     (e.nama && String(e.nama).trim().toLowerCase() === param.toLowerCase())
   );
-  if (idx !== -1) {
-    const rawSaldo = req.body.saldoObat;
-    const cleanSaldo = rawSaldo !== undefined && rawSaldo !== null
-      ? parseInt(String(rawSaldo).replace(/[^\d-]/g, '')) || 0
-      : (parseInt(String(db.employees[idx].saldoObat || db.employees[idx].sisaLimit || '0').replace(/[^\d-]/g, '')) || 0);
 
+  const rawSaldo = req.body.saldoObat;
+  const cleanSaldo = rawSaldo !== undefined && rawSaldo !== null
+    ? parseInt(String(rawSaldo).replace(/[^\d-]/g, '')) || 0
+    : (idx !== -1 ? (parseInt(String(db.employees[idx].saldoObat || db.employees[idx].sisaLimit || '0').replace(/[^\d-]/g, '')) || 0) : 0);
+
+  if (idx !== -1) {
     db.employees[idx] = {
       ...db.employees[idx],
       ...req.body,
@@ -2382,20 +2383,47 @@ app.put('/api/patients/:id', (req, res) => {
       nama: req.body.nama !== undefined ? String(req.body.nama).trim() : db.employees[idx].nama,
       dept: req.body.dept !== undefined ? String(req.body.dept).trim() : db.employees[idx].dept,
       departemen: req.body.dept !== undefined ? String(req.body.dept).trim() : (db.employees[idx].departemen || db.employees[idx].dept),
-      gender: req.body.gender || db.employees[idx].gender,
-      golDarah: req.body.golDarah || db.employees[idx].golDarah || '-',
+      gender: req.body.gender || req.body.jenisKelamin || db.employees[idx].gender,
+      golDarah: req.body.golDarah || req.body.golonganDarah || db.employees[idx].golDarah || '-',
       tglLahir: req.body.tglLahir !== undefined ? String(req.body.tglLahir).trim() : db.employees[idx].tglLahir,
       tgl_lahir: req.body.tglLahir !== undefined ? String(req.body.tglLahir).trim() : (db.employees[idx].tgl_lahir || db.employees[idx].tglLahir),
       hp: req.body.hp !== undefined ? String(req.body.hp).trim() : (db.employees[idx].hp || ''),
       no_hp: req.body.hp !== undefined ? String(req.body.hp).trim() : (db.employees[idx].no_hp || db.employees[idx].hp || ''),
+      alamat: req.body.alamat !== undefined ? req.body.alamat : (db.employees[idx].alamat || ''),
+      alergi: req.body.alergi !== undefined ? req.body.alergi : (db.employees[idx].alergi || ''),
+      riwayatAlergi: req.body.alergi !== undefined ? req.body.alergi : (db.employees[idx].riwayatAlergi || ''),
       saldoObat: cleanSaldo,
       sectionName: req.body.sectionName !== undefined ? req.body.sectionName : (db.employees[idx].sectionName || ''),
       birthPlace: req.body.birthPlace !== undefined ? req.body.birthPlace : (db.employees[idx].birthPlace || '')
     };
     writeDB(db);
     return res.json({ success: true, employee: db.employees[idx] });
+  } else {
+    const newEmp = {
+      id: req.body.id || `EMP-${Date.now()}`,
+      nikPabrik: String(req.body.nikPabrik || req.body.nik || param).trim(),
+      nik: String(req.body.nik || req.body.nikPabrik || param).trim(),
+      nama: String(req.body.nama || req.body.namaPasien || '').trim(),
+      dept: String(req.body.dept || req.body.departemen || '-').trim(),
+      departemen: String(req.body.departemen || req.body.dept || '-').trim(),
+      gender: req.body.gender || req.body.jenisKelamin || 'Laki-laki',
+      golDarah: req.body.golDarah || req.body.golonganDarah || '-',
+      tglLahir: String(req.body.tglLahir || req.body.tgl_lahir || '').trim(),
+      tgl_lahir: String(req.body.tgl_lahir || req.body.tglLahir || '').trim(),
+      hp: String(req.body.hp || req.body.no_hp || req.body.noHp || '').trim(),
+      no_hp: String(req.body.no_hp || req.body.hp || '').trim(),
+      alamat: req.body.alamat || '',
+      alergi: req.body.alergi || '',
+      riwayatAlergi: req.body.alergi || '',
+      saldoObat: cleanSaldo,
+      sectionName: req.body.sectionName || '',
+      birthPlace: req.body.birthPlace || '',
+      created_at: new Date().toISOString()
+    };
+    db.employees.unshift(newEmp);
+    writeDB(db);
+    return res.json({ success: true, employee: newEmp });
   }
-  res.status(404).json({ error: 'Karyawan tidak ditemukan' });
 });
 
 app.delete('/api/patients/:id', (req, res) => {

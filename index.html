@@ -180,9 +180,7 @@
           <button type="button" class="nav-dropdown-item" data-target="view-surat-luar" id="nav-btn-surat-luar" onclick="handleNavDropdownClick('view-surat-luar', this)">
             <i class="fa-solid fa-file-circle-check" style="color: #ec4899;"></i> SURAT SAKIT (LUAR)
           </button>
-          <button type="button" class="nav-dropdown-item" data-target="view-gsheet" onclick="handleNavDropdownClick('view-gsheet', this)">
-            <i class="fa-brands fa-google-drive" style="color: #60a5fa;"></i> G-SHEET SYNC
-          </button>
+
         </div>
       </div>
     </nav>
@@ -335,9 +333,14 @@
                 <div class="banner-name" id="poli-info-nama">Nama Pasien</div>
                 <div class="banner-sub" id="poli-info-sub">NIK Pabrik: - | Dept: -</div>
               </div>
-              <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('poli-search-nik').value=''; document.getElementById('poli-patient-info-box').style.display='none'; appData.currentPoliPatient=null;" title="Ganti Pasien">
-                <i class="fa-solid fa-xmark"></i> Ganti
-              </button>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-sm" onclick="openModalEditCurrentPoliPatient()" style="font-weight: 700; border-radius: 6px; padding: 5px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); cursor: pointer;" title="Koreksi / Edit Data Pasien Ini">
+                  <i class="fa-solid fa-user-pen"></i> Edit Pasien
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('poli-search-nik').value=''; document.getElementById('poli-patient-info-box').style.display='none'; appData.currentPoliPatient=null;" style="font-weight: 700; border-radius: 6px; padding: 5px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px;" title="Ganti Pasien">
+                  <i class="fa-solid fa-xmark"></i> Ganti
+                </button>
+              </div>
             </div>
 
             <form id="form-poli-entry" onsubmit="event.preventDefault(); return false;">
@@ -2296,6 +2299,7 @@
               <button class="btn btn-primary" id="mj-nav-billing" onclick="switchManajemenTab('billing')">🧾 Billing PT &amp; Biaya</button>
               <button class="btn btn-secondary" id="mj-nav-tindakan" onclick="switchManajemenTab('tindakan')">💉 Master Tindakan &amp; Tarif</button>
               <button class="btn btn-secondary" id="mj-nav-users" onclick="switchManajemenTab('users')">👥 Akun Petugas</button>
+              <button class="btn btn-secondary" id="mj-nav-settings" onclick="switchManajemenTab('settings')">⚙️ Pengaturan Aplikasi</button>
               <button class="btn btn-warning" id="mj-nav-kontak" onclick="switchManajemenTab('kontak')">📲 Kontak WA</button>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -2405,11 +2409,12 @@
                 <div>
                   <label class="form-label" style="font-size: 0.8rem;">Profesi / Role *</label>
                   <select id="adm-user-role" class="form-control" required>
-                    <option value="Dokter">Dokter</option>
-                    <option value="Perawat" selected>Perawat</option>
-                    <option value="Bidan">Bidan</option>
-                    <option value="Apoteker">Apoteker</option>
-                    <option value="Petugas Medis">Petugas Medis</option>
+                    <option value="Dokter">Dokter (Nakes - Input Pelayanan &amp; Poli)</option>
+                    <option value="Perawat" selected>Perawat (Nakes - Input Pelayanan &amp; Poli)</option>
+                    <option value="Bidan">Bidan (Nakes - Input Pelayanan &amp; Poli)</option>
+                    <option value="Apoteker">Apoteker (Apotek - Gudang Obat &amp; Resep)</option>
+                    <option value="Manajemen">Manajemen / Admin (Akses Penuh &amp; Pengaturan)</option>
+                    <option value="HSE">HSE / K3 (Keselamatan Kerja &amp; Pemantauan K3)</option>
                   </select>
                 </div>
                 <div>
@@ -2449,18 +2454,17 @@
             <h3>📲 Kelola Daftar Kontak WA &amp; Gateway API WhaCenter</h3>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Pengiriman pesan otomatis via WhatsApp Center API &amp; kelola kontak penerima.</p>
 
-            <!-- WHACENTER API DEVICE ID CONFIG -->
-            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-              <div style="font-weight: 700; color: #34d399; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> WhatsApp Center Gateway (Device Connected: Hp Klinik Nafila)
+            <!-- WHATSAPP INTEGRATION STATUS: WA WEB QR DIRECT -->
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <div style="font-weight: 700; color: #34d399; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> WhatsApp Web Terintegrasi (Multi-Device Engine)
+                </div>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">Sistem telah beralih sepenuhnya ke WhatsApp Web resmi. Tautkan barcode QR di menu <strong>WA WEB</strong> untuk mengirim laporan, edukasi, dan rekap shift otomatis.</p>
               </div>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Device ID aktif dari WhaCenter untuk mengirim pesan otomatis secara instan.</p>
-              <div class="whacenter-row" style="display: flex; gap: 10px; align-items: center; max-width: 650px;">
-                <input type="text" id="whacenter-device-id" class="form-control" value="83f3428d66d811ef2f2d78e289bae57c" style="font-weight: 700; font-family: monospace;">
-                <button class="btn btn-primary" onclick="saveWhaCenterDeviceId()" style="white-space: nowrap; background: var(--success); border: none; font-weight: 700;">
-                  <i class="fa-solid fa-floppy-disk"></i> Simpan Device ID
-                </button>
-              </div>
+              <button type="button" class="btn btn-sm btn-success" onclick="document.querySelector('[data-target=\'view-wa-web\']')?.click()" style="font-weight: 700; padding: 8px 14px; background: #16a34a; border: none; border-radius: 6px;">
+                <i class="fa-solid fa-qrcode"></i> Buka Menu WA WEB
+              </button>
             </div>
 
             <form onsubmit="handleTambahWAContact(event)" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; margin-bottom: 20px;">
@@ -2500,6 +2504,57 @@
                 </tbody>
               </table>
             </div>
+          <!-- 5. PENGATURAN APLIKASI (GOOGLE SHEET SYNC & SISTEM) -->
+          <div id="mj-tab-settings" style="display: none; margin-top: 16px;">
+            <div class="glass-card" style="margin-bottom: 20px; border-left: 4px solid #00a8e8;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">
+                    <i class="fa-brands fa-google-drive" style="color: #00a8e8;"></i> Pengaturan Sinkronisasi Google Sheets
+                  </h3>
+                  <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.85rem;">
+                    Backup &amp; integrasi spreadsheet otomatis setiap jam 03:00 Subuh WIB ke Google Drive.
+                  </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" class="btn btn-primary" onclick="handleManualGSheetSync()" style="background: #0284c7; border: none; font-weight: 700;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Sinkron Sekarang
+                  </button>
+                </div>
+              </div>
+
+              <div style="background: var(--surface-2); border: 1px solid var(--border-card); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Status Auto-Sync</label>
+                    <div style="color: #34d399; font-weight: 700; font-size: 0.9rem;">
+                      <i class="fa-solid fa-circle-check"></i> AKTIF (Otomatis jam 03:00 Subuh)
+                    </div>
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Akses Cepat Pengaturan Lanjutan</label>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="unlockAndOpenGSheetView()" style="font-weight: 700;">
+                      <i class="fa-solid fa-sliders"></i> Buka Konfigurasi Detail Cloud
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass-card" style="margin-bottom: 20px; border-left: 4px solid #f59e0b;">
+              <h3 style="margin: 0 0 10px; font-size: 1.1rem; color: var(--text-main);">
+                <i class="fa-solid fa-database" style="color: #f59e0b;"></i> Cadangan Database Lokal &amp; Keamanan
+              </h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+                Unduh file cadangan database sistem rekam medis lengkap (.JSON) untuk arsip aman.
+              </p>
+              <button type="button" class="btn btn-warning" onclick="downloadDatabaseBackup()" style="background: #f59e0b; color: #000; font-weight: 700; border: none;">
+                <i class="fa-solid fa-download"></i> Unduh File Backup Database (JSON)
+              </button>
+            </div>
+          </div>
+
+
           </div>
 
         </div>
@@ -2857,7 +2912,97 @@
   </main>
 
   <!-- MODALS: EDIT DATA & KOREKSI STOK (MARUNDA FORMAT) -->
-  <div id="modal-edit-record" class="modal-overlay">
+    <!-- ============================================================ -->
+  <!-- MODAL: EDIT DATA PASIEN (KOREKSI NAMA, DEPT, USIA, NO WA, DLL) -->
+  <!-- ============================================================ -->
+  <div id="modal-edit-patient" class="modal-overlay" style="display: none; z-index: 10008;">
+    <div class="modal-card" style="max-width: 600px; width: 95vw; max-height: 90vh; overflow-y: auto; padding: 22px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; color: #f59e0b; font-size: 1.1rem;">
+            <i class="fa-solid fa-user-pen"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; color: var(--text-main);">Koreksi &amp; Edit Data Pasien</h3>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Perbarui data identitas pasien jika ada kekeliruan atau perubahan</span>
+          </div>
+        </div>
+        <button type="button" class="close-btn" onclick="closeModalEditPatient()">&times;</button>
+      </div>
+
+      <form id="form-edit-patient" onsubmit="handleSaveEditPatient(event)">
+        <input type="hidden" id="edit-pat-id">
+        <input type="hidden" id="edit-pat-orig-nik">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">NPK / NIK Pabrik *</label>
+            <input type="text" id="edit-pat-nik" class="form-control" placeholder="Contoh: 07572" required>
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Nama Lengkap Pasien *</label>
+            <input type="text" id="edit-pat-nama" class="form-control" placeholder="Nama Pasien" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Departemen / Bagian</label>
+            <input type="text" id="edit-pat-dept" class="form-control" placeholder="Contoh: Casting 1 / Mechanical">
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Jenis Kelamin</label>
+            <select id="edit-pat-gender" class="form-control">
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Tanggal Lahir</label>
+            <input type="date" id="edit-pat-tgl-lahir" class="form-control" onchange="updateEditPatAgePreview()">
+            <div id="edit-pat-age-preview" style="font-size: 0.72rem; color: #38bdf8; margin-top: 4px; font-weight: 600;">Usia: -</div>
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Golongan Darah</label>
+            <select id="edit-pat-goldar" class="form-control">
+              <option value="-">- Belum Diketahui -</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="AB">AB</option>
+              <option value="O">O</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.8rem; font-weight: 700;"><i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> Nomor WhatsApp / HP</label>
+          <input type="tel" id="edit-pat-hp" class="form-control" placeholder="Contoh: 087804559593">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Alamat Tempat Tinggal</label>
+          <textarea id="edit-pat-alamat" class="form-control" rows="2" placeholder="Alamat domisili pasien..."></textarea>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+          <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Riwayat Alergi / Penyakit Kronis</label>
+          <input type="text" id="edit-pat-alergi" class="form-control" placeholder="Contoh: Alergi Amoxicillin, Asma">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalEditPatient()">Batal</button>
+          <button type="submit" class="btn btn-warning" style="background: #f59e0b; color: #000; font-weight: 800; border: none; padding: 10px 20px;">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Pasien
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<div id="modal-edit-record" class="modal-overlay">
     <div class="modal-card" style="max-width: 650px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <h3 class="modal-title"><i class="fa-solid fa-pen-to-square" style="color: #eab308;"></i> Edit &amp; Koreksi Stok</h3>
@@ -2985,12 +3130,170 @@
             </label>
           </div>
 
-          <!-- Pantauan (Merah) -->
-          <div style="border: 1.5px dashed #ef4444; background: rgba(239, 68, 68, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; align-items: center; gap: 12px;">
-            <input type="checkbox" id="edit-is-pantauan" style="width: 20px; height: 20px; cursor: pointer; accent-color: #ef4444;">
-            <label for="edit-is-pantauan" style="color: #b91c1c; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; width: 100%;">
-              <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
-            </label>
+          <!-- Pantauan (Merah) - Full Rich Feature Matching SS 3 -->
+          <div style="border: 1.5px dashed #ef4444; background: rgba(239, 68, 68, 0.08); border-radius: var(--r-md); padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <label for="edit-is-pantauan" style="color: #b91c1c; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0;">
+                <input type="checkbox" id="edit-is-pantauan" onchange="toggleEditPantauanSubOptions()" style="width: 20px; height: 20px; cursor: pointer; accent-color: #ef4444;">
+                <i class="fa-solid fa-triangle-exclamation"></i> TANDAI PASIEN DALAM PANTAUAN (HIGH RISK / K3)
+              </label>
+              <span style="font-size: 0.75rem; color: #ef4444; background: rgba(239,68,68,0.15); padding: 2px 8px; border-radius: 8px; font-weight: 700;">
+                Terintegrasi HSE &amp; Pemantauan Rutin
+              </span>
+            </div>
+
+            <!-- Sub-opsi Rutinitas Pemantauan (Muncul saat dicentang) -->
+            <div id="edit-pantauan-sub-options" style="display: none; padding-top: 8px; border-top: 1px dashed rgba(239,68,68,0.3);">
+              <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
+                Pilih Jenis Kunjungan Pemantauan Rutin (Bisa dipilih 1, 2, atau ketiganya):
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(2,132,199,0.12); border: 1.5px solid rgba(2,132,199,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; color: #38bdf8; cursor: pointer;">
+                  <input type="checkbox" id="edit-pantauan-chk-mingguan" value="mingguan" checked onchange="toggleEditPantauanSection('mingguan')" style="width: 16px; height: 16px; accent-color: #0284c7; cursor: pointer;">
+                  <i class="fa-solid fa-heart-pulse"></i> 1 Minggu (Cek Vital / Gula)
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.12); border: 1.5px solid rgba(16,185,129,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; color: #34d399; cursor: pointer;">
+                  <input type="checkbox" id="edit-pantauan-chk-obat" value="obat" onchange="toggleEditPantauanSection('obat')" style="width: 16px; height: 16px; accent-color: #10b981; cursor: pointer;">
+                  <i class="fa-solid fa-pills"></i> 1 Bulan (Ambil Obat Rutin)
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(168,85,247,0.12); border: 1.5px solid rgba(168,85,247,0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; color: #c084fc; cursor: pointer;">
+                  <input type="checkbox" id="edit-pantauan-chk-lab" value="lab" onchange="toggleEditPantauanSection('lab')" style="width: 16px; height: 16px; accent-color: #8b5cf6; cursor: pointer;">
+                  <i class="fa-solid fa-flask-vial"></i> 3 Bulan (Cek Lab Berkala)
+                </label>
+              </div>
+
+              <!-- 1. FORM INPUT CEK RUTIN MINGGUAN -->
+              <div id="edit-pantauan-sec-mingguan" style="display: block; background: var(--surface-1); border: 1px solid rgba(2,132,199,0.3); border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(2,132,199,0.2); padding-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                  <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-heart-pulse"></i> 1. Cek Rutin Mingguan (Vital, Gula, Asam Urat, Kolesterol, BB/TB)
+                  </strong>
+                  <button type="button" class="btn btn-sm" onclick="syncEditObjektifToPantauan()" style="background: rgba(56,189,248,0.15); color: #38bdf8; font-size: 0.74rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.3); font-weight: 700;" title="Salin otomatis jika TD / Vital sudah diketik di kolom Objektif">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Ambil dari TTV Objektif
+                  </button>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Tekanan Darah (Sistolik / Diastolik)</label>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                      <input type="number" id="edit-pantauan-td-sis" class="form-control form-control-sm" placeholder="120" style="text-align: center; font-weight: 700;" oninput="updateEditPantauanBPStatus()">
+                      <span>/</span>
+                      <input type="number" id="edit-pantauan-td-dia" class="form-control form-control-sm" placeholder="80" style="text-align: center; font-weight: 700;" oninput="updateEditPantauanBPStatus()">
+                      <span style="font-size: 0.72rem; color: var(--text-muted);">mmHg</span>
+                    </div>
+                    <div id="edit-pantauan-bp-status" style="margin-top: 4px; font-size: 0.72rem; font-weight: 700; color: #10b981;">Status: Normal (&lt;120/80)</div>
+                  </div>
+
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Denyut Nadi</label>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                      <input type="number" id="edit-pantauan-nadi" class="form-control form-control-sm" placeholder="80" style="text-align: center;">
+                      <span style="font-size: 0.72rem; color: var(--text-muted);">bpm</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Gula Darah (mg/dL)</label>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                      <select id="edit-pantauan-tipe-gula" class="form-control form-control-sm" style="width: 75px; font-size: 0.78rem;">
+                        <option value="GDS">GDS</option>
+                        <option value="GDP">GDP</option>
+                        <option value="GD2PP">GD2PP</option>
+                      </select>
+                      <input type="number" id="edit-pantauan-gula" class="form-control form-control-sm" placeholder="110" style="text-align: center; font-weight: 700;">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Asam Urat (mg/dL)</label>
+                    <input type="number" step="0.1" id="edit-pantauan-asam-urat" class="form-control form-control-sm" placeholder="Contoh: 6.2">
+                  </div>
+
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Kolesterol Total (mg/dL)</label>
+                    <input type="number" id="edit-pantauan-kolesterol" class="form-control form-control-sm" placeholder="Contoh: 190">
+                  </div>
+
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Berat Badan &amp; Tinggi</label>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                      <input type="number" step="0.5" id="edit-pantauan-bb" class="form-control form-control-sm" placeholder="BB (kg)" oninput="calcEditPantauanBMI()">
+                      <input type="number" id="edit-pantauan-tb" class="form-control form-control-sm" placeholder="TB (cm)" oninput="calcEditPantauanBMI()">
+                    </div>
+                    <div id="edit-pantauan-bmi" style="margin-top: 4px; font-size: 0.72rem; color: var(--text-muted);">BMI: -</div>
+                  </div>
+
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Lingkar Perut (cm)</label>
+                    <input type="number" id="edit-pantauan-lingkar-perut" class="form-control form-control-sm" placeholder="Contoh: 85">
+                  </div>
+
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700; color: #38bdf8;">Jadwal Cek Mingguan Berikutnya</label>
+                    <input type="date" id="edit-pantauan-jadwal-mingguan" class="form-control form-control-sm">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. FORM INPUT OBAT RUTIN BULANAN -->
+              <div id="edit-pantauan-sec-obat" style="display: none; background: var(--surface-1); border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(16,185,129,0.2); padding-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; color: #34d399; margin: 0; cursor: pointer;">
+                    <input type="checkbox" id="edit-pantauan-chk-ambil-obat" checked style="width: 16px; height: 16px; accent-color: #10b981;">
+                    <i class="fa-solid fa-pills"></i> 2. Ada Pengambilan Obat Rutin Bulan Ini
+                  </label>
+                  <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-sm" onclick="syncEditResepToPantauan()" style="background: rgba(56,189,248,0.15); color: #38bdf8; font-size: 0.74rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.3); font-weight: 700;">
+                      <i class="fa-solid fa-arrows-rotate"></i> Salin Resep Edit
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addEditPantauanMedRow()" style="background: #0284c7; color: #fff; font-size: 0.74rem; padding: 3px 10px; border-radius: 4px; border: none; font-weight: 700;">
+                      <i class="fa-solid fa-plus"></i> + Tambah Obat
+                    </button>
+                  </div>
+                </div>
+
+                <!-- List Baris Obat -->
+                <div id="edit-pantauan-obat-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;"></div>
+
+                <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px;">
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700;">Catatan Obat / Kepatuhan Minum</label>
+                    <input type="text" id="edit-pantauan-catatan-obat" class="form-control form-control-sm" placeholder="Contoh: Diminum teratur">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.76rem; font-weight: 700; color: #34d399;">Jadwal Ambil Obat Bulan Depan</label>
+                    <input type="date" id="edit-pantauan-jadwal-obat" class="form-control form-control-sm">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. FORM INPUT CEK LAB 3 BULANAN -->
+              <div id="edit-pantauan-sec-lab" style="display: none; background: var(--surface-1); border: 1px solid rgba(168,85,247,0.3); border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(168,85,247,0.2); padding-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; color: #c084fc; margin: 0; cursor: pointer;">
+                    <input type="checkbox" id="edit-pantauan-chk-ada-lab" checked style="width: 16px; height: 16px; accent-color: #8b5cf6;">
+                    <i class="fa-solid fa-flask-vial"></i> 3. Ada Pemeriksaan Laboratorium (Triwulanan)
+                  </label>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-sm" onclick="addEditPantauanPresetLabs('prolanis')" style="background: rgba(168,85,247,0.15); color: #c084fc; font-size: 0.74rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(168,85,247,0.3); font-weight: 700;" title="Paket Cepat Prolanis">
+                      <i class="fa-solid fa-bolt"></i> + Paket Prolanis
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addEditPantauanLabRow()" style="background: #8b5cf6; color: #fff; font-size: 0.74rem; padding: 3px 10px; border-radius: 4px; border: none; font-weight: 700;">
+                      <i class="fa-solid fa-plus"></i> + Tambah Pemeriksaan Lab
+                    </button>
+                  </div>
+                </div>
+
+                <!-- List Baris Lab -->
+                <div id="edit-pantauan-lab-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;"></div>
+
+                <div>
+                  <label class="form-label" style="font-size: 0.76rem; font-weight: 700; color: #c084fc;">Jadwal Cek Lab Triwulanan Berikutnya</label>
+                  <input type="date" id="edit-pantauan-jadwal-lab" class="form-control form-control-sm">
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Upload File (Hijau) -->
@@ -4587,11 +4890,12 @@
         <div class="form-group" style="margin-bottom: 14px;">
           <label class="form-label">Profesi / Jabatan *</label>
           <select id="edit-user-role" class="form-control" required>
-            <option value="Dokter">Dokter</option>
-            <option value="Perawat">Perawat</option>
-            <option value="Bidan">Bidan</option>
-            <option value="Apoteker">Apoteker</option>
-            <option value="Petugas Medis">Petugas Medis</option>
+            <option value="Dokter">Dokter (Nakes - Input Pelayanan &amp; Poli)</option>
+            <option value="Perawat">Perawat (Nakes - Input Pelayanan &amp; Poli)</option>
+            <option value="Bidan">Bidan (Nakes - Input Pelayanan &amp; Poli)</option>
+            <option value="Apoteker">Apoteker (Apotek - Gudang Obat &amp; Resep)</option>
+            <option value="Manajemen">Manajemen / Admin (Akses Penuh &amp; Pengaturan)</option>
+            <option value="HSE">HSE / K3 (Keselamatan Kerja &amp; Pemantauan K3)</option>
           </select>
         </div>
         <div class="form-group" style="margin-bottom: 14px;">
