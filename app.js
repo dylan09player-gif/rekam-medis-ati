@@ -9956,52 +9956,121 @@ function renderHSESurkesTable() {
   const container = document.getElementById('table-hse-surkes-body');
   if (!container) return;
 
-  const surkesList = appData.records.filter(r => r.izinSakit === true);
+  // 1. Ambil data izin sakit internal poli (Surkes)
+  const surkesInternal = (appData.records || []).filter(r => r.izinSakit === true).map(r => {
+    const dObj = parseRecordDate(r);
+    const timeVal = getRecordTimestamp(r) || (dObj ? dObj.getTime() : 0);
+    return {
+      tipe: 'INTERNAL',
+      id: r.id,
+      tanggal: r.tanggal,
+      jam: r.jam || '',
+      nama: r.namaPasien || r.nama || '-',
+      nik: r.nikPabrik || r.npk || r.nik || '-',
+      dept: r.dept || r.departemen || '-',
+      keluhan: r.keluhan || r.keluhanUtama || '-',
+      objektif: r.objektif || '',
+      diagnosa: r.asesmen || r.diagnosa || r.diagnosis || '-',
+      plan: r.plan || '',
+      tglKembali: r.tanggalKontrol || '',
+      pemeriksa: r.pemeriksa || r.nakes || r.dokter || 'Dokter/Perawat Poli',
+      faskes: 'Klinik PT ATI (Internal)',
+      durasi: '1 Hari',
+      catatanKontrol: r.catatanKontrol || r.catatan || '',
+      timestamp: timeVal,
+      linkFoto: r.linkFoto || null,
+      raw: r
+    };
+  });
 
-  if (surkesList.length === 0) {
-    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Belum ada data pasien yang dipulangkan / diberikan izin istirahat sakit (Surkes)</div>`;
+  // 2. Ambil data surat sakit faskes luar
+  const surkesLuar = (appData.suratSakitLuar || []).map(s => {
+    let dVal = new Date(s.createdAt || s.created_at || s.tanggalInput || s.tanggalMulai || s.tglMulai || 0).getTime();
+    let dept = s.dept || s.departemen;
+    if (!dept || dept === '-') {
+      const p = (appData.patients || []).concat(appData.employees || []).find(x => 
+        String(x.npk || x.nikPabrik || x.nik || '').trim().toLowerCase() === String(s.nikPabrik || s.nik || '').trim().toLowerCase()
+      );
+      if (p) dept = p.dept || p.departemen;
+    }
+    if (!dept) dept = '-';
+
+    const tM = s.tanggalMulai || s.tglMulai || '';
+    const tS = s.tanggalSelesai || s.tglSelesai || tM;
+    const durasi = parseInt(s.durasiHari || s.lamaHari) || 1;
+
+    return {
+      tipe: 'LUAR',
+      id: s.id,
+      tanggal: tM,
+      jam: '',
+      nama: s.namaPasien || s.nama || '-',
+      nik: s.nikPabrik || s.nik || s.npk || '-',
+      dept: dept,
+      keluhan: `Istirahat ${durasi} Hari (${tM} s/d ${tS})`,
+      objektif: '',
+      diagnosa: s.diagnosa || s.diagnosis || '-',
+      plan: `Surat Sakit dari: ${s.namaFaskes || s.faskesLuar || 'RS/Klinik Luar'}${s.namaDokterLuar ? ` (Dokter: ${s.namaDokterLuar})` : ''}`,
+      tglKembali: tS,
+      pemeriksa: s.pemeriksaKlinik || s.petugas || 'Petugas Medis',
+      faskes: s.namaFaskes || s.faskesLuar || s.fasyankes || 'RS/Klinik Luar',
+      durasi: `${durasi} Hari`,
+      catatanKontrol: s.catatan || s.keterangan || '',
+      timestamp: dVal,
+      linkFoto: s.fotoBukti || s.linkFoto || null,
+      raw: s
+    };
+  });
+
+  const combined = surkesInternal.concat(surkesLuar);
+
+  if (combined.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px; background: var(--surface-1); border: 1px dashed var(--border-card); border-radius: 10px;">Belum ada data pasien yang dipulangkan / diberikan izin istirahat sakit (Surkes & Surat Luar)</div>`;
     return;
   }
 
-  // Sort descending by timestamp / newest first
-  const sortedSurkes = surkesList.slice().sort((a, b) => {
-    const timeA = getRecordTimestamp(a) || (parseRecordDate(a) ? parseRecordDate(a).getTime() : 0);
-    const timeB = getRecordTimestamp(b) || (parseRecordDate(b) ? parseRecordDate(b).getTime() : 0);
-    return timeB - timeA;
-  });
+  // Urutkan paling baru diinput
+  combined.sort((a, b) => b.timestamp - a.timestamp);
 
-  container.innerHTML = sortedSurkes.map((r, idx) => {
-    const patient = appData.patients.find(p => (p.nikPabrik || p.nik) === r.nikPabrik) || {};
-    const rawHp = patient.hp || patient.no_hp || '';
+  container.innerHTML = combined.map((r, idx) => {
+    const isInternal = r.tipe === 'INTERNAL';
+    const patient = (appData.patients || []).concat(appData.employees || []).find(p => (p.nikPabrik || p.nik || p.npk) === r.nik) || {};
+    const rawHp = patient.hp || patient.no_hp || patient.noHp || patient.telepon || '';
     const cleanWA = typeof cleanPhoneForWA === 'function' ? cleanPhoneForWA(rawHp) : rawHp;
     
-    const tplSurkes = encodeURIComponent(`Halo rekan ${r.namaPasien || ''} (${r.nikPabrik || ''}), ini dari Tim Medis PT ATI terkait surat izin istirahat sakit Anda.`);
+    const tplSurkes = encodeURIComponent(`Halo rekan ${r.nama || ''} (${r.nik || ''}), ini dari Tim Medis PT ATI terkait surat izin istirahat sakit Anda.`);
     const waBtn = rawHp 
-      ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(r.namaPasien || '')}', '${tplSurkes}')" title="Kirim Pesan WhatsApp di Dasbor"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
+      ? `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); openWaChatWithPatient('${escapeHtml(rawHp)}', '${escapeHtml(r.nama || '')}', '${tplSurkes}')" title="Kirim Pesan WhatsApp di Dasbor"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`
       : `<button type="button" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px; opacity: 0.5;" onclick="event.stopPropagation(); showToast('No HP belum diisi di data pasien.', 'warning')" title="No WA belum diisi"><i class="fa-brands fa-whatsapp"></i> Chat WA</button>`;
       
     const fileBtn = r.linkFoto 
-      ? `<button type="button" class="btn btn-sm" style="background: #0284c7; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); openPhotoViewer('${r.id}')" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
+      ? `<button type="button" class="btn btn-sm" style="background: #0284c7; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); ${isInternal ? `openPhotoViewer('${r.id}')` : `previewFotoSuratLuar('${r.linkFoto}')`}" title="Lihat Gambar/File"><i class="fa-solid fa-image"></i> File</button>`
       : '';
 
+    const cetakBtn = isInternal
+      ? `<button type="button" class="btn btn-sm" style="background: #4f46e5; color: #fff; border: none; font-weight: 800; padding: 7px 14px; border-radius: 6px;" onclick="event.stopPropagation(); printSuratSakit('${r.id}')" title="Cetak Surat Keterangan Sakit"><i class="fa-solid fa-print"></i> Cetak Surkes</button>`
+      : '';
+
+    const badgeTipe = isInternal
+      ? `<span class="badge-status-surkes">📄 Izin Istirahat Sakit (Poli)</span>`
+      : `<span class="badge-status-surkes" style="background: #fef3c7; color: #b45309; border-color: #fde68a;">📄 Surat Sakit Faskes Luar (${escapeHtml(r.faskes)})</span>`;
+
     return `
-    <div class="hse-patient-card surkes-card" ondblclick="openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Dobel-klik untuk melihat seluruh riwayat rekam medis pasien">
+    <div class="hse-patient-card surkes-card" ondblclick="openModalRiwayatPasien('${r.nik || r.nama}')" title="Dobel-klik untuk melihat seluruh riwayat rekam medis pasien">
       <div class="hse-card-header">
         <div>
-          <div class="hse-card-patient-name" onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Klik untuk membuka riwayat rekam medis">
-            ${r.namaPasien || '-'}
+          <div class="hse-card-patient-name" onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nik || r.nama}')" title="Klik untuk membuka riwayat rekam medis">
+            ${r.nama || '-'}
           </div>
           <div class="hse-card-tags">
-            <span class="badge badge-info"><i class="fa-solid fa-id-badge"></i> ${r.nikPabrik || '-'}</span>
+            <span class="badge badge-info"><i class="fa-solid fa-id-badge"></i> ${r.nik || '-'}</span>
             <span class="hse-card-dept-badge"><i class="fa-solid fa-building"></i> ${r.dept || '-'}</span>
           </div>
         </div>
         <div class="hse-card-meta">
-          <div class="hse-card-date"><i class="fa-regular fa-calendar" style="color: var(--warning);"></i> ${r.tanggal || '-'}</div>
+          <div class="hse-card-date"><i class="fa-regular fa-calendar" style="color: var(--warning);"></i> ${r.tanggal || '-'} ${r.jam || ''}</div>
           <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-            <span class="badge-status-surkes">
-              📄 Izin Istirahat Sakit
-            </span>
+            ${badgeTipe}
           </div>
         </div>
       </div>
@@ -10018,29 +10087,150 @@ function renderHSESurkesTable() {
         </div>` : ''}
         <div class="hse-card-soap-row">
           <strong class="hse-card-lbl">A (Diagnosis):</strong>
-          <div class="hse-card-val-block">${renderDiagnosisBadges(r.asesmen)}</div>
+          <div class="hse-card-val-block">${renderDiagnosisBadges(r.diagnosa)}</div>
         </div>
         <div class="hse-card-soap-row">
           <strong class="hse-card-lbl">P (Instruksi/Plan):</strong>
           <div class="hse-card-val" style="padding-left: 4px;">${formatPlanForDisplay(r.plan)}</div>
         </div>
+        ${r.tglKembali ? `
+        <div class="hse-card-soap-row">
+          <strong class="hse-card-lbl">Tgl Kembali Kerja:</strong>
+          <span class="hse-card-val" style="color: #16a34a; font-weight: 700;"><i class="fa-solid fa-calendar-check"></i> ${formatDateIndo(r.tglKembali)} (${r.durasi})</span>
+        </div>` : ''}
         <div class="hse-card-pemeriksa">
-          <i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Pemeriksa: <strong>${r.pemeriksa || '-'}</strong>
+          <i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Nakes / Penerima: <strong>${r.pemeriksa || '-'}</strong>
         </div>
       </div>
 
       <div class="hse-card-footer">
         <span class="hse-card-hint"><i class="fa-solid fa-circle-info"></i> No: #${idx + 1} | Dobel-klik card untuk riwayat</span>
         <div class="hse-card-actions">
-          <button type="button" class="btn btn-sm btn-primary" style="padding: 7px 14px; font-weight: 800; border-radius: 6px;" onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nikPabrik || r.namaPasien}')" title="Buka Riwayat Rekam Medis">
+          <button type="button" class="btn btn-sm btn-primary" style="padding: 7px 14px; font-weight: 800; border-radius: 6px;" onclick="event.stopPropagation(); openModalRiwayatPasien('${r.nik || r.nama}')" title="Buka Riwayat Rekam Medis">
             <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Pasien
           </button>
+          ${cetakBtn}
           ${waBtn}
           ${fileBtn}
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+// Export Rekapitulasi Surkes & Surat Sakit Luar ke Excel
+function exportHSESurkesExcel() {
+  // 1. Ambil data izin sakit internal poli (Surkes)
+  const surkesInternal = (appData.records || []).filter(r => r.izinSakit === true).map(r => {
+    const dObj = parseRecordDate(r);
+    const timeVal = getRecordTimestamp(r) || (dObj ? dObj.getTime() : 0);
+    return {
+      tipe: 'INTERNAL POLI',
+      tanggal: r.tanggal || '',
+      nama: r.namaPasien || r.nama || '-',
+      nik: r.nikPabrik || r.npk || r.nik || '-',
+      dept: r.dept || r.departemen || '-',
+      faskes: 'Klinik PT ATI (Internal)',
+      diagnosa: r.asesmen || r.diagnosa || r.diagnosis || '-',
+      durasiHari: 1,
+      tglMulai: r.tanggal || '',
+      tglSelesai: r.tanggalKontrol || r.tanggal || '',
+      nakes: r.pemeriksa || r.nakes || r.dokter || 'Dokter/Perawat Poli',
+      catatan: r.catatanKontrol || r.catatan || '',
+      timestamp: timeVal
+    };
+  });
+
+  // 2. Ambil data surat sakit faskes luar
+  const surkesLuar = (appData.suratSakitLuar || []).map(s => {
+    let dVal = new Date(s.createdAt || s.created_at || s.tanggalInput || s.tanggalMulai || s.tglMulai || 0).getTime();
+    let dept = s.dept || s.departemen;
+    if (!dept || dept === '-') {
+      const p = (appData.patients || []).concat(appData.employees || []).find(x => 
+        String(x.npk || x.nikPabrik || x.nik || '').trim().toLowerCase() === String(s.nikPabrik || s.nik || '').trim().toLowerCase()
+      );
+      if (p) dept = p.dept || p.departemen;
+    }
+    if (!dept) dept = '-';
+
+    const tM = s.tanggalMulai || s.tglMulai || '';
+    const tS = s.tanggalSelesai || s.tglSelesai || tM;
+    const durasi = parseInt(s.durasiHari || s.lamaHari) || 1;
+
+    return {
+      tipe: 'FASKES LUAR',
+      tanggal: tM,
+      nama: s.namaPasien || s.nama || '-',
+      nik: s.nikPabrik || s.nik || s.npk || '-',
+      dept: dept,
+      faskes: s.namaFaskes || s.faskesLuar || s.fasyankes || 'RS/Klinik Luar',
+      diagnosa: s.diagnosa || s.diagnosis || '-',
+      durasiHari: durasi,
+      tglMulai: tM,
+      tglSelesai: tS,
+      nakes: s.pemeriksaKlinik || s.petugas || 'Petugas Medis',
+      catatan: s.catatan || s.keterangan || (s.namaDokterLuar ? `Dokter: ${s.namaDokterLuar}` : ''),
+      timestamp: dVal
+    };
+  });
+
+  const combined = surkesInternal.concat(surkesLuar);
+  if (combined.length === 0) {
+    showToast('Belum ada data surat izin sakit untuk diekspor!', 'warning');
+    return;
+  }
+
+  combined.sort((a, b) => b.timestamp - a.timestamp);
+
+  if (typeof XLSX !== 'undefined') {
+    const wsData = [
+      ['REKAPITULASI SURAT IZIN SAKIT (INTERNAL POLI & FASKES LUAR) - PT ATI'],
+      [`Tanggal Ekspor: ${new Date().toLocaleDateString('id-ID')} | Total Data: ${combined.length}`],
+      [],
+      ['NO', 'SUMBER SURAT', 'TANGGAL INPUT', 'NIK / NPK', 'NAMA KARYAWAN', 'DEPARTEMEN', 'FASKES PENERBIT', 'DIAGNOSIS', 'DURASI (HARI)', 'TGL MULAI', 'TGL SELESAI', 'NAKES / PENERIMA', 'CATATAN']
+    ];
+
+    combined.forEach((item, idx) => {
+      wsData.push([
+        idx + 1,
+        item.tipe,
+        item.tanggal,
+        item.nik,
+        item.nama,
+        item.dept,
+        item.faskes,
+        item.diagnosa,
+        item.durasiHari,
+        item.tglMulai,
+        item.tglSelesai,
+        item.nakes,
+        item.catatan
+      ]);
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Rekap Surkes K3');
+    XLSX.writeFile(wb, `Laporan_Surkes_K3_ATI_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast('Laporan Rekap Surkes Excel berhasil diunduh!', 'success');
+  } else {
+    let tableHtml = `<html><head><meta charset="utf-8"></head><body><h2>Rekapitulasi Izin Istirahat Sakit K3 - PT ATI</h2><table border="1"><tr><th>No</th><th>Sumber</th><th>Tanggal</th><th>NIK</th><th>Nama</th><th>Dept</th><th>Faskes</th><th>Diagnosis</th><th>Durasi</th><th>Tgl Mulai</th><th>Tgl Selesai</th><th>Petugas</th><th>Catatan</th></tr>`;
+    combined.forEach((item, idx) => {
+      tableHtml += `<tr><td>${idx+1}</td><td>${item.tipe}</td><td>${item.tanggal}</td><td>${item.nik}</td><td>${item.nama}</td><td>${item.dept}</td><td>${item.faskes}</td><td>${item.diagnosa}</td><td>${item.durasiHari} Hari</td><td>${item.tglMulai}</td><td>${item.tglSelesai}</td><td>${item.nakes}</td><td>${item.catatan}</td></tr>`;
+    });
+    tableHtml += `</table></body></html>`;
+
+    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Laporan_Surkes_K3_ATI_${new Date().toISOString().slice(0, 10)}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Laporan Rekap Surkes Excel berhasil diunduh!', 'success');
+  }
 }
 
 function exportHSERekamMedisExcel() {
@@ -10143,6 +10333,9 @@ function exportHSERekamMedisExcel() {
 
   const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Laporan_Rekam_Medis_K3_${startVal || 'Semua'}_sd_${endVal || 'Semua'}.xls`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -14739,14 +14932,45 @@ function renderLaporanDHSETable() {
   const endDate = document.getElementById('dhse-filter-end')?.value;
   const kat = document.getElementById('dhse-filter-kategori')?.value || 'semua';
 
-  const list = appData.kontrolPasien || [];
+  // Gabungkan jadwal kontrol biasa dengan surat sakit faskes luar
+  const list = (appData.kontrolPasien || []).slice();
+  
+  // Tambahkan Surat Sakit Luar jika belum tercatat di kontrolPasien
+  (appData.suratSakitLuar || []).forEach(s => {
+    const sId = s.id || `SSL-${s.nikPabrik}-${s.tanggalMulai}`;
+    const already = list.some(k => k.recordId === s.id || k.id === s.id || (k.nikPabrik === s.nikPabrik && k.tanggalPeriksa === s.tanggalMulai));
+    if (!already) {
+      let dept = s.dept || s.departemen;
+      if (!dept || dept === '-') {
+        const p = (appData.patients || []).concat(appData.employees || []).find(x => 
+          String(x.npk || x.nikPabrik || x.nik || '').trim().toLowerCase() === String(s.nikPabrik || s.nik || '').trim().toLowerCase()
+        );
+        if (p) dept = p.dept || p.departemen;
+      }
+      list.push({
+        id: s.id,
+        recordId: s.id,
+        namaPasien: s.namaPasien || s.nama || '-',
+        nikPabrik: s.nikPabrik || s.nik || s.npk || '-',
+        dept: dept || '-',
+        tanggalPeriksa: s.tanggalMulai || s.tglMulai || '',
+        tanggalKontrol: s.tanggalSelesai || s.tglSelesai || s.tanggalMulai || '',
+        catatanKontrol: `Surat Sakit Luar (${s.namaFaskes || s.faskesLuar || 'RS/Klinik Luar'}): ${s.diagnosa || s.diagnosis || '-'} (${s.durasiHari || s.lamaHari || 1} Hari)`,
+        isIzinSakit: true,
+        kategori: 'izinSakit',
+        pemeriksa: s.pemeriksaKlinik || s.petugas || 'Petugas Medis',
+        status: 'MENUNGGU'
+      });
+    }
+  });
+
   let filtered = list.filter(item => {
     const d = item.tanggalPeriksa || item.tanggalKontrol || '';
     if (startDate && d < startDate) return false;
     if (endDate && d > endDate) return false;
 
-    if (kat === 'izinSakit' && item.kategori !== 'izinSakit' && !item.izinSakit) return false;
-    if (kat === 'pantauan' && item.kategori !== 'pantauan' && !item.pantauan) return false;
+    if (kat === 'izinSakit' && item.kategori !== 'izinSakit' && !item.isIzinSakit && !item.izinSakit) return false;
+    if (kat === 'pantauan' && item.kategori !== 'pantauan' && !item.isPantauan && !item.pantauan) return false;
 
     return true;
   });
@@ -16491,9 +16715,10 @@ function handleSuratLuarNikInput(val) {
     return;
   }
 
-  // Cari di database karyawan
-  const p = (appData.patients || []).find(x => 
-    String(x.npk || x.nikPabrik || x.nik || '').toLowerCase() === cleanVal.toLowerCase()
+  // Cari di database karyawan (pasien atau master karyawan)
+  const pool = (appData.patients || []).concat(appData.employees || []);
+  const p = pool.find(x => 
+    String(x.npk || x.nikPabrik || x.nik || '').trim().toLowerCase() === cleanVal.toLowerCase()
   );
 
   if (p) {
@@ -16502,11 +16727,12 @@ function handleSuratLuarNikInput(val) {
     const metaEl = document.getElementById('surat-luar-info-meta');
     const hiddenNama = document.getElementById('surat-luar-nama');
     const hiddenDept = document.getElementById('surat-luar-dept');
+    const deptStr = p.dept || p.departemen || '-';
 
     if (namaEl) namaEl.textContent = p.nama;
-    if (metaEl) metaEl.textContent = `Dept: ${p.departemen || '-'} | Gender: ${p.jenisKelamin || '-'} | No HP: ${p.noHp || '-'}`;
+    if (metaEl) metaEl.textContent = `Dept: ${deptStr} | Gender: ${p.jenisKelamin || p.kelamin || '-'} | No HP: ${p.hp || p.noHp || p.telepon || '-'}`;
     if (hiddenNama) hiddenNama.value = p.nama;
-    if (hiddenDept) hiddenDept.value = p.departemen || '-';
+    if (hiddenDept) hiddenDept.value = deptStr;
     if (infoBox) infoBox.style.display = 'block';
   }
 }
@@ -16518,9 +16744,10 @@ function cekNikSuratLuar() {
     return;
   }
 
-  const p = (appData.patients || []).find(x => 
-    String(x.npk || x.nikPabrik || x.nik || '').toLowerCase() === nikVal.toLowerCase() ||
-    String(x.nama || '').toLowerCase().includes(nikVal.toLowerCase())
+  const pool = (appData.patients || []).concat(appData.employees || []);
+  const p = pool.find(x => 
+    String(x.npk || x.nikPabrik || x.nik || '').trim().toLowerCase() === nikVal.toLowerCase() ||
+    String(x.nama || '').trim().toLowerCase().includes(nikVal.toLowerCase())
   );
 
   if (p) {
@@ -16529,13 +16756,14 @@ function cekNikSuratLuar() {
     const metaEl = document.getElementById('surat-luar-info-meta');
     const hiddenNama = document.getElementById('surat-luar-nama');
     const hiddenDept = document.getElementById('surat-luar-dept');
+    const deptStr = p.dept || p.departemen || '-';
 
     if (namaEl) namaEl.textContent = p.nama;
-    if (metaEl) metaEl.textContent = `Dept: ${p.departemen || '-'} | Gender: ${p.jenisKelamin || '-'} | No HP: ${p.noHp || '-'}`;
+    if (metaEl) metaEl.textContent = `Dept: ${deptStr} | Gender: ${p.jenisKelamin || p.kelamin || '-'} | No HP: ${p.hp || p.noHp || p.telepon || '-'}`;
     if (hiddenNama) hiddenNama.value = p.nama;
-    if (hiddenDept) hiddenDept.value = p.departemen || '-';
+    if (hiddenDept) hiddenDept.value = deptStr;
     if (infoBox) infoBox.style.display = 'block';
-    showToast(`Data ditemukan: ${p.nama} (${p.departemen || '-'})`, 'success');
+    showToast(`Data ditemukan: ${p.nama} (${deptStr})`, 'success');
   } else {
     showToast(`NIK/Nama "${nikVal}" tidak terdaftar di data karyawan PT. Silakan lengkapi diagnosa & faskes.`, 'warning');
     const hiddenNama = document.getElementById('surat-luar-nama');
@@ -16595,8 +16823,21 @@ async function handleSimpanSuratLuar(event) {
   const tglSelesai = document.getElementById('surat-luar-tgl-selesai')?.value;
   const faskes = document.getElementById('surat-luar-faskes')?.value.trim();
   const perawat = document.getElementById('surat-luar-perawat')?.value.trim();
-  const nama = document.getElementById('surat-luar-nama')?.value.trim() || nik;
-  const dept = document.getElementById('surat-luar-dept')?.value.trim() || '-';
+  let nama = document.getElementById('surat-luar-nama')?.value.trim();
+  let dept = document.getElementById('surat-luar-dept')?.value.trim();
+
+  if (!nama || !dept || dept === '-') {
+    const pool = (appData.patients || []).concat(appData.employees || []);
+    const pFound = pool.find(x => 
+      String(x.npk || x.nikPabrik || x.nik || '').trim().toLowerCase() === nik.toLowerCase()
+    );
+    if (pFound) {
+      if (!nama) nama = pFound.nama;
+      if (!dept || dept === '-') dept = pFound.dept || pFound.departemen || '-';
+    }
+  }
+  if (!nama) nama = nik;
+  if (!dept) dept = '-';
 
   if (!nik || !diagnosa || !tglMulai || !tglSelesai || !faskes || !perawat) {
     showToast('Mohon lengkapi seluruh field wajib!', 'warning');
@@ -16614,15 +16855,30 @@ async function handleSimpanSuratLuar(event) {
 
   const payload = {
     nik: nik,
+    nikPabrik: nik,
+    npk: nik,
     nama: nama,
+    namaPasien: nama,
+    dept: dept,
     departemen: dept,
     diagnosa: diagnosa,
+    diagnosis: diagnosa,
     tanggalMulai: tglMulai,
+    tglMulai: tglMulai,
     tanggalSelesai: tglSelesai,
+    tglSelesai: tglSelesai,
     durasiHari: durasi,
+    lamaHari: durasi,
     faskesLuar: faskes,
+    namaFaskes: faskes,
+    fasyankes: faskes,
+    faskes: faskes,
+    namaDokterLuar: '-',
+    dokter: '-',
     namaPerawat: perawat,
-    fotoBukti: _suratLuarFotoBase64 || null
+    pemeriksaKlinik: perawat,
+    fotoBukti: _suratLuarFotoBase64 || null,
+    linkFoto: _suratLuarFotoBase64 || null
   };
 
   const btn = document.getElementById('btn-simpan-surat-luar');
@@ -16777,6 +17033,12 @@ function renderSuratLuarTable() {
   if (!tbody) return;
 
   const filtered = getFilteredSuratLuarList();
+  // Sort descending by created_at / newest input first
+  filtered.sort((a, b) => {
+    const tA = new Date(a.createdAt || a.created_at || a.tanggalInput || a.tanggalMulai || a.tglMulai || 0).getTime();
+    const tB = new Date(b.createdAt || b.created_at || b.tanggalInput || b.tanggalMulai || b.tglMulai || 0).getTime();
+    return tB - tA;
+  });
 
   // Update Summary Stats Bar
   const totalHari = filtered.reduce((acc, it) => {

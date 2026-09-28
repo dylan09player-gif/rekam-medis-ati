@@ -318,6 +318,37 @@ function initDBOnce(data) {
     modified = true;
   }
 
+  // Auto-repair dept, nama & alias fields in surat_sakit_luar
+  if (Array.isArray(data.surat_sakit_luar) && Array.isArray(data.employees)) {
+    data.surat_sakit_luar.forEach(s => {
+      const emp = data.employees.find(e => 
+        (e.nikPabrik && s.nikPabrik && String(e.nikPabrik).trim().toLowerCase() === String(s.nikPabrik).trim().toLowerCase()) ||
+        (e.nik && s.nik && String(e.nik).trim().toLowerCase() === String(s.nik).trim().toLowerCase()) ||
+        (e.nama && s.namaPasien && String(e.nama).trim().toLowerCase() === String(s.namaPasien).trim().toLowerCase())
+      );
+      if (emp) {
+        if (!s.dept || s.dept === '-') {
+          s.dept = emp.dept || emp.departemen || '-';
+          modified = true;
+        }
+        if (!s.namaPasien || s.namaPasien === s.nikPabrik) {
+          s.namaPasien = emp.nama;
+          modified = true;
+        }
+      }
+      if (!s.nama) s.nama = s.namaPasien;
+      if (!s.departemen) s.departemen = s.dept;
+      if (!s.nik) s.nik = s.nikPabrik;
+      if (!s.npk) s.npk = s.nikPabrik;
+      if (!s.faskes) s.faskes = s.namaFaskes || s.faskesLuar;
+      if (!s.diagnosis) s.diagnosis = s.diagnosa;
+      if (!s.tglMulai) s.tglMulai = s.tanggalMulai;
+      if (!s.tglSelesai) s.tglSelesai = s.tanggalSelesai;
+      if (!s.lamaHari) s.lamaHari = s.durasiHari || 1;
+      if (!s.tanggal) s.tanggal = s.tanggalMulai;
+    });
+  }
+
   // Auto-enrich master WHO ICD-10 dataset
   const masterIcdFile = path.join(__dirname, 'icd10_master.json');
   if (fs.existsSync(masterIcdFile)) {
@@ -1310,18 +1341,18 @@ async function pushAllDataToGSheet(db, gsheetUrl) {
   // 8. Surat Sakit Luar
   const suratSakitLuar = (db.surat_sakit_luar || []).map(s => ({
     id: String(s.id || '').trim(),
-    tanggal: String(s.tanggal || '').trim(),
-    nikPabrik: String(s.nikPabrik || '').trim(),
-    nama: String(s.nama || '').trim(),
-    dept: String(s.dept || '').trim(),
-    faskes: String(s.faskes || '').trim(),
-    dokter: String(s.dokter || '').trim(),
-    diagnosis: String(s.diagnosis || '').trim(),
-    lamaHari: parseSafeInt(s.lamaHari, 0),
-    tglMulai: String(s.tglMulai || '').trim(),
-    tglSelesai: String(s.tglSelesai || '').trim(),
-    keterangan: String(s.keterangan || '').trim(),
-    linkFoto: String(s.linkFoto || '').trim()
+    tanggal: String(s.tanggal || s.tanggalMulai || s.tglMulai || s.created_at || '').trim(),
+    nikPabrik: String(s.nikPabrik || s.nik || s.npk || '').trim(),
+    nama: String(s.namaPasien || s.nama || '').trim(),
+    dept: String(s.dept || s.departemen || '').trim(),
+    faskes: String(s.namaFaskes || s.faskesLuar || s.fasyankes || s.faskes || '').trim(),
+    dokter: String(s.namaDokterLuar || s.dokter || '').trim(),
+    diagnosis: String(s.diagnosa || s.diagnosis || '').trim(),
+    lamaHari: parseSafeInt(s.durasiHari || s.lamaHari, 1),
+    tglMulai: String(s.tanggalMulai || s.tglMulai || '').trim(),
+    tglSelesai: String(s.tanggalSelesai || s.tglSelesai || '').trim(),
+    keterangan: String(s.catatan || s.keterangan || '').trim(),
+    linkFoto: String(s.linkFoto || s.fotoBukti || '').trim()
   }));
 
   const payload = {
@@ -2531,45 +2562,152 @@ app.post('/api/surat-luar', (req, res) => {
   const db = readDB();
   if (!Array.isArray(db.surat_sakit_luar)) db.surat_sakit_luar = [];
 
-  const nikPabrik = req.body.nikPabrik || req.body.nik;
-  const namaPasien = req.body.namaPasien || req.body.nama;
-  const dept = req.body.dept || req.body.departemen || '-';
+  const nikPabrik = req.body.nikPabrik || req.body.nik || req.body.npk;
+  let namaPasien = req.body.namaPasien || req.body.nama;
+  let dept = req.body.dept || req.body.departemen;
   const namaFaskes = req.body.namaFaskes || req.body.faskesLuar || req.body.faskes || 'RS/Klinik Luar';
-  const namaDokterLuar = req.body.namaDokterLuar || '-';
-  const tanggalMulai = req.body.tanggalMulai;
-  const tanggalSelesai = req.body.tanggalSelesai || req.body.tanggalMulai;
-  const durasiHari = parseInt(req.body.durasiHari) || 1;
+  const namaDokterLuar = req.body.namaDokterLuar || req.body.dokter || '-';
+  const tanggalMulai = req.body.tanggalMulai || req.body.tglMulai;
+  const tanggalSelesai = req.body.tanggalSelesai || req.body.tglSelesai || tanggalMulai;
+  const durasiHari = parseInt(req.body.durasiHari || req.body.lamaHari) || 1;
   const diagnosa = req.body.diagnosa || req.body.diagnosis || '-';
   const linkFoto = req.body.linkFoto || req.body.fotoBukti || (Array.isArray(req.body.fotoList) && req.body.fotoList.length > 0 ? req.body.fotoList[0] : null);
   const fotoList = Array.isArray(req.body.fotoList) ? req.body.fotoList : (linkFoto ? [linkFoto] : []);
-  const pemeriksaKlinik = req.body.pemeriksaKlinik || req.body.namaPerawat || 'Petugas Medis';
-  const catatan = req.body.catatan || '';
+  const pemeriksaKlinik = req.body.pemeriksaKlinik || req.body.namaPerawat || req.body.petugas || 'Petugas Medis';
+  const catatan = req.body.catatan || req.body.keterangan || '';
 
-  if (!nikPabrik || !namaPasien || !tanggalMulai) {
-    return res.status(400).json({ success: false, error: 'NIK, Nama Pasien, dan Tanggal Mulai Istirahat wajib diisi!' });
+  if (!nikPabrik || !tanggalMulai) {
+    return res.status(400).json({ success: false, error: 'NIK Karyawan dan Tanggal Mulai Istirahat wajib diisi!' });
   }
+
+  // Auto-resolve nama dan departemen dari database master karyawan jika belum ada / masih '-'
+  const emp = (db.employees || []).find(e => 
+    String(e.nikPabrik || e.nik || '').trim().toLowerCase() === String(nikPabrik).trim().toLowerCase() ||
+    (namaPasien && e.nama && String(e.nama).trim().toLowerCase() === String(namaPasien).trim().toLowerCase())
+  );
+  if (emp) {
+    if (!namaPasien || namaPasien === nikPabrik) namaPasien = emp.nama;
+    if (!dept || dept === '-') dept = emp.dept || emp.departemen || '-';
+  }
+  if (!namaPasien) namaPasien = nikPabrik;
+  if (!dept) dept = '-';
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }).replace(/\./g, ':');
+  const dateStr = now.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
+  const isoStr = now.toISOString();
+  const tglInputStr = `${dateStr} ${timeStr}`;
 
   const newSurat = {
     id: 'SSL-' + Date.now(),
     nikPabrik: String(nikPabrik).trim(),
+    nik: String(nikPabrik).trim(),
+    npk: String(nikPabrik).trim(),
     namaPasien: String(namaPasien).trim(),
+    nama: String(namaPasien).trim(),
     dept: String(dept).trim(),
+    departemen: String(dept).trim(),
     namaFaskes: String(namaFaskes).trim(),
+    faskesLuar: String(namaFaskes).trim(),
+    fasyankes: String(namaFaskes).trim(),
+    faskes: String(namaFaskes).trim(),
     namaDokterLuar: String(namaDokterLuar).trim(),
+    dokter: String(namaDokterLuar).trim(),
     tanggalMulai: tanggalMulai,
+    tglMulai: tanggalMulai,
     tanggalSelesai: tanggalSelesai,
+    tglSelesai: tanggalSelesai,
     durasiHari: durasiHari,
+    lamaHari: durasiHari,
     diagnosa: String(diagnosa).trim(),
-    linkFoto: linkFoto,
+    diagnosis: String(diagnosa).trim(),
+    linkFoto: linkFoto || '',
+    fotoBukti: linkFoto || '',
     fotoList: fotoList,
     pemeriksaKlinik: String(pemeriksaKlinik).trim(),
+    petugas: String(pemeriksaKlinik).trim(),
     catatan: String(catatan).trim(),
-    created_at: new Date().toISOString()
+    keterangan: String(catatan).trim(),
+    tanggalInput: tglInputStr,
+    tanggal: tanggalMulai,
+    created_at: isoStr,
+    createdAt: isoStr
   };
 
   db.surat_sakit_luar.unshift(newSurat);
   writeDB(db);
-  res.status(201).json({ success: true, data: newSurat, message: 'Surat Sakit Luar berhasil disimpan!' });
+
+  // Auto-record ke jadwal kontrol & pemantauan DHSE
+  try {
+    let kontrolList = loadKontrolPasien();
+    const ktrItem = {
+      id: 'KTR-' + Date.now(),
+      recordId: newSurat.id,
+      nikPabrik: newSurat.nikPabrik,
+      npkPabrik: newSurat.nikPabrik,
+      namaPasien: newSurat.namaPasien,
+      dept: newSurat.dept,
+      departemen: newSurat.dept,
+      noHp: emp ? (emp.hp || emp.noHp || emp.telepon || '') : '',
+      noHpPasien: emp ? (emp.hp || emp.noHp || emp.telepon || '') : '',
+      tanggalPeriksa: newSurat.tanggalMulai,
+      tanggalKontrol: newSurat.tanggalSelesai,
+      catatanKontrol: `Evaluasi Akhir Istirahat Sakit (${newSurat.namaFaskes}): ${newSurat.diagnosa} (${newSurat.durasiHari} Hari)`,
+      catatan: `Surat Sakit Luar: ${newSurat.namaFaskes}`,
+      asesmen: newSurat.diagnosa,
+      diagnosa: newSurat.diagnosa,
+      isIzinSakit: true,
+      isPantauan: false,
+      pemeriksa: newSurat.pemeriksaKlinik,
+      status: 'MENUNGGU',
+      created_at: newSurat.created_at
+    };
+    kontrolList.unshift(ktrItem);
+    saveKontrolPasien(kontrolList);
+  } catch (ktrErr) {
+    console.error('Error auto-creating kontrol from surat luar:', ktrErr);
+  }
+
+  res.status(201).json({ success: true, data: newSurat, message: 'Surat Sakit Luar berhasil disimpan & terhubung ke seluruh sistem pelaporan!' });
+
+  // Kirim Notifikasi Resmi ke Grup Telegram Tim Medis & Manajemen
+  setImmediate(async () => {
+    try {
+      const isTeleActive = db.settings?.telegram_send_patient !== false;
+      if (isTeleActive) {
+        const nowWIB = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+        const namaPtKlinik = db.settings?.nama_pt || 'PT ATI';
+        const tM = formatShiftDateDDMMYYYY(newSurat.tanggalMulai);
+        const tS = formatShiftDateDDMMYYYY(newSurat.tanggalSelesai);
+        const izinStr = (tM === tS) ? `${tM} (1 Hari)` : `${tM} s/d ${tS} (${newSurat.durasiHari} Hari)`;
+
+        const telegramText = 
+`📑 <b>LAPORAN SURAT SAKIT FASKES LUAR (${namaPtKlinik})</b>
+━━━━━━━━━━━━━━━━━━━━
+🕐 <b>Waktu Terima:</b> ${nowWIB} WIB
+👤 <b>Pasien:</b> <b>${newSurat.namaPasien}</b>
+🔢 <b>NPK / NIK:</b> <code>${newSurat.nikPabrik}</code>
+🏢 <b>Bagian / Dept:</b> ${newSurat.dept}
+🏥 <b>Faskes Penerbit:</b> ${newSurat.namaFaskes}
+👨‍⚕️ <b>Dokter Luar:</b> ${newSurat.namaDokterLuar}
+━━━━━━━━━━━━━━━━━━━━
+🔬 <b>DIAGNOSIS:</b>
+  ${newSurat.diagnosa}
+
+🛌 <b>PERIODE ISTIRAHAT:</b>
+  ${izinStr}
+
+📝 <b>Catatan:</b>
+  ${newSurat.catatan || '-'}
+
+👩‍⚕️ <b>Petugas Penerima:</b> ${newSurat.pemeriksaKlinik}`;
+
+        sendTelegramNotif(telegramText);
+      }
+    } catch (errTele) {
+      console.error('Non-blocking telegram notif error (surat luar):', errTele.message);
+    }
+  });
 });
 
 app.delete('/api/surat-luar/:id', (req, res) => {
@@ -3775,6 +3913,7 @@ app.post('/api/shift/format1', async (req, res) => {
 
       const nakes = r.pemeriksa || r.nakes || r.dokter || '-';
       const jamFull = formatShiftTglJam(r.tanggal || tglMulai, r.jam || '00:00', r.created_at);
+      const surkesKet = r.izinSakit ? `\n   📄 Surkes  : ⚠️ DIBERIKAN SURAT SAKIT (SURKES)${r.tanggalKontrol ? ` s/d ${formatShiftDateDDMMYYYY(r.tanggalKontrol)}` : ''}` : '';
 
       return `${idx + 1}. 👤 ${nama}\n` +
         `   🪪 NPK/NIK : ${npk}\n` +
@@ -3784,23 +3923,44 @@ app.post('/api/shift/format1', async (req, res) => {
         `   🔬 Diag    :\n${diagStr}\n` +
         `   📦 Obat    :\n${obatStr}\n` +
         `   👨‍⚕️ Nakes   : ${nakes}\n` +
-        `   🕒 Jam     : ${jamFull}`;
+        `   🕒 Jam     : ${jamFull}${surkesKet}`;
     });
     msg += pasienBlocks.join('\n\n') + '\n\n';
   } else {
     msg += `(Tidak ada kunjungan pasien dalam shift ini)\n\n`;
   }
 
+  // 1b. Rekap Surat Sakit Internal Poli (Surkes)
+  const surkesPoliFiltered = filtered.filter(r => r.izinSakit === true);
+  if (surkesPoliFiltered.length > 0) {
+    msg += `📑 SURAT SAKIT DARI POLI (SURKES - ${surkesPoliFiltered.length} Pasien):\n`;
+    surkesPoliFiltered.forEach((r, idx) => {
+      const nama = r.namaPasien || r.nama || '-';
+      const dept = r.dept || r.departemen || '-';
+      const npk = r.nikPabrik || r.npk || r.nik || '-';
+      const diag = (r.asesmen || r.diagnosa || r.diagnosis || '-').trim();
+      const dokter = r.pemeriksa || r.dokter || 'Dokter Klinik';
+      const tglIzin = r.tanggalKontrol ? `Istirahat s/d ${formatShiftDateDDMMYYYY(r.tanggalKontrol)}` : `Istirahat Sakit (1 Hari)`;
+      msg += `   ${idx + 1}. 👤 ${nama} (${dept}) 🪪 NPK: ${npk}\n` +
+             `      🔬 Diag   : ${diag}\n` +
+             `      🛌 Izin   : ${tglIzin}\n` +
+             `      👨‍⚕️ Dokter : ${dokter}\n`;
+    });
+    msg += `\n`;
+  }
+
   msg += `📄 SURAT SAKIT (LUAR):\n`;
   if (suratLuarFiltered.length > 0) {
     const suratBlocks = suratLuarFiltered.map((s, idx) => {
       const nama = s.namaPasien || s.nama || '-';
-      const dept = s.dept || s.departemen || '-';
+      const emp = (db.employees || []).find(e => String(e.nikPabrik || e.nik || '').toLowerCase() === String(s.nikPabrik || s.nik || '').toLowerCase());
+      const dept = (s.dept && s.dept !== '-') ? s.dept : (emp ? (emp.dept || emp.departemen || '-') : '-');
       const diag = s.diagnosa || s.diagnosis || '-';
       const faskes = s.namaFaskes || s.fasyankes || s.faskesLuar || '-';
       const tglM = formatShiftDateDDMMYYYY(s.tanggalMulai || s.tglMulai);
       const tglS = formatShiftDateDDMMYYYY(s.tanggalSelesai || s.tglSelesai || s.tanggalMulai || s.tglMulai);
-      const izin = `${tglM} s/d ${tglS}`;
+      const dur = s.durasiHari || s.lamaHari || 1;
+      const izin = (tglM === tglS) ? `${tglM} (${dur} Hari)` : `${tglM} s/d ${tglS} (${dur} Hari)`;
 
       return `${idx + 1}. 👤 ${nama}\n` +
         `   🏢 Dept   : ${dept}\n` +
@@ -3924,7 +4084,39 @@ app.post('/api/shift/format2', async (req, res) => {
     detailKunjunganLines = `   ▪️ -`;
   }
 
-  // 2. Surat Sakit Luar
+  // 2. Surat Sakit Poli (Surkes)
+  const surkesPoliRecords = filteredRecords.filter(r => r.izinSakit === true);
+  const deptSurkesPoliMap = {};
+  surkesPoliRecords.forEach(r => {
+    const dept = (r.dept || r.departemen || 'Lain-lain').trim();
+    deptSurkesPoliMap[dept] = (deptSurkesPoliMap[dept] || 0) + 1;
+  });
+
+  let deptSurkesPoliLines = '';
+  const deptSurkesKeys = Object.keys(deptSurkesPoliMap).sort((a, b) => deptSurkesPoliMap[b] - deptSurkesPoliMap[a]);
+  if (deptSurkesKeys.length > 0) {
+    deptSurkesPoliLines = deptSurkesKeys.map(dept => {
+      const label = dept.toLowerCase().startsWith('dept') ? dept : `Dept ${dept}`;
+      return `  🔹 ${label} : ${deptSurkesPoliMap[dept]}`;
+    }).join('\n');
+  } else {
+    deptSurkesPoliLines = `  🔹 -`;
+  }
+
+  let detailSurkesPoliLines = '';
+  if (surkesPoliRecords.length > 0) {
+    detailSurkesPoliLines = surkesPoliRecords.map(r => {
+      const nama = r.namaPasien || r.nama || '-';
+      const dept = r.dept || r.departemen || '-';
+      const diagRaw = (r.asesmen || r.diagnosa || r.diagnosis || 'Pemeriksaan').trim();
+      const nakes = r.pemeriksa || r.dokter || 'Dokter Klinik';
+      return `   ▪️ ${nama} (${dept}) ➜ ${diagRaw} [${nakes}]`;
+    }).join('\n');
+  } else {
+    detailSurkesPoliLines = `   ▪️ -`;
+  }
+
+  // 3. Surat Sakit Luar
   const filteredSuratLuar = suratLuar.filter(s => {
     const dInput = parseShiftDateTime(s.tanggalInput || s.created_at || s.createdAt, null, s.created_at || s.createdAt);
     const dMulai = parseShiftDateTime(s.tanggalMulai || s.tglMulai, '00:00:00');
@@ -3940,7 +4132,8 @@ app.post('/api/shift/format2', async (req, res) => {
 
   const deptSuratMap = {};
   filteredSuratLuar.forEach(s => {
-    const dept = (s.dept || s.departemen || 'Lain-lain').trim();
+    const emp = (db.employees || []).find(e => String(e.nikPabrik || e.nik || '').toLowerCase() === String(s.nikPabrik || s.nik || '').toLowerCase());
+    const dept = ((s.dept && s.dept !== '-') ? s.dept : (emp ? (emp.dept || emp.departemen || 'Lain-lain') : 'Lain-lain')).trim();
     deptSuratMap[dept] = (deptSuratMap[dept] || 0) + 1;
   });
 
@@ -3959,9 +4152,12 @@ app.post('/api/shift/format2', async (req, res) => {
   if (filteredSuratLuar.length > 0) {
     detailSuratLines = filteredSuratLuar.map(s => {
       const nama = s.namaPasien || s.nama || '-';
-      const dept = s.dept || s.departemen || '-';
+      const emp = (db.employees || []).find(e => String(e.nikPabrik || e.nik || '').toLowerCase() === String(s.nikPabrik || s.nik || '').toLowerCase());
+      const dept = (s.dept && s.dept !== '-') ? s.dept : (emp ? (emp.dept || emp.departemen || '-') : '-');
       const faskes = s.namaFaskes || s.fasyankes || s.faskesLuar || '-';
-      return `   ▪️ ${nama} (${dept}) ➜ ${faskes}`;
+      const diag = s.diagnosa || s.diagnosis || '-';
+      const dur = s.durasiHari || s.lamaHari || 1;
+      return `   ▪️ ${nama} (${dept}) ➜ ${faskes} [${diag} - ${dur} Hari]`;
     }).join('\n');
   } else {
     detailSuratLines = `   ▪️ -`;
@@ -3999,6 +4195,12 @@ app.post('/api/shift/format2', async (req, res) => {
     `Detail Pasien Berobat:\n` +
     `${detailKunjunganLines}\n\n` +
     `${newEmpLines}` +
+    (surkesPoliRecords.length > 0 ? 
+    `📑 SURAT SAKIT POLI (SURKES) :\n` +
+    `${deptSurkesPoliLines}\n` +
+    `📋 Total : ${surkesPoliRecords.length} Surat\n` +
+    `Detail Surkes Poli:\n` +
+    `${detailSurkesPoliLines}\n\n` : '') +
     `📄 SURAT SAKIT (LUAR) :\n` +
     `${deptSuratLines}\n` +
     `📋 Total : ${filteredSuratLuar.length} Surat\n` +
