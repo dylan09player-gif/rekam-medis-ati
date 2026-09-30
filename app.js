@@ -14562,8 +14562,17 @@ async function loadKontrolData() {
     if (!appData.kontrolPasien) appData.kontrolPasien = [];
   }
 
-  updateKontrolMetricBadges();
-  renderKontrolTable();
+  try {
+    updateKontrolMetricBadges();
+  } catch (err) {
+    console.error('Error updating kontrol metric badges:', err);
+  }
+
+  try {
+    renderKontrolTable();
+  } catch (err) {
+    console.error('Error rendering kontrol table:', err);
+  }
 }
 
 function updateKontrolMetricBadges() {
@@ -14594,6 +14603,9 @@ function updateKontrolMetricBadges() {
   if (elStatTomorrow) elStatTomorrow.textContent = `${tomorrowCount} Pasien`;
   if (elStatTotal) elStatTotal.textContent = `${totalUpcoming} Pasien`;
 
+  const navBadge = document.getElementById('badge-nav-kontrol-today');
+  const navMoreIndicator = document.getElementById('badge-nav-more-indicator');
+
   if (navBadge) {
     if (todayCount > 0) {
       navBadge.style.display = 'inline-block';
@@ -14601,6 +14613,9 @@ function updateKontrolMetricBadges() {
     } else {
       navBadge.style.display = 'none';
     }
+  }
+  if (navMoreIndicator) {
+    navMoreIndicator.style.display = todayCount > 0 ? 'inline-block' : 'none';
   }
 }
 
@@ -14747,16 +14762,24 @@ async function markKontrolSelesai(id) {
     const res = await fetch(`/api/kontrol/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'Selesai' })
+      body: JSON.stringify({ 
+        status: 'Selesai',
+        selesaiAt: new Date().toISOString(),
+        selesaiOleh: (window.currentUser && window.currentUser.nama) ? window.currentUser.nama : 'Petugas Medis'
+      })
     });
     if (res.ok) {
       showToast('✅ Pasien telah ditandai selesai kontrol!', 'success');
       await loadKontrolData();
+      if (typeof renderKontrolCardPopupList === 'function') {
+        renderKontrolCardPopupList();
+      }
     } else {
-      showToast('❌ Gagal memperbarui status kontrol', 'error');
+      const errJson = await res.json().catch(() => ({}));
+      showToast(`❌ Gagal memperbarui status kontrol: ${errJson.error || res.statusText}`, 'error');
     }
   } catch (err) {
-    console.error(err);
+    console.error('Error markKontrolSelesai:', err);
     showToast('❌ Gangguan koneksi ke server', 'error');
   }
 }
@@ -14768,11 +14791,15 @@ async function deleteKontrol(id) {
     if (res.ok) {
       showToast('Jadwal kontrol berhasil dihapus.', 'info');
       await loadKontrolData();
+      if (typeof renderKontrolCardPopupList === 'function') {
+        renderKontrolCardPopupList();
+      }
     } else {
-      showToast('❌ Gagal menghapus jadwal kontrol', 'error');
+      const errJson = await res.json().catch(() => ({}));
+      showToast(`❌ Gagal menghapus jadwal kontrol: ${errJson.error || res.statusText}`, 'error');
     }
   } catch (err) {
-    console.error(err);
+    console.error('Error deleteKontrol:', err);
     showToast('❌ Gangguan koneksi ke server', 'error');
   }
 }
@@ -15010,7 +15037,7 @@ async function handleSaveManualKontrol(e) {
 
 // Modal Edit Kontrol
 function openModalEditKontrol(id) {
-  const item = (appData.kontrolPasien || []).find(k => k.id === id);
+  const item = (appData.kontrolPasien || []).find(k => String(k.id) === String(id));
   if (!item) return;
 
   document.getElementById('edit-kontrol-id').value = item.id;

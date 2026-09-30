@@ -5515,7 +5515,8 @@ app.get('/api/kontrol', (req, res) => {
 
   list.forEach(k => {
     const tgl = k.tanggalKontrol || '';
-    if (k.status === 'MENUNGGU') {
+    const isMenunggu = (k.status || '').toUpperCase() === 'MENUNGGU';
+    if (isMenunggu) {
       if (tgl === todayStr) hariIniCount++;
       else if (tgl === tomorrowStr) besokCount++;
       else if (tgl > todayStr) mendatangCount++;
@@ -5526,8 +5527,10 @@ app.get('/api/kontrol', (req, res) => {
 
   // Urutkan jadwal: Yang MENUNGGU lebih dulu, lalu terdekat berdasarkan tanggal
   list.sort((a, b) => {
-    if (a.status === 'MENUNGGU' && b.status !== 'MENUNGGU') return -1;
-    if (a.status !== 'MENUNGGU' && b.status === 'MENUNGGU') return 1;
+    const aWait = (a.status || '').toUpperCase() === 'MENUNGGU';
+    const bWait = (b.status || '').toUpperCase() === 'MENUNGGU';
+    if (aWait && !bWait) return -1;
+    if (!aWait && bWait) return 1;
     return (a.tanggalKontrol || '').localeCompare(b.tanggalKontrol || '');
   });
 
@@ -5588,20 +5591,26 @@ app.post('/api/kontrol', (req, res) => {
 
 app.put('/api/kontrol/:id', (req, res) => {
   const list = loadKontrolPasien();
-  const idx = list.findIndex(k => k.id === req.params.id);
+  const targetId = String(req.params.id);
+  const idx = list.findIndex(k => String(k.id) === targetId);
   if (idx === -1) {
     return res.status(404).json({ error: 'Jadwal kontrol tidak ditemukan.' });
   }
 
-  list[idx] = { ...list[idx], ...req.body };
+  list[idx] = { 
+    ...list[idx], 
+    ...req.body,
+    updated_at: new Date().toISOString()
+  };
   saveKontrolPasien(list);
   res.json(list[idx]);
 });
 
 app.delete('/api/kontrol/:id', (req, res) => {
   let list = loadKontrolPasien();
+  const targetId = String(req.params.id);
   const initialLen = list.length;
-  list = list.filter(k => k.id !== req.params.id);
+  list = list.filter(k => String(k.id) !== targetId);
   if (list.length === initialLen) {
     return res.status(404).json({ error: 'Jadwal kontrol tidak ditemukan.' });
   }
