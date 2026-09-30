@@ -14736,18 +14736,18 @@ function renderKontrolTable() {
         </td>
         <td style="text-align: center;">
           <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-            <button type="button" class="btn btn-sm" onclick="openWaChatWithPatient('${escapeHtml(patientPhone)}', '${escapeHtml(k.namaPasien || '')}', '${encodeURIComponent(reminderMsg)}')" style="background: rgba(34,197,94,0.15); border: 1px solid #22c55e; color: #22c55e; font-weight: 700; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Kirim Pengingat WhatsApp">
+            <button type="button" class="btn btn-sm btn-kontrol-wa" data-phone="${escapeHtml(patientPhone)}" data-nama="${escapeHtml(k.namaPasien || '')}" data-id="${escapeHtml(k.id)}" style="background: rgba(34,197,94,0.15); border: 1px solid #22c55e; color: #22c55e; font-weight: 700; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Kirim Pengingat WhatsApp">
               <i class="fa-brands fa-whatsapp"></i> WA
             </button>
             ${!isDone ? `
-              <button type="button" class="btn btn-sm" onclick="markKontrolSelesai('${k.id}')" style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #10b981; font-weight: 700; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Tandai Sudah Selesai Kontrol">
+              <button type="button" class="btn btn-sm btn-kontrol-selesai" data-id="${escapeHtml(k.id)}" style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #10b981; font-weight: 700; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Tandai Sudah Selesai Kontrol">
                 <i class="fa-solid fa-check"></i> Selesai
               </button>
             ` : ''}
-            <button type="button" class="btn btn-sm btn-secondary" onclick="openModalEditKontrol('${k.id}')" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Ubah Tanggal Kontrol">
+            <button type="button" class="btn btn-sm btn-secondary btn-kontrol-edit" data-id="${escapeHtml(k.id)}" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Ubah Tanggal Kontrol">
               <i class="fa-solid fa-calendar-days"></i>
             </button>
-            <button type="button" class="btn btn-sm" onclick="deleteKontrol('${k.id}')" style="background: transparent; border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Hapus Jadwal">
+            <button type="button" class="btn btn-sm btn-kontrol-hapus" data-id="${escapeHtml(k.id)}" style="background: transparent; border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 0.75rem; padding: 4px 8px; border-radius: 8px;" title="Hapus Jadwal">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -14755,6 +14755,45 @@ function renderKontrolTable() {
       </tr>
     `;
   }).join('');
+
+  // Pasang event delegation (aman dari karakter spesial dalam data)
+  _attachKontrolTableEvents(tbody);
+}
+
+function _attachKontrolTableEvents(tbody) {
+  if (!tbody) return;
+  tbody.querySelectorAll('.btn-kontrol-selesai').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.getAttribute('data-id');
+      if (id) markKontrolSelesai(id);
+    });
+  });
+  tbody.querySelectorAll('.btn-kontrol-wa').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var phone = this.getAttribute('data-phone') || '';
+      var nama = this.getAttribute('data-nama') || '';
+      var id = this.getAttribute('data-id') || '';
+      var k = (appData.kontrolPasien || []).find(function(x) { return String(x.id) === id; });
+      if (k) {
+        var msg = 'Halo rekan ' + (k.namaPasien || '') + ' (' + (k.npkPabrik || k.nikPabrik || '-') + '), ini dari Tim Medis Klinik PT ATI. Mengingatkan jadwal kontrol kesehatan Anda pada hari *' + formatDateIndo(k.tanggalKontrol) + '* untuk evaluasi: *' + (k.catatan || k.diagnosa || 'Pemeriksaan kesehatan lanjutan') + '*. Mohon hadir di poliklinik sebelum jam kerja berakhir. Terima kasih!';
+        openWaChatWithPatient(phone, nama, encodeURIComponent(msg));
+      } else {
+        openWaChatWithPatient(phone, nama, '');
+      }
+    });
+  });
+  tbody.querySelectorAll('.btn-kontrol-edit').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.getAttribute('data-id');
+      if (id) openModalEditKontrol(id);
+    });
+  });
+  tbody.querySelectorAll('.btn-kontrol-hapus').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.getAttribute('data-id');
+      if (id) deleteKontrol(id);
+    });
+  });
 }
 
 async function markKontrolSelesai(id) {
@@ -14917,10 +14956,10 @@ function renderKontrolCardPopupList() {
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             ${dateBadge}
-            <button type="button" class="btn btn-sm" onclick="closeKontrolCardPopup(); openWaChatWithPatient('${escapeHtml(patientPhone)}', '${escapeHtml(k.namaPasien || '')}', '${encodeURIComponent(reminderMsg)}')" style="background: rgba(34,197,94,0.15); border: 1px solid #22c55e; color: #15803d; font-weight: 700; font-size: 0.75rem; padding: 4px 10px; border-radius: 8px;" title="Kirim Pengingat WhatsApp">
+            <button type="button" class="btn btn-sm btn-popup-kontrol-wa" data-phone="${escapeHtml(patientPhone)}" data-nama="${escapeHtml(k.namaPasien || '')}" data-id="${escapeHtml(k.id)}" style="background: rgba(34,197,94,0.15); border: 1px solid #22c55e; color: #15803d; font-weight: 700; font-size: 0.75rem; padding: 4px 10px; border-radius: 8px;" title="Kirim Pengingat WhatsApp">
               <i class="fa-brands fa-whatsapp" style="color: #22c55e;"></i> Chat WA
             </button>
-            <button type="button" class="btn btn-sm" onclick="markKontrolSelesai('${k.id}'); setTimeout(renderKontrolCardPopupList, 300);" style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #047857; font-weight: 700; font-size: 0.75rem; padding: 4px 10px; border-radius: 8px;" title="Tandai Selesai Kontrol">
+            <button type="button" class="btn btn-sm btn-popup-kontrol-selesai" data-id="${escapeHtml(k.id)}" style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #047857; font-weight: 700; font-size: 0.75rem; padding: 4px 10px; border-radius: 8px;" title="Tandai Selesai Kontrol">
               <i class="fa-solid fa-check"></i> Selesai
             </button>
           </div>
@@ -14933,6 +14972,33 @@ function renderKontrolCardPopupList() {
       </div>
     `;
   }).join('');
+
+  // Event delegation popup kontrol (aman dari karakter spesial)
+  container.querySelectorAll('.btn-popup-kontrol-wa').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var phone = this.getAttribute('data-phone') || '';
+      var nama = this.getAttribute('data-nama') || '';
+      var id = this.getAttribute('data-id') || '';
+      var k = (appData.kontrolPasien || []).find(function(x) { return String(x.id) === id; });
+      closeKontrolCardPopup();
+      if (k) {
+        var notesText = k.catatanKontrol || k.catatan || 'Rencana kontrol dokter';
+        var msg = 'Halo rekan ' + (k.namaPasien || '') + ' (' + (k.npkPabrik || k.nikPabrik || '-') + '), ini dari Tim Medis Klinik PT ATI. Mengingatkan jadwal kontrol kesehatan Anda pada hari *' + formatDateIndo(k.tanggalKontrol) + '* untuk evaluasi: *' + notesText + '*. Mohon hadir di poliklinik sebelum jam kerja berakhir. Terima kasih!';
+        openWaChatWithPatient(phone, nama, encodeURIComponent(msg));
+      } else {
+        openWaChatWithPatient(phone, nama, '');
+      }
+    });
+  });
+  container.querySelectorAll('.btn-popup-kontrol-selesai').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var id = this.getAttribute('data-id');
+      if (id) {
+        await markKontrolSelesai(id);
+        setTimeout(renderKontrolCardPopupList, 300);
+      }
+    });
+  });
 }
 
 // Modal Manual Kontrol

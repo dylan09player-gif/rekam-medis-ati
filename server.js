@@ -5589,6 +5589,36 @@ app.post('/api/kontrol', (req, res) => {
   res.status(201).json(newKtr);
 });
 
+// Laporan DHSE (Departemen K3/HSE PT ATI) - HARUS sebelum route /:id
+app.get('/api/kontrol/laporan-dhse', (req, res) => {
+  const list = loadKontrolPasien();
+  const { startDate, endDate, kategori, dept } = req.query;
+
+  let filtered = list.filter(k => k.isIzinSakit || k.isPantauan);
+
+  if (startDate) {
+    filtered = filtered.filter(k => (k.tanggalKontrol || k.tanggalPeriksa) >= startDate);
+  }
+  if (endDate) {
+    filtered = filtered.filter(k => (k.tanggalKontrol || k.tanggalPeriksa) <= endDate);
+  }
+  if (kategori === 'izinSakit') {
+    filtered = filtered.filter(k => k.isIzinSakit);
+  } else if (kategori === 'pantauan') {
+    filtered = filtered.filter(k => k.isPantauan);
+  }
+  if (dept) {
+    filtered = filtered.filter(k => (k.dept || '').toLowerCase().includes(dept.toLowerCase()));
+  }
+
+  res.json({
+    total: filtered.length,
+    izinSakitCount: filtered.filter(k => k.isIzinSakit).length,
+    pantauanCount: filtered.filter(k => k.isPantauan).length,
+    data: filtered
+  });
+
+
 app.put('/api/kontrol/:id', (req, res) => {
   const list = loadKontrolPasien();
   const targetId = String(req.params.id);
@@ -5617,35 +5647,6 @@ app.delete('/api/kontrol/:id', (req, res) => {
   saveKontrolPasien(list);
   res.json({ success: true, message: 'Jadwal kontrol berhasil dihapus.' });
 });
-
-// Laporan DHSE (Departemen K3/HSE PT ATI)
-app.get('/api/kontrol/laporan-dhse', (req, res) => {
-  const list = loadKontrolPasien();
-  const { startDate, endDate, kategori, dept } = req.query;
-
-  let filtered = list.filter(k => k.isIzinSakit || k.isPantauan);
-
-  if (startDate) {
-    filtered = filtered.filter(k => (k.tanggalKontrol || k.tanggalPeriksa) >= startDate);
-  }
-  if (endDate) {
-    filtered = filtered.filter(k => (k.tanggalKontrol || k.tanggalPeriksa) <= endDate);
-  }
-  if (kategori === 'izinSakit') {
-    filtered = filtered.filter(k => k.isIzinSakit);
-  } else if (kategori === 'pantauan') {
-    filtered = filtered.filter(k => k.isPantauan);
-  }
-  if (dept) {
-    filtered = filtered.filter(k => (k.dept || '').toLowerCase().includes(dept.toLowerCase()));
-  }
-
-  res.json({
-    total: filtered.length,
-    izinSakitCount: filtered.filter(k => k.isIzinSakit).length,
-    pantauanCount: filtered.filter(k => k.isPantauan).length,
-    data: filtered
-  });
 });
 
 // Catch-all: serve index.html
