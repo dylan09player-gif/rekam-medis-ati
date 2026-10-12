@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Akses Permanen - Rekam Medis Klinik Nafila Medika (PT ATI)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; max-width: 640px; width: 100%; padding: 28px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+    .title { font-size: 1.35rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+    .subtitle { font-size: 0.9rem; color: #94a3b8; margin-bottom: 20px; line-height: 1.5; }
+    .status-box { background: #0f172a; border: 1px solid #1e40af; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center; }
+    .spinner { display: inline-block; width: 22px; height: 22px; border: 3px solid #38bdf8; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .route-list { display: flex; flex-direction: column; gap: 10px; }
+    .route-item { display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; text-decoration: none; color: #e2e8f0; transition: all 0.2s; }
+    .route-item:hover { border-color: #38bdf8; background: #172554; }
+    .route-info { display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+    .route-name { font-weight: 600; font-size: 0.92rem; color: #f1f5f9; }
+    .route-url { font-size: 0.78rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
+    .badge { font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .badge-checking { background: #334155; color: #cbd5e1; }
+    .badge-ok { background: #065f46; color: #6ee7b7; border: 1px solid #059669; }
+    .badge-blocked { background: #7f1d1d; color: #fca5a5; border: 1px solid #dc2626; }
+    .toggle-row { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: #94a3b8; }
+    .btn-stop { background: #334155; color: #f8fafc; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+    .btn-stop:hover { background: #475569; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">🏥 Portal Akses Permanen — Klinik Nafila (PT ATI)</div>
+    <div class="subtitle">
+      Simpan/Bookmark halaman ini! Sistem sedang mendeteksi jalur server yang <b>tidak diblokir Firewall WiFi PT</b> dan akan mengarahkan Anda secara otomatis.
+    </div>
+
+    <div class="status-box" id="statusBox">
+      <span class="spinner" id="spinner"></span>
+      <span id="statusText">Mencari jalur tercepat yang lolos Firewall PT...</span>
+    </div>
+
+    <div class="route-list" id="routeList"></div>
+
+    <div class="toggle-row">
+      <span id="updatedAt">Memuat daftar jalur aktif...</span>
+      <button class="btn-stop" id="btnCancel" onclick="cancelAutoRedirect()">Tahan Redirect Otomatis</button>
+    </div>
+  </div>
+
+  <script>
+    let autoRedirect = true;
+    let redirected = false;
+
+    function cancelAutoRedirect() {
+      autoRedirect = false;
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('statusText').innerHTML = 'Redirect otomatis dihentikan. Silakan klik salah satu jalur berstatus <b>LOLOS FIREWALL</b> di bawah:';
+      document.getElementById('btnCancel').style.display = 'none';
+    }
+
+    async function probeUrl(route, idx) {
+      const badge = document.getElementById('badge-' + idx);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6500);
+      try {
+        const res = await fetch(route.url + '/?probe=' + Date.now(), {
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (res.ok) {
+          badge.className = 'badge badge-ok';
+          badge.textContent = '✅ LOLOS FIREWALL (Buka)';
+          if (autoRedirect && !redirected) {
+            redirected = true;
+            document.getElementById('statusText').innerHTML = 'Jalur ditemukan! Mengalihkan ke <b>' + route.name + '</b>...';
+            setTimeout(() => {
+              if (autoRedirect) window.location.replace(route.url);
+            }, 400);
+          }
+          return true;
+        }
+      } catch (e) {
+        clearTimeout(timer);
+      }
+      badge.className = 'badge badge-blocked';
+      badge.textContent = '❌ Diblokir / Offline';
+      return false;
+    }
+
+    async function init() {
+      try {
+        const res = await fetch('./tunnels.json?t=' + Date.now(), { cache: 'no-store' });
+        const data = await res.json();
+        document.getElementById('updatedAt').textContent = 'Update Server: ' + (data.updated_at || 'Baru saja');
+        const list = document.getElementById('routeList');
+        list.innerHTML = '';
+
+        data.routes.forEach((r, idx) => {
+          const a = document.createElement('a');
+          a.className = 'route-item';
+          a.href = r.url;
+          a.innerHTML = `
+            <div class="route-info">
+              <div class="route-name">${r.name}</div>
+              <div class="route-url">${r.url}</div>
+            </div>
+            <span class="badge badge-checking" id="badge-${idx}">⏳ Mengecek...</span>
+          `;
+          list.appendChild(a);
+        });
+
+        const results = await Promise.all(data.routes.map((r, idx) => probeUrl(r, idx)));
+        if (!results.some(Boolean)) {
+          document.getElementById('spinner').style.display = 'none';
+          document.getElementById('statusText').innerHTML = '⚠️ Silakan klik langsung salah satu link di bawah:';
+        }
+      } catch (err) {
+        document.getElementById('statusText').textContent = 'Gagal memuat daftar jalur: ' + err.message;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

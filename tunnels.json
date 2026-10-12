@@ -1,0 +1,29 @@
+{
+  "updated_at": "2026-10-12 15:59:36 WIB",
+  "routes": [
+    {
+      "name": "Jalur 1 \u2014 Serveo Cloud (.com)",
+      "url": "https://048aeaa79a73bc62-103-49-239-253.serveousercontent.com"
+    },
+    {
+      "name": "Jalur 2 \u2014 Localhost.run (.life)",
+      "url": "https://f7af962c2eb26e.lhr.life"
+    },
+    {
+      "name": "Jalur 3 \u2014 Cloudflare Tunnel (.com)",
+      "url": "https://graphics-storm-indirect-salmon.trycloudflare.com"
+    },
+    {
+      "name": "Jalur 4 \u2014 Domain Utama (.my.id)",
+      "url": "https://nafilamedika.my.id"
+    },
+    {
+      "name": "Jalur 5 \u2014 Direct SSLIP (.io)",
+      "url": "https://ati-medis.103.49.239.253.sslip.io"
+    },
+    {
+      "name": "Jalur 6 \u2014 Direct IP Server (Port 80)",
+      "url": "http://103.49.239.253"
+    }
+  ]
+}
