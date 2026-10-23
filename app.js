@@ -5583,13 +5583,34 @@ function expDateToInputDate(displayVal) {
   return '';
 }
 
+// Fallback helper untuk mendapatkan Expire Date obat dari data master atau riwayat surat jalan
+function getMedicineExpDate(m) {
+  if (m && m.expDate && m.expDate !== '-') return m.expDate;
+  if (!m || !Array.isArray(appData.suratJalan)) return '-';
+  const mId = String(m.id || '').trim().toLowerCase();
+  const mName = String(m.nama || '').trim().toLowerCase();
+  for (const sj of appData.suratJalan) {
+    if (Array.isArray(sj.items)) {
+      for (const it of sj.items) {
+        const itId = String(it.id || '').trim().toLowerCase();
+        const itName = String(it.name || it.nama || '').trim().toLowerCase();
+        const itExp = String(it.expDate || it.expiredDate || '').trim();
+        if (((mId && itId === mId) || (mName && itName === mName)) && itExp && itExp !== '-') {
+          return itExp;
+        }
+      }
+    }
+  }
+  return '-';
+}
+
 function renderStokOpnameTable() {
   const tbody = document.getElementById('table-stok-opname-body');
   if (!tbody) return;
 
   tbody.innerHTML = (appData.medicines || []).map((m, i) => {
     const modalVal = (m.hargaModal !== undefined && m.hargaModal !== null && m.hargaModal !== '') ? (parseFloat(m.hargaModal) || 0) : 0;
-    const expDisplay = (m.expDate && m.expDate !== '-') ? m.expDate : '-';
+    const expDisplay = getMedicineExpDate(m);
     return `
     <tr>
       <td data-label="No">${i + 1}</td>
@@ -5609,7 +5630,7 @@ function printStokOpnameDoc() {
   const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const rowsHTML = (appData.medicines || []).map((m, i) => {
     const modalVal = (m.hargaModal !== undefined && m.hargaModal !== null && m.hargaModal !== '') ? (parseFloat(m.hargaModal) || 0) : 0;
-    const expDisplay = (m.expDate && m.expDate !== '-') ? m.expDate : '-';
+    const expDisplay = getMedicineExpDate(m);
     return `
     <tr>
       <td style="text-align:center; padding: 6px; border: 1px solid #000;">${i + 1}</td>
@@ -5921,7 +5942,7 @@ function renderGudangTable(customList = null) {
       const valNama = (activeEditValues && activeEditValues.nama !== null) ? activeEditValues.nama : (m.nama || '');
       const valKat = (activeEditValues && activeEditValues.kategori !== null) ? activeEditValues.kategori : (m.kategori || 'Gudang PT ATI');
       const valStok = (activeEditValues && activeEditValues.stok !== null) ? activeEditValues.stok : (m.stok !== undefined ? m.stok : 0);
-      const valExp = (activeEditValues && activeEditValues.expDate !== null) ? activeEditValues.expDate : expDateToInputDate(m.expDate);
+      const valExp = (activeEditValues && activeEditValues.expDate !== null) ? activeEditValues.expDate : expDateToInputDate(getMedicineExpDate(m));
       const valHargaModal = (activeEditValues && activeEditValues.hargaModal !== null) ? activeEditValues.hargaModal : (m.hargaModal !== undefined ? m.hargaModal : 0);
       const valHarga = (activeEditValues && activeEditValues.harga !== null) ? activeEditValues.harga : (parseFloat(m.harga) || 0);
       const valSatuan = (activeEditValues && activeEditValues.satuan !== null) ? activeEditValues.satuan : (m.satuan || 'strip');
@@ -5976,7 +5997,7 @@ function renderGudangTable(customList = null) {
       ? `<span class="badge badge-danger">🔥 STOK MENIPIS</span>`
       : `<span class="badge badge-success">AMAN</span>`;
 
-    const expDisplay = (m.expDate && m.expDate !== '-') ? m.expDate : '-';
+    const expDisplay = getMedicineExpDate(m);
     const expBadgeHTML = expDisplay !== '-'
       ? `<span onclick="startInlineEditObat('${m.id}', 'exp')" title="Klik untuk edit Expire Date" style="cursor: pointer; color: #f43f5e; font-weight: 700; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.25); padding: 3px 8px; border-radius: 4px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-regular fa-calendar" style="font-size: 0.75rem;"></i> ${escapeHtml(expDisplay)}</span>`
       : `<span onclick="startInlineEditObat('${m.id}', 'exp')" title="Klik untuk isi Expire Date" style="cursor: pointer; color: var(--text-muted); font-size: 0.82rem; padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--border-color);">-</span>`;

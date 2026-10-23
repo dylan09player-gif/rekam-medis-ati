@@ -28,7 +28,16 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname), {
+  etag: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
@@ -1643,8 +1652,53 @@ function autoPushMedicinesToGSheet(db) {
   return;
 }
 
+// Helper: Auto-backfill Expire Date dari Riwayat Surat Jalan ke Master Obat
+function backfillMedicineExpDatesFromSuratJalan(db) {
+  if (!db || !Array.isArray(db.medicines) || !Array.isArray(db.surat_jalan)) return false;
+  let hasChanges = false;
+  const sortedSJ = [...db.surat_jalan].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeB - timeA;
+  });
+
+  const latestExpById = new Map();
+  const latestExpByName = new Map();
+
+  for (const sj of sortedSJ) {
+    if (Array.isArray(sj.items)) {
+      for (const it of sj.items) {
+        const exp = String(it.expDate || it.expiredDate || it.tglKadaluarsa || '').trim();
+        if (exp && exp !== '-') {
+          const itId = String(it.id || '').trim().toLowerCase();
+          const itName = String(it.name || it.nama || '').trim().toLowerCase();
+          if (itId && !latestExpById.has(itId)) latestExpById.set(itId, exp);
+          if (itName && !latestExpByName.has(itName)) latestExpByName.set(itName, exp);
+        }
+      }
+    }
+  }
+
+  for (const m of db.medicines) {
+    const curExp = String(m.expDate || '').trim();
+    if (!curExp || curExp === '-') {
+      const mId = String(m.id || '').trim().toLowerCase();
+      const mName = String(m.nama || '').trim().toLowerCase();
+      const foundExp = latestExpById.get(mId) || latestExpByName.get(mName);
+      if (foundExp) {
+        m.expDate = foundExp;
+        hasChanges = true;
+      }
+    }
+  }
+
+  return hasChanges;
+}
+
 app.get('/api/medicines', (req, res) => {
   const db = readDB();
+  const changed = backfillMedicineExpDatesFromSuratJalan(db);
+  if (changed) writeDB(db);
   let medicines = db.medicines || [];
   medicines.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
   res.json(medicines);
