@@ -1227,6 +1227,7 @@
                   <tr>
                     <th>KODE</th>
                     <th>NAMA OBAT</th>
+                    <th>EXPIRE DATE</th>
                     <th>KATEGORI</th>
                     <th>SISA STOK</th>
                     <th>HARGA MODAL (Rp)</th>
@@ -1264,6 +1265,7 @@
                   <tr>
                     <th>No</th>
                     <th>Nama Obat</th>
+                    <th>Expire Date</th>
                     <th>Harga Modal</th>
                     <th>Stok Sistem</th>
                     <th>Stok Real (Fisik)</th>
@@ -3876,9 +3878,15 @@
             <input type="text" id="obat-satuan" class="form-control" required value="strip" placeholder="strip / box / tube / botol">
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Kategori Obat</label>
-          <input type="text" id="obat-kategori" class="form-control" placeholder="Analgetik / Bebas / Antibiotik">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label class="form-label">Kategori Obat</label>
+            <input type="text" id="obat-kategori" class="form-control" placeholder="Analgetik / Bebas / Antibiotik">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-calendar-day" style="color: #f43f5e;"></i> Expire Date</label>
+            <input type="date" id="obat-exp-date" class="form-control" style="font-weight: 700;">
+          </div>
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
           <button type="button" class="btn btn-secondary" onclick="closeModalTambahObat()">Batal</button>
@@ -3922,9 +3930,15 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Kategori Obat</label>
-          <input type="text" id="edit-obat-kategori" class="form-control" placeholder="Gudang PT ATI / Obat Bebas">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label class="form-label">Kategori Obat</label>
+            <input type="text" id="edit-obat-kategori" class="form-control" placeholder="Gudang PT ATI / Obat Bebas">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-calendar-day" style="color: #f43f5e;"></i> Expire Date</label>
+            <input type="date" id="edit-obat-exp-date" class="form-control" style="font-weight: 700;">
+          </div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">

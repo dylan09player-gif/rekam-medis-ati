@@ -1659,11 +1659,13 @@ app.post('/api/medicines', (req, res) => {
   newMed.harga = parseSafeInt(rawJual, 0);
   newMed.hargaJual = newMed.harga;
   newMed.hargaModal = parseSafeInt(newMed.hargaModal, 0);
+  newMed.expDate = newMed.expDate ? String(newMed.expDate).trim() : '-';
   if (!db.medicines) db.medicines = [];
   db.medicines.unshift(newMed);
   db.medicines.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
   writeDB(db);
   autoPushMedicinesToGSheet(db);
+  notifyClients();
   res.status(201).json(newMed);
 });
 
@@ -1679,7 +1681,7 @@ app.put('/api/medicines/:id', (req, res) => {
 
   if (idx !== -1) {
     const oldMed = { ...db.medicines[idx] };
-    const { nama, stok, harga, hargaJual, hargaModal, satuan, kategori, petugas, alasan, sendTelegram } = req.body;
+    const { nama, stok, harga, hargaJual, hargaModal, satuan, kategori, expDate, petugas, alasan, sendTelegram } = req.body;
 
     const newNama = nama !== undefined ? String(nama).trim() : oldMed.nama;
     const newStok = stok !== undefined ? parseSafeInt(stok, oldMed.stok) : oldMed.stok;
@@ -1688,6 +1690,7 @@ app.put('/api/medicines/:id', (req, res) => {
     const newHargaModal = hargaModal !== undefined ? parseSafeInt(hargaModal, oldMed.hargaModal || 0) : parseSafeInt(oldMed.hargaModal, 0);
     const newSatuan = satuan !== undefined ? String(satuan).trim() : oldMed.satuan;
     const newKategori = kategori !== undefined ? String(kategori).trim() : oldMed.kategori;
+    const newExpDate = expDate !== undefined ? (String(expDate).trim() || '-') : (oldMed.expDate || '-');
     const namaPetugas = petugas || 'Petugas Gudang / Apoteker';
     const alasanEdit = alasan || 'Pembaruan data obat';
 
@@ -1717,10 +1720,12 @@ app.put('/api/medicines/:id', (req, res) => {
       hargaJual: newHarga,
       hargaModal: newHargaModal,
       satuan: newSatuan,
-      kategori: newKategori
+      kategori: newKategori,
+      expDate: newExpDate
     };
     writeDB(db);
     autoPushMedicinesToGSheet(db);
+    notifyClients();
 
     // Kirim Audit Log ke Telegram Bot hanya jika diminta secara eksplisit
     if (sendTelegram === true) {
@@ -1911,9 +1916,13 @@ app.post('/api/medicines/transfer', (req, res) => {
       const prevStok = parseSafeInt(oldMed.stok, 0);
       const newStok = prevStok + qtySent;
 
+      const incomingExp = String(item.expDate || item.expiredDate || item.tglKadaluarsa || '').trim();
+      const updatedExpDate = (incomingExp && incomingExp !== '-') ? incomingExp : (oldMed.expDate || '-');
+
       db.medicines[idx] = {
         ...oldMed,
-        stok: newStok
+        stok: newStok,
+        expDate: updatedExpDate
       };
 
       logStockMutation(db, {
@@ -2131,6 +2140,15 @@ app.put('/api/surat-jalan/:id', (req, res) => {
       auditLogs.push(`• ${oldMed.nama}: *${prevStok}* ➔ *${nextStok}* (${diff > 0 ? '+' : ''}${diff} ${oldMed.satuan || 'item'})`);
     } else if (diff !== 0) {
       auditLogs.push(`• ${info.name}: (${diff > 0 ? '+' : ''}${diff} ${info.satuan})`);
+    }
+  });
+
+  // Sinkronkan juga perubahan Exp Date dari revisi Surat Jalan ke master obat
+  items.forEach(newIt => {
+    const mIdx = findMedIndex(newIt);
+    const incomingExp = String(newIt.expDate || newIt.expiredDate || newIt.tglKadaluarsa || '').trim();
+    if (mIdx !== -1 && incomingExp && incomingExp !== '-') {
+      db.medicines[mIdx].expDate = incomingExp;
     }
   });
 

@@ -911,6 +911,7 @@ function renderActiveViewOnly(forcedViewId) {
     renderEditDataTable();
   } else if (activeId === 'view-gudang') {
     if (!editingGudangObatId) renderGudangTable();
+    renderStokOpnameTable();
   } else if (activeId === 'view-karyawan') {
     renderKaryawanTable();
     renderMobileKaryawanCards();
@@ -4438,7 +4439,7 @@ function setupShipMedicineSearchable() {
         <div class="searchable-option-item" data-id="${m.id}" data-nama="${m.nama}" data-stok="${m.stok !== undefined ? m.stok : 0}">
           <div>
             <strong>${m.nama}</strong>
-            <div class="option-sub">Stok: ${m.stok !== undefined ? m.stok : 0} ${m.satuan || ''} | Harga: ${hargaFormat}</div>
+            <div class="option-sub">Stok: ${m.stok !== undefined ? m.stok : 0} ${m.satuan || ''}${(m.expDate && m.expDate !== '-') ? ` | Exp: <span style="color:#f43f5e;font-weight:700;">${m.expDate}</span>` : ''} | Harga: ${hargaFormat}</div>
           </div>
         </div>
       `;
@@ -4688,6 +4689,7 @@ async function processShipmentAndPrint() {
       await loadAllAppData();
       await loadRiwayatSuratJalan();
       renderGudangTable();
+      renderStokOpnameTable();
 
       // Print Delivery Order / Surat Jalan safely
       try {
@@ -5519,6 +5521,7 @@ async function saveEditSuratJalan(shouldPrint = false) {
       await loadAllAppData();
       await loadRiwayatSuratJalan();
       renderGudangTable();
+      renderStokOpnameTable();
 
       // Jika user memilih Simpan & Cetak Ulang
       if (shouldPrint && data.suratJalan) {
@@ -5545,16 +5548,53 @@ async function saveEditSuratJalan(shouldPrint = false) {
   }
 }
 
+// Helper konversi format Expire Date
+function normalizeExpDate(rawVal) {
+  const str = String(rawVal || '').trim();
+  if (!str || str === '-') return '-';
+  if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    if (parts.length === 3 && parts[2].length === 4) {
+      return `${parts[0]}/${parts[1]}/${parts[2]}`;
+    }
+  }
+  return str;
+}
+
+function expDateToInputDate(displayVal) {
+  const str = String(displayVal || '').trim();
+  if (!str || str === '-') return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length === 3 && parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts.length === 3 && parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  return '';
+}
+
 function renderStokOpnameTable() {
   const tbody = document.getElementById('table-stok-opname-body');
   if (!tbody) return;
 
   tbody.innerHTML = (appData.medicines || []).map((m, i) => {
     const modalVal = (m.hargaModal !== undefined && m.hargaModal !== null && m.hargaModal !== '') ? (parseFloat(m.hargaModal) || 0) : 0;
+    const expDisplay = (m.expDate && m.expDate !== '-') ? m.expDate : '-';
     return `
     <tr>
       <td data-label="No">${i + 1}</td>
       <td data-label="Nama Obat"><strong>${escapeHtml(m.nama)}</strong></td>
+      <td data-label="Expire Date" style="font-weight: 700; color: ${expDisplay !== '-' ? '#f43f5e' : 'var(--text-muted)'};">${escapeHtml(expDisplay)}</td>
       <td data-label="Harga Modal" style="font-weight: 600; color: #a78bfa;">Rp ${modalVal.toLocaleString('id-ID')}</td>
       <td data-label="Stok Sistem" style="font-weight: 700;">${m.stok} ${escapeHtml(m.satuan || 'strip')}</td>
       <td data-label="Stok Real (Fisik)" style="background: rgba(255,255,255,0.05); text-align: center; color: var(--text-muted);">_______</td>
@@ -5569,10 +5609,12 @@ function printStokOpnameDoc() {
   const tglIndo = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const rowsHTML = (appData.medicines || []).map((m, i) => {
     const modalVal = (m.hargaModal !== undefined && m.hargaModal !== null && m.hargaModal !== '') ? (parseFloat(m.hargaModal) || 0) : 0;
+    const expDisplay = (m.expDate && m.expDate !== '-') ? m.expDate : '-';
     return `
     <tr>
       <td style="text-align:center; padding: 6px; border: 1px solid #000;">${i + 1}</td>
       <td style="padding: 6px; font-weight: bold; border: 1px solid #000;">${m.nama}</td>
+      <td style="text-align:center; padding: 6px; font-weight: 600; border: 1px solid #000; color: ${expDisplay !== '-' ? '#b91c1c' : '#000'};">${expDisplay}</td>
       <td style="text-align:right; padding: 6px; border: 1px solid #000;">Rp ${modalVal.toLocaleString('id-ID')}</td>
       <td style="text-align:center; padding: 6px; font-weight: bold; border: 1px solid #000;">${m.stok} ${m.satuan || 'strip'}</td>
       <td style="border: 1px solid #000;"></td>
@@ -5619,10 +5661,11 @@ function printStokOpnameDoc() {
       <table>
         <thead>
           <tr>
-            <th style="width: 5%;">No</th>
-            <th style="width: 35%;">Nama Obat</th>
-            <th style="width: 15%;">Harga Modal</th>
-            <th style="width: 15%;">Stok Sistem</th>
+            <th style="width: 4%;">No</th>
+            <th style="width: 26%;">Nama Obat</th>
+            <th style="width: 12%;">Expire Date</th>
+            <th style="width: 14%;">Harga Modal</th>
+            <th style="width: 14%;">Stok Sistem</th>
             <th style="width: 10%;">Stok Real</th>
             <th style="width: 10%;">Selisih</th>
             <th style="width: 10%;">Perhitungan Harga Selisih</th>
@@ -5697,14 +5740,16 @@ function clearGudangSearch() {
 
 let editingGudangObatId = null;
 
-function startInlineEditObat(id) {
+function startInlineEditObat(id, focusField = 'stok') {
   editingGudangObatId = String(id);
   renderGudangTable();
   setTimeout(() => {
-    const inputStok = document.getElementById(`inline-obat-stok-${id}`);
-    if (inputStok) {
-      inputStok.focus();
-      inputStok.select();
+    const targetEl = document.getElementById(`inline-obat-${focusField}-${id}`) || document.getElementById(`inline-obat-stok-${id}`);
+    if (targetEl) {
+      targetEl.focus();
+      if (typeof targetEl.select === 'function' && targetEl.type !== 'date') {
+        targetEl.select();
+      }
     }
   }, 40);
 }
@@ -5728,6 +5773,7 @@ async function saveInlineEditObat(id) {
   const namaEl = document.getElementById(`inline-obat-nama-${id}`);
   const katEl = document.getElementById(`inline-obat-kategori-${id}`);
   const stokEl = document.getElementById(`inline-obat-stok-${id}`);
+  const expEl = document.getElementById(`inline-obat-exp-${id}`);
   const hargaModalEl = document.getElementById(`inline-obat-harga-modal-${id}`);
   const hargaEl = document.getElementById(`inline-obat-harga-${id}`);
   const satuanEl = document.getElementById(`inline-obat-satuan-${id}`);
@@ -5740,6 +5786,7 @@ async function saveInlineEditObat(id) {
 
   const hargaModalVal = rawHargaModal === '' ? 0 : (parseFloat(rawHargaModal) || 0);
   const hargaJualVal = rawHarga === '' ? 0 : (parseFloat(rawHarga) || 0);
+  const expDateVal = expEl ? normalizeExpDate(expEl.value) : '-';
 
   const payload = {
     nama: namaEl.value.trim(),
@@ -5749,7 +5796,8 @@ async function saveInlineEditObat(id) {
     harga: hargaJualVal,
     hargaJual: hargaJualVal,
     satuan: satuanEl ? satuanEl.value.trim() : 'strip',
-    petugas: (typeof currentUser !== 'undefined' && currentUser && currentUser.nama) ? currentUser.nama : 'Petugas Gudang',
+    expDate: expDateVal,
+    petugas: (appData.currentUser && (appData.currentUser.nama || appData.currentUser.name)) ? (appData.currentUser.nama || appData.currentUser.name) : 'Petugas Gudang',
     alasan: 'Edit langsung di tabel obat'
   };
 
@@ -5789,6 +5837,7 @@ async function saveInlineEditObat(id) {
 
       editingGudangObatId = null;
       renderGudangTable();
+      renderStokOpnameTable();
     } else {
       showToast('Gagal menyimpan: ' + (data.error || 'Terjadi kesalahan'), 'error');
       if (saveBtn) {
@@ -5815,6 +5864,7 @@ function renderGudangTable(customList = null) {
     const curNama = document.getElementById(`inline-obat-nama-${editingGudangObatId}`);
     const curKat = document.getElementById(`inline-obat-kategori-${editingGudangObatId}`);
     const curStok = document.getElementById(`inline-obat-stok-${editingGudangObatId}`);
+    const curExp = document.getElementById(`inline-obat-exp-${editingGudangObatId}`);
     const curHargaModal = document.getElementById(`inline-obat-harga-modal-${editingGudangObatId}`);
     const curHarga = document.getElementById(`inline-obat-harga-${editingGudangObatId}`);
     const curSatuan = document.getElementById(`inline-obat-satuan-${editingGudangObatId}`);
@@ -5823,6 +5873,7 @@ function renderGudangTable(customList = null) {
         nama: curNama ? curNama.value : null,
         kategori: curKat ? curKat.value : null,
         stok: curStok ? curStok.value : null,
+        expDate: curExp ? curExp.value : null,
         hargaModal: curHargaModal ? curHargaModal.value : null,
         harga: curHarga ? curHarga.value : null,
         satuan: curSatuan ? curSatuan.value : null,
@@ -5853,7 +5904,7 @@ function renderGudangTable(customList = null) {
   if (filteredList.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
+        <td colspan="10" style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
           <i class="fa-solid fa-magnifying-glass" style="font-size: 2rem; opacity: 0.3; margin-bottom: 8px; display: block;"></i>
           <strong>Obat "${escapeHtml(query)}" tidak ditemukan.</strong>
           <div style="font-size: 0.82rem; margin-top: 4px;">Periksa ejaan nama obat atau klik tombol <strong>+ Tambah Obat Baru</strong> di kanan atas untuk mendaftarkannya.</div>
@@ -5870,6 +5921,7 @@ function renderGudangTable(customList = null) {
       const valNama = (activeEditValues && activeEditValues.nama !== null) ? activeEditValues.nama : (m.nama || '');
       const valKat = (activeEditValues && activeEditValues.kategori !== null) ? activeEditValues.kategori : (m.kategori || 'Gudang PT ATI');
       const valStok = (activeEditValues && activeEditValues.stok !== null) ? activeEditValues.stok : (m.stok !== undefined ? m.stok : 0);
+      const valExp = (activeEditValues && activeEditValues.expDate !== null) ? activeEditValues.expDate : expDateToInputDate(m.expDate);
       const valHargaModal = (activeEditValues && activeEditValues.hargaModal !== null) ? activeEditValues.hargaModal : (m.hargaModal !== undefined ? m.hargaModal : 0);
       const valHarga = (activeEditValues && activeEditValues.harga !== null) ? activeEditValues.harga : (parseFloat(m.harga) || 0);
       const valSatuan = (activeEditValues && activeEditValues.satuan !== null) ? activeEditValues.satuan : (m.satuan || 'strip');
@@ -5879,6 +5931,9 @@ function renderGudangTable(customList = null) {
           <td data-label="Kode" style="vertical-align: middle;">${escapeHtml(m.kode || '-')}</td>
           <td data-label="Nama Obat" style="vertical-align: middle;">
             <input type="text" id="inline-obat-nama-${m.id}" class="form-control" value="${escapeHtml(valNama)}" style="font-weight: 700; min-width: 140px; padding: 5px 8px; font-size: 0.9rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
+          </td>
+          <td data-label="Expire Date" style="vertical-align: middle;">
+            <input type="date" id="inline-obat-exp-${m.id}" class="form-control" value="${escapeHtml(valExp)}" style="font-weight: 700; width: 140px; padding: 5px 8px; font-size: 0.85rem; color: #f43f5e;" onkeydown="handleInlineObatKey(event, '${m.id}')">
           </td>
           <td data-label="Kategori" style="vertical-align: middle;">
             <input type="text" id="inline-obat-kategori-${m.id}" class="form-control" value="${escapeHtml(valKat)}" style="min-width: 110px; padding: 5px 8px; font-size: 0.85rem;" onkeydown="handleInlineObatKey(event, '${m.id}')">
@@ -5921,10 +5976,16 @@ function renderGudangTable(customList = null) {
       ? `<span class="badge badge-danger">🔥 STOK MENIPIS</span>`
       : `<span class="badge badge-success">AMAN</span>`;
 
+    const expDisplay = (m.expDate && m.expDate !== '-') ? m.expDate : '-';
+    const expBadgeHTML = expDisplay !== '-'
+      ? `<span onclick="startInlineEditObat('${m.id}', 'exp')" title="Klik untuk edit Expire Date" style="cursor: pointer; color: #f43f5e; font-weight: 700; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.25); padding: 3px 8px; border-radius: 4px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-regular fa-calendar" style="font-size: 0.75rem;"></i> ${escapeHtml(expDisplay)}</span>`
+      : `<span onclick="startInlineEditObat('${m.id}', 'exp')" title="Klik untuk isi Expire Date" style="cursor: pointer; color: var(--text-muted); font-size: 0.82rem; padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--border-color);">-</span>`;
+
     return `
       <tr>
         <td data-label="Kode">${escapeHtml(m.kode || '-')}</td>
         <td data-label="Nama Obat"><strong>${escapeHtml(m.nama)}</strong></td>
+        <td data-label="Expire Date">${expBadgeHTML}</td>
         <td data-label="Kategori">${escapeHtml(m.kategori || 'Gudang PT ATI')}</td>
         <td data-label="Sisa Stok" style="font-weight: 700; font-size: 1.05rem; ${isLow ? 'color: var(--danger);' : ''}">${m.stok}</td>
         <td data-label="Harga Modal (Rp)" style="font-weight: 700; color: #a78bfa;">Rp ${(parseFloat(m.hargaModal) || 0).toLocaleString('id-ID')}</td>
@@ -5974,7 +6035,8 @@ async function handleSaveTambahObat(e) {
     harga: jualVal,
     hargaJual: jualVal,
     satuan: document.getElementById('obat-satuan').value,
-    kategori: document.getElementById('obat-kategori').value || 'Gudang PT ATI'
+    kategori: document.getElementById('obat-kategori').value || 'Gudang PT ATI',
+    expDate: normalizeExpDate(document.getElementById('obat-exp-date')?.value)
   };
 
   try {
@@ -5988,6 +6050,7 @@ async function handleSaveTambahObat(e) {
       closeModalTambahObat();
       await loadAllAppData();
       renderGudangTable();
+      renderStokOpnameTable();
     }
   } catch (err) {
     showToast('Gagal menyimpan obat', 'error');
@@ -6007,6 +6070,8 @@ function openModalEditObat(id) {
     if (jualInput) jualInput.value = med.harga !== undefined ? med.harga : 0;
     document.getElementById('edit-obat-satuan').value = med.satuan || 'strip';
     document.getElementById('edit-obat-kategori').value = med.kategori || 'Gudang PT ATI';
+    const expInput = document.getElementById('edit-obat-exp-date');
+    if (expInput) expInput.value = expDateToInputDate(med.expDate);
     modal.style.display = 'flex';
     return;
   }
@@ -6034,7 +6099,8 @@ async function handleSaveEditObat(e) {
     hargaJual: jualVal,
     satuan: document.getElementById('edit-obat-satuan').value.trim(),
     kategori: document.getElementById('edit-obat-kategori').value.trim() || 'Gudang PT ATI',
-    petugas: document.getElementById('edit-obat-petugas')?.value.trim() || 'Petugas Gudang',
+    expDate: normalizeExpDate(document.getElementById('edit-obat-exp-date')?.value),
+    petugas: document.getElementById('edit-obat-petugas')?.value.trim() || (appData.currentUser?.nama || 'Petugas Gudang'),
     alasan: document.getElementById('edit-obat-alasan')?.value.trim() || 'Edit data obat'
   };
 
@@ -6058,6 +6124,7 @@ async function handleSaveEditObat(e) {
       closeModalEditObat();
       await loadAllAppData();
       renderGudangTable();
+      renderStokOpnameTable();
     } else {
       showToast('Gagal memperbarui obat: ' + (data.error || 'Terjadi kesalahan'), 'error');
     }

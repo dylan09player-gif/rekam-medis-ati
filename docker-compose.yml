@@ -22,7 +22,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: rekam-medis-tunnel
     restart: always
-    command: tunnel --url http://rekam-medis-ati:3000
+    command: tunnel --protocol http2 --url http://rekam-medis-ati:3000
     depends_on:
       - rekam-medis-ati
     networks:
