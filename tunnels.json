@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-26 04:26:16 WIB",
+  "updated_at": "2026-10-26 04:30:38 WIB",
   "routes": [
     {
       "name": "Jalur 1 \u2014 Serveo Cloud (.com)",
@@ -7,7 +7,7 @@
     },
     {
       "name": "Jalur 2 \u2014 Localhost.run (.life)",
-      "url": "https://4efc6cab644bfe.lhr.life"
+      "url": "https://9f2e979c3c19a3.lhr.life"
     },
     {
       "name": "Jalur 3 \u2014 Cloudflare Tunnel (.com)",
