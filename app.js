@@ -907,6 +907,8 @@ function renderActiveViewOnly(forcedViewId) {
       }
       updatePoliTimelineView();
     }
+  } else if (activeId === 'view-konsul-dokter') {
+    if (typeof initKonsulDokterView === 'function') initKonsulDokterView();
   } else if (activeId === 'view-edit-data') {
     renderEditDataTable();
   } else if (activeId === 'view-gudang') {
@@ -2169,7 +2171,36 @@ function renderPatientSpecificHistory(currentPatient, history) {
     return;
   }
 
-  container.innerHTML = history.map(r => {
+    const latestKonsul = history.find(r => r.isKonsulDokter || r.rekomendasiObat || (r.stottDavis && (r.stottDavis.a || r.stottDavis.d)));
+  let advisDoctorBannerHTML = '';
+  if (latestKonsul && (latestKonsul.rekomendasiObat || latestKonsul.stottDavis)) {
+    const advisText = latestKonsul.rekomendasiObat || [
+      latestKonsul.stottDavis?.a ? `Akut: ${latestKonsul.stottDavis.a}` : '',
+      latestKonsul.stottDavis?.d ? `Edukasi: ${latestKonsul.stottDavis.d}` : ''
+    ].filter(Boolean).join('\n');
+
+    advisDoctorBannerHTML = `
+      <div class="advis-card-highlight">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <strong style="color: #60a5fa; font-size: 0.86rem; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-user-doctor"></i> ADVIS KONSUL DOKTER &amp; REKOMENDASI TERAPI
+          </strong>
+          <span style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(latestKonsul.tanggal || '')} &bull; ${escapeHtml(latestKonsul.pemeriksa || 'dr. Dylan')}</span>
+        </div>
+        <div style="font-size: 0.82rem; color: var(--text-main); white-space: pre-line; background: rgba(0,0,0,0.22); padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #3b82f6;">
+          ${escapeHtml(advisText)}
+        </div>
+        ${latestKonsul.rekomendasiObat ? `
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="button" class="btn btn-sm" onclick="copyKonsulObatToPoli('${latestKonsul.id}')" style="background: #2563eb; color: #fff; font-weight: 700; font-size: 0.76rem; padding: 4px 10px; border: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+            <i class="fa-solid fa-copy"></i> Salin ke Resep Poli Ini
+          </button>
+        </div>` : ''}
+      </div>
+    `;
+  }
+
+  container.innerHTML = advisDoctorBannerHTML + history.map(r => {
     // Format Diagnosis (A)
     let diagHTML = '<span style="color: var(--text-faint); font-weight: 500;">-</span>';
     if (r.asesmen) {
@@ -2478,8 +2509,8 @@ async function handleSavePoli(e) {
   }
 
   const pemeriksa = document.getElementById('poli-pemeriksa').value.trim() || 'Nakes Pemeriksa';
-  const isIzinSakit = document.getElementById('poli-izin-sakit').checked;
-  const isPantauan = document.getElementById('poli-pantauan').checked;
+  const isIzinSakit = document.getElementById('poli-izin-sakit')?.checked || false;
+  const isPantauan = document.getElementById('poli-pantauan')?.checked || false;
 
   const objektifFull = document.getElementById('poli-objektif-detail').value.trim();
 
@@ -7709,6 +7740,11 @@ async function switchHSESubTab(type) {
   if (type === 'pantauan') {
     if (typeof loadLongTermPantauanData === 'function') {
       await loadLongTermPantauanData();
+
+  // Inisialisasi Grafik Tren Longitudinal Pasien
+  if (typeof renderHSEPatientTrendChart === 'function') {
+    renderHSEPatientTrendChart(nikOrName, 'td');
+  }
     }
     renderHSEPasienPantauanTable();
     if (pantauanTab) pantauanTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -9358,7 +9394,9 @@ async function openModalRiwayatPantauan(nikOrName) {
 
           <!-- Rincian Vital Mingguan -->
           <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 0.8rem;">
-            ${m.tensiSistol ? `<span class="badge badge-info"><i class="fa-solid fa-heart-pulse"></i> TD: ${m.tensiSistol}/${m.tensiDiastol} (${m.statusTensi})</span>` : ''}
+            ${m.tensiSistol ? `<span class="badge badge-info"><i class="fa-solid fa-heart-pulse"></i> TD: ${m.tensiSistol}/${m.tensiDiastol} (${m.statusTensi})${m.map ? ` [MAP: ${m.map}]` : ''}</span>` : ''}
+            ${m.beratJenisUrine ? `<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8;"><i class="fa-solid fa-droplet"></i> BJ Urine: ${m.beratJenisUrine} (${m.statusHidrasi || 'Euhidrasi'})</span>` : ''}
+            ${m.warnaUrineArmstrong ? `<span class="badge" style="background: rgba(234,179,8,0.2); color: #facc15;"><i class="fa-solid fa-eye-dropper"></i> Armstrong: Skala ${m.warnaUrineArmstrong}</span>` : ''}
             ${m.gulaDarah ? `<span class="badge badge-warning"><i class="fa-solid fa-droplet"></i> Gula (${m.tipeGula}): ${m.gulaDarah} mg/dL</span>` : ''}
             ${m.asamUrat ? `<span class="badge" style="background: rgba(234,179,8,0.2); color: #facc15;">Asam Urat: ${m.asamUrat} mg/dL</span>` : ''}
             ${m.kolesterol ? `<span class="badge" style="background: rgba(239,68,68,0.2); color: #f87171;">Kolesterol: ${m.kolesterol} mg/dL</span>` : ''}
@@ -10080,6 +10118,10 @@ function exportHSEPantauanExcel() {
       'Status Kontrol': item.statusKontrol,
       'Jadwal Kontrol': item.nextSchedule || '-',
       'Tensi Darah (mmHg)': item.curSis ? `${item.curSis}/${item.curDia || 80}` : '-',
+      'MAP (mmHg)': (item.curSis && item.curDia) ? Math.round(item.curDia + (item.curSis - item.curDia)/3) : (item.matchedLongTerm?.mingguan?.map || '-'),
+      'Berat Jenis Urine': item.matchedLongTerm?.mingguan?.beratJenisUrine || '-',
+      'Warna Urine (Armstrong)': item.matchedLongTerm?.mingguan?.warnaUrineArmstrong ? `Skala ${item.matchedLongTerm.mingguan.warnaUrineArmstrong}` : '-',
+      'Status Hidrasi K3': item.matchedLongTerm?.mingguan?.statusHidrasi || '-',
       'Delta TD (mmHg)': item.dSis !== null ? (item.dSis > 0 ? `+${item.dSis}` : `${item.dSis}`) : '-',
       'Gula Darah (mg/dL)': item.curGDS || '-',
       'Lingkar Perut (cm)': item.curLP || '-',
@@ -10087,6 +10129,11 @@ function exportHSEPantauanExcel() {
       'Respon Terapi Obat': medsStr || 'Tidak ada obat rutin',
       'Laboratorium PROLANIS': labParts.join(', ') || 'Belum ada lab',
       'Respon Lab': item.evalLab || '-',
+      'Stott-Davis Kuadran A (Akut)': item.latestRec?.stottDavis?.a || '-',
+      'Stott-Davis Kuadran B (Perilaku)': item.latestRec?.stottDavis?.b || '-',
+      'Stott-Davis Kuadran C (Kronis)': item.latestRec?.stottDavis?.c || '-',
+      'Stott-Davis Kuadran D (Promosi Hidrasi)': item.latestRec?.stottDavis?.d || '-',
+      'Rekomendasi Terapi Dokter': item.latestRec?.rekomendasiObat || '-',
       'Catatan Dokter': item.matchedLongTerm?.catatanDokter || '-',
       'Dokter Pemeriksa': item.matchedLongTerm?.pemeriksa || item.latestRec.pemeriksa || '-',
       'Tanggal Terakhir': item.matchedLongTerm?.tanggal || item.latestRec.tanggal || '-'
@@ -19105,4 +19152,1297 @@ function applyRoleAccess() {
       document.querySelector('[data-target="view-poli"]')?.click();
     }
   }
+}
+
+
+
+// =========================================================================
+// MODUL KONSUL DOKTER & STOTT & DAVIS 4-QUADRANT EVALUATION SYSTEM
+// Tabel Pemeriksaan Dinamis, Hitung Otomatis MAP & BMI, Evaluasi Klinis,
+// dan Integrasi Grafik Longitudinal Trend HSE K3
+// =========================================================================
+
+const DEFAULT_MASTER_EXAM_TESTS = [
+  // 1. Tersering & Tesis Hidrasi K3
+  { id: 'tekanan_darah', nama: 'Tekanan Darah (Sistolik / Diastolik)', kategori: 'TTV & Hidrasi', satuan: 'mmHg', rujukan: '< 120/80', tipe: 'bp' },
+  { id: 'bj_urine', nama: 'Berat Jenis Urine (Refraktometer)', kategori: 'TTV & Hidrasi', satuan: '', rujukan: '1.002 - 1.030 (Euhidrasi ≤ 1.020)', tipe: 'numeric', minRef: 1.002, maxRef: 1.020 },
+  { id: 'warna_urine', nama: 'Warna Urine (Armstrong 1-8)', kategori: 'TTV & Hidrasi', satuan: 'Skala', rujukan: 'Skala 1 - 3 (Euhidrasi)', tipe: 'armstrong' },
+  { id: 'gds', nama: 'Gula Darah Sewaktu (GDS)', kategori: 'Metabolik', satuan: 'mg/dL', rujukan: '< 140', tipe: 'numeric', maxRef: 140 },
+  { id: 'gdp', nama: 'Gula Darah Puasa (GDP)', kategori: 'Metabolik', satuan: 'mg/dL', rujukan: '70 - 100', tipe: 'numeric', minRef: 70, maxRef: 100 },
+  { id: 'kolesterol', nama: 'Kolesterol Total', kategori: 'Metabolik', satuan: 'mg/dL', rujukan: '< 200', tipe: 'numeric', maxRef: 200 },
+  { id: 'asam_urat', nama: 'Asam Urat', kategori: 'Metabolik', satuan: 'mg/dL', rujukan: '3.5 - 7.2 (P) / 2.6 - 6.0 (W)', tipe: 'numeric', minRef: 3.5, maxRef: 7.2 },
+  { id: 'berat_badan', nama: 'Berat Badan (BB)', kategori: 'Antropometri', satuan: 'kg', rujukan: '-', tipe: 'numeric' },
+  { id: 'tinggi_badan', nama: 'Tinggi Badan (TB)', kategori: 'Antropometri', satuan: 'cm', rujukan: '-', tipe: 'numeric' },
+  { id: 'lingkar_perut', nama: 'Lingkar Perut', kategori: 'Antropometri', satuan: 'cm', rujukan: '< 90 (P) / < 80 (W)', tipe: 'numeric', maxRef: 90 },
+  { id: 'nadi', nama: 'Denyut Nadi', kategori: 'TTV & Hidrasi', satuan: 'x/menit', rujukan: '60 - 100', tipe: 'numeric', minRef: 60, maxRef: 100 },
+  { id: 'suhu', nama: 'Suhu Tubuh', kategori: 'TTV & Hidrasi', satuan: '°C', rujukan: '36.5 - 37.5', tipe: 'numeric', minRef: 36.5, maxRef: 37.5 },
+  { id: 'rr', nama: 'Laju Pernapasan (RR)', kategori: 'TTV & Hidrasi', satuan: 'x/menit', rujukan: '12 - 20', tipe: 'numeric', minRef: 12, maxRef: 20 },
+  { id: 'spo2', nama: 'Saturasi Oksigen (SpO2)', kategori: 'TTV & Hidrasi', satuan: '%', rujukan: '≥ 95', tipe: 'numeric', minRef: 95 },
+
+  // 2. Laboratorium Rutin & Darah Lengkap
+  { id: 'hba1c', nama: 'HbA1c (Hemoglobin A1c)', kategori: 'Laboratorium', satuan: '%', rujukan: '< 6.5', tipe: 'numeric', maxRef: 6.5 },
+  { id: 'ureum', nama: 'Ureum Darah', kategori: 'Laboratorium', satuan: 'mg/dL', rujukan: '15 - 45', tipe: 'numeric', minRef: 15, maxRef: 45 },
+  { id: 'kreatinin', nama: 'Kreatinin Serum', kategori: 'Laboratorium', satuan: 'mg/dL', rujukan: '0.6 - 1.2', tipe: 'numeric', minRef: 0.6, maxRef: 1.2 },
+  { id: 'egfr', nama: 'eGFR (Fungsi Ginjal)', kategori: 'Laboratorium', satuan: 'mL/min/1.73m2', rujukan: '≥ 90', tipe: 'numeric', minRef: 90 },
+  { id: 'hb', nama: 'Hemoglobin (Hb)', kategori: 'Laboratorium', satuan: 'g/dL', rujukan: '13.0 - 17.5', tipe: 'numeric', minRef: 13.0, maxRef: 17.5 },
+  { id: 'leukosit', nama: 'Leukosit', kategori: 'Laboratorium', satuan: '/uL', rujukan: '4.000 - 10.000', tipe: 'numeric', minRef: 4000, maxRef: 10000 },
+  { id: 'trombosit', nama: 'Trombosit', kategori: 'Laboratorium', satuan: '/uL', rujukan: '150.000 - 450.000', tipe: 'numeric', minRef: 150000, maxRef: 450000 },
+  { id: 'hematokrit', nama: 'Hematokrit (Ht)', kategori: 'Laboratorium', satuan: '%', rujukan: '40 - 52', tipe: 'numeric', minRef: 40, maxRef: 52 },
+  { id: 'sgot', nama: 'SGOT / AST', kategori: 'Laboratorium', satuan: 'U/L', rujukan: '< 35', tipe: 'numeric', maxRef: 35 },
+  { id: 'sgpt', nama: 'SGPT / ALT', kategori: 'Laboratorium', satuan: 'U/L', rujukan: '< 45', tipe: 'numeric', maxRef: 45 },
+  { id: 'trigliserida', nama: 'Trigliserida', kategori: 'Laboratorium', satuan: 'mg/dL', rujukan: '< 150', tipe: 'numeric', maxRef: 150 },
+  { id: 'hdl', nama: 'Kolesterol HDL', kategori: 'Laboratorium', satuan: 'mg/dL', rujukan: '> 40', tipe: 'numeric', minRef: 40 },
+  { id: 'ldl', nama: 'Kolesterol LDL', kategori: 'Laboratorium', satuan: 'mg/dL', rujukan: '< 100', tipe: 'numeric', maxRef: 100 },
+  { id: 'natrium', nama: 'Elektrolit - Natrium', kategori: 'Laboratorium', satuan: 'mmol/L', rujukan: '135 - 145', tipe: 'numeric', minRef: 135, maxRef: 145 },
+  { id: 'kalium', nama: 'Elektrolit - Kalium', kategori: 'Laboratorium', satuan: 'mmol/L', rujukan: '3.5 - 5.0', tipe: 'numeric', minRef: 3.5, maxRef: 5.0 },
+  { id: 'klorida', nama: 'Elektrolit - Klorida', kategori: 'Laboratorium', satuan: 'mmol/L', rujukan: '98 - 106', tipe: 'numeric', minRef: 98, maxRef: 106 },
+  { id: 'protein_urine', nama: 'Protein Urine', kategori: 'Urine Lengkap', satuan: '', rujukan: 'Negatif', tipe: 'text' },
+  { id: 'glukosa_urine', nama: 'Glukosa Urine', kategori: 'Urine Lengkap', satuan: '', rujukan: 'Negatif', tipe: 'text' }
+];
+
+let _currentKonsulPatient = null;
+let _konsulTimelineTab = 'patient';
+
+function getMasterExamTests() {
+  let customTests = [];
+  try {
+    const raw = localStorage.getItem('ati_custom_master_exams');
+    if (raw) customTests = JSON.parse(raw);
+  } catch (e) {
+    console.error('Error parsing custom master exams:', e);
+  }
+  return [...DEFAULT_MASTER_EXAM_TESTS, ...customTests];
+}
+
+function initKonsulDokterView() {
+  const dateInput = document.getElementById('konsul-tanggal');
+  const timeInput = document.getElementById('konsul-jam');
+  const dokterInput = document.getElementById('konsul-dokter');
+
+  const now = new Date();
+  if (dateInput && !dateInput.value) {
+    dateInput.value = now.toISOString().slice(0, 10);
+  }
+  if (timeInput && !timeInput.value) {
+    timeInput.value = now.toTimeString().slice(0, 5);
+  }
+  if (dokterInput && !dokterInput.value) {
+    const currentUser = (typeof getActiveUserName === 'function') ? getActiveUserName() : 'dr. Dylan Alam Fadhilah, Sp.KKLP';
+    dokterInput.value = currentUser || 'dr. Dylan Alam Fadhilah, Sp.KKLP';
+  }
+
+  // Auto sync if Poli already has a patient selected
+  if (!_currentKonsulPatient && appData.currentPoliPatient) {
+    selectKonsulPatient(appData.currentPoliPatient);
+  }
+
+  // Populate initial frequent exam rows if table is empty
+  const tbody = document.getElementById('konsul-exam-tbody');
+  if (tbody && tbody.children.length === 0) {
+    applyKonsulPreset('hidrasi');
+  }
+
+  updateKonsulTimelineView();
+}
+
+function syncPatientFromPoliToKonsul() {
+  if (appData.currentPoliPatient) {
+    selectKonsulPatient(appData.currentPoliPatient);
+    showToast(`✅ Berhasil menyinkronkan pasien "${appData.currentPoliPatient.nama}" dari Poli!`, 'success');
+  } else {
+    showToast('⚠️ Belum ada pasien yang dipilih di Tab Poli.', 'warning');
+  }
+}
+
+function searchPatientKonsul() {
+  const input = document.getElementById('konsul-search-nik');
+  if (!input) return;
+  const q = input.value.trim().toLowerCase();
+  if (!q) {
+    showToast('Ketik NIK atau Nama pasien untuk mencari!', 'warning');
+    return;
+  }
+
+  const patient = (appData.patients || []).find(p => {
+    const nik = (p.nikPabrik || p.nik || '').toLowerCase();
+    const nama = (p.nama || '').toLowerCase();
+    return nik.includes(q) || nama.includes(q);
+  });
+
+  if (patient) {
+    selectKonsulPatient(patient);
+    showToast(`✅ Pasien ditemukan: ${patient.nama}`, 'success');
+  } else {
+    showToast(`❌ Pasien dengan kata kunci "${q}" tidak ditemukan di database.`, 'error');
+  }
+}
+
+function selectKonsulPatient(patient) {
+  _currentKonsulPatient = patient;
+  const nameEl = document.getElementById('konsul-banner-name');
+  const subEl = document.getElementById('konsul-banner-sub');
+  const tagsEl = document.getElementById('konsul-banner-tags');
+  const searchInput = document.getElementById('konsul-search-nik');
+
+  if (searchInput) searchInput.value = patient.nikPabrik || patient.nama || '';
+
+  if (nameEl) nameEl.textContent = `${patient.nama} (${patient.nikPabrik || '-'})`;
+  if (subEl) {
+    const age = patient.usia || patient.umur ? `${patient.usia || patient.umur} thn` : '';
+    const gender = patient.gender || patient.jenisKelamin || '';
+    const dept = patient.dept || patient.departemen || '-';
+    subEl.textContent = `Dept: ${dept} | ${gender} ${age} | Telp: ${patient.hp || patient.noHp || '-'}`;
+  }
+
+  if (tagsEl) {
+    tagsEl.innerHTML = '';
+    if (patient.alergi && patient.alergi !== '-') {
+      tagsEl.innerHTML += `<span class="badge" style="background: rgba(239,68,68,0.2); color: #ef4444; font-weight: 800;"><i class="fa-solid fa-triangle-exclamation"></i> ALERGI: ${escapeHtml(patient.alergi)}</span>`;
+    }
+    const isPantauan = (appData.pantauan || []).some(p => 
+      (p.nikPabrik && p.nikPabrik === patient.nikPabrik) || (p.namaPasien && p.namaPasien.toLowerCase() === patient.nama.toLowerCase())
+    );
+    if (isPantauan) {
+      tagsEl.innerHTML += `<span class="badge" style="background: rgba(220,38,38,0.25); color: #f87171; font-weight: 800;"><i class="fa-solid fa-shield-heart"></i> PASIEN PANTAUAN K3</span>`;
+    }
+  }
+
+  // Update right timeline
+  updateKonsulTimelineView();
+}
+
+function resetFormKonsulDokter() {
+  _currentKonsulPatient = null;
+  const searchInput = document.getElementById('konsul-search-nik');
+  const nameEl = document.getElementById('konsul-banner-name');
+  const subEl = document.getElementById('konsul-banner-sub');
+  const tagsEl = document.getElementById('konsul-banner-tags');
+
+  if (searchInput) searchInput.value = '';
+  if (nameEl) nameEl.textContent = 'Silakan Cari Pasien Terlebih Dahulu';
+  if (subEl) subEl.textContent = 'Data biometrik, riwayat klinis, dan tren lab pasien akan otomatis dimuat';
+  if (tagsEl) tagsEl.innerHTML = '';
+
+  ['konsul-stott-a', 'konsul-stott-b', 'konsul-stott-c', 'konsul-stott-d', 'konsul-rekomendasi-obat'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  const tbody = document.getElementById('konsul-exam-tbody');
+  if (tbody) tbody.innerHTML = '';
+  applyKonsulPreset('hidrasi');
+
+  // Reset follow up checkboxes
+  const chkIzin = document.getElementById('poli-izin-sakit');
+  if (chkIzin) { chkIzin.checked = false; handlePoliCheckboxChange(); }
+  const chkPantauan = document.getElementById('poli-pantauan');
+  if (chkPantauan) { chkPantauan.checked = false; handlePoliCheckboxChange(); }
+  const chkKontrol = document.getElementById('poli-chk-kontrol');
+  if (chkKontrol) { chkKontrol.checked = false; togglePoliKontrolFields(); }
+
+  updateKonsulTimelineView();
+  showToast('Formulir Konsul Dokter telah direset.', 'info');
+}
+
+function addKonsulExamRow(testId = '', val1 = '', val2 = '') {
+  const tbody = document.getElementById('konsul-exam-tbody');
+  if (!tbody) return;
+
+  const masterList = getMasterExamTests();
+  const selectedTest = masterList.find(t => t.id === testId) || masterList[0];
+
+  const tr = document.createElement('tr');
+  tr.dataset.testId = selectedTest.id;
+  tr.dataset.tipe = selectedTest.tipe || 'numeric';
+
+  tr.innerHTML = `
+    <td>
+      <select class="form-control konsul-exam-select" onchange="handleKonsulTestChange(this)" style="font-size: 0.82rem; font-weight: 700; background: var(--surface-2);">
+        ${masterList.map(t => `
+          <option value="${t.id}" ${t.id === selectedTest.id ? 'selected' : ''}>
+            ${t.kategori ? `[${t.kategori}] ` : ''}${t.nama}
+          </option>
+        `).join('')}
+      </select>
+    </td>
+    <td class="td-exam-value">
+      ${renderExamValueInputHTML(selectedTest, val1, val2)}
+    </td>
+    <td class="td-exam-satuan" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
+      ${selectedTest.satuan || '-'}
+    </td>
+    <td class="td-exam-rujukan" style="font-size: 0.78rem; color: var(--text-muted);">
+      ${selectedTest.rujukan || '-'}
+    </td>
+    <td class="td-exam-status">
+      <span class="badge badge-status-normal" style="font-size: 0.72rem; padding: 2px 7px; background: rgba(34, 197, 94, 0.15); color: #22c55e;">
+        Normal
+      </span>
+    </td>
+    <td style="text-align: center;">
+      <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); updateExamCalculations();" title="Hapus baris" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;">
+        <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
+      </button>
+    </td>
+  `;
+
+  tbody.appendChild(tr);
+  calculateExamRowStatus(tr);
+  updateExamCalculations();
+}
+
+function renderExamValueInputHTML(test, val1 = '', val2 = '') {
+  if (test.tipe === 'bp') {
+    return `
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <input type="number" class="form-control form-control-sm exam-val-sis" placeholder="Sis" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="width: 60px; font-weight: 700; text-align: center;">
+        <span style="font-weight: 800; color: var(--text-muted);">/</span>
+        <input type="number" class="form-control form-control-sm exam-val-dia" placeholder="Dia" value="${val2}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="width: 60px; font-weight: 700; text-align: center;">
+        <span class="badge exam-map-pill" style="font-size: 0.7rem; background: rgba(59,130,246,0.15); color: #3b82f6; padding: 2px 5px; white-space: nowrap;">MAP: -</span>
+      </div>
+    `;
+  } else if (test.tipe === 'armstrong') {
+    return `
+      <select class="form-control form-control-sm exam-val-armstrong" onchange="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-size: 0.8rem; font-weight: 700;">
+        <option value="">-- Pilih Skala --</option>
+        <option value="1" ${val1 === '1' ? 'selected' : ''}>1: Jernih Pucat (Euhidrasi Optimal)</option>
+        <option value="2" ${val1 === '2' ? 'selected' : ''}>2: Kuning Sangat Muda (Euhidrasi)</option>
+        <option value="3" ${val1 === '3' ? 'selected' : ''}>3: Kuning Cerah (Euhidrasi Cukup)</option>
+        <option value="4" ${val1 === '4' ? 'selected' : ''}>4: Kuning Sedang (Dehidrasi Ringan)</option>
+        <option value="5" ${val1 === '5' ? 'selected' : ''}>5: Kuning Pekat (Dehidrasi Sedang)</option>
+        <option value="6" ${val1 === '6' ? 'selected' : ''}>6: Kuning Tua / Amber (Dehidrasi Berat)</option>
+        <option value="7" ${val1 === '7' ? 'selected' : ''}>7: Cokelat Teh (Dehidrasi Sangat Berat)</option>
+        <option value="8" ${val1 === '8' ? 'selected' : ''}>8: Cokelat Pekat (Dehidrasi Kritis)</option>
+      </select>
+    `;
+  } else if (test.id === 'bj_urine') {
+    return `
+      <input type="number" step="0.001" class="form-control form-control-sm exam-val-num" placeholder="1.015" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-weight: 700; text-align: center;">
+    `;
+  } else if (test.tipe === 'text') {
+    return `
+      <input type="text" class="form-control form-control-sm exam-val-text" placeholder="Hasil" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr'));" style="font-weight: 600;">
+    `;
+  } else {
+    return `
+      <input type="number" step="any" class="form-control form-control-sm exam-val-num" placeholder="Nilai" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-weight: 700; text-align: center;">
+    `;
+  }
+}
+
+function handleKonsulTestChange(selectEl) {
+  const tr = selectEl.closest('tr');
+  const testId = selectEl.value;
+  const masterList = getMasterExamTests();
+  const test = masterList.find(t => t.id === testId) || masterList[0];
+
+  tr.dataset.testId = test.id;
+  tr.dataset.tipe = test.tipe || 'numeric';
+
+  const tdValue = tr.querySelector('.td-exam-value');
+  const tdSatuan = tr.querySelector('.td-exam-satuan');
+  const tdRujukan = tr.querySelector('.td-exam-rujukan');
+
+  if (tdValue) tdValue.innerHTML = renderExamValueInputHTML(test);
+  if (tdSatuan) tdSatuan.textContent = test.satuan || '-';
+  if (tdRujukan) tdRujukan.textContent = test.rujukan || '-';
+
+  calculateExamRowStatus(tr);
+  updateExamCalculations();
+}
+
+function calculateExamRowStatus(tr) {
+  if (!tr) return;
+  const testId = tr.dataset.testId;
+  const statusTd = tr.querySelector('.td-exam-status');
+  if (!statusTd) return;
+
+  const masterList = getMasterExamTests();
+  const test = masterList.find(t => t.id === testId) || {};
+
+  if (test.tipe === 'bp') {
+    const sis = parseFloat(tr.querySelector('.exam-val-sis')?.value) || 0;
+    const dia = parseFloat(tr.querySelector('.exam-val-dia')?.value) || 0;
+    const mapPill = tr.querySelector('.exam-map-pill');
+
+    if (sis > 0 && dia > 0) {
+      const map = Math.round(dia + (sis - dia) / 3);
+      if (mapPill) mapPill.textContent = `MAP: ${map}`;
+
+      if (sis >= 160 || dia >= 100) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(220,38,38,0.2); color: #f87171; font-weight: 800;">Hipertensi Tk 2</span>';
+      } else if (sis >= 140 || dia >= 90) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(239,68,68,0.2); color: #ef4444; font-weight: 800;">Hipertensi Tk 1</span>';
+      } else if (sis >= 120 || dia >= 80) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(245,158,11,0.2); color: #f59e0b; font-weight: 800;">Pre-Hipertensi</span>';
+      } else if (sis < 90) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8; font-weight: 800;">Hipotensi</span>';
+      } else {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(34,197,94,0.2); color: #22c55e; font-weight: 800;">Normal</span>';
+      }
+    } else {
+      if (mapPill) mapPill.textContent = 'MAP: -';
+      statusTd.innerHTML = '<span class="badge" style="background: rgba(148,163,184,0.2); color: var(--text-muted);">-</span>';
+    }
+  } else if (test.tipe === 'armstrong') {
+    const scale = parseInt(tr.querySelector('.exam-val-armstrong')?.value) || 0;
+    if (scale >= 1 && scale <= 3) {
+      statusTd.innerHTML = '<span class="badge" style="background: rgba(34,197,94,0.2); color: #22c55e; font-weight: 800;">🟢 Euhidrasi</span>';
+    } else if (scale >= 4 && scale <= 5) {
+      statusTd.innerHTML = '<span class="badge" style="background: rgba(245,158,11,0.2); color: #f59e0b; font-weight: 800;">🟡 Dehidrasi Ringan</span>';
+    } else if (scale >= 6) {
+      statusTd.innerHTML = '<span class="badge" style="background: rgba(220,38,38,0.2); color: #f87171; font-weight: 800;">🔴 Dehidrasi Berat</span>';
+    } else {
+      statusTd.innerHTML = '<span class="badge" style="background: rgba(148,163,184,0.2); color: var(--text-muted);">-</span>';
+    }
+  } else if (test.id === 'bj_urine') {
+    const val = parseFloat(tr.querySelector('.exam-val-num')?.value);
+    if (!isNaN(val) && val > 0) {
+      if (val < 1.002) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8; font-weight: 800;">Hipostenuria</span>';
+      } else if (val <= 1.020) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(34,197,94,0.2); color: #22c55e; font-weight: 800;">🟢 Euhidrasi</span>';
+      } else if (val <= 1.025) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(245,158,11,0.2); color: #f59e0b; font-weight: 800;">🟡 Dehidrasi Ringan</span>';
+      } else {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(220,38,38,0.2); color: #f87171; font-weight: 800;">🔴 Dehidrasi Berat</span>';
+      }
+    } else {
+      statusTd.innerHTML = '<span class="badge" style="background: rgba(148,163,184,0.2); color: var(--text-muted);">-</span>';
+    }
+  } else {
+    const val = parseFloat(tr.querySelector('.exam-val-num')?.value);
+    if (!isNaN(val)) {
+      if (test.maxRef !== undefined && val > test.maxRef) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(239,68,68,0.2); color: #ef4444; font-weight: 800;">Tinggi</span>';
+      } else if (test.minRef !== undefined && val < test.minRef) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8; font-weight: 800;">Rendah</span>';
+      } else {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(34,197,94,0.2); color: #22c55e; font-weight: 800;">Normal</span>';
+      }
+    } else {
+      statusTd.innerHTML = '<span class="badge" style="background: rgba(148,163,184,0.2); color: var(--text-muted);">-</span>';
+    }
+  }
+}
+
+function updateExamCalculations() {
+  const rows = document.querySelectorAll('#konsul-exam-tbody tr');
+  let bb = null;
+  let tb = null;
+  let sis = null;
+  let dia = null;
+
+  rows.forEach(r => {
+    const id = r.dataset.testId;
+    if (id === 'berat_badan') {
+      const v = parseFloat(r.querySelector('.exam-val-num')?.value);
+      if (!isNaN(v) && v > 0) bb = v;
+    } else if (id === 'tinggi_badan') {
+      const v = parseFloat(r.querySelector('.exam-val-num')?.value);
+      if (!isNaN(v) && v > 0) tb = v;
+    } else if (id === 'tekanan_darah') {
+      const s = parseFloat(r.querySelector('.exam-val-sis')?.value);
+      const d = parseFloat(r.querySelector('.exam-val-dia')?.value);
+      if (!isNaN(s) && !isNaN(d) && s > 0 && d > 0) {
+        sis = s;
+        dia = d;
+      }
+    }
+  });
+
+  const mapBadge = document.getElementById('konsul-badge-map');
+  const bmiBadge = document.getElementById('konsul-badge-bmi');
+
+  if (mapBadge) {
+    if (sis && dia) {
+      const map = Math.round(dia + (sis - dia) / 3);
+      mapBadge.style.display = 'inline-block';
+      mapBadge.textContent = `MAP: ${map} mmHg`;
+    } else {
+      mapBadge.style.display = 'none';
+    }
+  }
+
+  if (bmiBadge) {
+    if (bb && tb && tb > 50) {
+      const bmi = (bb / ((tb / 100) ** 2)).toFixed(1);
+      let cat = 'Normal';
+      if (bmi < 18.5) cat = 'Kurang';
+      else if (bmi >= 25) cat = 'Obesitas';
+      else if (bmi >= 23) cat = 'Overweight';
+
+      bmiBadge.style.display = 'inline-block';
+      bmiBadge.textContent = `BMI: ${bmi} (${cat})`;
+    } else {
+      bmiBadge.style.display = 'none';
+    }
+  }
+}
+
+function applyKonsulPreset(presetType) {
+  const tbody = document.getElementById('konsul-exam-tbody');
+  if (!tbody) return;
+
+  if (presetType === 'ttv') {
+    addKonsulExamRow('tekanan_darah', '120', '80');
+    addKonsulExamRow('nadi', '78');
+    addKonsulExamRow('suhu', '36.5');
+    addKonsulExamRow('rr', '18');
+  } else if (presetType === 'hidrasi') {
+    addKonsulExamRow('tekanan_darah', '120', '80');
+    addKonsulExamRow('bj_urine', '1.018');
+    addKonsulExamRow('warna_urine', '3');
+    addKonsulExamRow('berat_badan', '65');
+  } else if (presetType === 'metabolik') {
+    addKonsulExamRow('gds', '110');
+    addKonsulExamRow('kolesterol', '180');
+    addKonsulExamRow('asam_urat', '5.5');
+    addKonsulExamRow('hba1c', '5.8');
+    addKonsulExamRow('lingkar_perut', '82');
+  }
+}
+
+function openModalTambahMasterExam() {
+  const modal = document.getElementById('modal-tambah-master-exam');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModalTambahMasterExam() {
+  const modal = document.getElementById('modal-tambah-master-exam');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveCustomMasterExam() {
+  const nama = document.getElementById('master-exam-nama')?.value?.trim();
+  const kategori = document.getElementById('master-exam-kategori')?.value || 'Laboratorium';
+  const satuan = document.getElementById('master-exam-satuan')?.value?.trim() || '';
+  const rujukan = document.getElementById('master-exam-rujukan')?.value?.trim() || '-';
+  const minVal = parseFloat(document.getElementById('master-exam-min')?.value);
+  const maxVal = parseFloat(document.getElementById('master-exam-max')?.value);
+
+  if (!nama) {
+    showToast('Nama pemeriksaan wajib diisi!', 'warning');
+    return;
+  }
+
+  const id = 'custom_' + nama.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const newTest = {
+    id,
+    nama,
+    kategori,
+    satuan,
+    rujukan,
+    tipe: 'numeric'
+  };
+  if (!isNaN(minVal)) newTest.minRef = minVal;
+  if (!isNaN(maxVal)) newTest.maxRef = maxVal;
+
+  let customList = [];
+  try {
+    const raw = localStorage.getItem('ati_custom_master_exams');
+    if (raw) customList = JSON.parse(raw);
+  } catch (e) {}
+
+  customList = customList.filter(t => t.id !== id);
+  customList.push(newTest);
+  localStorage.setItem('ati_custom_master_exams', JSON.stringify(customList));
+
+  closeModalTambahMasterExam();
+  showToast(`✅ Parameter "${nama}" berhasil disimpan ke master!`, 'success');
+
+  // Immediately add as a row in table
+  addKonsulExamRow(id);
+}
+
+async function handleSaveKonsulDokter(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  if (!_currentKonsulPatient) {
+    showToast('⚠️ Silakan cari dan pilih pasien terlebih dahulu sebelum menyimpan konsul!', 'warning');
+    document.getElementById('konsul-search-nik')?.focus();
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-konsul');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan Konsul Dokter...';
+  }
+
+  try {
+    const tanggalVal = document.getElementById('konsul-tanggal')?.value;
+    const jamVal = document.getElementById('konsul-jam')?.value;
+    const dokterVal = document.getElementById('konsul-dokter')?.value?.trim() || 'dr. Dylan Alam Fadhilah, Sp.KKLP';
+
+    const now = new Date();
+    let tanggalFormatted = '';
+    let customCreatedAt = '';
+    let jamFormatted = '';
+
+    let jamH = now.getHours();
+    let jamM = now.getMinutes();
+    let jamS = now.getSeconds();
+
+    if (jamVal) {
+      const parts = jamVal.split(':');
+      if (parts.length >= 2) {
+        jamH = parseInt(parts[0], 10) || 0;
+        jamM = parseInt(parts[1], 10) || 0;
+        jamS = 0;
+      }
+    }
+    jamFormatted = `${String(jamH).padStart(2, '0')}:${String(jamM).padStart(2, '0')}:00`;
+
+    if (tanggalVal) {
+      const [yr, mo, dy] = tanggalVal.split('-');
+      tanggalFormatted = `${parseInt(dy)}/${parseInt(mo)}/${yr}`;
+      customCreatedAt = new Date(yr, mo - 1, dy, jamH, jamM, jamS).toISOString();
+    } else {
+      tanggalFormatted = now.toLocaleDateString('id-ID');
+      customCreatedAt = now.toISOString();
+    }
+
+    // 1. Gather Dynamic Exam & Lab Rows
+    const examRows = document.querySelectorAll('#konsul-exam-tbody tr');
+    const examList = [];
+    const summaryLines = [];
+    let pntSis = null, pntDia = null, pntMap = null;
+    let pntBjUrine = null, pntArmstrong = null, pntNadi = null;
+    let pntGds = null, pntAu = null, pntKol = null;
+    let pntBb = null, pntTb = null, pntLp = null;
+
+    examRows.forEach(tr => {
+      const testId = tr.dataset.testId;
+      const selectEl = tr.querySelector('.konsul-exam-select');
+      const testName = selectEl ? selectEl.options[selectEl.selectedIndex].text.replace(/^\[.*?\]\s*/, '') : testId;
+      const satuan = tr.querySelector('.td-exam-satuan')?.textContent?.trim() || '';
+      const rujukan = tr.querySelector('.td-exam-rujukan')?.textContent?.trim() || '';
+      const status = tr.querySelector('.td-exam-status')?.textContent?.trim() || 'Normal';
+
+      let nilaiStr = '';
+      if (testId === 'tekanan_darah') {
+        const s = tr.querySelector('.exam-val-sis')?.value;
+        const d = tr.querySelector('.exam-val-dia')?.value;
+        if (s && d) {
+          pntSis = parseFloat(s);
+          pntDia = parseFloat(d);
+          pntMap = Math.round(pntDia + (pntSis - pntDia) / 3);
+          nilaiStr = `${s}/${d}`;
+          summaryLines.push(`TD: ${nilaiStr} mmHg (MAP: ${pntMap} mmHg) - ${status}`);
+        }
+      } else if (testId === 'warna_urine') {
+        const arm = tr.querySelector('.exam-val-armstrong')?.value;
+        if (arm) {
+          pntArmstrong = arm;
+          nilaiStr = `Skala ${arm}`;
+          summaryLines.push(`Warna Urine: Skala ${arm} - ${status}`);
+        }
+      } else if (testId === 'bj_urine') {
+        const bj = tr.querySelector('.exam-val-num')?.value;
+        if (bj) {
+          pntBjUrine = parseFloat(bj);
+          nilaiStr = bj;
+          summaryLines.push(`BJ Urine: ${bj} - ${status}`);
+        }
+      } else {
+        const val = tr.querySelector('.exam-val-num')?.value || tr.querySelector('.exam-val-text')?.value;
+        if (val) {
+          nilaiStr = val;
+          summaryLines.push(`${testName}: ${val} ${satuan} (${status})`);
+          if (testId === 'nadi') pntNadi = parseFloat(val);
+          if (testId === 'gds' || testId === 'gdp') pntGds = parseFloat(val);
+          if (testId === 'asam_urat') pntAu = parseFloat(val);
+          if (testId === 'kolesterol') pntKol = parseFloat(val);
+          if (testId === 'berat_badan') pntBb = parseFloat(val);
+          if (testId === 'tinggi_badan') pntTb = parseFloat(val);
+          if (testId === 'lingkar_perut') pntLp = parseFloat(val);
+        }
+      }
+
+      if (nilaiStr) {
+        examList.push({
+          testId,
+          testName,
+          nilai: nilaiStr,
+          satuan,
+          rujukan,
+          status
+        });
+      }
+    });
+
+    let pntBmi = null;
+    if (pntBb && pntTb && pntTb > 50) {
+      pntBmi = (pntBb / ((pntTb / 100) ** 2)).toFixed(1);
+    }
+
+    // 2. Gather Stott & Davis 4 Quadrants
+    const stottA = document.getElementById('konsul-stott-a')?.value?.trim() || '';
+    const stottB = document.getElementById('konsul-stott-b')?.value?.trim() || '';
+    const stottC = document.getElementById('konsul-stott-c')?.value?.trim() || '';
+    const stottD = document.getElementById('konsul-stott-d')?.value?.trim() || '';
+
+    // 3. Gather Doctor Therapy Recommendations
+    const rekomendasiObat = document.getElementById('konsul-rekomendasi-obat')?.value?.trim() || '';
+
+    // 4. Gather 4 Follow-up Boxes
+    const isIzinSakit = document.getElementById('poli-izin-sakit')?.checked || false;
+    const isPantauan = document.getElementById('poli-pantauan')?.checked || false;
+    const chkKontrol = document.getElementById('poli-chk-kontrol')?.checked || false;
+    const tglKontrol = document.getElementById('poli-tanggal-kontrol')?.value || '';
+    const catatanKontrol = document.getElementById('poli-catatan-kontrol')?.value?.trim() || '';
+
+    // Handle File Upload if selected
+    let linkFoto = '';
+    const fileInput = document.getElementById('poli-upload-file');
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+      try {
+        const file = fileInput.files[0];
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const upRes = await fetch('/api/upload-foto', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileData: base64, fileName: file.name, mimeType: file.type })
+        });
+        const upData = await upRes.json();
+        if (upData.fileUrl) linkFoto = upData.fileUrl;
+      } catch (uploadErr) {
+        console.error('File upload err:', uploadErr);
+      }
+    }
+
+    // Formulate Objective & Plan
+    const objektifText = summaryLines.join('; ') || 'Pemeriksaan fisik dalam batas normal';
+    const planText = [
+      rekomendasiObat ? `Rekomendasi Terapi: ${rekomendasiObat}` : '',
+      stottB ? `Edukasi Perilaku: ${stottB}` : '',
+      stottC ? `Manajemen Kronis: ${stottC}` : '',
+      stottD ? `Promosi Kesehatan & Hidrasi: ${stottD}` : ''
+    ].filter(Boolean).join('\n');
+
+    // Build Record Payload
+    const newRecord = {
+      nikPabrik: _currentKonsulPatient.nikPabrik || '',
+      namaPasien: _currentKonsulPatient.nama,
+      dept: _currentKonsulPatient.dept || '',
+      noHp: _currentKonsulPatient.hp || _currentKonsulPatient.noHp || '',
+      tanggal: tanggalFormatted,
+      jam: jamFormatted,
+      created_at: customCreatedAt,
+      keluhan: stottA || 'Konsultasi Evaluasi Holistik Dokter',
+      objektif: objektifText,
+      asesmen: 'Konsultasi Dokter & Evaluasi Stott-Davis',
+      plan: planText,
+      tindakan: [],
+      biayaTindakan: 0,
+      resep: [],
+      biayaObat: 0,
+      totalBiaya: 0,
+      pemeriksa: dokterVal,
+      izinSakit: isIzinSakit,
+      isPantauan: isPantauan,
+      isKonsulDokter: true,
+      stottDavis: {
+        a: stottA,
+        b: stottB,
+        c: stottC,
+        d: stottD
+      },
+      pemeriksaanFisikLab: examList,
+      rekomendasiObat: rekomendasiObat,
+      tanggalKontrol: chkKontrol ? tglKontrol : '',
+      catatanKontrol: catatanKontrol,
+      linkFoto: linkFoto
+    };
+
+    // If marked for pantauan, build pantauanPayload with hydration and MAP
+    let pantauanPayload = null;
+    if (isPantauan) {
+      let statusTensi = 'Normal';
+      if (pntSis >= 160 || pntDia >= 100) statusTensi = 'Hipertensi Tk 2';
+      else if (pntSis >= 140 || pntDia >= 90) statusTensi = 'Hipertensi Tk 1';
+      else if (pntSis >= 120 || pntDia >= 80) statusTensi = 'Pre-Hipertensi';
+
+      let statusHidrasi = 'Euhidrasi';
+      if (pntBjUrine > 1.025 || (pntArmstrong && parseInt(pntArmstrong) >= 6)) statusHidrasi = 'Dehidrasi Berat';
+      else if (pntBjUrine > 1.020 || (pntArmstrong && parseInt(pntArmstrong) >= 4)) statusHidrasi = 'Dehidrasi Ringan';
+
+      pantauanPayload = {
+        mingguan: {
+          tensiSistol: pntSis,
+          tensiDiastol: pntDia,
+          statusTensi: statusTensi,
+          map: pntMap,
+          nadi: pntNadi,
+          gulaDarah: pntGds,
+          tipeGula: 'GDS',
+          asamUrat: pntAu,
+          kolesterol: pntKol,
+          beratBadan: pntBb,
+          tinggiBadan: pntTb,
+          bmi: pntBmi,
+          lingkarPerut: pntLp,
+          beratJenisUrine: pntBjUrine,
+          warnaUrineArmstrong: pntArmstrong,
+          statusHidrasi: statusHidrasi,
+          jadwalBerikutnya: chkKontrol ? tglKontrol : ''
+        },
+        obatBulanan: {
+          ambilObat: false,
+          daftarObat: [],
+          catatanObat: rekomendasiObat
+        },
+        lab3Bulan: {
+          adaCekLab: examList.some(e => e.testId.startsWith('custom_') || ['hba1c', 'ureum', 'kreatinin', 'egfr'].includes(e.testId)),
+          daftarLab: examList.map(e => ({ namaTes: e.testName, hasil: e.nilai, satuan: e.satuan, rujukan: e.rujukan, status: e.status }))
+        },
+        catatanDokter: `[Kuadran D - Hidrasi & Edukasi]: ${stottD}
+[Advis Obat]: ${rekomendasiObat}`,
+        sendWa: document.getElementById('poli-pantauan-send-wa')?.checked || false
+      };
+      newRecord.pantauanData = pantauanPayload;
+      newRecord.tipePantauan = 'mingguan, konsultasi_dokter';
+    }
+
+    // Save via POST /api/records
+    window._lastLocalMutationTime = Date.now();
+    const res = await fetch('/api/records', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newRecord)
+    });
+
+    if (res.ok) {
+      const resData = await res.json().catch(() => newRecord);
+      const recordToStore = (resData && resData.id) ? resData : { ...newRecord, id: 'REC-' + Date.now() };
+
+      if (!Array.isArray(appData.records)) appData.records = [];
+      appData.records.unshift(recordToStore);
+
+      if (pantauanPayload && typeof loadLongTermPantauanData === 'function') {
+        await loadLongTermPantauanData().catch(() => {});
+      }
+
+      showToast('✅ Rekam Medis Konsultasi Dokter & Evaluasi Stott-Davis Berhasil Disimpan!', 'success', 5000);
+      updateKonsulTimelineView();
+      if (typeof updatePoliTimelineView === 'function') updatePoliTimelineView();
+    } else {
+      throw new Error(`Server returned status ${res.status}`);
+    }
+  } catch (err) {
+    console.error('Save Konsul Error:', err);
+    showToast(`❌ Gagal menyimpan konsul dokter: ${err.message}`, 'error', 6000);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> SIMPAN KONSUL DOKTER &amp; DATA PANTAUAN';
+    }
+  }
+}
+
+function switchKonsulTimelineTab(tab) {
+  _konsulTimelineTab = tab;
+  const btnPatient = document.getElementById('btn-konsul-tab-patient');
+  const btnToday = document.getElementById('btn-konsul-tab-today');
+
+  if (tab === 'patient') {
+    if (btnPatient) { btnPatient.style.background = '#2563eb'; btnPatient.style.color = '#fff'; }
+    if (btnToday) { btnToday.style.background = 'transparent'; btnToday.style.color = 'var(--text-muted)'; }
+  } else {
+    if (btnToday) { btnToday.style.background = '#2563eb'; btnToday.style.color = '#fff'; }
+    if (btnPatient) { btnPatient.style.background = 'transparent'; btnPatient.style.color = 'var(--text-muted)'; }
+  }
+  updateKonsulTimelineView();
+}
+
+function updateKonsulTimelineView() {
+  const container = document.getElementById('konsul-timeline-container');
+  const patientCountEl = document.getElementById('konsul-history-count');
+  const todayCountEl = document.getElementById('konsul-today-count');
+  if (!container) return;
+
+  const allRecords = appData.records || [];
+  const todayStr = new Date().toLocaleDateString('id-ID');
+  const todayKonsul = allRecords.filter(r => (r.tanggal === todayStr || (r.created_at && r.created_at.slice(0, 10) === new Date().toISOString().slice(0, 10))) && (r.isKonsulDokter || r.rekomendasiObat || r.stottDavis));
+
+  if (todayCountEl) todayCountEl.textContent = todayKonsul.length;
+
+  let patientRecords = [];
+  if (_currentKonsulPatient) {
+    const pNik = String(_currentKonsulPatient.nikPabrik || '').trim().toLowerCase();
+    const pNama = String(_currentKonsulPatient.nama || '').trim().toLowerCase();
+    patientRecords = allRecords.filter(r => {
+      const rNik = String(r.nikPabrik || '').trim().toLowerCase();
+      const rNama = String(r.namaPasien || '').trim().toLowerCase();
+      return (pNik && rNik && rNik === pNik) || (pNama && rNama && rNama === pNama);
+    }).sort((a, b) => (new Date(b.created_at || 0) - new Date(a.created_at || 0)));
+  }
+
+  if (patientCountEl) patientCountEl.textContent = patientRecords.length;
+
+  const targetList = (_konsulTimelineTab === 'today') ? todayKonsul : patientRecords;
+
+  if (targetList.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+        <i class="fa-solid fa-folder-open" style="font-size: 2.8rem; margin-bottom: 10px; opacity: 0.35;"></i>
+        <p style="font-weight: 700;">Belum ada riwayat untuk ditampilkan</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Pilih pasien atau input konsultasi dokter baru.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = targetList.map(r => {
+    const sd = r.stottDavis || {};
+    const exams = Array.isArray(r.pemeriksaanFisikLab) ? r.pemeriksaanFisikLab : [];
+
+    return `
+      <div class="glass-card" style="padding: 14px; margin-bottom: 12px; border-left: 4px solid #2563eb; background: var(--surface-1);">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+          <div>
+            <strong style="font-size: 0.95rem; color: var(--text-main);">${escapeHtml(r.namaPasien)} (${escapeHtml(r.nikPabrik || '-')})</strong>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">
+              <i class="fa-regular fa-clock"></i> ${r.tanggal} (${r.jam || '-'}) &bull; Dokter: ${escapeHtml(r.pemeriksa || 'dr. Dylan')}
+            </div>
+          </div>
+          <span class="badge" style="background: rgba(37,99,235,0.15); color: #3b82f6; font-size: 0.72rem; font-weight: 800;">
+            ${r.isKonsulDokter ? '🩺 KONSUL DOKTER' : 'POLI'}
+          </span>
+        </div>
+
+        <!-- Stott & Davis 4 Quadrants Chips -->
+        ${(sd.a || sd.b || sd.c || sd.d) ? `
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; background: rgba(0,0,0,0.18); padding: 8px 10px; border-radius: 8px;">
+            ${sd.a ? `<div style="font-size: 0.78rem;"><strong>[A. Akut]:</strong> ${escapeHtml(sd.a)}</div>` : ''}
+            ${sd.b ? `<div style="font-size: 0.78rem; color: #fbbf24;"><strong>[B. Perilaku]:</strong> ${escapeHtml(sd.b)}</div>` : ''}
+            ${sd.c ? `<div style="font-size: 0.78rem; color: #c084fc;"><strong>[C. Kronis]:</strong> ${escapeHtml(sd.c)}</div>` : ''}
+            ${sd.d ? `<div style="font-size: 0.78rem; color: #34d399;"><strong>[D. Hidrasi/Promosi]:</strong> ${escapeHtml(sd.d)}</div>` : ''}
+          </div>
+        ` : (r.keluhan ? `<div style="font-size: 0.8rem; margin-bottom: 6px;"><strong>Keluhan:</strong> ${escapeHtml(r.keluhan)}</div>` : '')}
+
+        <!-- Dynamic Exams summary -->
+        ${exams.length > 0 ? `
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+            ${exams.map(e => `<span class="badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; font-size: 0.72rem;">${escapeHtml(e.testName)}: ${escapeHtml(e.nilai)} ${escapeHtml(e.satuan || '')}</span>`).join('')}
+          </div>
+        ` : (r.objektif ? `<div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 6px;"><strong>Objektif:</strong> ${escapeHtml(r.objektif)}</div>` : '')}
+
+        <!-- Advis Rekomendasi Terapi -->
+        ${r.rekomendasiObat ? `
+          <div style="font-size: 0.8rem; background: rgba(34,197,94,0.1); border: 1px dashed rgba(34,197,94,0.3); padding: 6px 10px; border-radius: 6px; color: #34d399; margin-bottom: 8px;">
+            <strong><i class="fa-solid fa-prescription"></i> Advis Resep Dokter:</strong><br>
+            ${escapeHtml(r.rekomendasiObat)}
+          </div>
+        ` : ''}
+
+        <div style="display: flex; justify-content: flex-end; gap: 6px;">
+          ${r.rekomendasiObat ? `
+            <button type="button" class="btn btn-sm" onclick="copyKonsulObatToPoli('${r.id}')" style="background: rgba(37,99,235,0.15); color: #60a5fa; border: 1px solid rgba(37,99,235,0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+              <i class="fa-solid fa-copy"></i> Salin ke Resep Poli
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function copyKonsulObatToPoli(recordId) {
+  const rec = (appData.records || []).find(r => r.id === recordId);
+  if (!rec || !rec.rekomendasiObat) {
+    showToast('Tidak ada data rekomendasi obat pada catatan ini.', 'warning');
+    return;
+  }
+
+  // Switch to Poli tab
+  if (typeof switchMobileNav === 'function' && window.innerWidth <= 768) {
+    const poliBtn = document.getElementById('mnav-poli');
+    switchMobileNav('view-poli', poliBtn);
+  } else {
+    const desktopPoliBtn = document.querySelector('.nav-btn[data-target="view-poli"]');
+    if (desktopPoliBtn) desktopPoliBtn.click();
+  }
+
+  // Sync patient to Poli if not already selected
+  if (rec.namaPasien && (!appData.currentPoliPatient || appData.currentPoliPatient.nama !== rec.namaPasien)) {
+    const matchedPt = (appData.patients || []).find(p => 
+      (p.nikPabrik && p.nikPabrik === rec.nikPabrik) || (p.nama && p.nama.toLowerCase() === rec.namaPasien.toLowerCase())
+    );
+    if (matchedPt && typeof selectPatientForPoli === 'function') {
+      selectPatientForPoli(matchedPt);
+    }
+  }
+
+  // Try parsing lines like "Amlodipine 10mg"
+  const lines = rec.rekomendasiObat.split('\n').map(l => l.replace(/^[-*•\d.]+\s*/, '').trim()).filter(Boolean);
+  let addedCount = 0;
+
+  lines.forEach(line => {
+    // Check if line matches an existing medicine in warehouse
+    const medList = (typeof getSortedMedicines === 'function') ? getSortedMedicines() : (appData.medicines || []);
+    const cleanLine = line.toLowerCase();
+    const matchedMed = medList.find(m => cleanLine.includes(m.nama.toLowerCase()));
+
+    if (matchedMed && typeof addPoliMedicineRow === 'function') {
+      addPoliMedicineRow(matchedMed.nama, 1);
+      addedCount++;
+    }
+  });
+
+  if (addedCount > 0) {
+    showToast(`✅ ${addedCount} obat dari advis dokter berhasil dimasukkan ke tabel resep Poli!`, 'success', 5000);
+  } else {
+    // If exact name didn't match warehouse, add row with the line text
+    if (lines.length > 0 && typeof addPoliMedicineRow === 'function') {
+      addPoliMedicineRow(lines[0], 1);
+      showToast(`ℹ️ Advis dokter: "${lines[0]}" dimasukkan ke resep Poli. Silakan sesuaikan dosis dan stok.`, 'info', 6000);
+    }
+  }
+}
+
+// =========================================================================
+// GRAFIK TREN LONGITUDINAL HSE & PEMANTAUAN K3
+// Menggunakan Chart.js untuk menampilkan kurva longitudinal pasien
+// (Tensi & MAP, Hidrasi BJ Urine & Armstrong, GDS, Asam Urat, Kolesterol, BB)
+// =========================================================================
+
+let _currentHSEChartPatientKey = '';
+let _currentHSEChartTab = 'td';
+let _hseChartInstance = null;
+
+function switchHSEChartTab(tabKey) {
+  _currentHSEChartTab = tabKey;
+  document.querySelectorAll('.btn-hse-chart-tab').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'transparent';
+    b.style.color = 'var(--text-muted)';
+  });
+
+  const activeBtn = document.getElementById(`btn-chart-tab-${tabKey}`);
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    activeBtn.style.background = '#0284c7';
+    activeBtn.style.color = '#fff';
+  }
+
+  if (_currentHSEChartPatientKey) {
+    renderHSEPatientTrendChart(_currentHSEChartPatientKey, tabKey);
+  }
+}
+
+function renderHSEPatientTrendChart(nikOrName, filterTab = 'td') {
+  _currentHSEChartPatientKey = nikOrName;
+  _currentHSEChartTab = filterTab;
+
+  const canvas = document.getElementById('canvas-hse-trend-chart');
+  const emptyMsg = document.getElementById('hse-chart-empty-msg');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  const key = (nikOrName || '').trim().toLowerCase();
+  
+  // Merge data points from _longTermPantauanRecords and appData.records
+  const points = [];
+
+  (_longTermPantauanRecords || []).forEach(r => {
+    const rNik = String(r.nikPabrik || '').trim().toLowerCase();
+    const rNama = String(r.namaPasien || '').trim().toLowerCase();
+    if (rNik === key || rNama === key) {
+      const m = r.mingguan || {};
+      const l = r.lab3Bulan || {};
+      points.push({
+        tanggal: r.tanggal || '',
+        rawTime: r.rawTime || new Date(r.tanggal || Date.now()).getTime(),
+        sis: parseFloat(m.tensiSistol) || null,
+        dia: parseFloat(m.tensiDiastol) || null,
+        map: m.map ? parseFloat(m.map) : ((m.tensiSistol && m.tensiDiastol) ? Math.round(parseFloat(m.tensiDiastol) + (parseFloat(m.tensiSistol) - parseFloat(m.tensiDiastol)) / 3) : null),
+        bjUrine: parseFloat(m.beratJenisUrine) || null,
+        armstrong: m.warnaUrineArmstrong ? parseFloat(m.warnaUrineArmstrong) : null,
+        gds: parseFloat(m.gulaDarah) || null,
+        au: parseFloat(m.asamUrat) || null,
+        kol: parseFloat(m.kolesterol) || null,
+        bb: parseFloat(m.beratBadan) || null,
+        bmi: m.bmi ? parseFloat(m.bmi) : null,
+        lp: parseFloat(m.lingkarPerut) || null,
+        hba1c: parseFloat(l.hba1c) || null
+      });
+    }
+  });
+
+  (appData.records || []).forEach(r => {
+    const rNik = String(r.nikPabrik || '').trim().toLowerCase();
+    const rNama = String(r.namaPasien || '').trim().toLowerCase();
+    if (rNik === key || rNama === key) {
+      const exams = Array.isArray(r.pemeriksaanFisikLab) ? r.pemeriksaanFisikLab : [];
+      let sis = null, dia = null, bjU = null, arm = null, gds = null, au = null, kol = null, bb = null, tb = null, lp = null, hba1c = null;
+
+      exams.forEach(e => {
+        if (e.testId === 'tekanan_darah') {
+          const parts = String(e.nilai).split('/');
+          if (parts.length >= 2) { sis = parseFloat(parts[0]); dia = parseFloat(parts[1]); }
+        } else if (e.testId === 'bj_urine') {
+          bjU = parseFloat(e.nilai);
+        } else if (e.testId === 'warna_urine') {
+          arm = parseFloat(String(e.nilai).replace(/[^0-9]/g, ''));
+        } else if (e.testId === 'gds' || e.testId === 'gdp') {
+          gds = parseFloat(e.nilai);
+        } else if (e.testId === 'asam_urat') {
+          au = parseFloat(e.nilai);
+        } else if (e.testId === 'kolesterol') {
+          kol = parseFloat(e.nilai);
+        } else if (e.testId === 'berat_badan') {
+          bb = parseFloat(e.nilai);
+        } else if (e.testId === 'tinggi_badan') {
+          tb = parseFloat(e.nilai);
+        } else if (e.testId === 'lingkar_perut') {
+          lp = parseFloat(e.nilai);
+        } else if (e.testId === 'hba1c') {
+          hba1c = parseFloat(e.nilai);
+        }
+      });
+
+      if (sis || bjU || arm || gds || bb) {
+        const timeVal = r.created_at ? new Date(r.created_at).getTime() : 0;
+        points.push({
+          tanggal: r.tanggal || '',
+          rawTime: timeVal,
+          sis,
+          dia,
+          map: (sis && dia) ? Math.round(dia + (sis - dia) / 3) : null,
+          bjUrine: bjU,
+          armstrong: arm,
+          gds,
+          au,
+          kol,
+          bb,
+          bmi: (bb && tb && tb > 50) ? parseFloat((bb / ((tb / 100) ** 2)).toFixed(1)) : null,
+          lp,
+          hba1c
+        });
+      }
+    }
+  });
+
+  // Sort points chronologically
+  points.sort((a, b) => a.rawTime - b.rawTime);
+
+  // Filter unique dates / records
+  const cleanPoints = [];
+  const seenTimes = new Set();
+  points.forEach(p => {
+    const k = p.tanggal + '_' + (p.sis || '') + '_' + (p.bjUrine || '');
+    if (!seenTimes.has(k)) {
+      seenTimes.add(k);
+      cleanPoints.push(p);
+    }
+  });
+
+  const labels = cleanPoints.map(p => p.tanggal || 'Kunjungan');
+
+  // Build datasets according to filterTab
+  let datasets = [];
+
+  if (filterTab === 'td') {
+    datasets = [
+      {
+        label: 'Sistolik (mmHg)',
+        data: cleanPoints.map(p => p.sis),
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      },
+      {
+        label: 'Diastolik (mmHg)',
+        data: cleanPoints.map(p => p.dia),
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      },
+      {
+        label: 'MAP (Mean Arterial Pressure)',
+        data: cleanPoints.map(p => p.map),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+        borderDash: [5, 5],
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      }
+    ];
+  } else if (filterTab === 'hidrasi') {
+    datasets = [
+      {
+        label: 'Berat Jenis Urine (USG)',
+        data: cleanPoints.map(p => p.bjUrine),
+        borderColor: '#0284c7',
+        backgroundColor: 'rgba(2, 132, 199, 0.2)',
+        yAxisID: 'y',
+        tension: 0.3,
+        borderWidth: 2.5,
+        pointRadius: 5
+      },
+      {
+        label: 'Warna Urine (Armstrong 1-8)',
+        data: cleanPoints.map(p => p.armstrong),
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+        yAxisID: 'y1',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      }
+    ];
+  } else if (filterTab === 'metabolik') {
+    datasets = [
+      {
+        label: 'Gula Darah GDS (mg/dL)',
+        data: cleanPoints.map(p => p.gds),
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      },
+      {
+        label: 'Kolesterol Total (mg/dL)',
+        data: cleanPoints.map(p => p.kol),
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      },
+      {
+        label: 'Asam Urat (mg/dL)',
+        data: cleanPoints.map(p => p.au),
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      }
+    ];
+  } else if (filterTab === 'antropometri') {
+    datasets = [
+      {
+        label: 'Berat Badan (kg)',
+        data: cleanPoints.map(p => p.bb),
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      },
+      {
+        label: 'BMI (kg/m2)',
+        data: cleanPoints.map(p => p.bmi),
+        borderColor: '#34d399',
+        backgroundColor: 'rgba(52, 211, 153, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      },
+      {
+        label: 'Lingkar Perut (cm)',
+        data: cleanPoints.map(p => p.lp),
+        borderColor: '#c084fc',
+        backgroundColor: 'rgba(192, 132, 252, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      }
+    ];
+  } else {
+    datasets = [
+      {
+        label: 'HbA1c (%)',
+        data: cleanPoints.map(p => p.hba1c),
+        borderColor: '#ec4899',
+        backgroundColor: 'rgba(236, 72, 153, 0.2)',
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+      }
+    ];
+  }
+
+  // Destroy previous chart
+  if (_hseChartInstance) {
+    _hseChartInstance.destroy();
+    _hseChartInstance = null;
+  }
+
+  const hasData = datasets.some(ds => ds.data.some(v => v !== null && !isNaN(v)));
+
+  if (!hasData || cleanPoints.length === 0) {
+    canvas.style.display = 'none';
+    if (emptyMsg) emptyMsg.style.display = 'block';
+    return;
+  }
+
+  canvas.style.display = 'block';
+  if (emptyMsg) emptyMsg.style.display = 'none';
+
+  const ctx = canvas.getContext('2d');
+  const scalesConfig = {
+    x: {
+      grid: { color: 'rgba(255, 255, 255, 0.08)' },
+      ticks: { color: '#94a3b8', font: { size: 10 } }
+    },
+    y: {
+      grid: { color: 'rgba(255, 255, 255, 0.08)' },
+      ticks: { color: '#94a3b8', font: { size: 10 } }
+    }
+  };
+
+  if (filterTab === 'hidrasi') {
+    scalesConfig.y1 = {
+      position: 'right',
+      grid: { drawOnChartArea: false },
+      ticks: { color: '#f59e0b', font: { size: 10 } },
+      min: 1,
+      max: 8
+    };
+  }
+
+  _hseChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: '#cbd5e1', font: { size: 11, weight: 'bold' } }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleColor: '#38bdf8',
+          bodyColor: '#fff',
+          borderWidth: 1,
+          borderColor: 'rgba(56, 189, 248, 0.3)',
+          padding: 10
+        }
+      },
+      scales: scalesConfig
+    }
+  });
 }

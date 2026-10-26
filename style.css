@@ -4537,3 +4537,130 @@ select.form-control {
   gap: 5px;
 }
 
+
+
+/* ========================================================
+   KONSUL DOKTER & STOTT & DAVIS 4-QUADRANT STYLES
+   ======================================================== */
+.stott-quadrant-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+  .stott-quadrant-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stott-card {
+  background: var(--surface-1);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--r-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.stott-card:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+}
+
+.stott-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stott-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stott-badge-a {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.stott-badge-b {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.stott-badge-c {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.stott-badge-d {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.konsul-exam-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+
+.konsul-exam-table th {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1.5px solid var(--border-color);
+}
+
+.konsul-exam-table td {
+  padding: 4px 6px;
+  vertical-align: middle;
+  background: var(--surface-1);
+}
+
+.konsul-exam-table tr td:first-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.konsul-exam-table tr td:last-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.advis-card-highlight {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.2), rgba(37, 99, 235, 0.15));
+  border: 1.5px solid #3b82f6;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.18);
+}
+
+.btn-hse-chart-tab {
+  transition: all 0.2s ease;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+}
+
+.btn-hse-chart-tab.active {
+  background: #0284c7 !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}

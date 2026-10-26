@@ -140,6 +140,9 @@
       <button class="nav-btn active" data-target="view-poli">
         <i class="fa-solid fa-stethoscope"></i> POLI
       </button>
+      <button class="nav-btn" data-target="view-konsul-dokter" id="nav-btn-konsul-dokter" style="background: linear-gradient(135deg, rgba(30, 58, 138, 0.25), rgba(37, 99, 235, 0.25)); border: 1.5px solid #3b82f6; font-weight: 800;">
+        <i class="fa-solid fa-user-doctor" style="color: #60a5fa;"></i> KONSUL DOKTER
+      </button>
       <button class="nav-btn" data-target="view-edit-data">
         <i class="fa-solid fa-clipboard-check"></i> <span class="nav-text-full">DATA YANG SUDAH MASUK</span><span class="nav-text-short">DATA MASUK</span>
       </button>
@@ -249,6 +252,10 @@
   <div class="mobile-more-menu" id="mobile-more-menu">
     <div class="mobile-more-title"><i class="fa-solid fa-grid-2" style="margin-right:6px;"></i>Menu Lainnya</div>
     <div class="mobile-more-grid">
+      <button class="mobile-more-item" onclick="switchMobileNav('view-konsul-dokter', null, true)" style="background: rgba(37,99,235,0.12); border: 1.5px solid rgba(37,99,235,0.35);">
+        <i class="fa-solid fa-user-doctor" style="color: #3b82f6;"></i>
+        Konsul Dokter
+      </button>
       <button class="mobile-more-item" onclick="switchMobileNav('view-gudang', null, true)">
         <i class="fa-solid fa-boxes-stacked"></i>
         Gudang Obat
@@ -496,6 +503,258 @@
                 </div>
               </div>
 
+              <!-- Submit Button (Explicit Click Only) -->
+              <button type="button" id="btn-save-poli" class="btn btn-primary btn-block" onclick="handleSavePoli(event)" style="padding: 13px; font-size: 0.95rem; font-weight: 800; margin-top: 12px;">
+                <i class="fa-solid fa-floppy-disk"></i> SIMPAN REKAM MEDIS &amp; POTONG STOK
+              </button>
+
+            </form>
+          </div>
+        </div>
+
+        <!-- LAYAR KANAN: Timeline Riwayat Rekam Medis & Live Kunjungan Hari Ini -->
+        <div class="glass-card soap-panel">
+          <div class="soap-panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div class="soap-panel-title">
+              <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent);"></i>
+              Riwayat Kunjungan
+            </div>
+            
+            <!-- Tab Switcher: Pasien Terpilih vs Live Hari Ini -->
+            <div style="display: inline-flex; background: rgba(0,0,0,0.25); border-radius: 20px; padding: 2px; border: 1px solid var(--border-color);">
+              <button type="button" id="btn-poli-tab-patient" class="btn btn-sm" onclick="switchPoliTimelineTab('patient')" style="border-radius: 16px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; background: var(--primary); color: #fff; border: none; cursor: pointer;">
+                <i class="fa-solid fa-user"></i> Pasien Ini (<span id="poli-history-count">0</span>)
+              </button>
+              <button type="button" id="btn-poli-tab-today" class="btn btn-sm" onclick="switchPoliTimelineTab('today')" style="border-radius: 16px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; background: transparent; color: var(--text-muted); border: none; cursor: pointer;">
+                <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i> Live Hari Ini (<span id="poli-today-count">0</span>)
+              </button>
+            </div>
+          </div>
+
+          <div id="poli-selected-banner" class="patient-info-banner">
+            <div>
+              <div class="banner-name" id="poli-banner-name">Silakan Cari / Pilih Pasien</div>
+              <div class="banner-sub" id="poli-banner-sub">Riwayat kunjungan & resep pasien akan muncul di sini</div>
+            </div>
+            <div id="poli-banner-alergi" style="font-size: 0.8rem; font-weight: 700; color: var(--danger);"></div>
+          </div>
+
+          <!-- Alert Notifikasi Cepat Hasil Simpan -->
+          <div id="poli-recent-saved-alert" style="display: none; margin: 10px 14px 0 14px;"></div>
+
+          <div class="soap-scrollable-body" id="poli-timeline-container">
+            <div style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+              <i class="fa-solid fa-folder-open" style="font-size: 3rem; margin-bottom: 12px; opacity: 0.4;"></i>
+              <p>Riwayat rekam medis pasien akan ditampilkan di sisi kanan ini secara kronologis.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB KONSUL DOKTER (EVALUASI HOLISTIK STOTT & DAVIS 1979)
+         Tabel Pemeriksaan & Lab Dinamis, 4 Kuadran Stott-Davis, 
+         Rekomendasi Terapi, & Terintegrasi Pemantauan HSE K3
+         ======================================================== -->
+    <section id="view-konsul-dokter" class="page-view">
+      <div class="soap-split-layout">
+
+        <!-- LAYAR KIRI: Form Konsultasi Dokter & Evaluasi Holistik -->
+        <div class="glass-card soap-panel">
+          <div class="soap-panel-header" style="background: linear-gradient(135deg, rgba(30, 58, 138, 0.2), rgba(37, 99, 235, 0.15)); border-bottom: 1.5px solid rgba(59, 130, 246, 0.4);">
+            <div class="soap-panel-title" style="color: #60a5fa;">
+              <i class="fa-solid fa-user-doctor"></i>
+              Konsultasi Dokter &amp; Evaluasi Holistik
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button type="button" class="btn btn-sm btn-secondary" onclick="syncPatientFromPoliToKonsul()" title="Tarik Pasien yang Sedang Aktif di Poli">
+                <i class="fa-solid fa-arrows-rotate"></i> Sinkron Pasien Poli
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="resetFormKonsulDokter()">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+              </button>
+            </div>
+          </div>
+
+          <div class="soap-scrollable-body">
+
+            <!-- Scan / Cari Pasien Konsul -->
+            <div class="patient-select-bar">
+              <div style="position: relative; flex: 1;">
+                <input type="text" id="konsul-search-nik" class="form-control" placeholder="Scan / Ketik NIK Pabrik atau Nama Karyawan untuk Konsultasi..." onkeyup="if(event.key==='Enter') searchPatientKonsul()" style="padding-left: 36px;">
+                <i class="fa-solid fa-id-card" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+              </div>
+              <button type="button" class="btn btn-primary" onclick="searchPatientKonsul()" style="padding: 0 18px; background: #2563eb; border-color: #2563eb; font-weight: 700;">
+                <i class="fa-solid fa-magnifying-glass"></i> CARI
+              </button>
+            </div>
+
+            <!-- Patient Info Banner Konsul -->
+            <div id="konsul-patient-banner" class="patient-info-banner" style="margin-bottom: 14px; background: rgba(37, 99, 235, 0.08); border: 1.5px solid rgba(37, 99, 235, 0.3);">
+              <div>
+                <div class="banner-name" id="konsul-banner-name">Silakan Cari Pasien Terlebih Dahulu</div>
+                <div class="banner-sub" id="konsul-banner-sub">Data biometrik, riwayat klinis, dan tren lab pasien akan otomatis dimuat</div>
+              </div>
+              <div id="konsul-banner-tags" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;"></div>
+            </div>
+
+            <!-- Meta Kunjungan: Tanggal, Jam, Nama Dokter -->
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.8fr; gap: 10px; margin-bottom: 16px;">
+              <div>
+                <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Tanggal Konsul</label>
+                <input type="date" id="konsul-tanggal" class="form-control" style="font-size: 0.88rem; padding: 6px 10px;">
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Jam Konsul</label>
+                <input type="time" id="konsul-jam" class="form-control" style="font-size: 0.88rem; padding: 6px 10px;">
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Dokter Pemeriksa</label>
+                <input type="text" id="konsul-dokter" class="form-control" placeholder="dr. Dylan Alam Fadhilah, Sp.KKLP" style="font-size: 0.88rem; padding: 6px 10px; font-weight: 700; color: #3b82f6;">
+              </div>
+            </div>
+
+            <!-- SECTION 1: TABEL PEMERIKSAAN FISIK & LAB DINAMIS -->
+            <div class="glass-card" style="padding: 14px; margin-bottom: 16px; border: 1px solid rgba(59, 130, 246, 0.25);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                <div style="font-weight: 800; font-size: 0.92rem; color: #60a5fa; display: flex; align-items: center; gap: 7px;">
+                  <i class="fa-solid fa-flask-vial"></i> 1. PEMERIKSAAN FISIK, TTV &amp; LABORATORIUM DINAMIS
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-sm" onclick="applyKonsulPreset('ttv')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.74rem; font-weight: 700;">
+                    <i class="fa-solid fa-heart-pulse"></i> + TTV Rutin
+                  </button>
+                  <button type="button" class="btn btn-sm" onclick="applyKonsulPreset('hidrasi')" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 0.74rem; font-weight: 700;">
+                    <i class="fa-solid fa-droplet"></i> + Hidrasi K3 (Tesis)
+                  </button>
+                  <button type="button" class="btn btn-sm" onclick="applyKonsulPreset('metabolik')" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.74rem; font-weight: 700;">
+                    <i class="fa-solid fa-vial"></i> + Metabolik
+                  </button>
+                  <button type="button" class="btn btn-sm" onclick="openModalTambahMasterExam()" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 0.74rem; font-weight: 700;" title="Tambah parameter pemeriksaan baru ke master">
+                    <i class="fa-solid fa-plus"></i> + Simpan ke Master
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tabel Dinamis -->
+              <div style="overflow-x: auto;">
+                <table class="konsul-exam-table" id="table-konsul-exam">
+                  <thead>
+                    <tr>
+                      <th style="width: 32%;">Parameter Pemeriksaan</th>
+                      <th style="width: 25%;">Hasil / Nilai</th>
+                      <th style="width: 12%;">Satuan</th>
+                      <th style="width: 15%;">Nilai Rujukan</th>
+                      <th style="width: 12%;">Status</th>
+                      <th style="width: 4%; text-align: center;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="konsul-exam-tbody">
+                    <!-- Dinamis via addKonsulExamRow() -->
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <button type="button" class="btn btn-sm" onclick="addKonsulExamRow()" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); font-weight: 700; font-size: 0.8rem;">
+                  <i class="fa-solid fa-plus"></i> Tambah Baris Pemeriksaan
+                </button>
+                <div id="konsul-calc-summary" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 8px; align-items: center;">
+                  <span id="konsul-badge-map" style="display: none; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 2px 8px; border-radius: 6px;">MAP: -</span>
+                  <span id="konsul-badge-bmi" style="display: none; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 6px;">BMI: -</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 2: PROTOKOL KONSULTASI 4 KUADRAN (STOTT & DAVIS, 1979) -->
+            <div class="glass-card" style="padding: 14px; margin-bottom: 16px; border: 1px solid rgba(168, 85, 247, 0.25);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+                <div style="font-weight: 800; font-size: 0.92rem; color: #c084fc; display: flex; align-items: center; gap: 7px;">
+                  <i class="fa-solid fa-brain"></i> 2. PROTOKOL KONSULTASI 4 KUADRAN (STOTT &amp; DAVIS, 1979)
+                </div>
+                <span style="font-size: 0.72rem; color: #a78bfa; background: rgba(168, 85, 247, 0.12); padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                  Model Konsultasi Holistik Kedokteran Keluarga &amp; Okupasi
+                </span>
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 10px;">
+                Dokumentasi holistik 4 domain: keluhan akut, modifikasi perilaku pertolongan, kontrol masalah kronis, dan promosi kesehatan hidrasi kerja.
+              </div>
+
+              <!-- 2x2 Quadrant Grid -->
+              <div class="stott-quadrant-grid">
+                
+                <!-- Kuadran A: Akut -->
+                <div class="stott-card">
+                  <div class="stott-card-header">
+                    <span class="stott-badge stott-badge-a">
+                      <i class="fa-solid fa-triangle-exclamation"></i> Kuadran A: Masalah Akut
+                    </span>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">Presenting Problems</span>
+                  </div>
+                  <textarea id="konsul-stott-a" class="form-control" rows="3" placeholder="Rincian keluhan saat ini, onset, gejala klinis, evaluasi tanda bahaya (red flags), serta penanganan segera..." style="font-size: 0.82rem; resize: vertical;"></textarea>
+                </div>
+
+                <!-- Kuadran B: Modifikasi Perilaku -->
+                <div class="stott-card">
+                  <div class="stott-card-header">
+                    <span class="stott-badge stott-badge-b">
+                      <i class="fa-solid fa-person-shelter"></i> Kuadran B: Perilaku Pertolongan
+                    </span>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">Help-Seeking Behaviour</span>
+                  </div>
+                  <textarea id="konsul-stott-b" class="form-control" rows="3" placeholder="Edukasi kemandirian (self-care), kapan harus segera ke klinik tanpa menunda, kepatuhan berobat, dan penggunaan obat rasional..." style="font-size: 0.82rem; resize: vertical;"></textarea>
+                </div>
+
+                <!-- Kuadran C: Masalah Kronis -->
+                <div class="stott-card">
+                  <div class="stott-card-header">
+                    <span class="stott-badge stott-badge-c">
+                      <i class="fa-solid fa-heart-pulse"></i> Kuadran C: Masalah Kronis
+                    </span>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">Continuing Problems</span>
+                  </div>
+                  <textarea id="konsul-stott-c" class="form-control" rows="3" placeholder="Evaluasi penyakit komorbid (Hipertensi, DM, CKD, cedera kerja lama), kepatuhan minum obat rutin, dan target pencapaian klinis..." style="font-size: 0.82rem; resize: vertical;"></textarea>
+                </div>
+
+                <!-- Kuadran D: Promosi Kesehatan & Hidrasi -->
+                <div class="stott-card">
+                  <div class="stott-card-header">
+                    <span class="stott-badge stott-badge-d">
+                      <i class="fa-solid fa-seedling"></i> Kuadran D: Promosi Kesehatan
+                    </span>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">Health Promotion &amp; Hidrasi</span>
+                  </div>
+                  <textarea id="konsul-stott-d" class="form-control" rows="3" placeholder="Edukasi hidrasi khusus area baking/panas, target minum air & elektrolit, diet rendah garam/gula, aktivitas fisik, APD..." style="font-size: 0.82rem; resize: vertical;"></textarea>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- SECTION 3: REKOMENDASI TERAPI & ADVIS RESEP DOKTER -->
+            <div class="glass-card" style="padding: 14px; margin-bottom: 16px; border: 1.5px solid rgba(34, 197, 94, 0.35); background: rgba(34, 197, 94, 0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div style="font-weight: 800; font-size: 0.92rem; color: #22c55e; display: flex; align-items: center; gap: 7px;">
+                  <i class="fa-solid fa-prescription"></i> 3. ADVIS DOKTER &amp; REKOMENDASI RESEP (UNTUK POLI / FARMASI)
+                </div>
+                <span style="font-size: 0.72rem; color: #22c55e; background: rgba(34, 197, 94, 0.15); padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                  Terhubung ke Layar Poli
+                </span>
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 8px;">
+                Tulis instruksi obat dan dosis di bawah ini. Perawat di Tab POLI akan melihat instruksi ini di sisi kanan dan dapat langsung menyalinnya menjadi resep resmi untuk potong stok gudang.
+              </div>
+              <textarea id="konsul-rekomendasi-obat" class="form-control" rows="3" placeholder="Contoh:&#10;- Amlodipine 10mg tab No. XXX (1x1 pagi)&#10;- Metformin 500mg tab No. LX (2x1 dc)&#10;- Oralit sachet No. X (1 sachet diminum berkala saat shift panas)" style="font-size: 0.84rem; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+
+            <!-- SECTION 4: 4 KOTAK TINDAK LANJUT & PEMANTAUAN (K3 / SURKES / KONTROL / UPLOAD) -->
+            <div class="glass-card" style="padding: 14px; margin-bottom: 16px; border: 1px solid var(--border-card);">
+              <div style="font-weight: 800; font-size: 0.92rem; color: var(--text-main); margin-bottom: 10px; display: flex; align-items: center; gap: 7px;">
+                <i class="fa-solid fa-clipboard-list"></i> 4. TINDAK LANJUT, PERIZINAN &amp; PEMANTAUAN K3
+              </div>
+
+              <!-- 4 KOTAK ASLI DIPINDAHKAN KE SINI SECARA SEMPURNA -->
               <!-- 3 KOTAK: IZIN SAKIT, PANTAUAN, UPLOAD -->
               <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
                 
@@ -733,55 +992,52 @@
 
               </div>
 
-              <!-- Submit Button (Explicit Click Only) -->
-              <button type="button" id="btn-save-poli" class="btn btn-primary btn-block" onclick="handleSavePoli(event)" style="padding: 13px; font-size: 0.95rem; font-weight: 800; margin-top: 12px;">
-                <i class="fa-solid fa-floppy-disk"></i> SIMPAN REKAM MEDIS &amp; POTONG STOK
-              </button>
+            </div>
 
-            </form>
+            <!-- TOMBOL SIMPAN KONSUL DOKTER -->
+            <button type="button" id="btn-save-konsul" class="btn btn-primary btn-block" onclick="handleSaveKonsulDokter(event)" style="padding: 14px; font-size: 1rem; font-weight: 800; background: linear-gradient(135deg, #1e3a8a, #2563eb); border: none; box-shadow: 0 4px 15px rgba(37,99,235,0.4); border-radius: var(--r-md); margin-top: 10px;">
+              <i class="fa-solid fa-floppy-disk"></i> SIMPAN KONSUL DOKTER &amp; DATA PANTAUAN
+            </button>
+
           </div>
         </div>
 
-        <!-- LAYAR KANAN: Timeline Riwayat Rekam Medis & Live Kunjungan Hari Ini -->
+        <!-- LAYAR KANAN: Timeline Riwayat Konsul Dokter & Rekam Medis Pasien -->
         <div class="glass-card soap-panel">
           <div class="soap-panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div class="soap-panel-title">
-              <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent);"></i>
-              Riwayat Kunjungan
+              <i class="fa-solid fa-clock-rotate-left" style="color: #60a5fa;"></i>
+              Riwayat Konsultasi &amp; Rekam Medis
             </div>
             
-            <!-- Tab Switcher: Pasien Terpilih vs Live Hari Ini -->
             <div style="display: inline-flex; background: rgba(0,0,0,0.25); border-radius: 20px; padding: 2px; border: 1px solid var(--border-color);">
-              <button type="button" id="btn-poli-tab-patient" class="btn btn-sm" onclick="switchPoliTimelineTab('patient')" style="border-radius: 16px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; background: var(--primary); color: #fff; border: none; cursor: pointer;">
-                <i class="fa-solid fa-user"></i> Pasien Ini (<span id="poli-history-count">0</span>)
+              <button type="button" id="btn-konsul-tab-patient" class="btn btn-sm" onclick="switchKonsulTimelineTab('patient')" style="border-radius: 16px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; background: #2563eb; color: #fff; border: none; cursor: pointer;">
+                <i class="fa-solid fa-user"></i> Pasien Ini (<span id="konsul-history-count">0</span>)
               </button>
-              <button type="button" id="btn-poli-tab-today" class="btn btn-sm" onclick="switchPoliTimelineTab('today')" style="border-radius: 16px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; background: transparent; color: var(--text-muted); border: none; cursor: pointer;">
-                <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i> Live Hari Ini (<span id="poli-today-count">0</span>)
+              <button type="button" id="btn-konsul-tab-today" class="btn btn-sm" onclick="switchKonsulTimelineTab('today')" style="border-radius: 16px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; background: transparent; color: var(--text-muted); border: none; cursor: pointer;">
+                <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i> Konsul Hari Ini (<span id="konsul-today-count">0</span>)
               </button>
             </div>
           </div>
 
-          <div id="poli-selected-banner" class="patient-info-banner">
+          <div id="konsul-selected-banner" class="patient-info-banner">
             <div>
-              <div class="banner-name" id="poli-banner-name">Silakan Cari / Pilih Pasien</div>
-              <div class="banner-sub" id="poli-banner-sub">Riwayat kunjungan & resep pasien akan muncul di sini</div>
+              <div class="banner-name" id="konsul-timeline-banner-name">Pilih Pasien Terlebih Dahulu</div>
+              <div class="banner-sub" id="konsul-timeline-banner-sub">Histori konsultasi holistik, tren TTV, dan resep dokter akan muncul di sini</div>
             </div>
-            <div id="poli-banner-alergi" style="font-size: 0.8rem; font-weight: 700; color: var(--danger);"></div>
           </div>
 
-          <!-- Alert Notifikasi Cepat Hasil Simpan -->
-          <div id="poli-recent-saved-alert" style="display: none; margin: 10px 14px 0 14px;"></div>
-
-          <div class="soap-scrollable-body" id="poli-timeline-container">
+          <div class="soap-scrollable-body" id="konsul-timeline-container">
             <div style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
               <i class="fa-solid fa-folder-open" style="font-size: 3rem; margin-bottom: 12px; opacity: 0.4;"></i>
-              <p>Riwayat rekam medis pasien akan ditampilkan di sisi kanan ini secara kronologis.</p>
+              <p>Histori rekam medis dan konsultasi holistik pasien akan ditampilkan di sisi kanan ini secara kronologis.</p>
             </div>
           </div>
         </div>
 
       </div>
     </section>
+
 
     <!-- ============================================================ -->
     <!-- TAB BARU: JADWAL KONTROL PASIEN & PEMANTAUAN DHSE (SESUAI SS 4) -->
@@ -4710,6 +4966,43 @@
         <button type="button" class="close-btn" onclick="closeModalRiwayatPantauan()">&times;</button>
       </div>
       <div class="modal-body" style="padding: 16px 20px; flex: 1; overflow-y: auto;">
+        
+        <!-- GRAFIK TREN LONGITUDINAL TERPADU -->
+        <div id="hse-chart-wrapper" style="background: var(--surface-1); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <div style="font-size: 0.88rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-chart-line"></i> Grafik Tren Longitudinal Pemantauan &amp; Evaluasi
+            </div>
+            
+            <!-- Filter Kategori Grafik -->
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;" id="hse-chart-tab-group">
+              <button type="button" class="btn btn-sm btn-hse-chart-tab active" id="btn-chart-tab-td" onclick="switchHSEChartTab('td')" style="border-radius: 8px; padding: 3px 8px; font-size: 0.72rem; font-weight: 700; background: #0284c7; color: #fff;">
+                🩺 Tensi &amp; MAP
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-chart-tab" id="btn-chart-tab-hidrasi" onclick="switchHSEChartTab('hidrasi')" style="border-radius: 8px; padding: 3px 8px; font-size: 0.72rem; font-weight: 700; background: transparent; color: var(--text-muted);">
+                💧 Hidrasi (BJ Urine &amp; Armstrong)
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-chart-tab" id="btn-chart-tab-metabolik" onclick="switchHSEChartTab('metabolik')" style="border-radius: 8px; padding: 3px 8px; font-size: 0.72rem; font-weight: 700; background: transparent; color: var(--text-muted);">
+                🩸 Gula &amp; Lemak Darah
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-chart-tab" id="btn-chart-tab-antropometri" onclick="switchHSEChartTab('antropometri')" style="border-radius: 8px; padding: 3px 8px; font-size: 0.72rem; font-weight: 700; background: transparent; color: var(--text-muted);">
+                ⚖️ BB, BMI &amp; LP
+              </button>
+              <button type="button" class="btn btn-sm btn-hse-chart-tab" id="btn-chart-tab-lab" onclick="switchHSEChartTab('lab')" style="border-radius: 8px; padding: 3px 8px; font-size: 0.72rem; font-weight: 700; background: transparent; color: var(--text-muted);">
+                🧪 Lab Berkala
+              </button>
+            </div>
+          </div>
+
+          <div style="position: relative; height: 220px; width: 100%;">
+            <canvas id="canvas-hse-trend-chart"></canvas>
+          </div>
+          <div id="hse-chart-empty-msg" style="display: none; text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 30px 10px;">
+            <i class="fa-solid fa-chart-area" style="font-size: 2rem; opacity: 0.3; margin-bottom: 6px; display: block;"></i>
+            Belum cukup data riwayat untuk menampilkan kurva kategori ini.
+          </div>
+        </div>
+
         <div id="container-riwayat-pantauan-feed" style="display: flex; flex-direction: column; gap: 12px;">
           <!-- Populated dynamically -->
         </div>
@@ -6026,5 +6319,64 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="gdrive-sync.js?v=20261023_v2"></script>
   <script src="app.js?v=20261023_v2"></script>
+
+  <!-- MODAL TAMBAH MASTER PEMERIKSAAN / LAB KONSUL DOKTER -->
+  <div id="modal-tambah-master-exam" class="modal-overlay" style="display: none; z-index: 10005;">
+    <div class="modal-card" style="max-width: 520px; width: 95vw;">
+      <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1rem; color: #a855f7; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-flask-vial"></i> Tambah Master Pemeriksaan / Lab Baru
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModalTambahMasterExam()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px;">
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+          Parameter yang disimpan ke master akan selalu muncul di pencarian konsultasi dokter dan otomatis tersinkron ke grafik tren HSE.
+        </p>
+        <div>
+          <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Nama Pemeriksaan / Tes *</label>
+          <input type="text" id="master-exam-nama" class="form-control" placeholder="Contoh: Albumin Serum, Natrium, Troponin...">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Kategori</label>
+            <select id="master-exam-kategori" class="form-control">
+              <option value="Laboratorium">Laboratorium Darah</option>
+              <option value="Urine Lengkap">Urine &amp; Ginjal</option>
+              <option value="TTV &amp; Hidrasi">TTV &amp; Hidrasi K3</option>
+              <option value="Metabolik">Metabolik / Kronis</option>
+              <option value="Antropometri">Antropometri / Fisik</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Satuan</label>
+            <input type="text" id="master-exam-satuan" class="form-control" placeholder="Contoh: mg/dL, g/dL, %">
+          </div>
+        </div>
+        <div>
+          <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Nilai Rujukan Normal</label>
+          <input type="text" id="master-exam-rujukan" class="form-control" placeholder="Contoh: 3.5 - 5.2, < 140, Negatif">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label class="form-label" style="font-size: 0.78rem; font-weight: 700;">Batas Bawah Normal (Opsional)</label>
+            <input type="number" step="any" id="master-exam-min" class="form-control" placeholder="Min">
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 0.78rem; font-weight: 700;">Batas Atas Normal (Opsional)</label>
+            <input type="number" step="any" id="master-exam-max" class="form-control" placeholder="Max">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModalTambahMasterExam()">Batal</button>
+          <button type="button" class="btn btn-primary" onclick="saveCustomMasterExam()" style="background: #a855f7; border-color: #a855f7; font-weight: 700;">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan ke Master
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
