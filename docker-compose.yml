@@ -14,6 +14,9 @@ services:
       - ./data:/app/data
       - ./uploads:/app/uploads
       - ./auth_baileys:/app/auth_baileys
+      - ./index.html:/app/index.html
+      - ./app.js:/app/app.js
+      - ./style.css:/app/style.css
     networks:
       - default
       - coolify
@@ -32,4 +35,3 @@ networks:
   default:
   coolify:
     external: true
-
