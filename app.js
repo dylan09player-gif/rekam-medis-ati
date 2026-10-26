@@ -19214,9 +19214,9 @@ function applyRoleAccess() {
 
 const DEFAULT_MASTER_EXAM_TESTS = [
   // 1. Tersering & Tesis Hidrasi K3
-  { id: 'tekanan_darah', nama: 'Tekanan Darah (Sistolik / Diastolik)', kategori: 'TTV & Hidrasi', satuan: 'mmHg', rujukan: '< 120/80', tipe: 'bp' },
-  { id: 'bj_urine', nama: 'Berat Jenis Urine (Refraktometer)', kategori: 'TTV & Hidrasi', satuan: '', rujukan: '1.002 - 1.030 (Euhidrasi ≤ 1.020)', tipe: 'numeric', minRef: 1.002, maxRef: 1.020 },
-  { id: 'warna_urine', nama: 'Warna Urine (Armstrong 1-8)', kategori: 'TTV & Hidrasi', satuan: 'Skala', rujukan: 'Skala 1 - 3 (Euhidrasi)', tipe: 'armstrong' },
+  { id: 'tekanan_darah', nama: 'Tekanan Darah (TD)', kategori: 'TTV & Hidrasi', satuan: 'mmHg', rujukan: '< 120/80', tipe: 'bp' },
+  { id: 'bj_urine', nama: 'Berat Jenis Urine (BJ)', kategori: 'TTV & Hidrasi', satuan: '', rujukan: '1.002 - 1.030 (Euhidrasi ≤ 1.020)', tipe: 'numeric', minRef: 1.002, maxRef: 1.020 },
+  { id: 'warna_urine', nama: 'Warna Urine (Armstrong)', kategori: 'TTV & Hidrasi', satuan: 'Skala', rujukan: 'Skala 1 - 3 (Euhidrasi)', tipe: 'armstrong' },
   { id: 'gds', nama: 'Gula Darah Sewaktu (GDS)', kategori: 'Metabolik', satuan: 'mg/dL', rujukan: '< 140', tipe: 'numeric', maxRef: 140 },
   { id: 'gdp', nama: 'Gula Darah Puasa (GDP)', kategori: 'Metabolik', satuan: 'mg/dL', rujukan: '70 - 100', tipe: 'numeric', minRef: 70, maxRef: 100 },
   { id: 'kolesterol', nama: 'Kolesterol Total', kategori: 'Metabolik', satuan: 'mg/dL', rujukan: '< 200', tipe: 'numeric', maxRef: 200 },
@@ -19409,33 +19409,45 @@ function addKonsulExamRow(testId = '', val1 = '', val2 = '') {
   tr.dataset.testId = selectedTest.id;
   tr.dataset.tipe = selectedTest.tipe || 'numeric';
 
+  const catGroups = {};
+  masterList.forEach(t => {
+    const k = t.kategori || 'Pemeriksaan Lainnya';
+    if (!catGroups[k]) catGroups[k] = [];
+    catGroups[k].push(t);
+  });
+  const optGroupsHtml = Object.entries(catGroups).map(([catName, tests]) => `
+    <optgroup label="── ${escapeHtml(catName)} ──">
+      ${tests.map(t => `
+        <option value="${t.id}" ${t.id === selectedTest.id ? 'selected' : ''}>
+          ${escapeHtml(t.nama)}
+        </option>
+      `).join('')}
+    </optgroup>
+  `).join('');
+
   tr.innerHTML = `
     <td>
-      <select class="form-control konsul-exam-select" onchange="handleKonsulTestChange(this)" style="font-size: 0.82rem; font-weight: 700; background: var(--surface-2);">
-        ${masterList.map(t => `
-          <option value="${t.id}" ${t.id === selectedTest.id ? 'selected' : ''}>
-            ${t.kategori ? `[${t.kategori}] ` : ''}${t.nama}
-          </option>
-        `).join('')}
+      <select class="form-control konsul-exam-select" onchange="handleKonsulTestChange(this)">
+        ${optGroupsHtml}
       </select>
     </td>
     <td class="td-exam-value">
       ${renderExamValueInputHTML(selectedTest, val1, val2)}
     </td>
-    <td class="td-exam-satuan" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
+    <td class="td-exam-satuan" style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">
       ${selectedTest.satuan || '-'}
     </td>
-    <td class="td-exam-rujukan" style="font-size: 0.78rem; color: var(--text-muted);">
+    <td class="td-exam-rujukan" style="font-size: 0.8rem; color: var(--text-muted);">
       ${selectedTest.rujukan || '-'}
     </td>
     <td class="td-exam-status">
-      <span class="badge badge-status-normal" style="font-size: 0.72rem; padding: 2px 7px; background: rgba(34, 197, 94, 0.15); color: #22c55e;">
+      <span class="badge badge-status-normal" style="font-size: 0.74rem; padding: 3px 8px; background: rgba(34, 197, 94, 0.15); color: #22c55e;">
         Normal
       </span>
     </td>
     <td style="text-align: center;">
-      <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); updateExamCalculations();" title="Hapus baris" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;">
-        <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
+      <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); updateExamCalculations();" title="Hapus baris" style="width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;">
+        <i class="fa-solid fa-trash-can" style="font-size: 0.78rem;"></i>
       </button>
     </td>
   `;
@@ -19448,38 +19460,38 @@ function addKonsulExamRow(testId = '', val1 = '', val2 = '') {
 function renderExamValueInputHTML(test, val1 = '', val2 = '') {
   if (test.tipe === 'bp') {
     return `
-      <div style="display: flex; align-items: center; gap: 4px;">
-        <input type="number" class="form-control form-control-sm exam-val-sis" placeholder="Sis" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="width: 60px; font-weight: 700; text-align: center;">
-        <span style="font-weight: 800; color: var(--text-muted);">/</span>
-        <input type="number" class="form-control form-control-sm exam-val-dia" placeholder="Dia" value="${val2}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="width: 60px; font-weight: 700; text-align: center;">
-        <span class="badge exam-map-pill" style="font-size: 0.7rem; background: rgba(59,130,246,0.15); color: #3b82f6; padding: 2px 5px; white-space: nowrap;">MAP: -</span>
+      <div class="exam-bp-group">
+        <input type="number" class="form-control form-control-sm exam-val-sis" placeholder="Sistol" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" title="Tekanan Sistolik (mmHg)">
+        <span style="font-weight: 800; font-size: 1.1rem; color: var(--text-muted); line-height: 1;">/</span>
+        <input type="number" class="form-control form-control-sm exam-val-dia" placeholder="Diastol" value="${val2}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" title="Tekanan Diastolik (mmHg)">
+        <span class="badge exam-map-pill" title="Mean Arterial Pressure (Rata-rata Tekanan Arteri)">MAP: -</span>
       </div>
     `;
   } else if (test.tipe === 'armstrong') {
     return `
-      <select class="form-control form-control-sm exam-val-armstrong" onchange="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-size: 0.8rem; font-weight: 700;">
-        <option value="">-- Pilih Skala --</option>
-        <option value="1" ${val1 === '1' ? 'selected' : ''}>1: Jernih Pucat (Euhidrasi Optimal)</option>
-        <option value="2" ${val1 === '2' ? 'selected' : ''}>2: Kuning Sangat Muda (Euhidrasi)</option>
-        <option value="3" ${val1 === '3' ? 'selected' : ''}>3: Kuning Cerah (Euhidrasi Cukup)</option>
-        <option value="4" ${val1 === '4' ? 'selected' : ''}>4: Kuning Sedang (Dehidrasi Ringan)</option>
-        <option value="5" ${val1 === '5' ? 'selected' : ''}>5: Kuning Pekat (Dehidrasi Sedang)</option>
-        <option value="6" ${val1 === '6' ? 'selected' : ''}>6: Kuning Tua / Amber (Dehidrasi Berat)</option>
-        <option value="7" ${val1 === '7' ? 'selected' : ''}>7: Cokelat Teh (Dehidrasi Sangat Berat)</option>
-        <option value="8" ${val1 === '8' ? 'selected' : ''}>8: Cokelat Pekat (Dehidrasi Kritis)</option>
+      <select class="form-control form-control-sm exam-val-armstrong" onchange="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-size: 0.82rem; font-weight: 700; height: 34px; min-width: 220px;">
+        <option value="">-- Pilih Skala Warna Urine --</option>
+        <option value="1" ${val1 == '1' ? 'selected' : ''}>1: Jernih Pucat (Euhidrasi Optimal)</option>
+        <option value="2" ${val1 == '2' ? 'selected' : ''}>2: Kuning Sangat Muda (Euhidrasi)</option>
+        <option value="3" ${val1 == '3' ? 'selected' : ''}>3: Kuning Cerah (Euhidrasi Cukup)</option>
+        <option value="4" ${val1 == '4' ? 'selected' : ''}>4: Kuning Sedang (Dehidrasi Ringan)</option>
+        <option value="5" ${val1 == '5' ? 'selected' : ''}>5: Kuning Pekat (Dehidrasi Sedang)</option>
+        <option value="6" ${val1 == '6' ? 'selected' : ''}>6: Kuning Tua / Amber (Dehidrasi Berat)</option>
+        <option value="7" ${val1 == '7' ? 'selected' : ''}>7: Cokelat Teh (Dehidrasi Sangat Berat)</option>
+        <option value="8" ${val1 == '8' ? 'selected' : ''}>8: Cokelat Pekat (Dehidrasi Kritis)</option>
       </select>
     `;
   } else if (test.id === 'bj_urine') {
     return `
-      <input type="number" step="0.001" class="form-control form-control-sm exam-val-num" placeholder="1.015" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-weight: 700; text-align: center;">
+      <input type="number" step="0.001" class="form-control form-control-sm exam-val-num" placeholder="Contoh: 1.018" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-weight: 700; text-align: center; height: 34px; font-size: 0.92rem; min-width: 120px; width: 130px;">
     `;
   } else if (test.tipe === 'text') {
     return `
-      <input type="text" class="form-control form-control-sm exam-val-text" placeholder="Hasil" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr'));" style="font-weight: 600;">
+      <input type="text" class="form-control form-control-sm exam-val-text" placeholder="Hasil pemeriksaan" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr'));" style="font-weight: 600; height: 34px; font-size: 0.85rem; min-width: 130px;">
     `;
   } else {
     return `
-      <input type="number" step="any" class="form-control form-control-sm exam-val-num" placeholder="Nilai" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-weight: 700; text-align: center;">
+      <input type="number" step="any" class="form-control form-control-sm exam-val-num" placeholder="Nilai" value="${val1}" oninput="calculateExamRowStatus(this.closest('tr')); updateExamCalculations();" style="font-weight: 700; text-align: center; height: 34px; font-size: 0.92rem; min-width: 100px; width: 120px;">
     `;
   }
 }
@@ -19521,18 +19533,18 @@ function calculateExamRowStatus(tr) {
 
     if (sis > 0 && dia > 0) {
       const map = Math.round(dia + (sis - dia) / 3);
-      if (mapPill) mapPill.textContent = `MAP: ${map}`;
+      if (mapPill) mapPill.textContent = `MAP: ${map} mmHg`;
 
       if (sis >= 160 || dia >= 100) {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(220,38,38,0.2); color: #f87171; font-weight: 800;">Hipertensi Tk 2</span>';
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(220,38,38,0.22); color: #f87171; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Hipertensi Tk 2</span>';
       } else if (sis >= 140 || dia >= 90) {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(239,68,68,0.2); color: #ef4444; font-weight: 800;">Hipertensi Tk 1</span>';
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(239,68,68,0.2); color: #ef4444; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Hipertensi Tk 1</span>';
       } else if (sis >= 120 || dia >= 80) {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(245,158,11,0.2); color: #f59e0b; font-weight: 800;">Pre-Hipertensi</span>';
-      } else if (sis < 90) {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8; font-weight: 800;">Hipotensi</span>';
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(245,158,11,0.2); color: #f59e0b; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Pre-Hipertensi</span>';
+      } else if (sis < 90 || dia < 60) {
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Hipotensi</span>';
       } else {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(34,197,94,0.2); color: #22c55e; font-weight: 800;">Normal</span>';
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(34,197,94,0.2); color: #22c55e; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Normal</span>';
       }
     } else {
       if (mapPill) mapPill.textContent = 'MAP: -';
