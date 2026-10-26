@@ -9392,6 +9392,37 @@ async function openModalRiwayatPantauan(nikOrName) {
             </div>
           </div>
 
+          <!-- BADGE STATUS LAIK KERJA & HAZARD OKUPASI -->
+          ${(() => {
+            const lk = r.laikKerja || (r.mingguan && r.mingguan.laikKerja) || {};
+            const fitStatus = lk.fitnessStatus || 'fit';
+            const meta = (typeof getFitnessStatusMeta === 'function') ? getFitnessStatusMeta(fitStatus) : { label: 'Fit to Work', color: '#22c55e' };
+            const hazards = Array.isArray(lk.hazards) ? lk.hazards : [];
+
+            return `
+              <div style="background: rgba(0,0,0,0.22); border-left: 4px solid ${meta.color}; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;">
+                  <strong style="font-size: 0.88rem; color: ${meta.color};">
+                    <i class="fa-solid fa-id-card-clip"></i> ${meta.label}
+                  </strong>
+                  ${lk.reviewDate ? `<span class="badge" style="background: rgba(168,85,247,0.2); color: #c084fc; font-size: 0.74rem; font-weight: 800;"><i class="fa-regular fa-calendar-check"></i> Evaluasi Ulang: ${lk.reviewDate}</span>` : ''}
+                </div>
+                ${hazards.length > 0 ? `
+                  <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 6px;">
+                    <strong style="color: #f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> Hazard:</strong> ${hazards.map(h => escapeHtml(h)).join('; ')}
+                  </div>
+                ` : ''}
+                ${fitStatus !== 'fit' ? `
+                  <div style="display: grid; grid-template-columns: 1fr; gap: 4px; font-size: 0.78rem; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px;">
+                    ${lk.alasan ? `<div><strong style="color: #fbbf24;">Alasan Medis:</strong> ${escapeHtml(lk.alasan)}</div>` : ''}
+                    ${lk.tindakan ? `<div><strong style="color: #38bdf8;">Harus Diapakan Dulu:</strong> ${escapeHtml(lk.tindakan)} ${lk.detailTindakan ? `(${escapeHtml(lk.detailTindakan)})` : ''}</div>` : ''}
+                    ${lk.rtwTrajectoryLabel ? `<div><strong style="color: #34d399;">Rekomendasi Penempatan:</strong> ${escapeHtml(lk.rtwTrajectoryLabel)}</div>` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          })()}
+
           <!-- Rincian Vital Mingguan -->
           <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 0.8rem;">
             ${m.tensiSistol ? `<span class="badge badge-info"><i class="fa-solid fa-heart-pulse"></i> TD: ${m.tensiSistol}/${m.tensiDiastol} (${m.statusTensi})${m.map ? ` [MAP: ${m.map}]` : ''}</span>` : ''}
@@ -10122,6 +10153,12 @@ function exportHSEPantauanExcel() {
       'Berat Jenis Urine': item.matchedLongTerm?.mingguan?.beratJenisUrine || '-',
       'Warna Urine (Armstrong)': item.matchedLongTerm?.mingguan?.warnaUrineArmstrong ? `Skala ${item.matchedLongTerm.mingguan.warnaUrineArmstrong}` : '-',
       'Status Hidrasi K3': item.matchedLongTerm?.mingguan?.statusHidrasi || '-',
+      'Hazard Okupasi': (Array.isArray(item.matchedLongTerm?.laikKerja?.hazards) ? item.matchedLongTerm.laikKerja.hazards.join('; ') : '-') || '-',
+      'Status Laik Kerja (FFW)': item.matchedLongTerm?.laikKerja?.statusMeta?.label || (item.matchedLongTerm?.laikKerja?.fitnessStatus ? item.matchedLongTerm.laikKerja.fitnessStatus.toUpperCase() : 'FIT TO WORK'),
+      'Alasan Medis Okupasi': item.matchedLongTerm?.laikKerja?.alasan || '-',
+      'Tindakan Prasyarat Pemulihan': (item.matchedLongTerm?.laikKerja?.tindakan ? `${item.matchedLongTerm.laikKerja.tindakan} ${item.matchedLongTerm.laikKerja.detailTindakan || ''}`.trim() : '-') || '-',
+      'Tanggal Evaluasi Ulang': item.matchedLongTerm?.laikKerja?.reviewDate || '-',
+      'Rencana Penempatan Pasca-Evaluasi': item.matchedLongTerm?.laikKerja?.rtwTrajectoryLabel || '-',
       'Delta TD (mmHg)': item.dSis !== null ? (item.dSis > 0 ? `+${item.dSis}` : `${item.dSis}`) : '-',
       'Gula Darah (mg/dL)': item.curGDS || '-',
       'Lingkar Perut (cm)': item.curLP || '-',
@@ -19242,6 +19279,10 @@ function initKonsulDokterView() {
     applyKonsulPreset('hidrasi');
   }
 
+  // Inisialisasi Hazard Chips & Master K3 Okupasi
+  if (typeof renderKonsulHazardChips === 'function') renderKonsulHazardChips();
+  if (typeof renderKonsulK3Dropdowns === 'function') renderKonsulK3Dropdowns();
+
   updateKonsulTimelineView();
 }
 
@@ -19873,7 +19914,29 @@ async function handleSaveKonsulDokter(e) {
       if (pntBjUrine > 1.025 || (pntArmstrong && parseInt(pntArmstrong) >= 6)) statusHidrasi = 'Dehidrasi Berat';
       else if (pntBjUrine > 1.020 || (pntArmstrong && parseInt(pntArmstrong) >= 4)) statusHidrasi = 'Dehidrasi Ringan';
 
+      const fitnessStatus = document.querySelector('input[name="konsul_fitness_status"]:checked')?.value || 'fit';
+      const rtwAlasan = document.getElementById('konsul-rtw-alasan')?.value || '';
+      const rtwTindakan = document.getElementById('konsul-rtw-tindakan')?.value || '';
+      const rtwDetail = document.getElementById('konsul-rtw-tindakan-detail')?.value?.trim() || '';
+      const rtwReviewDate = document.getElementById('konsul-rtw-review-date')?.value || '';
+      const rtwTrajectory = document.getElementById('konsul-rtw-trajectory')?.value || 'return_original';
+
+      const laikKerjaData = {
+        fitnessStatus: fitnessStatus,
+        statusMeta: getFitnessStatusMeta(fitnessStatus),
+        hazards: _selectedKonsulHazards || [],
+        alasan: rtwAlasan,
+        tindakan: rtwTindakan,
+        detailTindakan: rtwDetail,
+        reviewDate: rtwReviewDate,
+        rtwTrajectory: rtwTrajectory,
+        rtwTrajectoryLabel: getRTWTrajectoryLabel(rtwTrajectory)
+      };
+
+      newRecord.laikKerja = laikKerjaData;
+
       pantauanPayload = {
+        laikKerja: laikKerjaData,
         mingguan: {
           tensiSistol: pntSis,
           tensiDiastol: pntDia,
@@ -20445,4 +20508,263 @@ function renderHSEPatientTrendChart(nikOrName, filterTab = 'td') {
       scales: scalesConfig
     }
   });
+}
+
+
+// =========================================================================
+// MODUL PENETAPAN HAZARD OKUPASI & STATUS LAIK KERJA (FITNESS FOR WORK)
+// Berdasarkan Standar Kedokteran Okupasi (PubMed / Europe PMC / PERDOKHI)
+// Mendukung Tesis dr. Dylan Alam Fadhilah & Operasional HSE PT ATI
+// =========================================================================
+
+const DEFAULT_MASTER_HAZARDS = [
+  "🔥 Fisik: Suhu Panas / Heat Stress (ISBB Tinggi: Foundry/Melting/Pouring/Baking)",
+  "🔊 Fisik: Kebisingan Tinggi (>85 dBA)",
+  "💨 Kimia: Debu Silika / Fume Logam / Gas Pelarut",
+  "🏋️ Ergonomi: Angkat Angkut Berat / Posisi Statis / Repetitif",
+  "🌙 Kerja Giliran / Shift Malam",
+  "⚡ Risiko Tinggi: Ketinggian / Alat Berat / Ruang Terbatas"
+];
+
+const DEFAULT_MASTER_RTW_ALASAN = [
+  "💧 Dehidrasi Kerja Panas (BJ Urine > 1.020 / Skala Armstrong ≥ 4)",
+  "🩺 Hipertensi Tidak Terkontrol pada Pajanan Panas (TD ≥ 140/90 mmHg / MAP Tinggi)",
+  "🚨 Krisis / Urgensi Hipertensi Akut (TD ≥ 180/110 mmHg)",
+  "🩸 Diabetes Melitus / Hiperglikemia Tidak Terkontrol (GDS > 200 mg/dL)",
+  "🦴 Low Back Pain (LBP) / Gangguan Muskuloskeletal Akibat Ergonomi",
+  "😵‍💫 Vertigo / Kelelahan Panas Akut (Heat Exhaustion)"
+];
+
+const DEFAULT_MASTER_RTW_TINDAKAN = [
+  "🥤 Protokol Rehidrasi Terstruktur (Minum 250 mL/20-30 menit) hingga BJ Urine ≤ 1.020",
+  "💊 Stabilisasi Tekanan Darah dengan Antihipertensi Rutin hingga TD < 140/90 mmHg",
+  "❄️ Bebas Pajanan Panas (Cooling Rest) & Observasi Medis di Klinik",
+  "🏥 Rujukan Spesialis / Konsultasi Lanjutan & Evaluasi Laboratorium Ulang",
+  "🧘 Fisioterapi & Pembatasan Angkat Beban > 5 kg"
+];
+
+let _selectedKonsulHazards = ["🔥 Fisik: Suhu Panas / Heat Stress (ISBB Tinggi: Foundry/Melting/Pouring/Baking)"];
+let _currentFitnessStatus = 'fit';
+
+function getMasterK3List(type) {
+  let key = 'ati_custom_master_k3_' + type;
+  let custom = [];
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) custom = JSON.parse(raw);
+  } catch (e) {}
+
+  if (type === 'hazard') return [...DEFAULT_MASTER_HAZARDS, ...custom];
+  if (type === 'alasan') return [...DEFAULT_MASTER_RTW_ALASAN, ...custom];
+  if (type === 'tindakan') return [...DEFAULT_MASTER_RTW_TINDAKAN, ...custom];
+  return [];
+}
+
+function renderKonsulHazardChips() {
+  const container = document.getElementById('konsul-hazard-chips-group');
+  if (!container) return;
+
+  const hazards = getMasterK3List('hazard');
+  container.innerHTML = hazards.map(h => {
+    const isActive = _selectedKonsulHazards.includes(h);
+    return `
+      <div class="hazard-chip ${isActive ? 'active' : ''}" onclick="toggleKonsulHazardChip(this, '${escapeHtml(h)}')" data-hazard="${escapeHtml(h)}">
+        <i class="fa-solid ${isActive ? 'fa-square-check' : 'fa-square'}" style="color: ${isActive ? '#f59e0b' : 'var(--text-muted)'};"></i>
+        <span>${escapeHtml(h)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleKonsulHazardChip(el, hazardName) {
+  const idx = _selectedKonsulHazards.indexOf(hazardName);
+  if (idx === -1) {
+    _selectedKonsulHazards.push(hazardName);
+  } else {
+    _selectedKonsulHazards.splice(idx, 1);
+  }
+  renderKonsulHazardChips();
+}
+
+function renderKonsulK3Dropdowns() {
+  const alasanSelect = document.getElementById('konsul-rtw-alasan');
+  const tindakanSelect = document.getElementById('konsul-rtw-tindakan');
+
+  if (alasanSelect) {
+    const alasanList = getMasterK3List('alasan');
+    alasanSelect.innerHTML = alasanList.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+  }
+
+  if (tindakanSelect) {
+    const tindakanList = getMasterK3List('tindakan');
+    tindakanSelect.innerHTML = tindakanList.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  }
+}
+
+function handleFitnessStatusChange(status) {
+  _currentFitnessStatus = status;
+  const detailsContainer = document.getElementById('konsul-rtw-details-container');
+  if (!detailsContainer) return;
+
+  if (status === 'fit') {
+    detailsContainer.style.display = 'none';
+  } else {
+    detailsContainer.style.display = 'block';
+    // Default 7 days if date is empty
+    const dateInput = document.getElementById('konsul-rtw-review-date');
+    if (dateInput && !dateInput.value) {
+      setKonsulRTWDuration(7, '7 Hari (1 Minggu)');
+    }
+  }
+}
+
+function setKonsulRTWDuration(days, label) {
+  const dateInput = document.getElementById('konsul-rtw-review-date');
+  const badge = document.getElementById('konsul-rtw-countdown-badge');
+  const targetDate = new Date();
+
+  if (days === 0) {
+    // 1 Shift (today)
+  } else {
+    targetDate.setDate(targetDate.getDate() + days);
+  }
+
+  const yyyy = targetDate.getFullYear();
+  const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(targetDate.getDate()).padStart(2, '0');
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+
+  if (dateInput) dateInput.value = dateStr;
+
+  // Sync to Jadwal Kontrol automatically
+  const tglKontrol = document.getElementById('poli-tanggal-kontrol');
+  const chkKontrol = document.getElementById('poli-chk-kontrol');
+  if (tglKontrol) tglKontrol.value = dateStr;
+  if (chkKontrol) {
+    chkKontrol.checked = true;
+    if (typeof togglePoliKontrolFields === 'function') togglePoliKontrolFields();
+  }
+
+  updateKonsulRTWCountdownBadge(label);
+}
+
+function updateKonsulRTWCountdownBadge(customLabel = '') {
+  const dateInput = document.getElementById('konsul-rtw-review-date');
+  const badge = document.getElementById('konsul-rtw-countdown-badge');
+  if (!dateInput || !badge) return;
+
+  const val = dateInput.value;
+  if (!val) {
+    badge.textContent = '⏳ Durasi: Belum ditentukan';
+    return;
+  }
+
+  const parts = val.split('-');
+  const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  targetDate.setHours(0,0,0,0);
+
+  const diffDays = Math.round((targetDate - today) / (1000 * 60 * 60 * 24));
+  const formattedTarget = `${parts[2]}/${parts[1]}/${parts[0]}`;
+
+  if (diffDays === 0) {
+    badge.textContent = `⏳ Durasi: 1 Shift (Evaluasi Ulang Hari Ini)`;
+  } else if (diffDays > 0) {
+    badge.textContent = `⏳ Durasi: ${customLabel || diffDays + ' Hari'} (Evaluasi: ${formattedTarget} - Sisa ${diffDays} Hari)`;
+  } else {
+    badge.textContent = `⚠️ Sudah Lewat Jadwal (${formattedTarget})`;
+  }
+}
+
+function openModalTambahMasterK3(type) {
+  const modal = document.getElementById('modal-tambah-master-k3');
+  const title = document.getElementById('modal-master-k3-title');
+  const label = document.getElementById('modal-master-k3-label');
+  const typeInp = document.getElementById('modal-master-k3-type');
+  const input = document.getElementById('modal-master-k3-input');
+  if (!modal) return;
+
+  if (typeInp) typeInp.value = type;
+  if (input) input.value = '';
+
+  if (type === 'hazard') {
+    if (title) title.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Tambah Master Hazard Lingkungan Kerja';
+    if (label) label.textContent = 'Nama Hazard / Bahaya Okupasi *';
+  } else if (type === 'alasan') {
+    if (title) title.innerHTML = '<i class="fa-solid fa-stethoscope"></i> Tambah Master Alasan / Penyakit Kerja';
+    if (label) label.textContent = 'Nama Diagnosis / Penyakit / Kejadian Kerja *';
+  } else if (type === 'tindakan') {
+    if (title) title.innerHTML = '<i class="fa-solid fa-kit-medical"></i> Tambah Master Tindakan Prasyarat Pemulihan';
+    if (label) label.textContent = 'Nama Tindakan Prasyarat / Intervensi *';
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeModalTambahMasterK3() {
+  const modal = document.getElementById('modal-tambah-master-k3');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveCustomMasterK3() {
+  const typeInp = document.getElementById('modal-master-k3-type');
+  const input = document.getElementById('modal-master-k3-input');
+  if (!typeInp || !input) return;
+
+  const type = typeInp.value;
+  const val = input.value.trim();
+  if (!val) {
+    showToast('Silakan isi nama item!', 'warning');
+    return;
+  }
+
+  const key = 'ati_custom_master_k3_' + type;
+  let custom = [];
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) custom = JSON.parse(raw);
+  } catch (e) {}
+
+  if (!custom.includes(val)) {
+    custom.push(val);
+    localStorage.setItem(key, JSON.stringify(custom));
+  }
+
+  closeModalTambahMasterK3();
+  showToast(`✅ Item "${val}" berhasil ditambahkan ke master!`, 'success');
+
+  if (type === 'hazard') {
+    if (!_selectedKonsulHazards.includes(val)) _selectedKonsulHazards.push(val);
+    renderKonsulHazardChips();
+  } else {
+    renderKonsulK3Dropdowns();
+    if (type === 'alasan') {
+      const sel = document.getElementById('konsul-rtw-alasan');
+      if (sel) sel.value = val;
+    } else if (type === 'tindakan') {
+      const sel = document.getElementById('konsul-rtw-tindakan');
+      if (sel) sel.value = val;
+    }
+  }
+}
+
+function getFitnessStatusMeta(status) {
+  if (status === 'fit') {
+    return { label: '🟢 Fit to Work', badgeClass: 'badge-success', color: '#22c55e', text: 'Laik Kerja Penuh' };
+  } else if (status === 'fit_note') {
+    return { label: '🟡 Fit with Note / Restriction', badgeClass: 'badge-warning', color: '#f59e0b', text: 'Laik Kerja dengan Catatan / Penyesuaian' };
+  } else if (status === 'temp_unfit') {
+    return { label: '🟠 Temporary Unfit', badgeClass: 'badge-danger', color: '#ef4444', text: 'Tidak Laik Kerja Sementara' };
+  } else if (status === 'unfit_mutasi') {
+    return { label: '🔴 Unfit for Specific Job', badgeClass: 'badge-danger', color: '#dc2626', text: 'Wajib Penyesuaian Tempat Kerja Permanen / Mutasi' };
+  }
+  return { label: '🟢 Fit to Work', badgeClass: 'badge-success', color: '#22c55e', text: 'Laik Kerja' };
+}
+
+function getRTWTrajectoryLabel(val) {
+  if (val === 'return_original') return '✅ Kembali ke Pekerjaan/Tempat Semula (Bila Target Tercapai)';
+  if (val === 'return_adjusted') return '🛠️ Kembali dengan Penyesuaian Tempat Kerja (Rotasi / Pembatasan Beban)';
+  if (val === 'redeployment') return '🚫 Tidak Dapat Kembali Semula — Rekomendasi Mutasi Area Kerja';
+  return '-';
 }

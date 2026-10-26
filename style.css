@@ -4664,3 +4664,58 @@ select.form-control {
   color: #fff !important;
   box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
 }
+
+
+/* ========================================================
+   K3 FITNESS FOR WORK & OCCUPATIONAL HAZARDS STYLES
+   ======================================================== */
+.hazard-chip {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid var(--border-color);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.hazard-chip:hover {
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+.hazard-chip.active {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: #f59e0b !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+
+.fit-card-label {
+  transition: all 0.2s ease;
+}
+
+.fit-card-label:hover {
+  transform: translateY(-1px);
+}
+
+.fit-card-label:has(input:checked) {
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+  filter: brightness(1.1);
+}
+
+.btn-k3-dur {
+  transition: all 0.2s ease;
+}
+
+.btn-k3-dur:hover, .btn-k3-dur.active {
+  background: #a855f7 !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.35);
+}
