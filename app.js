@@ -14190,14 +14190,27 @@ function initPoliPantauanDates() {
 }
 
 function togglePoliPantauanSection(type) {
-  const chkMingguan = document.getElementById('poli-pantauan-chk-mingguan')?.checked;
-  const chkObat = document.getElementById('poli-pantauan-chk-obat')?.checked;
-  const chkLab = document.getElementById('poli-pantauan-chk-lab')?.checked;
+  const chkMingguanEl = document.getElementById('poli-pantauan-chk-mingguan');
+  const chkObatEl = document.getElementById('poli-pantauan-chk-obat');
+  const chkLabEl = document.getElementById('poli-pantauan-chk-lab');
 
   const secMingguan = document.getElementById('poli-pantauan-sec-mingguan');
   const secObat = document.getElementById('poli-pantauan-sec-obat');
   const secLab = document.getElementById('poli-pantauan-sec-lab');
   const commonFooter = document.getElementById('poli-pantauan-common-footer');
+
+  // Jika sub-opsi legacy dihilangkan, panel K3 (secMingguan) dan commonFooter selalu tampil aktif
+  if (!chkMingguanEl && !chkObatEl && !chkLabEl) {
+    if (secMingguan) secMingguan.style.display = 'block';
+    if (commonFooter) commonFooter.style.display = 'block';
+    initPoliPantauanDates();
+    updatePoliKontrolFromPantauan();
+    return;
+  }
+
+  const chkMingguan = chkMingguanEl?.checked;
+  const chkObat = chkObatEl?.checked;
+  const chkLab = chkLabEl?.checked;
 
   if (secMingguan) secMingguan.style.display = chkMingguan ? 'block' : 'none';
   if (secObat) {
