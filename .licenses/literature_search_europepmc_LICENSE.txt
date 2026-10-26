@@ -1,0 +1,4 @@
+Europe PMC Database Skill License & Terms Notification
+Timestamp: 2026-10-27T01:59:05+07:00
+Terms: https://europepmc.org/
+Always check the license of the papers retrieved by the skill for any restrictions.
