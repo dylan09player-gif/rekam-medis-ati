@@ -19214,7 +19214,7 @@ function applyRoleAccess() {
 
 const DEFAULT_MASTER_EXAM_TESTS = [
   // 1. Tersering & Tesis Hidrasi K3
-  { id: 'tekanan_darah', nama: 'Tekanan Darah (TD)', kategori: 'TTV & Hidrasi', satuan: 'mmHg', rujukan: '< 120/80', tipe: 'bp' },
+  { id: 'tekanan_darah', nama: 'Tekanan Darah (TD)', kategori: 'TTV & Hidrasi', satuan: 'mmHg', rujukan: '< 140/90 (JNC 8)', tipe: 'bp' },
   { id: 'bj_urine', nama: 'Berat Jenis Urine (BJ)', kategori: 'TTV & Hidrasi', satuan: '', rujukan: '1.002 - 1.030 (Euhidrasi ≤ 1.020)', tipe: 'numeric', minRef: 1.002, maxRef: 1.020 },
   { id: 'warna_urine', nama: 'Warna Urine (Armstrong)', kategori: 'TTV & Hidrasi', satuan: 'Skala', rujukan: 'Skala 1 - 3 (Euhidrasi)', tipe: 'armstrong' },
   { id: 'gds', nama: 'Gula Darah Sewaktu (GDS)', kategori: 'Metabolik', satuan: 'mg/dL', rujukan: '< 140', tipe: 'numeric', maxRef: 140 },
@@ -19297,6 +19297,7 @@ function initKonsulDokterView() {
   if (typeof renderKonsulK3Dropdowns === 'function') renderKonsulK3Dropdowns();
 
   updateKonsulTimelineView();
+  if (typeof initKonsulDraggableSplitter === 'function') initKonsulDraggableSplitter();
 }
 
 function syncPatientFromPoliToKonsul() {
@@ -19536,15 +19537,13 @@ function calculateExamRowStatus(tr) {
       if (mapPill) mapPill.textContent = `MAP: ${map} mmHg`;
 
       if (sis >= 160 || dia >= 100) {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(220,38,38,0.22); color: #f87171; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Hipertensi Tk 2</span>';
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(220,38,38,0.22); color: #f87171; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Hipertensi Derajat 2</span>';
       } else if (sis >= 140 || dia >= 90) {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(239,68,68,0.2); color: #ef4444; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Hipertensi Tk 1</span>';
-      } else if (sis >= 120 || dia >= 80) {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(245,158,11,0.2); color: #f59e0b; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Pre-Hipertensi</span>';
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(239,68,68,0.2); color: #ef4444; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Hipertensi Derajat 1</span>';
       } else if (sis < 90 || dia < 60) {
         statusTd.innerHTML = '<span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Hipotensi</span>';
       } else {
-        statusTd.innerHTML = '<span class="badge" style="background: rgba(34,197,94,0.2); color: #22c55e; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Normal</span>';
+        statusTd.innerHTML = '<span class="badge" style="background: rgba(34,197,94,0.2); color: #22c55e; font-weight: 800; font-size: 0.76rem; padding: 4px 8px;">Normal (< 140/90)</span>';
       }
     } else {
       if (mapPill) mapPill.textContent = 'MAP: -';
@@ -19931,9 +19930,9 @@ async function handleSaveKonsulDokter(e) {
     let pantauanPayload = null;
     if (isPantauan) {
       let statusTensi = 'Normal';
-      if (pntSis >= 160 || pntDia >= 100) statusTensi = 'Hipertensi Tk 2';
-      else if (pntSis >= 140 || pntDia >= 90) statusTensi = 'Hipertensi Tk 1';
-      else if (pntSis >= 120 || pntDia >= 80) statusTensi = 'Pre-Hipertensi';
+      if (pntSis >= 160 || pntDia >= 100) statusTensi = 'Hipertensi Derajat 2';
+      else if (pntSis >= 140 || pntDia >= 90) statusTensi = 'Hipertensi Derajat 1';
+      else if (pntSis < 90 || pntDia < 60) statusTensi = 'Hipotensi';
 
       let statusHidrasi = 'Euhidrasi';
       if (pntBjUrine > 1.025 || (pntArmstrong && parseInt(pntArmstrong) >= 6)) statusHidrasi = 'Dehidrasi Berat';
@@ -20792,4 +20791,121 @@ function getRTWTrajectoryLabel(val) {
   if (val === 'return_adjusted') return '🛠️ Kembali dengan Penyesuaian Tempat Kerja (Rotasi / Pembatasan Beban)';
   if (val === 'redeployment') return '🚫 Tidak Dapat Kembali Semula — Rekomendasi Mutasi Area Kerja';
   return '-';
+}
+
+
+// =========================================================================
+// DRAGGABLE SPLITTER FOR KONSUL DOKTER DASHBOARD
+// Memungkinkan dokter menggeser pembatas layar kiri & kanan secara fleksibel
+// =========================================================================
+
+function initKonsulDraggableSplitter() {
+  const container = document.getElementById('konsul-split-layout');
+  const leftPanel = document.getElementById('konsul-panel-left');
+  const gutter = document.getElementById('konsul-gutter');
+  const rightPanel = document.getElementById('konsul-panel-right');
+
+  if (!container || !leftPanel || !gutter) return;
+
+  // Restore saved ratio from localStorage
+  const savedRatio = localStorage.getItem('ati_konsul_split_ratio');
+  if (savedRatio) {
+    const r = parseFloat(savedRatio);
+    if (!isNaN(r) && r >= 35 && r <= 85) {
+      leftPanel.style.flexBasis = `${r}%`;
+    }
+  }
+
+  let isDragging = false;
+  let startX = 0;
+  let startLeftWidth = 0;
+  let containerWidth = 0;
+
+  function onPointerDown(e) {
+    if (window.innerWidth <= 992) return;
+    isDragging = true;
+    startX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+    startLeftWidth = leftPanel.getBoundingClientRect().width;
+    containerWidth = container.getBoundingClientRect().width;
+    gutter.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('touchmove', onPointerMove, { passive: false });
+    window.addEventListener('touchend', onPointerUp);
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    const currentX = e.clientX || (e.touches && e.touches[0].clientX) || startX;
+    const dx = currentX - startX;
+    let newWidth = startLeftWidth + dx;
+
+    // Constrain min and max widths
+    const minLeft = 380;
+    const maxLeft = containerWidth - 280;
+
+    if (newWidth < minLeft) newWidth = minLeft;
+    if (newWidth > maxLeft) newWidth = maxLeft;
+
+    const newPct = (newWidth / containerWidth) * 100;
+    leftPanel.style.flexBasis = `${newPct.toFixed(2)}%`;
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function onPointerUp() {
+    if (!isDragging) return;
+    isDragging = false;
+    gutter.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('touchmove', onPointerMove);
+    window.removeEventListener('touchend', onPointerUp);
+
+    // Persist ratio
+    const currentWidth = leftPanel.getBoundingClientRect().width;
+    const totalW = container.getBoundingClientRect().width;
+    if (totalW > 0) {
+      const pct = ((currentWidth / totalW) * 100).toFixed(1);
+      localStorage.setItem('ati_konsul_split_ratio', pct);
+    }
+  }
+
+  gutter.addEventListener('pointerdown', onPointerDown);
+  gutter.addEventListener('touchstart', onPointerDown, { passive: true });
+
+  // Double click resets to standard 60%
+  gutter.addEventListener('dblclick', () => {
+    leftPanel.style.flexBasis = '60%';
+    localStorage.setItem('ati_konsul_split_ratio', '60');
+    const label = document.getElementById('label-konsul-focus');
+    if (label) label.textContent = 'Perlebar';
+    showToast('Ukuran layar konsul direset ke 60% : 40%', 'info');
+  });
+}
+
+function toggleKonsulFocusMode() {
+  const leftPanel = document.getElementById('konsul-panel-left');
+  const label = document.getElementById('label-konsul-focus');
+  if (!leftPanel) return;
+
+  const currentBasis = parseFloat(leftPanel.style.flexBasis) || 60;
+  if (currentBasis < 75) {
+    // Melebarkan form hingga 82%
+    leftPanel.style.flexBasis = '82%';
+    localStorage.setItem('ati_konsul_split_ratio', '82');
+    if (label) label.textContent = 'Seimbang';
+    showToast('Mode Layar Lebar Aktif (Form 82%)', 'info');
+  } else {
+    // Kembalikan ke seimbang 58%
+    leftPanel.style.flexBasis = '58%';
+    localStorage.setItem('ati_konsul_split_ratio', '58');
+    if (label) label.textContent = 'Perlebar';
+    showToast('Mode Seimbang Aktif (Form 58%)', 'info');
+  }
 }

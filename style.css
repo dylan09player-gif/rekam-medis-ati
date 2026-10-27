@@ -4612,9 +4612,86 @@ select.form-control {
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+/* Draggable Splitter Layout untuk Dasbor Konsul Dokter */
+#konsul-split-layout {
+  display: flex !important;
+  flex-direction: row;
+  gap: 0;
+  align-items: stretch;
+  position: relative;
+  width: 100%;
+}
+
+#konsul-panel-left {
+  flex: 0 0 60%;
+  min-width: 380px;
+  max-width: calc(100% - 280px);
+  overflow: hidden;
+  transition: flex-basis 0.05s ease;
+}
+
+#konsul-gutter {
+  width: 16px;
+  min-width: 16px;
+  cursor: col-resize;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  position: relative;
+  z-index: 20;
+  margin: 0 -2px;
+  transition: background 0.2s ease;
+}
+
+#konsul-gutter:hover,
+#konsul-gutter.dragging {
+  background: rgba(59, 130, 246, 0.22);
+}
+
+#konsul-gutter .gutter-handle {
+  width: 4px;
+  height: 52px;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.45);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
+  transition: background 0.2s, height 0.2s, width 0.2s;
+}
+
+#konsul-gutter:hover .gutter-handle,
+#konsul-gutter.dragging .gutter-handle {
+  background: #3b82f6;
+  width: 6px;
+  height: 80px;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+}
+
+#konsul-panel-right {
+  flex: 1 1 0;
+  min-width: 280px;
+  overflow: hidden;
+}
+
+@media (max-width: 992px) {
+  #konsul-split-layout {
+    flex-direction: column !important;
+  }
+  #konsul-panel-left,
+  #konsul-panel-right {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+  #konsul-gutter {
+    display: none !important;
+  }
+}
+
 .konsul-exam-table {
   width: 100%;
-  min-width: 820px;
+  min-width: 660px;
   border-collapse: separate;
   border-spacing: 0 6px;
 }
